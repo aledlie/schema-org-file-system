@@ -13,9 +13,10 @@ import re
 import json
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, List, Tuple, Optional
+from typing import Dict, List, Tuple, Optional, Any
 from collections import defaultdict
 from urllib.parse import quote
+from contextlib import nullcontext
 
 # OCR and PDF imports
 try:
@@ -97,6 +98,22 @@ try:
 except ImportError:
     METADATA_AVAILABLE = False
     print("Warning: Metadata libraries not available. Install piexif, geopy")
+
+# Cost tracking imports (optional - gracefully degrade if not available)
+try:
+    from cost_roi_calculator import CostROICalculator, CostTracker
+    COST_TRACKING_AVAILABLE = True
+except ImportError:
+    COST_TRACKING_AVAILABLE = False
+    # Provide stub implementations for graceful degradation
+    class CostTracker:
+        """Stub CostTracker when cost tracking is not available."""
+        def __init__(self, *args, **kwargs):
+            pass
+        def __enter__(self):
+            return self
+        def __exit__(self, *args):
+            return False
 
 
 class ContentClassifier:
@@ -477,10 +494,16 @@ class ContentClassifier:
 class ImageMetadataParser:
     """Parses image metadata including EXIF, GPS, and timestamps."""
 
-    def __init__(self):
-        """Initialize the metadata parser."""
+    def __init__(self, cost_calculator: 'CostROICalculator' = None):
+        """
+        Initialize the metadata parser.
+
+        Args:
+            cost_calculator: Optional cost calculator for tracking usage costs
+        """
         self.metadata_available = METADATA_AVAILABLE
         self.geocoder = None
+        self.cost_calculator = cost_calculator
 
         if self.metadata_available:
             try:
@@ -627,40 +650,41 @@ class ImageMetadataParser:
         if not self.geocoder:
             return None
 
-        try:
-            lat, lon = coordinates
-            location = self.geocoder.reverse(f"{lat}, {lon}", exactly_one=True)
+        with CostTracker(self.cost_calculator, 'nominatim_geocoding') if self.cost_calculator else nullcontext():
+            try:
+                lat, lon = coordinates
+                location = self.geocoder.reverse(f"{lat}, {lon}", exactly_one=True)
 
-            if location and location.raw.get('address'):
-                address = location.raw['address']
+                if location and location.raw.get('address'):
+                    address = location.raw['address']
 
-                # Try to get city, state, country
-                parts = []
+                    # Try to get city, state, country
+                    parts = []
 
-                # City
-                city = address.get('city') or address.get('town') or address.get('village')
-                if city:
-                    parts.append(city)
+                    # City
+                    city = address.get('city') or address.get('town') or address.get('village')
+                    if city:
+                        parts.append(city)
 
-                # State/Region
-                state = address.get('state') or address.get('region')
-                if state:
-                    parts.append(state)
+                    # State/Region
+                    state = address.get('state') or address.get('region')
+                    if state:
+                        parts.append(state)
 
-                # Country
-                country = address.get('country')
-                if country:
-                    parts.append(country)
+                    # Country
+                    country = address.get('country')
+                    if country:
+                        parts.append(country)
 
-                if parts:
-                    return ', '.join(parts)
+                    if parts:
+                        return ', '.join(parts)
 
-        except (GeocoderTimedOut, GeocoderServiceError) as e:
-            print(f"  Geocoding error: {e}")
-        except Exception as e:
-            print(f"  Location lookup error: {e}")
+            except (GeocoderTimedOut, GeocoderServiceError) as e:
+                print(f"  Geocoding error: {e}")
+            except Exception as e:
+                print(f"  Location lookup error: {e}")
 
-        return None
+            return None
 
     def get_metadata_summary(self, image_path: Path) -> Dict[str, Any]:
         """
@@ -701,12 +725,18 @@ class ImageMetadataParser:
 class ImageContentAnalyzer:
     """Analyzes image content using computer vision."""
 
-    def __init__(self):
-        """Initialize the image content analyzer."""
+    def __init__(self, cost_calculator: 'CostROICalculator' = None):
+        """
+        Initialize the image content analyzer.
+
+        Args:
+            cost_calculator: Optional cost calculator for tracking usage costs
+        """
         self.vision_available = VISION_AVAILABLE
         self.model = None
         self.processor = None
         self.face_cascade = None
+        self.cost_calculator = cost_calculator
 
         if self.vision_available:
             try:
@@ -733,28 +763,29 @@ class ImageContentAnalyzer:
         if not self.vision_available or self.face_cascade is None:
             return False
 
-        try:
-            # Read image
-            img = cv2.imread(str(image_path))
-            if img is None:
+        with CostTracker(self.cost_calculator, 'face_detection') if self.cost_calculator else nullcontext():
+            try:
+                # Read image
+                img = cv2.imread(str(image_path))
+                if img is None:
+                    return False
+
+                # Convert to grayscale for face detection
+                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+
+                # Detect faces
+                faces = self.face_cascade.detectMultiScale(
+                    gray,
+                    scaleFactor=1.1,
+                    minNeighbors=5,
+                    minSize=(30, 30)
+                )
+
+                return len(faces) > 0
+
+            except Exception as e:
+                print(f"  Face detection error: {e}")
                 return False
-
-            # Convert to grayscale for face detection
-            gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-            # Detect faces
-            faces = self.face_cascade.detectMultiScale(
-                gray,
-                scaleFactor=1.1,
-                minNeighbors=5,
-                minSize=(30, 30)
-            )
-
-            return len(faces) > 0
-
-        except Exception as e:
-            print(f"  Face detection error: {e}")
-            return False
 
     def classify_image_content(self, image_path: Path) -> Dict[str, float]:
         """
@@ -766,48 +797,49 @@ class ImageContentAnalyzer:
         if not self.vision_available or self.model is None:
             return {}
 
-        try:
-            # Open image
-            image = Image.open(image_path)
+        with CostTracker(self.cost_calculator, 'clip_vision') if self.cost_calculator else nullcontext():
+            try:
+                # Open image
+                image = Image.open(image_path)
 
-            # Define categories to check
-            categories = [
-                "a photo of a home interior room",
-                "a photo of a living room",
-                "a photo of a bedroom",
-                "a photo of a kitchen",
-                "a photo of a bathroom",
-                "a photo of furniture",
-                "a photo of a house exterior",
-                "a photo of people",
-                "a screenshot",
-                "a photo of outdoors",
-                "a photo of nature"
-            ]
+                # Define categories to check
+                categories = [
+                    "a photo of a home interior room",
+                    "a photo of a living room",
+                    "a photo of a bedroom",
+                    "a photo of a kitchen",
+                    "a photo of a bathroom",
+                    "a photo of furniture",
+                    "a photo of a house exterior",
+                    "a photo of people",
+                    "a screenshot",
+                    "a photo of outdoors",
+                    "a photo of nature"
+                ]
 
-            # Prepare inputs
-            inputs = self.processor(
-                text=categories,
-                images=image,
-                return_tensors="pt",
-                padding=True
-            )
+                # Prepare inputs
+                inputs = self.processor(
+                    text=categories,
+                    images=image,
+                    return_tensors="pt",
+                    padding=True
+                )
 
-            # Get predictions
-            with torch.no_grad():
-                outputs = self.model(**inputs)
-                logits_per_image = outputs.logits_per_image
-                probs = logits_per_image.softmax(dim=1)
+                # Get predictions
+                with torch.no_grad():
+                    outputs = self.model(**inputs)
+                    logits_per_image = outputs.logits_per_image
+                    probs = logits_per_image.softmax(dim=1)
 
-            # Convert to dictionary
-            scores = {}
-            for i, category in enumerate(categories):
-                scores[category] = float(probs[0][i])
+                # Convert to dictionary
+                scores = {}
+                for i, category in enumerate(categories):
+                    scores[category] = float(probs[0][i])
 
-            return scores
+                return scores
 
-        except Exception as e:
-            print(f"  Image classification error: {e}")
+            except Exception as e:
+                print(f"  Image classification error: {e}")
             return {}
 
     def is_home_interior_no_people(self, image_path: Path) -> Tuple[bool, Dict[str, float]]:
@@ -879,7 +911,13 @@ class ImageContentAnalyzer:
 class ContentBasedFileOrganizer:
     """Organize files based on content analysis using OCR."""
 
-    def __init__(self, base_path: str = None, organize_by_date: bool = False, organize_by_location: bool = False):
+    def __init__(
+        self,
+        base_path: str = None,
+        organize_by_date: bool = False,
+        organize_by_location: bool = False,
+        enable_cost_tracking: bool = True
+    ):
         """
         Initialize the organizer.
 
@@ -887,14 +925,22 @@ class ContentBasedFileOrganizer:
             base_path: Base path for organized files
             organize_by_date: If True, organize photos by date (Photos/2023/11/)
             organize_by_location: If True, organize photos by location when GPS data available
+            enable_cost_tracking: If True, track costs and ROI for all features
         """
         self.base_path = Path(base_path or os.path.expanduser("~/Documents"))
+
+        # Initialize cost tracking if available and enabled
+        self.cost_calculator = None
+        if enable_cost_tracking and COST_TRACKING_AVAILABLE:
+            self.cost_calculator = CostROICalculator()
+            print("✓ Cost tracking enabled")
+
         self.enricher = MetadataEnricher()
         self.validator = SchemaValidator()
         self.registry = SchemaRegistry()
         self.classifier = ContentClassifier()
-        self.image_analyzer = ImageContentAnalyzer()
-        self.metadata_parser = ImageMetadataParser()
+        self.image_analyzer = ImageContentAnalyzer(cost_calculator=self.cost_calculator)
+        self.metadata_parser = ImageMetadataParser(cost_calculator=self.cost_calculator)
         self.stats = defaultdict(int)
         self.ocr_available = OCR_AVAILABLE
         self.organize_by_date = organize_by_date
@@ -1339,92 +1385,96 @@ class ContentBasedFileOrganizer:
         if not self.ocr_available:
             return ""
 
-        try:
-            image = Image.open(image_path)
-            text = pytesseract.image_to_string(image)
-            return text.strip()
-        except Exception as e:
-            print(f"  OCR error: {e}")
-            return ""
+        with CostTracker(self.cost_calculator, 'tesseract_ocr') if self.cost_calculator else nullcontext():
+            try:
+                image = Image.open(image_path)
+                text = pytesseract.image_to_string(image)
+                return text.strip()
+            except Exception as e:
+                print(f"  OCR error: {e}")
+                return ""
 
     def extract_text_from_pdf(self, pdf_path: Path) -> str:
         """Extract text from PDF (searchable or scanned)."""
         if not self.ocr_available:
             return ""
 
-        text = ""
+        with CostTracker(self.cost_calculator, 'pdf_extraction') if self.cost_calculator else nullcontext():
+            text = ""
 
-        try:
-            # First try to extract text directly (for searchable PDFs)
-            with open(pdf_path, 'rb') as f:
-                reader = pypdf.PdfReader(f)
-                for page in reader.pages[:10]:  # Limit to first 10 pages
-                    page_text = page.extract_text()
-                    if page_text:
-                        text += page_text + "\n"
+            try:
+                # First try to extract text directly (for searchable PDFs)
+                with open(pdf_path, 'rb') as f:
+                    reader = pypdf.PdfReader(f)
+                    for page in reader.pages[:10]:  # Limit to first 10 pages
+                        page_text = page.extract_text()
+                        if page_text:
+                            text += page_text + "\n"
 
-            # If we got meaningful text, return it
-            if len(text.strip()) > 100:
+                # If we got meaningful text, return it
+                if len(text.strip()) > 100:
+                    return text.strip()
+
+                # Otherwise, try OCR on the PDF
+                print(f"  Using OCR for scanned PDF...")
+                images = convert_from_path(pdf_path, first_page=1, last_page=5)
+                for image in images:
+                    text += pytesseract.image_to_string(image) + "\n"
+
                 return text.strip()
-
-            # Otherwise, try OCR on the PDF
-            print(f"  Using OCR for scanned PDF...")
-            images = convert_from_path(pdf_path, first_page=1, last_page=5)
-            for image in images:
-                text += pytesseract.image_to_string(image) + "\n"
-
-            return text.strip()
-        except Exception as e:
-            print(f"  PDF extraction error: {e}")
-            return ""
+            except Exception as e:
+                print(f"  PDF extraction error: {e}")
+                return ""
 
     def extract_text_from_docx(self, docx_path: Path) -> str:
         """Extract text from Word document."""
         if not DOCX_AVAILABLE:
             return ""
 
-        try:
-            doc = Document(docx_path)
-            text = []
-            for paragraph in doc.paragraphs:
-                if paragraph.text.strip():
-                    text.append(paragraph.text)
+        with CostTracker(self.cost_calculator, 'docx_extraction') if self.cost_calculator else nullcontext():
+            try:
+                doc = Document(docx_path)
+                text = []
+                for paragraph in doc.paragraphs:
+                    if paragraph.text.strip():
+                        text.append(paragraph.text)
 
-            # Also extract text from tables
-            for table in doc.tables:
-                for row in table.rows:
-                    for cell in row.cells:
-                        if cell.text.strip():
-                            text.append(cell.text)
+                # Also extract text from tables
+                for table in doc.tables:
+                    for row in table.rows:
+                        for cell in row.cells:
+                            if cell.text.strip():
+                                text.append(cell.text)
 
-            return "\n".join(text)
-        except Exception as e:
-            print(f"  DOCX extraction error: {e}")
-            return ""
+                return "\n".join(text)
+            except Exception as e:
+                print(f"  DOCX extraction error: {e}")
+                return ""
 
     def extract_text_from_xlsx(self, xlsx_path: Path) -> str:
         """Extract text from Excel spreadsheet."""
         if not EXCEL_AVAILABLE:
             return ""
 
-        try:
-            workbook = load_workbook(xlsx_path, read_only=True, data_only=True)
-            text = []
+        with CostTracker(self.cost_calculator, 'xlsx_extraction') if self.cost_calculator else nullcontext():
+            try:
+                workbook = load_workbook(xlsx_path, read_only=True, data_only=True)
+                text = []
 
-            # Limit to first 5 sheets
-            for sheet_name in list(workbook.sheetnames)[:5]:
-                sheet = workbook[sheet_name]
-                # Limit to first 100 rows
-                for row in list(sheet.iter_rows(max_row=100, values_only=True)):
-                    row_text = ' '.join([str(cell) for cell in row if cell is not None])
-                    if row_text.strip():
-                        text.append(row_text)
+                # Limit to first 5 sheets
+                for sheet_name in list(workbook.sheetnames)[:5]:
+                    sheet = workbook[sheet_name]
+                    # Limit to first 100 rows
+                    for row in list(sheet.iter_rows(max_row=100, values_only=True)):
+                        row_text = ' '.join([str(cell) for cell in row if cell is not None])
+                        if row_text.strip():
+                            text.append(row_text)
 
-            workbook.close()
-            return "\n".join(text)
-        except Exception as e:
-            print(f"  XLSX extraction error: {e}")
-            return ""
+                workbook.close()
+                return "\n".join(text)
+            except Exception as e:
+                print(f"  XLSX extraction error: {e}")
+                return ""
 
     def extract_text(self, file_path: Path) -> str:
         """Extract text from various file types."""
@@ -1987,6 +2037,84 @@ class ContentBasedFileOrganizer:
             print(f"Total schemas: {stats['total_schemas']}")
             print(f"Types: {', '.join(stats['types'])}")
 
+        # Cost tracking summary
+        if self.cost_calculator:
+            self._print_cost_summary()
+
+    def _print_cost_summary(self):
+        """Print cost and ROI summary from the cost calculator."""
+        if not self.cost_calculator:
+            return
+
+        print(f"\n{'='*60}")
+        print("Cost & ROI Analysis")
+        print(f"{'='*60}\n")
+
+        cost_summary = self.cost_calculator.calculate_total_cost()
+        roi_summary = self.cost_calculator.calculate_total_roi()
+
+        print(f"Total Processing Cost:     ${cost_summary['total_cost']:.4f}")
+        print(f"Total Files Processed:     {cost_summary['total_files_processed']:,}")
+        print(f"Avg Cost per File:         ${cost_summary['avg_cost_per_file']:.6f}")
+        print(f"Total Processing Time:     {cost_summary['total_processing_time_sec']:.1f}s")
+
+        print(f"\nEstimated Value Generated: ${roi_summary['total_value']:.2f}")
+        roi_pct = roi_summary['overall_roi_percentage']
+        roi_str = f"{roi_pct:.0f}%" if roi_pct != float('inf') else "∞"
+        print(f"Overall ROI:               {roi_str}")
+        print(f"Manual Hours Saved:        {roi_summary['total_manual_hours_saved']:.1f} hours")
+
+        # Per-feature breakdown (top 5 by usage)
+        feature_costs = cost_summary.get('feature_breakdown', {})
+        if feature_costs:
+            print(f"\n{'Feature':<25} {'Cost':>10} {'Files':>10}")
+            print("-" * 50)
+            sorted_features = sorted(
+                feature_costs.items(),
+                key=lambda x: x[1]['total_files_processed'],
+                reverse=True
+            )
+            for feature_name, data in sorted_features[:7]:
+                if data['total_invocations'] > 0:
+                    print(f"{feature_name:<25} ${data['total_cost']:>9.4f} {data['total_files_processed']:>10,}")
+
+        # Show recommendations if any critical issues
+        recommendations = self.cost_calculator.get_optimization_recommendations()
+        critical_recs = [r for r in recommendations if r['severity'] in ('critical', 'high')]
+        if critical_recs:
+            print(f"\n⚠️  Optimization Recommendations:")
+            for rec in critical_recs[:3]:
+                print(f"   • {rec['message']}")
+
+    def get_cost_report(self) -> Optional[Dict[str, Any]]:
+        """
+        Get the full cost and ROI report.
+
+        Returns:
+            Cost report dictionary or None if cost tracking is disabled
+        """
+        if not self.cost_calculator:
+            return None
+        return self.cost_calculator.generate_report()
+
+    def save_cost_report(self, output_path: str = None):
+        """
+        Save the cost report to a JSON file.
+
+        Args:
+            output_path: Path to save the report (auto-generated if None)
+        """
+        if not self.cost_calculator:
+            print("Cost tracking is not enabled")
+            return
+
+        if output_path is None:
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            output_path = f"results/cost_report_{timestamp}.json"
+
+        self.cost_calculator.generate_report(output_path)
+        print(f"Cost report saved to: {output_path}")
+
     def save_report(self, summary: Dict, output_path: str = None):
         """Save detailed organization report to JSON."""
         if output_path is None:
@@ -2031,11 +2159,23 @@ def main():
         type=int,
         help='Limit number of files to process (for testing)'
     )
+    parser.add_argument(
+        '--no-cost-tracking',
+        action='store_true',
+        help='Disable cost and ROI tracking'
+    )
+    parser.add_argument(
+        '--cost-report',
+        help='Path to save cost/ROI report (auto-generated if not specified)'
+    )
 
     args = parser.parse_args()
 
     # Create organizer
-    organizer = ContentBasedFileOrganizer(base_path=args.base_path)
+    organizer = ContentBasedFileOrganizer(
+        base_path=args.base_path,
+        enable_cost_tracking=not args.no_cost_tracking
+    )
 
     # Organize directories
     summary = organizer.organize_directories(
@@ -2047,9 +2187,13 @@ def main():
     # Print summary
     organizer.print_summary(summary)
 
-    # Save report
+    # Save reports
     if args.report or not args.dry_run:
         organizer.save_report(summary, args.report)
+
+    # Save cost report if tracking was enabled
+    if not args.no_cost_tracking and organizer.cost_calculator:
+        organizer.save_cost_report(args.cost_report)
 
 
 if __name__ == '__main__':
