@@ -1,0 +1,2054 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Data Explorer - File Organization System</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            --dark-bg: #0f1419;
+            --dark-surface: #1a1f2e;
+            --dark-surface-alt: #252d3d;
+            --dark-border: #3a4556;
+            --light-text: #e8eef7;
+            --light-text-secondary: #b0b8cc;
+            --accent-purple: #667eea;
+            --accent-pink: #f5576c;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --error: #e74c3c;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--dark-bg);
+            color: var(--light-text);
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        body.light-mode {
+            --dark-bg: #f8f9fa;
+            --dark-surface: #ffffff;
+            --dark-surface-alt: #f5f6f8;
+            --dark-border: #e1e8ed;
+            --light-text: #1a1f2e;
+            --light-text-secondary: #6b7c93;
+        }
+
+        /* Theme Toggle */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 50px;
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--light-text);
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: var(--dark-surface-alt);
+            border-color: var(--accent-purple);
+        }
+
+        .theme-toggle span {
+            font-size: 18px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+            border-bottom: 1px solid var(--dark-border);
+            padding: 40px 30px;
+            margin-bottom: 30px;
+        }
+
+        .header-content {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .header p {
+            color: var(--light-text-secondary);
+            font-size: 16px;
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            padding: 0 30px 50px;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid var(--dark-border);
+            overflow-x: auto;
+            padding-bottom: 0;
+        }
+
+        .tab {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            color: var(--light-text-secondary);
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            color: var(--light-text);
+            border-bottom-color: var(--accent-purple);
+        }
+
+        .tab.active {
+            color: var(--accent-purple);
+            border-bottom-color: var(--accent-purple);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Metrics Grid */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+
+        .metric-card {
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .metric-card:hover {
+            border-color: var(--accent-purple);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.2);
+        }
+
+        .metric-label {
+            font-size: 13px;
+            color: var(--light-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .metric-subtext {
+            font-size: 12px;
+            color: var(--light-text-secondary);
+        }
+
+        .metric-progress {
+            width: 100%;
+            height: 6px;
+            background: var(--dark-surface-alt);
+            border-radius: 3px;
+            margin-top: 12px;
+            overflow: hidden;
+        }
+
+        .metric-progress-bar {
+            height: 100%;
+            background: var(--primary-gradient);
+            border-radius: 3px;
+            transition: width 0.6s ease;
+        }
+
+        /* Charts Grid */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .chart-container {
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 12px;
+            padding: 24px;
+            transition: all 0.3s ease;
+        }
+
+        .chart-container:hover {
+            border-color: var(--accent-purple);
+            box-shadow: 0 8px 24px rgba(102, 126, 234, 0.15);
+        }
+
+        .chart-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--light-text);
+        }
+
+        .chart-wrapper {
+            position: relative;
+            height: 400px;
+        }
+
+        /* Full Width Chart */
+        .chart-full-width {
+            grid-column: 1 / -1;
+        }
+
+        .chart-full-width .chart-wrapper {
+            height: 500px;
+        }
+
+        /* Table */
+        .table-container {
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 40px;
+            overflow-x: auto;
+        }
+
+        .filters {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        .filter-input {
+            background: var(--dark-surface-alt);
+            border: 1px solid var(--dark-border);
+            color: var(--light-text);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .filter-input::placeholder {
+            color: var(--light-text-secondary);
+        }
+
+        .filter-select {
+            background: var(--dark-surface-alt);
+            border: 1px solid var(--dark-border);
+            color: var(--light-text);
+            padding: 10px 15px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-family: inherit;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-select:focus {
+            outline: none;
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        thead {
+            background: var(--dark-surface-alt);
+            border-bottom: 1px solid var(--dark-border);
+        }
+
+        th {
+            padding: 14px;
+            text-align: left;
+            font-weight: 600;
+            color: var(--light-text);
+        }
+
+        td {
+            padding: 14px;
+            border-bottom: 1px solid var(--dark-border);
+            color: var(--light-text-secondary);
+        }
+
+        tr:hover {
+            background: var(--dark-surface-alt);
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-primary {
+            background: rgba(102, 126, 234, 0.2);
+            color: #667eea;
+        }
+
+        .badge-success {
+            background: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+        }
+
+        .badge-warning {
+            background: rgba(243, 156, 18, 0.2);
+            color: #f39c12;
+        }
+
+        .badge-danger {
+            background: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+        }
+
+        /* Pagination */
+        .pagination {
+            display: flex;
+            gap: 8px;
+            margin-top: 20px;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .pagination button {
+            background: var(--dark-surface-alt);
+            border: 1px solid var(--dark-border);
+            color: var(--light-text);
+            padding: 8px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+
+        .pagination button:hover:not(:disabled) {
+            border-color: var(--accent-purple);
+            background: var(--dark-surface);
+        }
+
+        .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .pagination button.active {
+            background: var(--accent-purple);
+            border-color: var(--accent-purple);
+        }
+
+        /* Quality Gauge */
+        .quality-gauge {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 30px;
+        }
+
+        .gauge-circle {
+            position: relative;
+            width: 200px;
+            height: 200px;
+        }
+
+        .gauge-svg {
+            width: 100%;
+            height: 100%;
+            transform: rotate(-90deg);
+        }
+
+        .gauge-text {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+        }
+
+        .gauge-value {
+            font-size: 40px;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .gauge-label {
+            font-size: 12px;
+            color: var(--light-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        /* Issues List */
+        .issues-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .issue-item {
+            background: var(--dark-surface-alt);
+            border-left: 4px solid var(--accent-pink);
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .issue-title {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--light-text);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .issue-count {
+            background: var(--accent-pink);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 700;
+        }
+
+        .issue-samples {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .issue-sample {
+            background: var(--dark-surface);
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            color: var(--light-text-secondary);
+            font-family: 'Courier New', monospace;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 200px;
+        }
+
+        /* Split Comparison */
+        .split-comparison {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .split-card {
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 12px;
+            padding: 24px;
+        }
+
+        .split-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--light-text);
+        }
+
+        .split-stat {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--dark-border);
+        }
+
+        .split-stat:last-child {
+            border-bottom: none;
+        }
+
+        .split-label {
+            font-size: 13px;
+            color: var(--light-text-secondary);
+        }
+
+        .split-value {
+            font-size: 18px;
+            font-weight: 700;
+            background: var(--primary-gradient);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            color: var(--light-text-secondary);
+            font-size: 12px;
+            padding: 30px;
+            border-top: 1px solid var(--dark-border);
+            margin-top: 50px;
+        }
+
+        /* Responsive */
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .split-comparison {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .header {
+                padding: 20px 20px;
+                margin-bottom: 20px;
+            }
+
+            .header h1 {
+                font-size: 24px;
+            }
+
+            .container {
+                padding: 0 15px 30px;
+            }
+
+            .metrics-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tabs {
+                gap: 5px;
+            }
+
+            .tab {
+                padding: 10px 15px;
+                font-size: 12px;
+            }
+
+            .theme-toggle {
+                top: 10px;
+                right: 10px;
+                padding: 6px 12px;
+                font-size: 12px;
+            }
+        }
+
+        /* Scrollbar Styling */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--dark-surface-alt);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--dark-border);
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--accent-purple);
+        }
+
+        /* Empty State */
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--light-text-secondary);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+        }
+    </style>
+</head>
+<body>
+    <button class="theme-toggle" onclick="toggleTheme()">
+        <span id="theme-icon">🌙</span>
+        <span id="theme-text">Dark</span>
+    </button>
+
+    <div class="header">
+        <div class="header-content">
+            <h1>ML Data Explorer</h1>
+            <p>Interactive visualization and analysis of the file organization ML dataset</p>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab(this, 'overview')">Overview</button>
+            <button class="tab" onclick="switchTab(this, 'categories')">Categories</button>
+            <button class="tab" onclick="switchTab(this, 'patterns')">Patterns</button>
+            <button class="tab" onclick="switchTab(this, 'quality')">Data Quality</button>
+            <button class="tab" onclick="switchTab(this, 'features')">Feature Explorer</button>
+            <button class="tab" onclick="switchTab(this, 'performance')">Model Performance</button>
+        </div>
+
+        <!-- OVERVIEW TAB -->
+        <div id="overview" class="tab-content active">
+            <!-- Key Metrics -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Total Records</div>
+                    <div class="metric-value">30,133</div>
+                    <div class="metric-subtext">Files in dataset</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Training Set</div>
+                    <div class="metric-value">24,101</div>
+                    <div class="metric-subtext">79.9% of total</div>
+                    <div class="metric-progress">
+                        <div class="metric-progress-bar" style="width: 79.9%"></div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Test Set</div>
+                    <div class="metric-value">6,032</div>
+                    <div class="metric-subtext">20.0% of total</div>
+                    <div class="metric-progress">
+                        <div class="metric-progress-bar" style="width: 20%"></div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Data Quality</div>
+                    <div class="metric-value">95.47%</div>
+                    <div class="metric-subtext">Excellent quality</div>
+                    <div class="metric-progress">
+                        <div class="metric-progress-bar" style="width: 95.47%"></div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Categories</div>
+                    <div class="metric-value">13</div>
+                    <div class="metric-subtext">Unique classes</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Vocabulary Size</div>
+                    <div class="metric-value">1,430</div>
+                    <div class="metric-subtext">Unique tokens (min_freq: 5)</div>
+                </div>
+            </div>
+
+            <!-- Overview Charts -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-title">Category Distribution</div>
+                    <div class="chart-wrapper">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Top Extensions</div>
+                    <div class="chart-wrapper">
+                        <canvas id="extensionChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container chart-full-width">
+                    <div class="chart-title">Top 20 Filename Tokens</div>
+                    <div class="chart-wrapper">
+                        <canvas id="tokensChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Features Extracted Section -->
+            <div class="chart-container chart-full-width" style="margin-bottom: 30px;">
+                <div class="chart-title">Features Extracted Per File</div>
+                <p style="color: var(--light-text-secondary); font-size: 13px; margin-bottom: 20px;">
+                    Each file in the dataset has the following features extracted for ML training:
+                </p>
+                <div class="features-grid" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px;">
+                    <!-- Basic Features -->
+                    <div class="feature-group" style="background: var(--dark-surface-alt); border-radius: 10px; padding: 16px;">
+                        <h4 style="font-size: 14px; color: var(--accent-purple); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;">📁</span> Basic Features
+                        </h4>
+                        <ul style="list-style: none; font-size: 12px; color: var(--light-text-secondary); line-height: 1.8;">
+                            <li><code style="color: #667eea;">filename</code> - Original filename</li>
+                            <li><code style="color: #667eea;">filename_lower</code> - Lowercase filename</li>
+                            <li><code style="color: #667eea;">filepath</code> - Full file path</li>
+                            <li><code style="color: #667eea;">category</code> - Assigned category</li>
+                            <li><code style="color: #667eea;">subcategory</code> - Assigned subcategory</li>
+                        </ul>
+                    </div>
+
+                    <!-- Extension Features -->
+                    <div class="feature-group" style="background: var(--dark-surface-alt); border-radius: 10px; padding: 16px;">
+                        <h4 style="font-size: 14px; color: var(--accent-purple); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;">📎</span> Extension Features
+                        </h4>
+                        <ul style="list-style: none; font-size: 12px; color: var(--light-text-secondary); line-height: 1.8;">
+                            <li><code style="color: #667eea;">extension</code> - File extension (.png, .jpg)</li>
+                            <li><code style="color: #667eea;">extension_category</code> - Type (image, video, audio)</li>
+                        </ul>
+                    </div>
+
+                    <!-- Filename Pattern Features -->
+                    <div class="feature-group" style="background: var(--dark-surface-alt); border-radius: 10px; padding: 16px;">
+                        <h4 style="font-size: 14px; color: var(--accent-purple); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;">🔤</span> Filename Pattern Features
+                        </h4>
+                        <ul style="list-style: none; font-size: 12px; color: var(--light-text-secondary); line-height: 1.8;">
+                            <li><code style="color: #667eea;">filename_tokens</code> - Tokenized words array</li>
+                            <li><code style="color: #667eea;">filename_length</code> - Character count</li>
+                            <li><code style="color: #667eea;">has_numbers</code> - Contains digits</li>
+                            <li><code style="color: #667eea;">has_underscores</code> - Contains underscores</li>
+                            <li><code style="color: #667eea;">has_dashes</code> - Contains dashes</li>
+                            <li><code style="color: #667eea;">has_spaces</code> - Contains spaces</li>
+                            <li><code style="color: #667eea;">starts_with_date</code> - Date prefix pattern</li>
+                        </ul>
+                    </div>
+
+                    <!-- Pattern Detection Features -->
+                    <div class="feature-group" style="background: var(--dark-surface-alt); border-radius: 10px; padding: 16px;">
+                        <h4 style="font-size: 14px; color: var(--accent-purple); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;">🎯</span> Pattern Detection
+                        </h4>
+                        <ul style="list-style: none; font-size: 12px; color: var(--light-text-secondary); line-height: 1.8;">
+                            <li><code style="color: #667eea;">is_screenshot</code> - Screenshot pattern match</li>
+                            <li><code style="color: #667eea;">is_game_asset</code> - Game asset pattern match</li>
+                            <li><code style="color: #667eea;">is_document</code> - Document pattern match</li>
+                        </ul>
+                    </div>
+
+                    <!-- Metadata Features -->
+                    <div class="feature-group" style="background: var(--dark-surface-alt); border-radius: 10px; padding: 16px;">
+                        <h4 style="font-size: 14px; color: var(--accent-purple); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;">📊</span> Metadata Features
+                        </h4>
+                        <ul style="list-style: none; font-size: 12px; color: var(--light-text-secondary); line-height: 1.8;">
+                            <li><code style="color: #667eea;">has_extracted_text</code> - OCR text present</li>
+                            <li><code style="color: #667eea;">extracted_text_length</code> - Text char count</li>
+                            <li><code style="color: #667eea;">has_company_name</code> - Company detected</li>
+                            <li><code style="color: #667eea;">has_people_names</code> - Names detected</li>
+                            <li><code style="color: #667eea;">people_count</code> - Number of people</li>
+                        </ul>
+                    </div>
+
+                    <!-- Image Metadata Features -->
+                    <div class="feature-group" style="background: var(--dark-surface-alt); border-radius: 10px; padding: 16px;">
+                        <h4 style="font-size: 14px; color: var(--accent-purple); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;">📷</span> Image Metadata
+                        </h4>
+                        <ul style="list-style: none; font-size: 12px; color: var(--light-text-secondary); line-height: 1.8;">
+                            <li><code style="color: #667eea;">has_datetime</code> - EXIF datetime present</li>
+                            <li><code style="color: #667eea;">has_gps</code> - GPS coordinates present</li>
+                            <li><code style="color: #667eea;">has_location</code> - Location name present</li>
+                        </ul>
+                    </div>
+
+                    <!-- Path Features -->
+                    <div class="feature-group" style="background: var(--dark-surface-alt); border-radius: 10px; padding: 16px;">
+                        <h4 style="font-size: 14px; color: var(--accent-purple); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;">📂</span> Path Features
+                        </h4>
+                        <ul style="list-style: none; font-size: 12px; color: var(--light-text-secondary); line-height: 1.8;">
+                            <li><code style="color: #667eea;">path_depth</code> - Directory nesting level</li>
+                            <li><code style="color: #667eea;">parent_folder</code> - Parent directory name</li>
+                        </ul>
+                    </div>
+
+                    <!-- Derived Features -->
+                    <div class="feature-group" style="background: var(--dark-surface-alt); border-radius: 10px; padding: 16px;">
+                        <h4 style="font-size: 14px; color: var(--accent-purple); margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                            <span style="font-size: 18px;">🔧</span> Derived Features
+                        </h4>
+                        <ul style="list-style: none; font-size: 12px; color: var(--light-text-secondary); line-height: 1.8;">
+                            <li><code style="color: #667eea;">filename_hash</code> - MD5 hash (dedup)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Feature Stats Summary -->
+                <div style="margin-top: 24px; padding: 16px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%); border-radius: 10px; border: 1px solid var(--dark-border);">
+                    <div style="display: flex; flex-wrap: wrap; gap: 24px; justify-content: center;">
+                        <div style="text-align: center;">
+                            <div style="font-size: 28px; font-weight: 700; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">24</div>
+                            <div style="font-size: 11px; color: var(--light-text-secondary); text-transform: uppercase;">Total Features</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 28px; font-weight: 700; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">8</div>
+                            <div style="font-size: 11px; color: var(--light-text-secondary); text-transform: uppercase;">Feature Groups</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 28px; font-weight: 700; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">1,430</div>
+                            <div style="font-size: 11px; color: var(--light-text-secondary); text-transform: uppercase;">Vocabulary Tokens</div>
+                        </div>
+                        <div style="text-align: center;">
+                            <div style="font-size: 28px; font-weight: 700; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">13</div>
+                            <div style="font-size: 11px; color: var(--light-text-secondary); text-transform: uppercase;">Label Classes</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Train/Test Split -->
+            <div class="split-comparison">
+                <div class="split-card">
+                    <div class="split-title">Dataset Split</div>
+                    <div class="split-stat">
+                        <span class="split-label">Training Set</span>
+                        <span class="split-value">24,101</span>
+                    </div>
+                    <div class="split-stat">
+                        <span class="split-label">Test Set</span>
+                        <span class="split-value">6,032</span>
+                    </div>
+                    <div class="split-stat">
+                        <span class="split-label">Test Ratio</span>
+                        <span class="split-value">20%</span>
+                    </div>
+                    <div class="split-stat">
+                        <span class="split-label">Stratified By</span>
+                        <span class="split-value">Category</span>
+                    </div>
+                </div>
+                <div class="split-card">
+                    <div class="split-title">Train/Test Distribution</div>
+                    <div class="chart-wrapper">
+                        <canvas id="splitChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CATEGORIES TAB -->
+        <div id="categories" class="tab-content">
+            <div class="charts-grid">
+                <div class="chart-container chart-full-width">
+                    <div class="chart-title">Category Distribution (All Categories)</div>
+                    <div class="chart-wrapper">
+                        <canvas id="allCategoriesChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Main Categories (Pie Chart)</div>
+                    <div class="chart-wrapper">
+                        <canvas id="categoriesPieChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Subcategory Distribution</div>
+                    <div class="chart-wrapper">
+                        <canvas id="subcategoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- PATTERNS TAB -->
+        <div id="patterns" class="tab-content">
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Screenshots Detected</div>
+                    <div class="metric-value">180</div>
+                    <div class="metric-subtext">0.60% of dataset</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Game Assets Detected</div>
+                    <div class="metric-value">6,729</div>
+                    <div class="metric-subtext">22.33% of dataset</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Documents Detected</div>
+                    <div class="metric-value">3</div>
+                    <div class="metric-subtext">0.01% of dataset</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Files with Text</div>
+                    <div class="metric-value">236</div>
+                    <div class="metric-subtext">0.78% extracted text</div>
+                </div>
+            </div>
+
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-title">Pattern Detection Summary</div>
+                    <div class="chart-wrapper">
+                        <canvas id="patternChart"></canvas>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <div class="chart-title">Metadata Availability</div>
+                    <div class="chart-wrapper">
+                        <canvas id="metadataChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- DATA QUALITY TAB -->
+        <div id="quality" class="tab-content">
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="split-title">Quality Gauge</div>
+                    <div class="quality-gauge">
+                        <div class="gauge-circle">
+                            <svg class="gauge-svg" viewBox="0 0 100 100">
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="var(--dark-surface-alt)" stroke-width="8"/>
+                                <circle cx="50" cy="50" r="45" fill="none" stroke="url(#gaugeGradient)" stroke-width="8"
+                                    stroke-dasharray="265.89 280.6" stroke-linecap="round"/>
+                                <defs>
+                                    <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                                        <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+                                        <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+                                    </linearGradient>
+                                </defs>
+                            </svg>
+                            <div class="gauge-text">
+                                <div class="gauge-value">95.47%</div>
+                                <div class="gauge-label">Quality Score</div>
+                            </div>
+                        </div>
+                        <div>
+                            <div class="issues-list">
+                                <div class="issue-item">
+                                    <div class="issue-title">
+                                        Uncategorized Files
+                                        <span class="issue-count">2,727</span>
+                                    </div>
+                                    <div class="metric-subtext">9.05% of dataset</div>
+                                </div>
+                                <div class="issue-item">
+                                    <div class="issue-title">
+                                        Duplicate Files
+                                        <span class="issue-count">11</span>
+                                    </div>
+                                    <div class="metric-subtext">0.04% of dataset</div>
+                                </div>
+                                <div class="issue-item">
+                                    <div class="issue-title">
+                                        Unknown Extensions
+                                        <span class="issue-count">2</span>
+                                    </div>
+                                    <div class="metric-subtext">0.01% of dataset</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-container">
+                <div class="split-title">Sample Issues</div>
+                <div style="margin-top: 20px;">
+                    <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--light-text);">Uncategorized Files (Sample)</h3>
+                    <div class="issue-samples">
+                        <div class="issue-sample">ScreenshotResult.js.map</div>
+                        <div class="issue-sample">ScreenshotResult.d.ts.map</div>
+                        <div class="issue-sample">93419027627913a58f...</div>
+                        <div class="issue-sample">20251021_030330_9.webp</div>
+                        <div class="issue-sample">20251021_030330_5.webp</div>
+                        <div class="issue-sample">20251021_030330_4.webp</div>
+                    </div>
+                </div>
+                <div style="margin-top: 24px;">
+                    <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--light-text);">Duplicate Files (Sample)</h3>
+                    <div class="issue-samples">
+                        <div class="issue-sample">IMG_9352.heic</div>
+                        <div class="issue-sample">IMG_9352.mov</div>
+                        <div class="issue-sample">IMG_4766.heic</div>
+                        <div class="issue-sample">IMG_2395.mov</div>
+                        <div class="issue-sample">walking-outside.png</div>
+                        <div class="issue-sample">stretching.png</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- FEATURE EXPLORER TAB -->
+        <div id="features" class="tab-content">
+            <div class="table-container">
+                <div class="split-title">Feature Records</div>
+                <div class="filters">
+                    <input type="text" class="filter-input" id="searchInput" placeholder="Search filename..." onkeyup="filterTable()">
+                    <select class="filter-select" id="categoryFilter" onchange="filterTable()">
+                        <option value="">All Categories</option>
+                        <option value="game_assets">Game Assets</option>
+                        <option value="media">Media</option>
+                        <option value="uncategorized">Uncategorized</option>
+                        <option value="property_management">Property Management</option>
+                        <option value="technical">Technical</option>
+                        <option value="creative">Creative</option>
+                        <option value="legal">Legal</option>
+                        <option value="financial">Financial</option>
+                        <option value="business">Business</option>
+                        <option value="medical">Medical</option>
+                        <option value="personal">Personal</option>
+                        <option value="property">Property</option>
+                        <option value="filepath">Filepath</option>
+                    </select>
+                    <select class="filter-select" id="extensionFilter" onchange="filterTable()">
+                        <option value="">All Extensions</option>
+                        <option value=".png">.png</option>
+                        <option value=".jpg">.jpg</option>
+                        <option value=".wav">.wav</option>
+                        <option value=".ogg">.ogg</option>
+                        <option value=".svg">.svg</option>
+                        <option value=".webp">.webp</option>
+                        <option value=".jpeg">.jpeg</option>
+                        <option value=".heic">.heic</option>
+                        <option value=".mov">.mov</option>
+                    </select>
+                </div>
+
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Filename</th>
+                            <th>Category</th>
+                            <th>Subcategory</th>
+                            <th>Extension</th>
+                            <th>Patterns</th>
+                        </tr>
+                    </thead>
+                    <tbody id="featureTable">
+                        <tr><td colspan="5" class="empty-state">Loading sample data...</td></tr>
+                    </tbody>
+                </table>
+
+                <div class="pagination" id="pagination"></div>
+            </div>
+        </div>
+
+        <!-- MODEL PERFORMANCE TAB -->
+        <div id="performance" class="tab-content">
+            <!-- Key Metrics -->
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Category Accuracy</div>
+                    <div class="metric-value">71.17%</div>
+                    <div class="metric-subtext">4,293 / 6,032 correct</div>
+                    <div class="metric-progress">
+                        <div class="metric-progress-bar" style="width: 71.17%"></div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Subcategory Accuracy</div>
+                    <div class="metric-value">52.90%</div>
+                    <div class="metric-subtext">3,191 / 6,032 correct</div>
+                    <div class="metric-progress">
+                        <div class="metric-progress-bar" style="width: 52.9%"></div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Avg Confidence</div>
+                    <div class="metric-value">75.79%</div>
+                    <div class="metric-subtext">Mean prediction confidence</div>
+                    <div class="metric-progress">
+                        <div class="metric-progress-bar" style="width: 75.79%"></div>
+                    </div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Test Samples</div>
+                    <div class="metric-value">6,032</div>
+                    <div class="metric-subtext">FileCategorizationModel v1.0</div>
+                </div>
+            </div>
+
+            <!-- Charts Grid -->
+            <div class="charts-grid">
+                <!-- Per-Category F1 Scores -->
+                <div class="chart-container">
+                    <div class="chart-title">Per-Category F1 Scores</div>
+                    <div class="chart-wrapper">
+                        <canvas id="f1Chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Precision vs Recall -->
+                <div class="chart-container">
+                    <div class="chart-title">Precision vs Recall by Category</div>
+                    <div class="chart-wrapper">
+                        <canvas id="precisionRecallChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Top Misclassifications -->
+                <div class="chart-container chart-full-width">
+                    <div class="chart-title">Top Misclassifications</div>
+                    <div class="chart-wrapper">
+                        <canvas id="misclassificationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Per-Category Metrics Table -->
+            <div class="table-container">
+                <div class="split-title">Per-Category Metrics</div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category</th>
+                            <th>Precision</th>
+                            <th>Recall</th>
+                            <th>F1 Score</th>
+                            <th>Support</th>
+                        </tr>
+                    </thead>
+                    <tbody id="metricsTable">
+                        <tr>
+                            <td><span class="badge badge-primary">game_assets</span></td>
+                            <td><span style="color: var(--success);">98.79%</span></td>
+                            <td><span style="color: var(--warning);">78.22%</span></td>
+                            <td><span style="color: var(--success);">87.31%</span></td>
+                            <td>5,111</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-primary">media</span></td>
+                            <td><span style="color: var(--error);">14.88%</span></td>
+                            <td><span style="color: var(--success);">93.95%</span></td>
+                            <td><span style="color: var(--error);">25.69%</span></td>
+                            <td>314</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-primary">uncategorized</span></td>
+                            <td><span style="color: var(--error);">0.00%</span></td>
+                            <td><span style="color: var(--error);">0.00%</span></td>
+                            <td><span style="color: var(--error);">0.00%</span></td>
+                            <td>546</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-primary">property_management</span></td>
+                            <td><span style="color: var(--error);">0.00%</span></td>
+                            <td><span style="color: var(--error);">0.00%</span></td>
+                            <td><span style="color: var(--error);">0.00%</span></td>
+                            <td>49</td>
+                        </tr>
+                        <tr>
+                            <td><span class="badge badge-primary">other (9 categories)</span></td>
+                            <td><span style="color: var(--error);">0.00%</span></td>
+                            <td><span style="color: var(--error);">0.00%</span></td>
+                            <td><span style="color: var(--error);">0.00%</span></td>
+                            <td>12</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Analysis & Insights -->
+            <div class="split-comparison">
+                <div class="split-card">
+                    <div class="split-title">Key Insights</div>
+                    <div class="issues-list">
+                        <div class="issue-item" style="border-left-color: var(--success);">
+                            <div class="issue-title">
+                                Strong Game Asset Detection
+                            </div>
+                            <div class="metric-subtext">98.79% precision for game_assets - model rarely mislabels other files as game assets</div>
+                        </div>
+                        <div class="issue-item" style="border-left-color: var(--warning);">
+                            <div class="issue-title">
+                                High Recall for Media
+                            </div>
+                            <div class="metric-subtext">93.95% recall catches most media files, but low precision (14.88%) means many false positives</div>
+                        </div>
+                        <div class="issue-item" style="border-left-color: var(--error);">
+                            <div class="issue-title">
+                                Missing Categories
+                            </div>
+                            <div class="metric-subtext">Model doesn't predict uncategorized, property_management, or other minority classes</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="split-card">
+                    <div class="split-title">Top Misclassification Flows</div>
+                    <div class="issues-list">
+                        <div class="issue-item">
+                            <div class="issue-title">
+                                game_assets → media
+                                <span class="issue-count">1,113</span>
+                            </div>
+                            <div class="metric-subtext">21.8% of game assets misclassified as generic media</div>
+                        </div>
+                        <div class="issue-item">
+                            <div class="issue-title">
+                                uncategorized → media
+                                <span class="issue-count">518</span>
+                            </div>
+                            <div class="metric-subtext">94.9% of uncategorized predicted as media</div>
+                        </div>
+                        <div class="issue-item">
+                            <div class="issue-title">
+                                property_management → media
+                                <span class="issue-count">47</span>
+                            </div>
+                            <div class="metric-subtext">95.9% of property files predicted as media</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Confusion Matrix Heatmap -->
+            <div class="chart-container chart-full-width" style="margin-bottom: 30px;">
+                <div class="chart-title">Confusion Matrix (Major Categories)</div>
+                <div style="overflow-x: auto;">
+                    <table style="min-width: 600px;">
+                        <thead>
+                            <tr>
+                                <th style="background: var(--dark-surface-alt);">Actual \ Predicted</th>
+                                <th style="text-align: center;">game_assets</th>
+                                <th style="text-align: center;">media</th>
+                                <th style="text-align: center;">technical</th>
+                                <th style="text-align: center;">legal</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td style="font-weight: 600;">game_assets</td>
+                                <td style="background: rgba(46, 204, 113, 0.4); text-align: center; font-weight: 700;">3,998</td>
+                                <td style="background: rgba(231, 76, 60, 0.3); text-align: center;">1,113</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600;">media</td>
+                                <td style="background: rgba(243, 156, 18, 0.2); text-align: center;">19</td>
+                                <td style="background: rgba(46, 204, 113, 0.4); text-align: center; font-weight: 700;">295</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600;">uncategorized</td>
+                                <td style="background: rgba(243, 156, 18, 0.2); text-align: center;">28</td>
+                                <td style="background: rgba(231, 76, 60, 0.3); text-align: center;">518</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600;">property_management</td>
+                                <td style="background: rgba(243, 156, 18, 0.1); text-align: center;">2</td>
+                                <td style="background: rgba(231, 76, 60, 0.2); text-align: center;">47</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600;">personal</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="background: rgba(243, 156, 18, 0.2); text-align: center;">1</td>
+                            </tr>
+                            <tr>
+                                <td style="font-weight: 600;">filepath</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="text-align: center;">-</td>
+                                <td style="background: rgba(243, 156, 18, 0.2); text-align: center;">1</td>
+                                <td style="text-align: center;">-</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <p style="color: var(--light-text-secondary); font-size: 11px; margin-top: 12px; text-align: center;">
+                    Green = correct predictions | Red = significant misclassifications | Orange = minor misclassifications
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>ML Data Explorer - Schema.org File Organization System | Last Updated: 2025-12-09</p>
+    </div>
+
+    <script>
+        // Data
+        const stats = {
+            total_records: 30133,
+            category_distribution: {
+                "media": 1570,
+                "uncategorized": 2727,
+                "filepath": 2,
+                "property_management": 243,
+                "personal": 3,
+                "property": 6,
+                "financial": 7,
+                "legal": 4,
+                "business": 5,
+                "game_assets": 25554,
+                "medical": 5,
+                "technical": 6,
+                "creative": 1
+            },
+            subcategory_distribution: {
+                "sprites": 16453,
+                "textures": 8883,
+                "other": 2980,
+                "photos_social": 901,
+                "photos_other": 470,
+                "photos_screenshots": 176,
+                "audio": 152,
+                "music": 66,
+                "videos_recordings": 22,
+                "architecture": 6,
+                "tax": 5,
+                "leases": 3,
+                "clients": 3,
+                "corporate": 3,
+                "insurance": 2,
+                "employment": 2,
+                "identification": 1,
+                "photos": 1
+            },
+            extension_distribution: {
+                ".png": 29061,
+                ".jpg": 430,
+                ".wav": 278,
+                ".ogg": 126,
+                ".svg": 83,
+                ".webp": 48,
+                ".jpeg": 38,
+                ".heic": 36,
+                ".mov": 20,
+                ".gif": 5,
+                ".map": 2,
+                ".mp4": 2,
+                ".ts": 1,
+                ".js": 1,
+                ".mp3": 1
+            },
+            pattern_counts: {
+                "screenshots": 180,
+                "game_assets": 6729,
+                "documents": 3
+            },
+            metadata_availability: {
+                "has_text": 236,
+                "has_datetime": 157,
+                "has_gps": 0
+            },
+            top_tokens: {
+                "frame": 6610,
+                "head": 3866,
+                "item": 3280,
+                "arm": 2722,
+                "right": 1937,
+                "left": 1741,
+                "legs": 1486,
+                "torso": 1230,
+                "20251120": 989,
+                "dead": 880,
+                "hurt": 869,
+                "angry": 868,
+                "btn": 566,
+                "10": 553,
+                "11": 533,
+                "01": 490,
+                "shoulder": 475,
+                "12": 409,
+                "light": 368,
+                "13": 366
+            },
+            train_test_split: {
+                "train_size": 24101,
+                "test_size": 6032
+            }
+        };
+
+        // Sample features for the table
+        const sampleFeatures = [
+            { filename: "frame_head_left.png", category: "game_assets", subcategory: "sprites", extension: ".png", patterns: ["sprite"] },
+            { filename: "head_angry_05.png", category: "game_assets", subcategory: "sprites", extension: ".png", patterns: ["sprite"] },
+            { filename: "texture_stone_01.png", category: "game_assets", subcategory: "textures", extension: ".png", patterns: ["texture"] },
+            { filename: "battle_music.wav", category: "game_assets", subcategory: "music", extension: ".wav", patterns: ["audio"] },
+            { filename: "door_open.ogg", category: "game_assets", subcategory: "audio", extension: ".ogg", patterns: ["audio"] },
+            { filename: "20251021_030330_9.webp", category: "uncategorized", subcategory: "other", extension: ".webp", patterns: [] },
+            { filename: "IMG_9352.heic", category: "media", subcategory: "photos_other", extension: ".heic", patterns: [] },
+            { filename: "ScreenshotResult.js.map", category: "uncategorized", subcategory: "other", extension: ".map", patterns: [] },
+            { filename: "20251120_Event.jpg", category: "media", subcategory: "photos_social", extension: ".jpg", patterns: [] },
+            { filename: "arm_left_frame.png", category: "game_assets", subcategory: "sprites", extension: ".png", patterns: ["sprite"] },
+            { filename: "property_exterior.jpg", category: "property_management", subcategory: "other", extension: ".jpg", patterns: [] },
+            { filename: "contract.svg", category: "legal", subcategory: "other", extension: ".svg", patterns: ["document"] },
+            { filename: "boss_defeated_theme.wav", category: "game_assets", subcategory: "music", extension: ".wav", patterns: ["audio"] },
+            { filename: "icon_button_hover.png", category: "game_assets", subcategory: "sprites", extension: ".png", patterns: ["sprite"] },
+            { filename: "grass_texture_seamless.png", category: "game_assets", subcategory: "textures", extension: ".png", patterns: ["texture"] },
+        ];
+
+        // Theme Toggle
+        function toggleTheme() {
+            const body = document.body;
+            const isDark = body.classList.toggle('light-mode');
+            const icon = document.getElementById('theme-icon');
+            const text = document.getElementById('theme-text');
+
+            if (isDark) {
+                icon.textContent = '☀️';
+                text.textContent = 'Light';
+                localStorage.setItem('theme', 'light');
+            } else {
+                icon.textContent = '🌙';
+                text.textContent = 'Dark';
+                localStorage.setItem('theme', 'dark');
+            }
+
+            // Redraw charts to match theme
+            setTimeout(() => {
+                if (window.categoryChart) categoryChart.resize();
+            }, 100);
+        }
+
+        // Load theme preference
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-mode');
+            document.getElementById('theme-icon').textContent = '☀️';
+            document.getElementById('theme-text').textContent = 'Light';
+        }
+
+        // Tab Switching
+        function switchTab(element, tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+
+            element.classList.add('active');
+            document.getElementById(tabName).classList.add('active');
+
+            // Redraw charts when tab becomes visible
+            setTimeout(() => {
+                if (window.categoryChart) window.categoryChart.resize();
+                if (window.extensionChart) window.extensionChart.resize();
+                if (window.tokensChart) window.tokensChart.resize();
+                if (window.splitChart) window.splitChart.resize();
+                if (window.allCategoriesChart) window.allCategoriesChart.resize();
+                if (window.categoriesPieChart) window.categoriesPieChart.resize();
+                if (window.subcategoryChart) window.subcategoryChart.resize();
+                if (window.patternChart) window.patternChart.resize();
+                if (window.metadataChart) window.metadataChart.resize();
+                if (window.f1Chart) window.f1Chart.resize();
+                if (window.precisionRecallChart) window.precisionRecallChart.resize();
+                if (window.misclassificationChart) window.misclassificationChart.resize();
+            }, 100);
+        }
+
+        // Chart Colors
+        const chartColors = {
+            primary: '#667eea',
+            secondary: '#764ba2',
+            accent: '#f5576c',
+            success: '#2ecc71',
+            warning: '#f39c12',
+            purple: ['#667eea', '#764ba2', '#a855f7', '#ec4899', '#06b6d4', '#10b981', '#f59e0b'],
+            gradient: (ctx, color1, color2) => {
+                const gradient = ctx.createLinearGradient(0, 0, 0, 400);
+                gradient.addColorStop(0, color1);
+                gradient.addColorStop(1, color2);
+                return gradient;
+            }
+        };
+
+        const isDarkMode = () => !document.body.classList.contains('light-mode');
+        const textColor = () => isDarkMode() ? '#e8eef7' : '#1a1f2e';
+        const gridColor = () => isDarkMode() ? '#3a4556' : '#e1e8ed';
+
+        // Initialize Charts
+        Chart.register(ChartDataLabels);
+
+        // 1. Category Distribution (Overview)
+        const categoryCtx = document.getElementById('categoryChart');
+        if (categoryCtx) {
+            window.categoryChart = new Chart(categoryCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(stats.category_distribution),
+                    datasets: [{
+                        data: Object.values(stats.category_distribution),
+                        backgroundColor: chartColors.purple,
+                        borderColor: isDarkMode() ? '#252d3d' : '#ffffff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: textColor(), font: { size: 11 }, padding: 15 }
+                        },
+                        datalabels: {
+                            color: '#fff',
+                            font: { weight: 'bold', size: 10 },
+                            formatter: (value, context) => {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return percentage + '%';
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 2. Extension Distribution
+        const extensionCtx = document.getElementById('extensionChart');
+        if (extensionCtx) {
+            const topExtensions = Object.entries(stats.extension_distribution)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 8);
+
+            window.extensionChart = new Chart(extensionCtx, {
+                type: 'bar',
+                data: {
+                    labels: topExtensions.map(e => e[0]),
+                    datasets: [{
+                        label: 'Count',
+                        data: topExtensions.map(e => e[1]),
+                        backgroundColor: '#667eea',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: textColor() },
+                            grid: { color: gridColor() }
+                        },
+                        y: {
+                            ticks: { color: textColor() }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 3. Top Tokens
+        const tokensCtx = document.getElementById('tokensChart');
+        if (tokensCtx) {
+            const tokenEntries = Object.entries(stats.top_tokens).slice(0, 20);
+            window.tokensChart = new Chart(tokensCtx, {
+                type: 'bar',
+                data: {
+                    labels: tokenEntries.map(t => t[0]),
+                    datasets: [{
+                        label: 'Frequency',
+                        data: tokenEntries.map(t => t[1]),
+                        backgroundColor: ['#667eea', '#764ba2', '#a855f7', '#ec4899'],
+                        backgroundImage: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'x',
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { color: textColor() },
+                            grid: { color: gridColor() }
+                        },
+                        x: {
+                            ticks: { color: textColor() }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 4. Train/Test Split
+        const splitCtx = document.getElementById('splitChart');
+        if (splitCtx) {
+            window.splitChart = new Chart(splitCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Train', 'Test'],
+                    datasets: [{
+                        data: [stats.train_test_split.train_size, stats.train_test_split.test_size],
+                        backgroundColor: ['#667eea', '#f5576c'],
+                        borderColor: isDarkMode() ? '#252d3d' : '#ffffff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: textColor() }
+                        },
+                        datalabels: {
+                            color: '#fff',
+                            font: { weight: 'bold', size: 14 },
+                            formatter: (value, context) => {
+                                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                const percentage = ((value / total) * 100).toFixed(1);
+                                return percentage + '%';
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 5. All Categories Chart
+        const allCategoriesCtx = document.getElementById('allCategoriesChart');
+        if (allCategoriesCtx) {
+            const catEntries = Object.entries(stats.category_distribution)
+                .sort((a, b) => b[1] - a[1]);
+
+            window.allCategoriesChart = new Chart(allCategoriesCtx, {
+                type: 'bar',
+                data: {
+                    labels: catEntries.map(c => c[0]),
+                    datasets: [{
+                        label: 'File Count',
+                        data: catEntries.map(c => c[1]),
+                        backgroundColor: '#667eea',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { color: textColor() },
+                            grid: { color: gridColor() }
+                        },
+                        x: {
+                            ticks: { color: textColor() }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 6. Categories Pie Chart
+        const categoriesPieCtx = document.getElementById('categoriesPieChart');
+        if (categoriesPieCtx) {
+            window.categoriesPieChart = new Chart(categoriesPieCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(stats.category_distribution),
+                    datasets: [{
+                        data: Object.values(stats.category_distribution),
+                        backgroundColor: chartColors.purple,
+                        borderColor: isDarkMode() ? '#252d3d' : '#ffffff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: textColor(), font: { size: 10 }, padding: 10 }
+                        },
+                        datalabels: { display: false }
+                    }
+                }
+            });
+        }
+
+        // 7. Subcategory Distribution
+        const subcategoryCtx = document.getElementById('subcategoryChart');
+        if (subcategoryCtx) {
+            const subEntries = Object.entries(stats.subcategory_distribution)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 10);
+
+            window.subcategoryChart = new Chart(subcategoryCtx, {
+                type: 'bar',
+                data: {
+                    labels: subEntries.map(s => s[0]),
+                    datasets: [{
+                        label: 'Count',
+                        data: subEntries.map(s => s[1]),
+                        backgroundColor: '#764ba2',
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: textColor() },
+                            grid: { color: gridColor() }
+                        },
+                        y: {
+                            ticks: { color: textColor() }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 8. Pattern Detection
+        const patternCtx = document.getElementById('patternChart');
+        if (patternCtx) {
+            window.patternChart = new Chart(patternCtx, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(stats.pattern_counts),
+                    datasets: [{
+                        label: 'Count',
+                        data: Object.values(stats.pattern_counts),
+                        backgroundColor: ['#667eea', '#764ba2', '#f5576c'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { color: textColor() },
+                            grid: { color: gridColor() }
+                        },
+                        x: {
+                            ticks: { color: textColor() }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 9. Metadata Availability
+        const metadataCtx = document.getElementById('metadataChart');
+        if (metadataCtx) {
+            window.metadataChart = new Chart(metadataCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Has Text', 'Has DateTime', 'No GPS Data'],
+                    datasets: [{
+                        data: [236, 157, 30133 - 236 - 157],
+                        backgroundColor: ['#2ecc71', '#f39c12', '#e74c3c'],
+                        borderColor: isDarkMode() ? '#252d3d' : '#ffffff',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: textColor() }
+                        },
+                        datalabels: { display: false }
+                    }
+                }
+            });
+        }
+
+        // Feature Table Pagination
+        let currentPage = 1;
+        const itemsPerPage = 10;
+
+        function renderFeatureTable() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const categoryFilter = document.getElementById('categoryFilter').value;
+            const extensionFilter = document.getElementById('extensionFilter').value;
+
+            let filtered = sampleFeatures.filter(feature => {
+                const matchesSearch = feature.filename.toLowerCase().includes(searchTerm);
+                const matchesCategory = !categoryFilter || feature.category === categoryFilter;
+                const matchesExtension = !extensionFilter || feature.extension === extensionFilter;
+                return matchesSearch && matchesCategory && matchesExtension;
+            });
+
+            const totalPages = Math.ceil(filtered.length / itemsPerPage);
+            const startIdx = (currentPage - 1) * itemsPerPage;
+            const pageData = filtered.slice(startIdx, startIdx + itemsPerPage);
+
+            const tableBody = document.getElementById('featureTable');
+            tableBody.innerHTML = pageData.map(feature => `
+                <tr>
+                    <td><code style="font-size: 11px;">${feature.filename}</code></td>
+                    <td><span class="badge badge-primary">${feature.category}</span></td>
+                    <td>${feature.subcategory}</td>
+                    <td><code style="color: #667eea;">${feature.extension}</code></td>
+                    <td>
+                        ${feature.patterns.length > 0 ? feature.patterns.map(p => `<span class="badge badge-success">${p}</span>`).join(' ') : '-'}
+                    </td>
+                </tr>
+            `).join('');
+
+            // Update pagination
+            const paginationDiv = document.getElementById('pagination');
+            let paginationHTML = '';
+
+            if (currentPage > 1) {
+                paginationHTML += `<button onclick="goToPage(${currentPage - 1})">Previous</button>`;
+            }
+
+            for (let i = Math.max(1, currentPage - 2); i <= Math.min(totalPages, currentPage + 2); i++) {
+                paginationHTML += `<button onclick="goToPage(${i})" class="${i === currentPage ? 'active' : ''}">${i}</button>`;
+            }
+
+            if (currentPage < totalPages) {
+                paginationHTML += `<button onclick="goToPage(${currentPage + 1})">Next</button>`;
+            }
+
+            paginationDiv.innerHTML = paginationHTML || '<span style="color: var(--light-text-secondary);">1</span>';
+        }
+
+        function filterTable() {
+            currentPage = 1;
+            renderFeatureTable();
+        }
+
+        function goToPage(page) {
+            currentPage = page;
+            renderFeatureTable();
+        }
+
+        // Initial render
+        document.addEventListener('DOMContentLoaded', () => {
+            renderFeatureTable();
+        });
+
+        // Model Evaluation Data
+        const evalData = {
+            overall_metrics: {
+                accuracy: 0.7117,
+                subcategory_accuracy: 0.529,
+                avg_confidence: 0.7579,
+                total_correct: 4293,
+                total_incorrect: 1739
+            },
+            per_category_metrics: {
+                "game_assets": { precision: 0.9879, recall: 0.7822, f1_score: 0.8731, support: 5111 },
+                "media": { precision: 0.1488, recall: 0.9395, f1_score: 0.2569, support: 314 },
+                "uncategorized": { precision: 0, recall: 0.0, f1_score: 0, support: 546 },
+                "property_management": { precision: 0, recall: 0.0, f1_score: 0, support: 49 }
+            },
+            top_misclassifications: [
+                { from: "game_assets", to: "media", count: 1113 },
+                { from: "uncategorized", to: "media", count: 518 },
+                { from: "property_management", to: "media", count: 47 },
+                { from: "uncategorized", to: "game_assets", count: 28 },
+                { from: "media", to: "game_assets", count: 19 }
+            ]
+        };
+
+        // 10. F1 Score Chart
+        const f1Ctx = document.getElementById('f1Chart');
+        if (f1Ctx) {
+            const categories = Object.keys(evalData.per_category_metrics);
+            const f1Scores = categories.map(c => evalData.per_category_metrics[c].f1_score * 100);
+
+            window.f1Chart = new Chart(f1Ctx, {
+                type: 'bar',
+                data: {
+                    labels: categories,
+                    datasets: [{
+                        label: 'F1 Score (%)',
+                        data: f1Scores,
+                        backgroundColor: f1Scores.map(score =>
+                            score > 50 ? '#2ecc71' : score > 20 ? '#f39c12' : '#e74c3c'
+                        ),
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            color: '#fff',
+                            anchor: 'end',
+                            align: 'top',
+                            font: { size: 10, weight: 'bold' },
+                            formatter: (value) => value.toFixed(1) + '%'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { color: textColor(), callback: v => v + '%' },
+                            grid: { color: gridColor() }
+                        },
+                        x: {
+                            ticks: { color: textColor(), maxRotation: 45, minRotation: 45 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 11. Precision vs Recall Chart
+        const prCtx = document.getElementById('precisionRecallChart');
+        if (prCtx) {
+            const categories = Object.keys(evalData.per_category_metrics);
+
+            window.precisionRecallChart = new Chart(prCtx, {
+                type: 'bar',
+                data: {
+                    labels: categories,
+                    datasets: [
+                        {
+                            label: 'Precision',
+                            data: categories.map(c => evalData.per_category_metrics[c].precision * 100),
+                            backgroundColor: '#667eea',
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Recall',
+                            data: categories.map(c => evalData.per_category_metrics[c].recall * 100),
+                            backgroundColor: '#764ba2',
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { color: textColor() }
+                        },
+                        datalabels: { display: false }
+                    },
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 100,
+                            ticks: { color: textColor(), callback: v => v + '%' },
+                            grid: { color: gridColor() }
+                        },
+                        x: {
+                            ticks: { color: textColor(), maxRotation: 45, minRotation: 45 }
+                        }
+                    }
+                }
+            });
+        }
+
+        // 12. Misclassification Chart
+        const misCtx = document.getElementById('misclassificationChart');
+        if (misCtx) {
+            const misclassLabels = evalData.top_misclassifications.map(m => `${m.from} → ${m.to}`);
+            const misclassCounts = evalData.top_misclassifications.map(m => m.count);
+
+            window.misclassificationChart = new Chart(misCtx, {
+                type: 'bar',
+                data: {
+                    labels: misclassLabels,
+                    datasets: [{
+                        label: 'Count',
+                        data: misclassCounts,
+                        backgroundColor: ['#e74c3c', '#f39c12', '#f5576c', '#ff9f43', '#feca57'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { display: false },
+                        datalabels: {
+                            color: '#fff',
+                            anchor: 'end',
+                            align: 'start',
+                            font: { size: 11, weight: 'bold' },
+                            formatter: (value) => value.toLocaleString()
+                        }
+                    },
+                    scales: {
+                        x: {
+                            ticks: { color: textColor() },
+                            grid: { color: gridColor() }
+                        },
+                        y: {
+                            ticks: { color: textColor(), font: { size: 11 } }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>

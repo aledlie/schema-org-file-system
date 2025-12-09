@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>File Categorization Correction Interface</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        :root {
+            --primary: #3b82f6; --primary-dark: #1e40af; --secondary: #8b5cf6;
+            --success: #10b981; --warning: #f59e0b; --danger: #ef4444;
+            --gray-50: #f9fafb; --gray-100: #f3f4f6; --gray-200: #e5e7eb;
+            --gray-500: #6b7280; --gray-700: #374151; --gray-800: #1f2937; --gray-900: #111827;
+            --bg: #ffffff; --fg: #111827; --border: #e5e7eb;
+            --card-bg: #ffffff; --input-bg: #ffffff;
+        }
+        body.dark {
+            --bg: #111827; --fg: #f9fafb; --border: #374151;
+            --card-bg: #1f2937; --input-bg: #374151;
+        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--fg); line-height: 1.6; }
+        .header { background: linear-gradient(135deg, var(--danger) 0%, var(--warning) 100%); color: white; padding: 1.5rem 2rem; }
+        .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+        h1 { font-size: 1.5rem; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem; }
+        .card-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 1rem; color: var(--primary); }
+        .form-group { margin-bottom: 1rem; }
+        label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; color: var(--gray-700); }
+        body.dark label { color: var(--gray-200); }
+        input, select, textarea { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 0.5rem; background: var(--input-bg); color: var(--fg); font-size: 0.9rem; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .btn { padding: 0.75rem 1.5rem; border: none; border-radius: 0.5rem; font-weight: 600; cursor: pointer; transition: all 0.3s; }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-secondary { background: var(--gray-200); color: var(--gray-800); }
+        body.dark .btn-secondary { background: var(--gray-700); color: var(--gray-200); }
+        .category-select { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.5rem; margin-top: 0.5rem; }
+        .category-option { padding: 0.75rem; border: 2px solid var(--border); border-radius: 0.5rem; cursor: pointer; text-align: center; font-size: 0.85rem; transition: all 0.2s; }
+        .category-option:hover { border-color: var(--primary); background: rgba(59, 130, 246, 0.1); }
+        .category-option.selected { border-color: var(--primary); background: var(--primary); color: white; }
+        .correction-list { max-height: 400px; overflow-y: auto; }
+        .correction-item { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-bottom: 1px solid var(--border); }
+        .correction-item:last-child { border-bottom: none; }
+        .correction-info { flex: 1; }
+        .correction-filename { font-weight: 600; margin-bottom: 0.25rem; }
+        .correction-change { font-size: 0.8rem; color: var(--gray-500); }
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
+        .stat-card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 0.75rem; padding: 1rem; text-align: center; }
+        .stat-value { font-size: 2rem; font-weight: 700; color: var(--primary); }
+        .stat-label { font-size: 0.75rem; color: var(--gray-500); text-transform: uppercase; }
+        .badge { display: inline-block; padding: 0.2rem 0.6rem; border-radius: 9999px; font-size: 0.7rem; font-weight: 600; }
+        .badge-from { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        .badge-to { background: rgba(16, 185, 129, 0.2); color: var(--success); }
+        .toast { position: fixed; bottom: 2rem; right: 2rem; padding: 1rem 1.5rem; background: var(--success); color: white; border-radius: 0.5rem; box-shadow: 0 10px 15px rgba(0,0,0,0.2); transform: translateY(100px); opacity: 0; transition: all 0.3s; z-index: 1000; }
+        .toast.show { transform: translateY(0); opacity: 1; }
+        .rules-list { font-family: monospace; font-size: 0.8rem; background: var(--gray-100); padding: 1rem; border-radius: 0.5rem; max-height: 300px; overflow-y: auto; }
+        body.dark .rules-list { background: var(--gray-900); }
+        .theme-toggle { background: rgba(255,255,255,0.2); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; }
+        @media (max-width: 768px) { .grid-2 { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-content">
+            <h1>🔧 Correction Feedback System</h1>
+            <button class="theme-toggle" onclick="toggleTheme()">🌙 Dark</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <!-- Stats -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card">
+                <div class="stat-value" id="totalCorrections">0</div>
+                <div class="stat-label">Corrections</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="patternsLearned">0</div>
+                <div class="stat-label">Patterns Learned</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" id="rulesGenerated">0</div>
+                <div class="stat-label">Rules Generated</div>
+            </div>
+        </div>
+
+        <div class="grid-2">
+            <!-- Add Correction Form -->
+            <div class="card">
+                <div class="card-title">➕ Add Correction</div>
+                <form id="correctionForm">
+                    <div class="form-group">
+                        <label>File Path (original or current)</label>
+                        <input type="text" id="filePath" placeholder="/path/to/file.ext" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Filename</label>
+                        <input type="text" id="filename" placeholder="file.ext" required>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Assigned Category (wrong)</label>
+                            <select id="assignedCategory" required>
+                                <option value="">Select...</option>
+                                <option value="game_assets">Game Assets</option>
+                                <option value="media">Media</option>
+                                <option value="uncategorized">Uncategorized</option>
+                                <option value="property_management">Property Management</option>
+                                <option value="business">Business</option>
+                                <option value="financial">Financial</option>
+                                <option value="legal">Legal</option>
+                                <option value="technical">Technical</option>
+                                <option value="personal">Personal</option>
+                                <option value="medical">Medical</option>
+                                <option value="creative">Creative</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Correct Category</label>
+                            <select id="correctCategory" required>
+                                <option value="">Select...</option>
+                                <option value="game_assets">Game Assets</option>
+                                <option value="media">Media</option>
+                                <option value="uncategorized">Uncategorized</option>
+                                <option value="property_management">Property Management</option>
+                                <option value="business">Business</option>
+                                <option value="financial">Financial</option>
+                                <option value="legal">Legal</option>
+                                <option value="technical">Technical</option>
+                                <option value="personal">Personal</option>
+                                <option value="medical">Medical</option>
+                                <option value="creative">Creative</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid-2">
+                        <div class="form-group">
+                            <label>Assigned Subcategory</label>
+                            <input type="text" id="assignedSubcategory" placeholder="e.g., sprites, photos_other">
+                        </div>
+                        <div class="form-group">
+                            <label>Correct Subcategory</label>
+                            <input type="text" id="correctSubcategory" placeholder="e.g., textures, photos_social">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Reason for Correction</label>
+                        <textarea id="reason" rows="2" placeholder="Why was this file miscategorized?"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Content Hints (comma-separated keywords)</label>
+                        <input type="text" id="contentHints" placeholder="keyword1, keyword2, keyword3">
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Add Correction</button>
+                </form>
+            </div>
+
+            <!-- Recent Corrections -->
+            <div class="card">
+                <div class="card-title">📝 Recent Corrections</div>
+                <div class="correction-list" id="correctionList">
+                    <p style="color: var(--gray-500); text-align: center; padding: 2rem;">No corrections yet</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Common Mistakes -->
+        <div class="card">
+            <div class="card-title">⚠️ Most Common Mistakes</div>
+            <div id="commonMistakes" style="display: flex; flex-wrap: wrap; gap: 1rem;">
+                <p style="color: var(--gray-500);">No patterns detected yet</p>
+            </div>
+        </div>
+
+        <!-- Learned Rules -->
+        <div class="card">
+            <div class="card-title">🧠 Learned Pattern Rules</div>
+            <div class="rules-list" id="rulesDisplay">
+                <p style="color: var(--gray-500);">No rules learned yet. Add corrections to train the system.</p>
+            </div>
+            <div style="margin-top: 1rem;">
+                <button class="btn btn-secondary" onclick="exportRules()">📥 Export Rules JSON</button>
+                <button class="btn btn-secondary" onclick="downloadCorrections()">💾 Download All Corrections</button>
+            </div>
+        </div>
+
+        <!-- Import Section -->
+        <div class="card">
+            <div class="card-title">📤 Import Corrections</div>
+            <p style="margin-bottom: 1rem; font-size: 0.85rem; color: var(--gray-500);">
+                Import corrections from a JSON file or paste JSON directly.
+            </p>
+            <div class="form-group">
+                <textarea id="importJson" rows="4" placeholder='{"corrections": {...}, "learned_patterns": {...}}'></textarea>
+            </div>
+            <button class="btn btn-primary" onclick="importCorrections()">Import</button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Correction saved!</div>
+
+    <script>
+        // LocalStorage key for corrections
+        const STORAGE_KEY = 'file_organizer_corrections';
+
+        // Load data
+        let data = loadData();
+
+        function loadData() {
+            const stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                try { return JSON.parse(stored); } catch (e) {}
+            }
+            return {
+                corrections: {},
+                learned_patterns: {},
+                statistics: {
+                    total_corrections: 0,
+                    corrections_by_category: {},
+                    most_common_mistakes: []
+                }
+            };
+        }
+
+        function saveData() {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+            updateUI();
+        }
+
+        function computeHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return Math.abs(hash).toString(16).padStart(8, '0');
+        }
+
+        function extractPatterns(filename) {
+            const patterns = [];
+            const lower = filename.toLowerCase();
+
+            const checks = [
+                [/^screenshot/, 'screenshot_prefix'],
+                [/^img_/, 'img_prefix'],
+                [/frame\d*/, 'frame_pattern'],
+                [/sprite/, 'sprite_keyword'],
+                [/texture/, 'texture_keyword'],
+                [/audio|sound|sfx/, 'audio_keyword'],
+                [/music|bgm/, 'music_keyword'],
+                [/icon/, 'icon_keyword'],
+                [/tile/, 'tile_keyword'],
+                [/wall|floor|door/, 'environment_keyword'],
+                [/character|player|enemy/, 'character_keyword'],
+                [/weapon|sword/, 'weapon_keyword'],
+                [/\d{8}_\d{6}/, 'timestamp_pattern'],
+                [/whatsapp/, 'whatsapp_keyword'],
+            ];
+
+            checks.forEach(([regex, label]) => {
+                if (regex.test(lower)) patterns.push(label);
+            });
+
+            const ext = filename.split('.').pop().toLowerCase();
+            if (ext) patterns.push('ext:' + ext);
+
+            return patterns;
+        }
+
+        function addCorrection(e) {
+            e.preventDefault();
+
+            const filePath = document.getElementById('filePath').value;
+            const filename = document.getElementById('filename').value;
+            const assignedCat = document.getElementById('assignedCategory').value;
+            const correctCat = document.getElementById('correctCategory').value;
+            const assignedSubcat = document.getElementById('assignedSubcategory').value;
+            const correctSubcat = document.getElementById('correctSubcategory').value;
+            const reason = document.getElementById('reason').value;
+            const hints = document.getElementById('contentHints').value.split(',').map(h => h.trim()).filter(Boolean);
+
+            const hash = computeHash(filePath + filename);
+            const patterns = extractPatterns(filename);
+
+            data.corrections[hash] = {
+                original_path: filePath,
+                filename: filename,
+                assigned_category: assignedCat,
+                correct_category: correctCat,
+                assigned_subcategory: assignedSubcat,
+                correct_subcategory: correctSubcat,
+                correction_reason: reason,
+                content_hints: hints,
+                filename_patterns: patterns,
+                correction_date: new Date().toISOString()
+            };
+
+            // Update statistics
+            data.statistics.total_corrections++;
+            if (!data.statistics.corrections_by_category[correctCat]) {
+                data.statistics.corrections_by_category[correctCat] = 0;
+            }
+            data.statistics.corrections_by_category[correctCat]++;
+
+            // Update common mistakes
+            let found = false;
+            for (const mistake of data.statistics.most_common_mistakes) {
+                if (mistake.from === assignedCat && mistake.to === correctCat) {
+                    mistake.count++;
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                data.statistics.most_common_mistakes.push({
+                    from: assignedCat,
+                    to: correctCat,
+                    count: 1
+                });
+            }
+            data.statistics.most_common_mistakes.sort((a, b) => b.count - a.count);
+
+            // Update learned patterns
+            patterns.forEach(pattern => {
+                if (!data.learned_patterns[pattern]) {
+                    data.learned_patterns[pattern] = { categories: {}, subcategories: {} };
+                }
+                const learned = data.learned_patterns[pattern];
+                learned.categories[correctCat] = (learned.categories[correctCat] || 0) + 1;
+                if (correctSubcat) {
+                    learned.subcategories[correctSubcat] = (learned.subcategories[correctSubcat] || 0) + 1;
+                }
+            });
+
+            saveData();
+            showToast('Correction saved!');
+            e.target.reset();
+        }
+
+        function updateUI() {
+            // Stats
+            document.getElementById('totalCorrections').textContent = data.statistics.total_corrections;
+            document.getElementById('patternsLearned').textContent = Object.keys(data.learned_patterns).length;
+
+            // Count rules
+            let rulesCount = 0;
+            Object.values(data.learned_patterns).forEach(p => {
+                const total = Object.values(p.categories).reduce((a, b) => a + b, 0);
+                if (total >= 2) rulesCount++;
+            });
+            document.getElementById('rulesGenerated').textContent = rulesCount;
+
+            // Correction list
+            const list = document.getElementById('correctionList');
+            const corrections = Object.entries(data.corrections).slice(-10).reverse();
+            if (corrections.length === 0) {
+                list.innerHTML = '<p style="color: var(--gray-500); text-align: center; padding: 2rem;">No corrections yet</p>';
+            } else {
+                list.innerHTML = corrections.map(([hash, c]) => `
+                    <div class="correction-item">
+                        <div class="correction-info">
+                            <div class="correction-filename">${c.filename}</div>
+                            <div class="correction-change">
+                                <span class="badge badge-from">${c.assigned_category}</span>
+                                →
+                                <span class="badge badge-to">${c.correct_category}</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-danger" style="padding: 0.4rem 0.8rem; font-size: 0.75rem;" onclick="deleteCorrection('${hash}')">✕</button>
+                    </div>
+                `).join('');
+            }
+
+            // Common mistakes
+            const mistakes = document.getElementById('commonMistakes');
+            if (data.statistics.most_common_mistakes.length === 0) {
+                mistakes.innerHTML = '<p style="color: var(--gray-500);">No patterns detected yet</p>';
+            } else {
+                mistakes.innerHTML = data.statistics.most_common_mistakes.slice(0, 10).map(m => `
+                    <div style="background: var(--gray-100); padding: 0.75rem 1rem; border-radius: 0.5rem; display: flex; align-items: center; gap: 0.5rem;">
+                        <span class="badge badge-from">${m.from}</span>
+                        →
+                        <span class="badge badge-to">${m.to}</span>
+                        <strong style="margin-left: auto;">${m.count}x</strong>
+                    </div>
+                `).join('');
+            }
+
+            // Learned rules
+            const rules = document.getElementById('rulesDisplay');
+            const patternRules = [];
+            Object.entries(data.learned_patterns).forEach(([pattern, p]) => {
+                const total = Object.values(p.categories).reduce((a, b) => a + b, 0);
+                if (total >= 2) {
+                    const best = Object.entries(p.categories).sort((a, b) => b[1] - a[1])[0];
+                    const confidence = best[1] / total;
+                    if (confidence >= 0.6) {
+                        patternRules.push({
+                            pattern,
+                            category: best[0],
+                            confidence,
+                            count: total
+                        });
+                    }
+                }
+            });
+
+            if (patternRules.length === 0) {
+                rules.innerHTML = '<p style="color: var(--gray-500);">No rules learned yet. Add corrections to train the system.</p>';
+            } else {
+                patternRules.sort((a, b) => b.count - a.count);
+                rules.innerHTML = patternRules.map(r =>
+                    `<div style="margin-bottom: 0.5rem;">
+                        <strong>${r.pattern}</strong> → ${r.category}
+                        <span style="color: var(--gray-500);">(${(r.confidence * 100).toFixed(0)}%, ${r.count} samples)</span>
+                    </div>`
+                ).join('');
+            }
+        }
+
+        function deleteCorrection(hash) {
+            if (confirm('Delete this correction?')) {
+                delete data.corrections[hash];
+                data.statistics.total_corrections = Math.max(0, data.statistics.total_corrections - 1);
+                saveData();
+                showToast('Correction deleted');
+            }
+        }
+
+        function exportRules() {
+            const rules = { pattern_rules: [], content_rules: [] };
+
+            Object.entries(data.learned_patterns).forEach(([pattern, p]) => {
+                const total = Object.values(p.categories).reduce((a, b) => a + b, 0);
+                if (total >= 2) {
+                    const best = Object.entries(p.categories).sort((a, b) => b[1] - a[1])[0];
+                    const confidence = best[1] / total;
+                    if (confidence >= 0.6) {
+                        const bestSubcat = Object.entries(p.subcategories).sort((a, b) => b[1] - a[1])[0];
+                        rules.pattern_rules.push({
+                            pattern,
+                            category: best[0],
+                            subcategory: bestSubcat ? bestSubcat[0] : null,
+                            confidence: Math.round(confidence * 1000) / 1000,
+                            sample_count: total
+                        });
+                    }
+                }
+            });
+
+            const blob = new Blob([JSON.stringify(rules, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'learned_rules.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function downloadCorrections() {
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `corrections_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importCorrections() {
+            const json = document.getElementById('importJson').value;
+            try {
+                const imported = JSON.parse(json);
+                if (imported.corrections) {
+                    Object.assign(data.corrections, imported.corrections);
+                }
+                if (imported.learned_patterns) {
+                    Object.entries(imported.learned_patterns).forEach(([pattern, p]) => {
+                        if (!data.learned_patterns[pattern]) {
+                            data.learned_patterns[pattern] = { categories: {}, subcategories: {} };
+                        }
+                        Object.entries(p.categories || {}).forEach(([cat, count]) => {
+                            data.learned_patterns[pattern].categories[cat] =
+                                (data.learned_patterns[pattern].categories[cat] || 0) + count;
+                        });
+                        Object.entries(p.subcategories || {}).forEach(([subcat, count]) => {
+                            data.learned_patterns[pattern].subcategories[subcat] =
+                                (data.learned_patterns[pattern].subcategories[subcat] || 0) + count;
+                        });
+                    });
+                }
+                if (imported.statistics) {
+                    data.statistics.total_corrections += imported.statistics.total_corrections || 0;
+                }
+                saveData();
+                document.getElementById('importJson').value = '';
+                showToast('Corrections imported!');
+            } catch (e) {
+                alert('Invalid JSON: ' + e.message);
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3000);
+        }
+
+        function toggleTheme() {
+            document.body.classList.toggle('dark');
+            const isDark = document.body.classList.contains('dark');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+            document.querySelector('.theme-toggle').textContent = isDark ? '☀️ Light' : '🌙 Dark';
+        }
+
+        // Initialize
+        document.getElementById('correctionForm').addEventListener('submit', addCorrection);
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark');
+            document.querySelector('.theme-toggle').textContent = '☀️ Light';
+        }
+        updateUI();
+    </script>
+</body>
+</html>

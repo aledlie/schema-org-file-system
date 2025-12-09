@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schema.org File Organization System - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5568d3;
+            --secondary: #764ba2;
+            --accent: #f5576c;
+            --success: #2ecc71;
+            --warning: #f39c12;
+            --dark-bg: #0f1419;
+            --dark-surface: #1a1f2e;
+            --dark-surface-alt: #252d3d;
+            --dark-border: #3a4556;
+            --light-text: #e8eef7;
+            --light-text-secondary: #b0b8cc;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--dark-bg);
+            color: var(--light-text);
+            line-height: 1.6;
+            overflow-x: hidden;
+        }
+
+        /* Animated Background */
+        .background-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            overflow: hidden;
+            pointer-events: none;
+        }
+
+        .background-animation::before,
+        .background-animation::after {
+            content: '';
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.15;
+            animation: float 20s ease-in-out infinite;
+        }
+
+        .background-animation::before {
+            width: 600px;
+            height: 600px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            top: -300px;
+            left: -200px;
+        }
+
+        .background-animation::after {
+            width: 500px;
+            height: 500px;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--secondary) 100%);
+            bottom: -250px;
+            right: -150px;
+            animation-delay: -10s;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) scale(1); }
+            33% { transform: translate(30px, -50px) scale(1.1); }
+            66% { transform: translate(-20px, 20px) scale(0.9); }
+        }
+
+        /* Container */
+        .container {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header Hero Section */
+        .hero {
+            text-align: center;
+            padding: 80px 20px 60px;
+            position: relative;
+        }
+
+        .hero h1 {
+            font-size: 56px;
+            font-weight: 800;
+            margin-bottom: 20px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 50%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            letter-spacing: -1px;
+            animation: fadeInDown 0.8s ease-out;
+        }
+
+        .hero-subtitle {
+            font-size: 20px;
+            color: var(--light-text-secondary);
+            margin-bottom: 15px;
+            animation: fadeInUp 0.8s ease-out 0.2s both;
+        }
+
+        .hero-description {
+            font-size: 16px;
+            color: var(--light-text-secondary);
+            max-width: 700px;
+            margin: 0 auto 40px;
+            line-height: 1.8;
+            animation: fadeInUp 0.8s ease-out 0.4s both;
+        }
+
+        /* Stats Bar */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 60px;
+            animation: fadeInUp 0.8s ease-out 0.6s both;
+        }
+
+        .stat-item {
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 16px;
+            padding: 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-item::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 0.3s ease;
+        }
+
+        .stat-item:hover::before {
+            transform: scaleX(1);
+        }
+
+        .stat-item:hover {
+            transform: translateY(-4px);
+            border-color: var(--primary);
+            box-shadow: 0 12px 24px rgba(102, 126, 234, 0.2);
+        }
+
+        .stat-value {
+            font-size: 36px;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--light-text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        /* Cards Grid */
+        .cards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 30px;
+            margin-bottom: 80px;
+        }
+
+        .feature-card {
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 20px;
+            padding: 40px 32px;
+            text-decoration: none;
+            color: var(--light-text);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            animation: fadeInUp 0.8s ease-out both;
+        }
+
+        .feature-card:nth-child(1) { animation-delay: 0.1s; }
+        .feature-card:nth-child(2) { animation-delay: 0.2s; }
+        .feature-card:nth-child(3) { animation-delay: 0.3s; }
+        .feature-card:nth-child(4) { animation-delay: 0.4s; }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 0;
+        }
+
+        .feature-card:hover::before {
+            opacity: 0.05;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            border-color: var(--primary);
+            box-shadow: 0 20px 40px rgba(102, 126, 234, 0.3);
+        }
+
+        .card-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .card-icon {
+            font-size: 56px;
+            margin-bottom: 24px;
+            display: inline-block;
+            transition: transform 0.4s ease;
+        }
+
+        .feature-card:hover .card-icon {
+            transform: scale(1.1) rotate(5deg);
+        }
+
+        .card-title {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 12px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .card-description {
+            font-size: 15px;
+            color: var(--light-text-secondary);
+            line-height: 1.7;
+            margin-bottom: 20px;
+            flex-grow: 1;
+        }
+
+        .card-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(102, 126, 234, 0.15);
+            color: var(--primary);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: auto;
+        }
+
+        .card-badge::after {
+            content: '→';
+            transition: transform 0.3s ease;
+        }
+
+        .feature-card:hover .card-badge::after {
+            transform: translateX(4px);
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            padding: 60px 20px 40px;
+            color: var(--light-text-secondary);
+            border-top: 1px solid var(--dark-border);
+        }
+
+        .footer-content {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .footer h3 {
+            font-size: 18px;
+            margin-bottom: 12px;
+            color: var(--light-text);
+        }
+
+        .footer p {
+            font-size: 14px;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+
+        .tech-stack {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 24px;
+        }
+
+        .tech-badge {
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--light-text-secondary);
+            transition: all 0.3s ease;
+        }
+
+        .tech-badge:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            transform: translateY(-2px);
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 36px;
+            }
+
+            .hero-subtitle {
+                font-size: 18px;
+            }
+
+            .hero-description {
+                font-size: 15px;
+            }
+
+            .cards-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .stats-bar {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .stat-value {
+                font-size: 28px;
+            }
+
+            .feature-card {
+                padding: 30px 24px;
+            }
+
+            .card-icon {
+                font-size: 48px;
+            }
+
+            .card-title {
+                font-size: 20px;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: var(--dark-surface-alt);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--dark-border);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="background-animation"></div>
+
+    <div class="container">
+        <!-- Hero Section -->
+        <section class="hero">
+            <h1>Schema.org File Organization</h1>
+            <p class="hero-subtitle">AI-Powered Content Analysis & Metadata Extraction</p>
+            <p class="hero-description">
+                Intelligent file organization system using Schema.org structured data, computer vision,
+                OCR, and machine learning to automatically categorize and organize your files with
+                unprecedented accuracy.
+            </p>
+        </section>
+
+        <!-- Stats Bar -->
+        <section class="stats-bar">
+            <div class="stat-item">
+                <div class="stat-value">30,133</div>
+                <div class="stat-label">Files Processed</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">98.6%</div>
+                <div class="stat-label">Success Rate</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">13</div>
+                <div class="stat-label">Categories</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">71.2%</div>
+                <div class="stat-label">ML Accuracy</div>
+            </div>
+        </section>
+
+        <!-- Feature Cards -->
+        <section class="cards-grid">
+            <a href="organization_report.html" class="feature-card">
+                <div class="card-content">
+                    <div class="card-icon">📊</div>
+                    <h2 class="card-title">Organization Report</h2>
+                    <p class="card-description">
+                        Comprehensive overview of your file organization process. View statistics,
+                        category distributions, progress tracking, and detailed insights into how
+                        your 30,000+ files have been systematically organized.
+                    </p>
+                    <div class="card-badge">View Report</div>
+                </div>
+            </a>
+
+            <a href="metadata_viewer.html" class="feature-card">
+                <div class="card-content">
+                    <div class="card-icon">🔍</div>
+                    <h2 class="card-title">Metadata Viewer</h2>
+                    <p class="card-description">
+                        Explore detailed Schema.org metadata for each file. Browse JSON-LD structured
+                        data, search through extracted content, and examine the rich metadata generated
+                        by AI vision, OCR, and EXIF parsing.
+                    </p>
+                    <div class="card-badge">Explore Metadata</div>
+                </div>
+            </a>
+
+            <a href="correction_interface.html" class="feature-card">
+                <div class="card-content">
+                    <div class="card-icon">🔧</div>
+                    <h2 class="card-title">Correction Interface</h2>
+                    <p class="card-description">
+                        Train the system by providing feedback on categorization decisions. Submit
+                        corrections, view learned patterns, and export rules to improve future
+                        organization accuracy through supervised learning.
+                    </p>
+                    <div class="card-badge">Submit Corrections</div>
+                </div>
+            </a>
+
+            <a href="ml_data_explorer.html" class="feature-card">
+                <div class="card-content">
+                    <div class="card-icon">🤖</div>
+                    <h2 class="card-title">ML Data Explorer</h2>
+                    <p class="card-description">
+                        Dive deep into the machine learning dataset. Analyze training/test splits,
+                        feature distributions, model performance metrics, confusion matrices, and
+                        identify areas for improvement.
+                    </p>
+                    <div class="card-badge">Explore Data</div>
+                </div>
+            </a>
+        </section>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <h3>Technology Stack</h3>
+                <p>
+                    Built with cutting-edge AI and machine learning technologies to deliver
+                    intelligent file organization at scale.
+                </p>
+                <div class="tech-stack">
+                    <span class="tech-badge">Python 3.14</span>
+                    <span class="tech-badge">CLIP Vision AI</span>
+                    <span class="tech-badge">Tesseract OCR</span>
+                    <span class="tech-badge">Schema.org</span>
+                    <span class="tech-badge">PyTorch</span>
+                    <span class="tech-badge">EXIF Metadata</span>
+                    <span class="tech-badge">Geolocation</span>
+                    <span class="tech-badge">JSON-LD</span>
+                </div>
+                <p style="margin-top: 30px; font-size: 12px; opacity: 0.7;">
+                    Last Updated: December 9, 2025 | System Status: Operational
+                </p>
+            </div>
+        </footer>
+    </div>
+</body>
+</html>
