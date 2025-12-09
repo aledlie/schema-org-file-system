@@ -17,6 +17,7 @@ This project provides an intelligent file organization system using Schema.org s
 - **Game Asset Detection** - Specialized categorization for game files (Priority 0)
 - **Filepath-based Classification** - Intelligent project name extraction
 - **Schema.org Metadata** - Generates structured data for all files
+- **Cost Tracking** - Per-feature cost and ROI calculation (NEW!)
 
 **Categories:**
 - Legal (contracts, real estate, corporate)
@@ -33,6 +34,12 @@ This project provides an intelligent file organization system using Schema.org s
 ```bash
 source venv/bin/activate
 python3 file_organizer_content_based.py --base-path ~/Documents --sources ~/Documents/Media --limit 1000
+
+# With cost tracking (default enabled)
+python3 file_organizer_content_based.py --base-path ~/Documents --sources ~/Documents/Media --cost-report
+
+# Disable cost tracking
+python3 file_organizer_content_based.py --base-path ~/Documents --sources ~/Documents/Media --no-cost-tracking
 ```
 
 ### 2. Type-Based File Organizer (`file_organizer_by_type.py`)
@@ -83,7 +90,151 @@ python3 image_renamer_metadata.py --dry-run --source ~/Documents/Media --recursi
 - `to_json_ld()` - Export as JSON-LD
 - `validate_required_properties()` - Validation
 
-## Current State (2025-11-26)
+### 5. Cost & ROI Calculator (`src/cost_roi_calculator.py`) - NEW
+
+**Purpose:** Calculate per-feature and per-model costs with ROI metrics.
+
+**Features:**
+- **Per-Feature Cost Tracking** - Track costs for CLIP, Tesseract, face detection, geocoding
+- **ROI Calculation** - Estimate value based on manual time saved
+- **Usage Records** - Detailed logging of each operation
+- **Cost Summaries** - Aggregate costs by feature
+
+**Tracked Features:**
+| Feature | Cost/Unit | Avg Time | Success Rate |
+|---------|-----------|----------|--------------|
+| CLIP Vision | $0.0001 | 2.5s | 95% |
+| Tesseract OCR | $0.00001 | 1.5s | 90% |
+| Face Detection | $0.000005 | 0.5s | 85% |
+| Nominatim Geocoding | $0 (free) | 1.0s | 75% |
+| Keyword Classifier | $0 | 0.001s | 98% |
+
+**Usage:**
+```python
+from src.cost_roi_calculator import CostROICalculator, CostTracker
+
+calculator = CostROICalculator()
+
+# Track a feature
+with CostTracker(calculator, 'clip_vision', files_processed=1):
+    result = analyze_image(image)
+
+# Get cost summary
+summary = calculator.get_cost_summary('clip_vision')
+print(f"Total cost: ${summary.total_cost:.4f}")
+
+# Get ROI metrics
+roi = calculator.get_roi_metrics('clip_vision')
+print(f"ROI: {roi.roi_percentage:.1f}%")
+```
+
+### 6. Cost Integration (`src/cost_integration.py`) - NEW
+
+**Purpose:** Easy integration of cost tracking into existing code.
+
+**Features:**
+- **Decorator Support** - `@track_cost('feature_name')` decorator
+- **Context Manager** - `with track_feature('feature_name'):` syntax
+- **Global Calculator** - Singleton pattern for easy access
+- **File Size Tracking** - Automatically track input file sizes
+
+**Usage:**
+```python
+from src.cost_integration import track_cost, track_feature, get_calculator
+
+# Decorator
+@track_cost('tesseract_ocr')
+def extract_text(image_path):
+    return pytesseract.image_to_string(Image.open(image_path))
+
+# Context manager
+with track_feature('clip_vision', file_path=image_path):
+    classification = model.predict(image)
+
+# Get reports
+calculator = get_calculator()
+calculator.print_summary()
+```
+
+### 7. Graph-Based Storage (`src/storage/`) - NEW
+
+**Purpose:** Graph-based SQL storage and key-value store for file metadata.
+
+**Components:**
+
+#### GraphStore (`src/storage/graph_store.py`)
+High-level interface for graph-based file storage with relationship traversal.
+
+**Features:**
+- File CRUD operations with deduplication (SHA-256 hash IDs)
+- Category management with hierarchy
+- Many-to-many relationships (files ↔ categories, companies, people, locations)
+- File relationship tracking (duplicate, similar, version, derived)
+- Statistics and aggregations
+- SQLite with WAL mode and optimized pragmas
+
+**Models (`src/storage/models.py`):**
+- `File` - Central node with metadata, EXIF, Schema.org data
+- `Category` - Hierarchical categories with parent/child relationships
+- `Company` - Extracted company entities
+- `Person` - Extracted person entities
+- `Location` - GPS and location data
+- `OrganizationSession` - Track organization runs
+- `FileRelationship` - Edges between files (duplicate, similar, etc.)
+- `CostRecord` - Cost tracking data
+- `SchemaMetadata` - Schema.org JSON-LD storage
+
+#### KeyValueStorage (`src/storage/kv_store.py`)
+Redis-like key-value storage using SQLite.
+
+**Features:**
+- Namespace isolation (cache, config, metadata, stats, session, feature)
+- TTL support for automatic expiration
+- JSON value serialization
+- Atomic increment/decrement operations
+- Pattern-based key scanning
+
+**Namespaces:**
+- `cache` - Temporary cached data
+- `config` - Configuration values
+- `metadata` - File metadata overflow
+- `stats` - Statistics and counters
+- `session` - Session-specific data
+- `feature` - Feature flags
+
+**Usage:**
+```python
+from src.storage import GraphStore, KeyValueStorage
+
+# Graph store
+graph = GraphStore('results/file_organization.db')
+file = graph.add_file('/path/to/file.jpg', 'file.jpg', file_size=1024)
+graph.add_file_category(file.id, 'Creative/Photos')
+
+# Key-value store
+kv = KeyValueStorage('results/file_organization.db')
+kv.set('last_run', datetime.now().isoformat(), namespace='session')
+kv.increment('files_processed', namespace='stats')
+```
+
+#### JSONMigrator (`src/storage/migration.py`)
+Migrate existing JSON result files to the database.
+
+**Supported Files:**
+- Organization reports (`content_organization_report_*.json`)
+- Cost reports (`cost_report_*.json`, `cost_roi_report.json`)
+- Model evaluation reports (`model_evaluation.json`)
+
+**Usage:**
+```python
+from src.storage import JSONMigrator
+
+migrator = JSONMigrator('results/file_organization.db', 'results')
+stats = migrator.migrate_all(verbose=True)
+print(f"Migrated {stats['files_migrated']} files")
+```
+
+## Current State (2025-12-09)
 
 ### Files Organized
 - **Total processed:** 1,600 / 14,302 (11.2%)
@@ -104,7 +255,20 @@ python3 image_renamer_metadata.py --dry-run --source ~/Documents/Media --recursi
 
 ### Recent Enhancements
 
-**GameAssets Category (New!):**
+**Graph-Based Storage (2025-12-09):**
+- SQLAlchemy ORM models for files, categories, companies, people, locations
+- Graph-like relationship tracking between files
+- Key-value store with namespace isolation and TTL support
+- JSON migration tool for existing reports
+- Database: `results/file_organization.db`
+
+**Cost & ROI Tracking (2025-12-09):**
+- Per-feature cost calculation (CLIP, Tesseract, face detection, geocoding)
+- ROI metrics based on manual time saved
+- Integrated into file organizer with `--cost-report` and `--no-cost-tracking` flags
+- Usage: `CostTracker` context manager or `@track_cost` decorator
+
+**GameAssets Category:**
 - Added Priority 0 detection (highest priority)
 - 4 subdirectories: Audio, Music, Sprites, Textures
 - 200+ keywords for classification
@@ -120,27 +284,36 @@ python3 image_renamer_metadata.py --dry-run --source ~/Documents/Media --recursi
 
 ```
 schema-org-file-system/
-├── file_organizer_content_based.py  # AI-powered organizer
+├── file_organizer_content_based.py  # AI-powered organizer (with cost tracking)
 ├── file_organizer_by_type.py        # Type-based organizer
-├── image_renamer_metadata.py        # Image metadata renamer (NEW)
+├── image_renamer_metadata.py        # Image metadata renamer
 ├── src/
 │   ├── base.py                      # Schema.org base classes
 │   ├── generators.py                # Specialized generators
 │   ├── validator.py                 # Validation system
 │   ├── integration.py               # Output formats
-│   └── enrichment.py                # Metadata enrichment
+│   ├── enrichment.py                # Metadata enrichment
+│   ├── cost_roi_calculator.py       # Cost & ROI calculation (NEW)
+│   ├── cost_integration.py          # Cost tracking integration (NEW)
+│   └── storage/                     # Graph-based storage (NEW)
+│       ├── __init__.py              # Module exports
+│       ├── models.py                # SQLAlchemy ORM models
+│       ├── graph_store.py           # Graph-based SQL storage
+│       ├── kv_store.py              # Key-value storage
+│       └── migration.py             # JSON to DB migration
 ├── docs/
 │   ├── README.md                    # Full documentation
 │   ├── BEST_PRACTICES.md            # Best practices
 │   ├── IMPLEMENTATION_SUMMARY.md    # Implementation details
-│   └── SESSION_NOTES.md             # Session work log (NEW)
+│   └── SESSION_NOTES.md             # Session work log
 ├── tests/
 │   ├── test_generators.py
 │   └── test_validator.py
 ├── examples/
 │   └── example_usage.py
-├── results/                          # Organization reports
-│   └── content_organization_report_*.json
+├── results/                          # Organization reports & database
+│   ├── content_organization_report_*.json
+│   └── file_organization.db         # SQLite database (NEW)
 └── venv/                             # Python virtual environment
 ```
 
@@ -153,6 +326,9 @@ pip install Pillow pytesseract piexif geopy
 
 # AI Vision
 pip install transformers torch torchvision opencv-python
+
+# Storage & Database (NEW)
+pip install sqlalchemy
 
 # HEIC Support (optional)
 pip install pillow-heif
@@ -328,7 +504,14 @@ Fallback: Screenshot_YYYYMMDD_HHMMSS.png
 
 See `docs/SESSION_NOTES.md` for detailed session work log.
 
-**Latest session:** 2025-11-26
+**Latest session:** 2025-12-09
+- Implemented graph-based SQL storage with SQLAlchemy
+- Added key-value store with namespace isolation
+- Created JSON to database migration tool
+- Added cost and ROI calculation system
+- Integrated cost tracking into file organizer
+
+**Previous session:** 2025-11-26
 - Added GameAssets category with subdirectories
 - Processed 1,600 files (100% success)
 - Created image metadata renamer
@@ -337,6 +520,6 @@ See `docs/SESSION_NOTES.md` for detailed session work log.
 ---
 
 **Project Status:** Active development
-**Last Updated:** 2025-11-26
+**Last Updated:** 2025-12-09
 **Python Version:** 3.14 (venv)
 **Working Directory:** `/Users/alyshialedlie/schema-org-file-system`
