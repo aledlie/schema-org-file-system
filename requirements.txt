@@ -1,0 +1,28 @@
+# Schema.org File Organization System
+# Requirements file
+
+# Core dependencies (minimal - uses Python standard library)
+# Python 3.8+ required
+
+# Optional dependencies for enhanced functionality:
+
+# For EXIF extraction (optional)
+# Pillow>=10.0.0
+
+# For NLP enrichment (optional)
+# spacy>=3.5.0
+
+# For file watching (optional)
+# watchdog>=3.0.0
+
+# For REST API (optional)
+# flask>=2.3.0
+
+# For testing (development)
+# pytest>=7.4.0
+# pytest-cov>=4.1.0
+
+# For code quality (development)
+# black>=23.7.0
+# flake8>=6.1.0
+# mypy>=1.5.0
