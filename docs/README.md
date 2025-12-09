@@ -405,6 +405,35 @@ class CustomGenerator(SchemaOrgBase):
 
 ## Changelog
 
+### Version 1.2.0 (December 2025)
+
+**Dashboard UI Optimization:**
+- Refactored metadata viewer from 24MB to 30KB (-99.9% reduction)
+- Added async data loading with progress spinner
+- Fixed invalid JSON in cost reports (Infinity values)
+- Added resource usage panel to main dashboard
+- Implemented error handling with retry functionality
+- Created comprehensive UI error handling test suite
+
+**New Features:**
+- Graph-based SQL storage with SQLAlchemy ORM
+- Key-value store with namespace isolation and TTL support
+- Cost & ROI tracking system with per-feature metrics
+- JSON to database migration tool
+- Live statistics dashboard
+
+**File Processing:**
+- 30,133 files processed (98.6% success rate)
+- GameAssets: 25,554 files (84.8%)
+- Enhanced game asset classification with 200+ keywords
+
+### Version 1.1.0 (November 2025)
+
+- Added GameAssets category with Audio, Music, Sprites, Textures
+- Added image metadata renamer with EXIF and GPS support
+- Priority-based classification system
+- AI-powered home interior detection using CLIP model
+
 ### Version 1.0.0 (2024)
 
 - Initial release

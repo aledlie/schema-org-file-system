@@ -237,23 +237,31 @@ print(f"Migrated {stats['files_migrated']} files")
 ## Current State (2025-12-09)
 
 ### Files Organized
-- **Total processed:** 1,600 / 14,302 (11.2%)
-- **Success rate:** 100% (0 errors)
+- **Total processed:** 30,133 files
+- **Success rate:** 98.6% (0 errors)
+- **Already organized:** 430 files
 
 ### Category Breakdown
-- GameAssets: 1,132 files
-  - Audio: 76 files
-  - Music: 33 files
-  - Sprites: 674 files
-  - Textures: 343 files
-- Technical: 4,501 files
-- Data: 2,651 files
-- Legal: 2,314 files
-- Creative: 402 files
-- Property_Management: 19 files
-- Uncategorized: 766 files
+- GameAssets: 25,554 files (84.8%)
+  - Sprites: 16,453 files
+  - Textures: 8,883 files
+  - Audio: 218 files
+- Uncategorized: 2,727 files (9.0%)
+- Media: 1,570 files (5.2%)
+- Property_Management: 243 files (0.8%)
+- Financial: 7 files
+- Technical: 6 files
 
 ### Recent Enhancements
+
+**Dashboard UI Optimization (2025-12-09):**
+- Fixed invalid JSON in `cost_report.json` (replaced `Infinity` values)
+- Refactored `metadata_viewer.html` from 24MB to 30KB (-99.9%)
+- Extracted 30,133 file records to external `metadata.json`
+- Added async data loading with progress spinner
+- Implemented error handling with retry button
+- Added resource usage panel to main dashboard
+- Created comprehensive error handling test suite
 
 **Graph-Based Storage (2025-12-09):**
 - SQLAlchemy ORM models for files, categories, companies, people, locations
@@ -267,12 +275,13 @@ print(f"Migrated {stats['files_migrated']} files")
 - ROI metrics based on manual time saved
 - Integrated into file organizer with `--cost-report` and `--no-cost-tracking` flags
 - Usage: `CostTracker` context manager or `@track_cost` decorator
+- Live stats displayed on main dashboard
 
 **GameAssets Category:**
 - Added Priority 0 detection (highest priority)
 - 4 subdirectories: Audio, Music, Sprites, Textures
 - 200+ keywords for classification
-- Successfully categorized 1,132 game files
+- Successfully categorized 25,554 game files
 
 **Image Renamer:**
 - New script: `image_renamer_metadata.py`
@@ -287,33 +296,44 @@ schema-org-file-system/
 ├── file_organizer_content_based.py  # AI-powered organizer (with cost tracking)
 ├── file_organizer_by_type.py        # Type-based organizer
 ├── image_renamer_metadata.py        # Image metadata renamer
+├── copy_to_site.sh                  # Build script for _site directory
 ├── src/
 │   ├── base.py                      # Schema.org base classes
 │   ├── generators.py                # Specialized generators
 │   ├── validator.py                 # Validation system
 │   ├── integration.py               # Output formats
 │   ├── enrichment.py                # Metadata enrichment
-│   ├── cost_roi_calculator.py       # Cost & ROI calculation (NEW)
-│   ├── cost_integration.py          # Cost tracking integration (NEW)
-│   └── storage/                     # Graph-based storage (NEW)
+│   ├── cost_roi_calculator.py       # Cost & ROI calculation
+│   ├── cost_integration.py          # Cost tracking integration
+│   └── storage/                     # Graph-based storage
 │       ├── __init__.py              # Module exports
 │       ├── models.py                # SQLAlchemy ORM models
 │       ├── graph_store.py           # Graph-based SQL storage
 │       ├── kv_store.py              # Key-value storage
 │       └── migration.py             # JSON to DB migration
+├── _site/                            # Dashboard & web UI
+│   ├── index.html                   # Main dashboard (25KB)
+│   ├── metadata_viewer.html         # File browser (30KB, loads external data)
+│   ├── metadata.json                # File metadata (24MB, async loaded)
+│   ├── organization_report.html     # Organization statistics (28KB)
+│   ├── cost_report.json             # Live cost/ROI data (15KB)
+│   ├── ml_data_explorer.html        # ML data viewer (85KB)
+│   └── correction_interface.html    # Feedback UI (27KB)
 ├── docs/
 │   ├── README.md                    # Full documentation
 │   ├── BEST_PRACTICES.md            # Best practices
 │   ├── IMPLEMENTATION_SUMMARY.md    # Implementation details
 │   └── SESSION_NOTES.md             # Session work log
 ├── tests/
-│   ├── test_generators.py
-│   └── test_validator.py
+│   ├── test_generators.py           # Generator tests
+│   ├── test_validator.py            # Validator tests
+│   └── test_metadata_viewer_errors.js  # UI error handling tests
 ├── examples/
 │   └── example_usage.py
 ├── results/                          # Organization reports & database
 │   ├── content_organization_report_*.json
-│   └── file_organization.db         # SQLite database (NEW)
+│   ├── file_organization.db         # SQLite database
+│   └── metadata.json                # Copy of file metadata
 └── venv/                             # Python virtual environment
 ```
 
@@ -468,14 +488,12 @@ Fallback: Screenshot_YYYYMMDD_HHMMSS.png
 
 ## Remaining Work
 
-**Files to process:** ~12,702 files remaining in ~/Documents/Media
-
 **Recommended next steps:**
-1. Continue processing in batches of 1,000-2,000
-2. Run image renamer on specific directories
-3. Review uncategorized files for new patterns
-4. Add HEIC support to renamer
-5. Consider additional game asset subcategories
+1. Review uncategorized files (2,727) for new classification patterns
+2. Add HEIC support to image renamer
+3. Consider additional game asset subcategories
+4. Implement server-side filtering for metadata viewer (if dataset grows)
+5. Add automated testing for dashboard UI components
 
 ## Troubleshooting
 
@@ -504,14 +522,23 @@ Fallback: Screenshot_YYYYMMDD_HHMMSS.png
 
 See `docs/SESSION_NOTES.md` for detailed session work log.
 
-**Latest session:** 2025-12-09
+**Latest session:** 2025-12-09 (Dashboard UI Debug)
+- Fixed invalid JSON in cost_report.json (Infinity values)
+- Refactored metadata_viewer.html from 24MB to 30KB
+- Added async data loading with progress spinner
+- Fixed null reference error on retry button
+- Added resource usage panel to main dashboard
+- Created test suite for UI error handling
+- Processed 30,133 files total (98.6% success rate)
+
+**Previous session:** 2025-12-09 (Storage & Cost Tracking)
 - Implemented graph-based SQL storage with SQLAlchemy
 - Added key-value store with namespace isolation
 - Created JSON to database migration tool
 - Added cost and ROI calculation system
 - Integrated cost tracking into file organizer
 
-**Previous session:** 2025-11-26
+**Earlier session:** 2025-11-26
 - Added GameAssets category with subdirectories
 - Processed 1,600 files (100% success)
 - Created image metadata renamer
@@ -523,3 +550,21 @@ See `docs/SESSION_NOTES.md` for detailed session work log.
 **Last Updated:** 2025-12-09
 **Python Version:** 3.14 (venv)
 **Working Directory:** `/Users/alyshialedlie/schema-org-file-system`
+
+## Git Commit History (Recent)
+
+```
+a0ce0bb docs(debug): add comprehensive debugging session summary
+bcf18b4 test(ui): add error handling tests for metadata viewer
+e3675ae chore(build): update copy_to_site script
+3b9adb1 fix(dashboard): add resource usage panel to main dashboard
+ca38ec3 refactor(ui): optimize metadata viewer performance
+aa852e9 fix(dashboard): fix invalid json in cost_report
+031f300 feat(organizer): auto-update _site after file organization
+3dad147 feat(ui): create dashboard with visual storyteller design
+027f690 docs(project): update documentation with latest features
+87f5e10 feat(organizer): add default cost-report path
+c139a4f feat(storage): implement graph-based sql and kv storage
+b82b185 feat(organizer): integrate cost tracking
+bc70300 feat(cost): add cost and roi calculation system
+```

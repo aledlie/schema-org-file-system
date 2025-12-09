@@ -1,5 +1,104 @@
 # Session Notes
 
+## Session: 2025-12-09 - Dashboard UI Debug & Optimization
+
+### Overview
+Debugged and fixed critical dashboard UI errors, optimized metadata viewer performance, and added comprehensive error handling.
+
+### Issues Found & Fixed
+
+#### 1. Invalid JSON in `cost_report.json`
+**Problem:** File contained `Infinity` values which are not valid JSON
+**Impact:** `JSON.parse()` failed, preventing cost data from loading
+**Fix:** Replaced all `Infinity` values with `null`
+**Commit:** `aa852e9`
+
+#### 2. `metadata_viewer.html` Performance (24MB → 30KB)
+**Problem:** 30,133 file records embedded inline as JavaScript array
+**Impact:**
+- Page load: 5-10 seconds minimum
+- Memory: 100MB+ on lower-end devices
+- Mobile devices would crash
+
+**Fix:**
+- Extracted data to external `metadata.json` file (24MB)
+- Rewrote HTML to fetch data asynchronously (30KB)
+- Added progress spinner showing load status
+- Implemented error handling with retry button
+
+**Commit:** `ca38ec3`
+
+#### 3. Null Reference Error on Retry
+**Problem:** "Cannot set properties of null (setting 'textContent')"
+**Cause:** When retry button clicked after error, loading elements no longer existed
+**Fix:** `loadData()` now restores loading UI before attempting reload
+**Test:** Created `tests/test_metadata_viewer_errors.js` with 159 lines
+**Commit:** `bcf18b4`
+
+### Files Modified
+- `_site/cost_report.json` - Fixed Infinity values
+- `_site/metadata_viewer.html` - Refactored for async loading
+- `_site/metadata.json` - New external data file
+- `_site/index.html` - Added resource usage panel
+- `results/metadata_viewer.html` - Synced copy
+- `copy_to_site.sh` - Updated build script
+- `tests/test_metadata_viewer_errors.js` - New test suite
+
+### Performance Metrics
+| Metric | Before | After |
+|--------|--------|-------|
+| `metadata_viewer.html` | 24MB | 30KB |
+| Page load time | 5-10s | <500ms |
+| Memory usage | 100MB+ | 5-10MB |
+
+### Git Commits
+```
+a0ce0bb docs(debug): add comprehensive debugging session summary
+bcf18b4 test(ui): add error handling tests for metadata viewer
+e3675ae chore(build): update copy_to_site script
+3b9adb1 fix(dashboard): add resource usage panel to main dashboard
+ca38ec3 refactor(ui): optimize metadata viewer performance
+aa852e9 fix(dashboard): fix invalid json in cost_report
+```
+
+### Statistics
+- **Total files indexed:** 30,133
+- **Success rate:** 98.6%
+- **Categories:** 6 main categories
+- **Top category:** GameAssets (25,554 files, 84.8%)
+
+---
+
+## Session: 2025-12-09 - Storage & Cost Tracking
+
+### Overview
+Implemented graph-based SQL storage, key-value store, and cost/ROI tracking system.
+
+### New Components
+
+#### Graph-Based Storage (`src/storage/`)
+- SQLAlchemy ORM models for files, categories, companies, people, locations
+- Graph-like relationship tracking between files
+- Key-value store with namespace isolation and TTL support
+- JSON migration tool for existing reports
+
+#### Cost & ROI Calculator (`src/cost_roi_calculator.py`)
+- Per-feature cost tracking (CLIP, Tesseract, face detection, geocoding)
+- ROI metrics based on manual time saved
+- Integrated into file organizer with `--cost-report` flag
+
+### Git Commits
+```
+031f300 feat(organizer): auto-update _site after file organization
+3dad147 feat(ui): create dashboard with visual storyteller design
+87f5e10 feat(organizer): add default cost-report path
+c139a4f feat(storage): implement graph-based sql and kv storage
+b82b185 feat(organizer): integrate cost tracking
+bc70300 feat(cost): add cost and roi calculation system
+```
+
+---
+
 ## Session: 2025-11-26 - File Organization & Image Renaming
 
 ### Overview
