@@ -2198,6 +2198,18 @@ def main():
     if not args.no_cost_tracking and organizer.cost_calculator:
         organizer.save_cost_report(args.cost_report)
 
+    # Update _site directory with latest HTML files
+    if not args.dry_run:
+        import subprocess
+        from pathlib import Path
+        script_path = Path(__file__).parent / 'copy_to_site.sh'
+        if script_path.exists():
+            try:
+                subprocess.run([str(script_path)], check=True, capture_output=True)
+                print("\n✓ Updated _site directory with latest HTML files")
+            except subprocess.CalledProcessError:
+                print("\n⚠ Failed to update _site directory")
+
 
 if __name__ == '__main__':
     main()
