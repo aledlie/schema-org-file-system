@@ -20,6 +20,15 @@ echo "✓ Copied correction_interface.html"
 cp /Users/alyshialedlie/schema-org-file-system/results/ml_data_explorer.html /Users/alyshialedlie/schema-org-file-system/_site/
 echo "✓ Copied ml_data_explorer.html"
 
+cp /Users/alyshialedlie/schema-org-file-system/results/index.html /Users/alyshialedlie/schema-org-file-system/_site/
+echo "✓ Copied index.html"
+
+# Copy cost report for dynamic data loading
+if [ -f /Users/alyshialedlie/schema-org-file-system/results/cost_report.json ]; then
+    cp /Users/alyshialedlie/schema-org-file-system/results/cost_report.json /Users/alyshialedlie/schema-org-file-system/_site/
+    echo "✓ Copied cost_report.json"
+fi
+
 echo ""
 echo "All files copied successfully to _site directory!"
 echo ""
