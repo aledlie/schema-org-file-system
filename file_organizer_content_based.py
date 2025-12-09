@@ -2166,7 +2166,10 @@ def main():
     )
     parser.add_argument(
         '--cost-report',
-        help='Path to save cost/ROI report (auto-generated if not specified)'
+        nargs='?',
+        const='results/cost_report.json',
+        default='results/cost_report.json',
+        help='Path to save cost/ROI report (default: results/cost_report.json, use --no-cost-tracking to disable)'
     )
 
     args = parser.parse_args()
