@@ -39,9 +39,11 @@ pyvenv.cfg
 .DS_Store
 Thumbs.db
 
-# Results (large JSON files)
+# Results (large JSON files, keep HTML for GitHub Pages)
 results/*.json
 results/ml_data/
+results/ml_data_*/
+!results/ml_data_explorer.html
 
 # Corrections data (user-specific)
 corrections.json
