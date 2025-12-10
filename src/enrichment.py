@@ -9,6 +9,8 @@ from typing import Any, Dict, List, Optional, Union
 from datetime import datetime
 from pathlib import Path
 import mimetypes
+import hashlib
+import uuid
 
 
 class MetadataEnricher:
@@ -104,22 +106,58 @@ class MetadataEnricher:
             file_path: Path to file
 
         Returns:
-            Metadata dictionary
+            Metadata dictionary with proper @id for JSON-LD
+
+        Note:
+            The @id is generated as a content-addressed URN using SHA-256 hash
+            of the absolute file path. This ensures:
+            - Same file always gets the same @id (deterministic)
+            - Valid IRI for JSON-LD compliance
+            - Deduplication across systems
         """
         path = Path(file_path)
         if not path.exists():
             return {}
 
         stats = path.stat()
+
+        # Generate deterministic @id from absolute path hash
+        abs_path = str(path.absolute())
+        file_hash = hashlib.sha256(abs_path.encode()).hexdigest()
+
         return {
+            '@id': f'urn:sha256:{file_hash}',
             'name': path.name,
             'url': f'file://{path.absolute()}',
             'encodingFormat': self.get_encoding_format(file_path),
             'contentSize': stats.st_size,
             'dateCreated': datetime.fromtimestamp(stats.st_ctime),
             'dateModified': datetime.fromtimestamp(stats.st_mtime),
-            'identifier': path.stem,
         }
+
+    def _generate_person_id(self, name: str) -> str:
+        """Generate deterministic @id for a Person."""
+        person_uuid = uuid.uuid5(
+            uuid.UUID('d1e2a3b4-5678-9abc-def0-123456789012'),  # Person namespace
+            name.lower().strip()
+        )
+        return f"urn:uuid:{person_uuid}"
+
+    def _generate_org_id(self, name: str) -> str:
+        """Generate deterministic @id for an Organization."""
+        org_uuid = uuid.uuid5(
+            uuid.UUID('c0e1a2b3-4567-89ab-cdef-012345678901'),  # Company namespace
+            name.lower().strip()
+        )
+        return f"urn:uuid:{org_uuid}"
+
+    def _generate_place_id(self, name: str) -> str:
+        """Generate deterministic @id for a Place."""
+        place_uuid = uuid.uuid5(
+            uuid.UUID('e2e3a4b5-6789-abcd-ef01-234567890123'),  # Location namespace
+            name.lower().strip()
+        )
+        return f"urn:uuid:{place_uuid}"
 
     def enrich_from_exif(self, exif_data: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -135,9 +173,11 @@ class MetadataEnricher:
 
         # Creator information
         if 'Artist' in exif_data:
+            artist_name = exif_data['Artist']
             metadata['creator'] = {
                 '@type': 'Person',
-                'name': exif_data['Artist']
+                '@id': self._generate_person_id(artist_name),
+                'name': artist_name
             }
 
         # Camera information
@@ -225,6 +265,7 @@ class MetadataEnricher:
                 if schema_key in ['author', 'creator'] and isinstance(value, str):
                     metadata[schema_key] = {
                         '@type': 'Person',
+                        '@id': self._generate_person_id(value),
                         'name': value
                     }
                 else:
@@ -260,9 +301,27 @@ class MetadataEnricher:
             for entity in nlp_results['entities']:
                 entity_type = entity.get('type', 'Thing')
                 schema_type = self._map_entity_type_to_schema(entity_type)
+                entity_name = entity.get('text', entity.get('name', ''))
+
+                # Generate appropriate @id based on entity type
+                if schema_type == 'Person':
+                    entity_id = self._generate_person_id(entity_name)
+                elif schema_type == 'Organization':
+                    entity_id = self._generate_org_id(entity_name)
+                elif schema_type == 'Place':
+                    entity_id = self._generate_place_id(entity_name)
+                else:
+                    # Generic Thing - use a hash-based ID
+                    thing_uuid = uuid.uuid5(
+                        uuid.UUID('a0b1c2d3-4567-89ab-cdef-0123456789ab'),  # Thing namespace
+                        entity_name.lower().strip()
+                    )
+                    entity_id = f"urn:uuid:{thing_uuid}"
+
                 mentions.append({
                     '@type': schema_type,
-                    'name': entity.get('text', entity.get('name', ''))
+                    '@id': entity_id,
+                    'name': entity_name
                 })
             if mentions:
                 metadata['mentions'] = mentions
@@ -301,14 +360,22 @@ class MetadataEnricher:
         if 'title' in audio_meta:
             metadata['name'] = audio_meta['title']
         if 'artist' in audio_meta:
+            artist_name = audio_meta['artist']
             metadata['byArtist'] = {
                 '@type': 'Person',
-                'name': audio_meta['artist']
+                '@id': self._generate_person_id(artist_name),
+                'name': artist_name
             }
         if 'album' in audio_meta:
+            album_name = audio_meta['album']
+            album_uuid = uuid.uuid5(
+                uuid.UUID('b1c2d3e4-5678-9abc-def0-123456789abc'),  # Album namespace
+                album_name.lower().strip()
+            )
             metadata['inAlbum'] = {
                 '@type': 'MusicAlbum',
-                'name': audio_meta['album']
+                '@id': f"urn:uuid:{album_uuid}",
+                'name': album_name
             }
         if 'genre' in audio_meta:
             metadata['genre'] = audio_meta['genre']
@@ -428,9 +495,11 @@ class MetadataEnricher:
 
         # Author
         if 'author' in code_analysis:
+            author_name = code_analysis['author']
             metadata['author'] = {
                 '@type': 'Person',
-                'name': code_analysis['author']
+                '@id': self._generate_person_id(author_name),
+                'name': author_name
             }
 
         # Functions/classes (as description)
