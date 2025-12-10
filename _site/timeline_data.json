@@ -1,0 +1,924 @@
+{
+  "generated_at": "2025-12-10T06:20:16.258004",
+  "cumulative": {
+    "total_sessions": 14,
+    "total_files": 41614,
+    "total_organized": 0,
+    "avg_processing_time": null,
+    "top_categories": [
+      {
+        "name": "sprites",
+        "count": 14482
+      },
+      {
+        "name": "textures",
+        "count": 5986
+      },
+      {
+        "name": "photos_social",
+        "count": 447
+      },
+      {
+        "name": "photos_other",
+        "count": 266
+      },
+      {
+        "name": "audio",
+        "count": 228
+      }
+    ]
+  },
+  "sessions": [
+    {
+      "id": "862197af2a1a3a39a851e11e23c13cdc86184777e939b3e4c5b461515816e9e0",
+      "started_at": "2025-11-20 23:40:42.000000",
+      "completed_at": "2025-11-20 23:40:42.000000",
+      "dry_run": 0,
+      "source_directories": [],
+      "base_path": null,
+      "file_limit": null,
+      "total_files": 30,
+      "organized_count": 0,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "862197af",
+      "success_rate": 0.0,
+      "categories": [],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 19
+        },
+        {
+          "schema_type": "DigitalDocument",
+          "count": 11
+        }
+      ],
+      "extensions": [],
+      "changes": {
+        "is_first": true,
+        "files_delta": 30,
+        "organized_delta": 0,
+        "new_categories": [],
+        "category_changes": []
+      }
+    },
+    {
+      "id": "98084d52f3069fb20d3a3f77ecaa88078134e2ae393e5ed4e09c03a33b4cc7b0",
+      "started_at": "2025-11-21 00:08:27.000000",
+      "completed_at": "2025-11-21 00:08:27.000000",
+      "dry_run": 0,
+      "source_directories": [],
+      "base_path": null,
+      "file_limit": null,
+      "total_files": 22,
+      "organized_count": 22,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "98084d52",
+      "success_rate": 100.0,
+      "categories": [
+        {
+          "name": "other",
+          "color": null,
+          "icon": null,
+          "count": 5,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "identification",
+          "color": null,
+          "icon": null,
+          "count": 4,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "contracts",
+          "color": null,
+          "icon": null,
+          "count": 4,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "tax",
+          "color": null,
+          "icon": null,
+          "count": 3,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "statements",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "employment",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "marketing",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "real_estate",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "DigitalDocument",
+          "count": 22
+        }
+      ],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": -8,
+        "organized_delta": 22,
+        "success_rate_delta": 100.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "dc92af4338692b11f1c3548076353c87979846288d5e1b1ec6a21d1695e72759",
+      "started_at": "2025-11-26 22:09:52.000000",
+      "completed_at": "2025-11-26 22:09:52.000000",
+      "dry_run": 0,
+      "source_directories": [],
+      "base_path": null,
+      "file_limit": null,
+      "total_files": 18160,
+      "organized_count": 67,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "dc92af43",
+      "success_rate": 0.4,
+      "categories": [
+        {
+          "name": "textures",
+          "color": null,
+          "icon": null,
+          "count": 43,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "photos_other",
+          "color": null,
+          "icon": null,
+          "count": 24,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "contracts",
+          "color": null,
+          "icon": null,
+          "count": 21,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "videos_recordings",
+          "color": null,
+          "icon": null,
+          "count": 13,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "tax",
+          "color": null,
+          "icon": null,
+          "count": 8,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "Technical/Logs/Uncategorized",
+          "color": null,
+          "icon": null,
+          "count": 7,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "identification",
+          "color": null,
+          "icon": null,
+          "count": 7,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "other",
+          "color": null,
+          "icon": null,
+          "count": 6,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "documentation",
+          "color": null,
+          "icon": null,
+          "count": 3,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "records",
+          "color": null,
+          "icon": null,
+          "count": 3,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 13881
+        },
+        {
+          "schema_type": "DigitalDocument",
+          "count": 4036
+        }
+      ],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": 18138,
+        "organized_delta": 45,
+        "success_rate_delta": -99.6,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "a1a45e87da021f6f84350207847dbeb3a816be36d26e1b8f321dd698a829df30",
+      "started_at": "2025-11-26 23:42:07.000000",
+      "completed_at": "2025-11-26 23:42:07.000000",
+      "dry_run": 0,
+      "source_directories": [],
+      "base_path": null,
+      "file_limit": null,
+      "total_files": 100,
+      "organized_count": 100,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "a1a45e87",
+      "success_rate": 100.0,
+      "categories": [
+        {
+          "name": "audio",
+          "color": null,
+          "icon": null,
+          "count": 36,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "music",
+          "color": null,
+          "icon": null,
+          "count": 15,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "other",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "DigitalDocument",
+          "count": 53
+        },
+        {
+          "schema_type": "ImageObject",
+          "count": 2
+        }
+      ],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": -18060,
+        "organized_delta": 33,
+        "success_rate_delta": 99.6,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "82c291d6e618a1d26c6d0ae4e726724f94b1936cba25e14e98f5f6c32b8197c2",
+      "started_at": "2025-11-26 23:43:32.000000",
+      "completed_at": "2025-11-26 23:43:32.000000",
+      "dry_run": 0,
+      "source_directories": [],
+      "base_path": null,
+      "file_limit": null,
+      "total_files": 500,
+      "organized_count": 500,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "82c291d6",
+      "success_rate": 100.0,
+      "categories": [
+        {
+          "name": "sprites",
+          "color": null,
+          "icon": null,
+          "count": 135,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "textures",
+          "color": null,
+          "icon": null,
+          "count": 67,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "audio",
+          "color": null,
+          "icon": null,
+          "count": 40,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "music",
+          "color": null,
+          "icon": null,
+          "count": 18,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 261
+        },
+        {
+          "schema_type": "DigitalDocument",
+          "count": 150
+        }
+      ],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": 400,
+        "organized_delta": 400,
+        "success_rate_delta": 0.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "8c4af390aef6d5320f89fd75a77d08013c6905e8b814dcf1321f2dcb184f5ea6",
+      "started_at": "2025-11-26 23:46:09.000000",
+      "completed_at": "2025-11-26 23:46:09.000000",
+      "dry_run": 0,
+      "source_directories": [],
+      "base_path": null,
+      "file_limit": null,
+      "total_files": 1000,
+      "organized_count": 1000,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "8c4af390",
+      "success_rate": 100.0,
+      "categories": [
+        {
+          "name": "sprites",
+          "color": null,
+          "icon": null,
+          "count": 309,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "textures",
+          "color": null,
+          "icon": null,
+          "count": 151,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 586
+        }
+      ],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": 500,
+        "organized_delta": 500,
+        "success_rate_delta": 0.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "f517761b3df5189f2092eb1dacee7c3b5530543b61b072101eb800a29697d71f",
+      "started_at": "2025-11-27 00:09:47.000000",
+      "completed_at": "2025-11-27 00:09:47.000000",
+      "dry_run": 0,
+      "source_directories": [],
+      "base_path": null,
+      "file_limit": null,
+      "total_files": 757,
+      "organized_count": 12,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "f517761b",
+      "success_rate": 1.6,
+      "categories": [
+        {
+          "name": "photos_screenshots",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "DigitalDocument",
+          "count": 3
+        },
+        {
+          "schema_type": "ImageObject",
+          "count": 1
+        }
+      ],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": -243,
+        "organized_delta": -988,
+        "success_rate_delta": -98.4,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "d81abbc489487892eded6655e9976f31d2a336974f795b73ded2ca572b971114",
+      "started_at": "2025-11-27 00:13:47.000000",
+      "completed_at": "2025-11-27 00:13:47.000000",
+      "dry_run": 0,
+      "source_directories": [],
+      "base_path": null,
+      "file_limit": null,
+      "total_files": 6,
+      "organized_count": 6,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "d81abbc4",
+      "success_rate": 100.0,
+      "categories": [],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 6
+        }
+      ],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": -751,
+        "organized_delta": -6,
+        "success_rate_delta": 98.4,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "4b1475e7367e18ad97f8b4a1631390fd4a286a946e2583654dc7c2290588752b",
+      "started_at": "2025-11-27 00:16:17.000000",
+      "completed_at": "2025-11-27 00:16:17.000000",
+      "dry_run": 0,
+      "source_directories": [],
+      "base_path": null,
+      "file_limit": null,
+      "total_files": 751,
+      "organized_count": 85,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "4b1475e7",
+      "success_rate": 11.3,
+      "categories": [
+        {
+          "name": "photos_other",
+          "color": null,
+          "icon": null,
+          "count": 2,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 2
+        }
+      ],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": 745,
+        "organized_delta": 79,
+        "success_rate_delta": -88.7,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "698461eca7da817b97e2b2dafdad417512a38711ac0bcc43dae8916dc2edbf31",
+      "started_at": "2025-11-27 01:33:04.000000",
+      "completed_at": "2025-11-27 01:33:04.000000",
+      "dry_run": 0,
+      "source_directories": [],
+      "base_path": null,
+      "file_limit": null,
+      "total_files": 645,
+      "organized_count": 54,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "698461ec",
+      "success_rate": 8.4,
+      "categories": [
+        {
+          "name": "photos_other",
+          "color": null,
+          "icon": null,
+          "count": 12,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 12
+        },
+        {
+          "schema_type": "DigitalDocument",
+          "count": 1
+        }
+      ],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": -106,
+        "organized_delta": -31,
+        "success_rate_delta": -2.9,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "f7d3acd8f837a717bcfc6b1f30c9a40b7020c378f00fcf10e88701670acbc02f",
+      "started_at": "2025-11-27 12:41:47.000000",
+      "completed_at": "2025-11-27 12:41:47.000000",
+      "dry_run": 0,
+      "source_directories": [],
+      "base_path": null,
+      "file_limit": null,
+      "total_files": 59,
+      "organized_count": 59,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "f7d3acd8",
+      "success_rate": 100.0,
+      "categories": [
+        {
+          "name": "records",
+          "color": null,
+          "icon": null,
+          "count": 2,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "design",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "planning",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "DigitalDocument",
+          "count": 4
+        }
+      ],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": -586,
+        "organized_delta": 5,
+        "success_rate_delta": 91.6,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "189d4bb9bd4b3407a3cfb7b7e8b4b6e323dd7375f63b794e9471a71bdf9b82f0",
+      "started_at": "2025-11-27 12:50:13.000000",
+      "completed_at": "2025-11-27 12:50:13.000000",
+      "dry_run": 0,
+      "source_directories": [],
+      "base_path": null,
+      "file_limit": null,
+      "total_files": 100,
+      "organized_count": 85,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "189d4bb9",
+      "success_rate": 85.0,
+      "categories": [
+        {
+          "name": "contracts",
+          "color": null,
+          "icon": null,
+          "count": 9,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "tax",
+          "color": null,
+          "icon": null,
+          "count": 2,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "DigitalDocument",
+          "count": 11
+        }
+      ],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": 41,
+        "organized_delta": 26,
+        "success_rate_delta": -15.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "3d4dafd439842506fa88cdf64fb175d08f1317424b4483264afce2a46f16cae2",
+      "started_at": "2025-11-27 13:09:25.000000",
+      "completed_at": "2025-11-27 13:09:25.000000",
+      "dry_run": 0,
+      "source_directories": [],
+      "base_path": null,
+      "file_limit": null,
+      "total_files": 150,
+      "organized_count": 106,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "3d4dafd4",
+      "success_rate": 70.7,
+      "categories": [
+        {
+          "name": "Technical/Web/leora-home-health.webflow",
+          "color": null,
+          "icon": null,
+          "count": 24,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "clients",
+          "color": null,
+          "icon": null,
+          "count": 19,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "photos_other",
+          "color": null,
+          "icon": null,
+          "count": 6,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "textures",
+          "color": null,
+          "icon": null,
+          "count": 5,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "Technical/Web/css",
+          "color": null,
+          "icon": null,
+          "count": 3,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "photos_social",
+          "color": null,
+          "icon": null,
+          "count": 2,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "DigitalDocument",
+          "count": 46
+        },
+        {
+          "schema_type": "ImageObject",
+          "count": 21
+        }
+      ],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": 50,
+        "organized_delta": 21,
+        "success_rate_delta": -14.3,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "fc505421ffea86018f80794f8354b94220cdb0fad20a27d9b7639cd689418eef",
+      "started_at": "2025-12-09 10:22:56.000000",
+      "completed_at": "2025-12-09 10:22:56.000000",
+      "dry_run": 0,
+      "source_directories": [],
+      "base_path": null,
+      "file_limit": null,
+      "total_files": 64,
+      "organized_count": 64,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "fc505421",
+      "success_rate": 100.0,
+      "categories": [],
+      "schema_types": [],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": -86,
+        "organized_delta": -42,
+        "success_rate_delta": 29.3,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "a6b07a390a11312d8306bcd3589c20572c146747338809c1d0ad5af53edd40bb",
+      "started_at": "2025-12-09 10:42:37.000000",
+      "completed_at": "2025-12-09 10:42:37.000000",
+      "dry_run": 0,
+      "source_directories": [],
+      "base_path": null,
+      "file_limit": null,
+      "total_files": 30133,
+      "organized_count": 29703,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "a6b07a39",
+      "success_rate": 98.6,
+      "categories": [
+        {
+          "name": "sprites",
+          "color": null,
+          "icon": null,
+          "count": 14038,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "textures",
+          "color": null,
+          "icon": null,
+          "count": 5720,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "photos_social",
+          "color": null,
+          "icon": null,
+          "count": 445,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "photos_other",
+          "color": null,
+          "icon": null,
+          "count": 222,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "photos_screenshots",
+          "color": null,
+          "icon": null,
+          "count": 176,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "audio",
+          "color": null,
+          "icon": null,
+          "count": 152,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "music",
+          "color": null,
+          "icon": null,
+          "count": 66,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "videos_recordings",
+          "color": null,
+          "icon": null,
+          "count": 13,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "corporate",
+          "color": null,
+          "icon": null,
+          "count": 3,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "clients",
+          "color": null,
+          "icon": null,
+          "count": 3,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 22063
+        },
+        {
+          "schema_type": "DigitalDocument",
+          "count": 423
+        }
+      ],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": 30069,
+        "organized_delta": 29639,
+        "success_rate_delta": -1.4,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    }
+  ],
+  "session_count": 15
+}
