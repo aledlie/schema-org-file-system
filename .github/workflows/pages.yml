@@ -26,11 +26,13 @@ jobs:
 
       - name: Prepare site content
         run: |
-          mkdir -p _site
-          cp results/ml_data_explorer.html _site/index.html
-          cp CNAME _site/CNAME
-          # Copy any additional assets if needed
-          cp -r results/*.json _site/ 2>/dev/null || true
+          # Use existing _site directory (already contains all dashboard files)
+          # Ensure CNAME is present for custom domain
+          cp CNAME _site/CNAME 2>/dev/null || true
+          # Copy ml_data_explorer.html as index if not already set
+          if [ ! -f _site/index.html ]; then
+            cp _site/ml_data_explorer.html _site/index.html
+          fi
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
