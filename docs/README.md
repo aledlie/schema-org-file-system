@@ -6,6 +6,7 @@ A comprehensive, production-ready Python system for generating, validating, and 
 
 - [Full Documentation](docs/README.md)
 - [Best Practices](docs/BEST_PRACTICES.md)
+- [Dependencies Guide](docs/DEPENDENCIES.md)
 - [Examples](examples/example_usage.py)
 - [Tests](tests/)
 
@@ -37,8 +38,19 @@ This system enables you to add rich, semantic metadata to any file type using Sc
 # Clone or download the system
 cd schema-org-file-system
 
-# No installation required - uses Python standard library
+# Create virtual environment and install dependencies
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+
+# Install system dependencies (macOS)
+brew install tesseract poppler
+
+# Verify installation
+python3 file_organizer_content_based.py --check-deps
 ```
+
+See [DEPENDENCIES.md](DEPENDENCIES.md) for detailed installation guide.
 
 ### Basic Usage
 

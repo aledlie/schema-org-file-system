@@ -115,6 +115,42 @@ except ImportError:
         def __exit__(self, *args):
             return False
 
+# Error tracking imports (optional - gracefully degrade if not available)
+try:
+    from error_tracking import (
+        init_sentry,
+        capture_error,
+        track_operation,
+        track_error,
+        FileProcessingErrorTracker,
+        ErrorLevel
+    )
+    ERROR_TRACKING_AVAILABLE = True
+except ImportError:
+    ERROR_TRACKING_AVAILABLE = False
+    # Stub implementations
+    def init_sentry(*args, **kwargs): return False
+    def capture_error(*args, **kwargs): pass
+    def track_operation(*args, **kwargs):
+        from contextlib import nullcontext
+        return nullcontext()
+    def track_error(*args, **kwargs):
+        def decorator(func): return func
+        return decorator
+    class FileProcessingErrorTracker:
+        def __init__(self): pass
+        def track_file(self, *args, **kwargs):
+            from contextlib import nullcontext
+            return nullcontext()
+        def print_summary(self): pass
+        def get_stats(self): return {}
+    class ErrorLevel:
+        FATAL = 'fatal'
+        ERROR = 'error'
+        WARNING = 'warning'
+        INFO = 'info'
+        DEBUG = 'debug'
+
 
 class ContentClassifier:
     """Classifies document content into categories."""
@@ -2171,8 +2207,49 @@ def main():
         default='results/cost_report.json',
         help='Path to save cost/ROI report (default: results/cost_report.json, use --no-cost-tracking to disable)'
     )
+    parser.add_argument(
+        '--check-deps',
+        action='store_true',
+        help='Run system health check and show feature availability'
+    )
+    parser.add_argument(
+        '--skip-health-check',
+        action='store_true',
+        help='Skip startup health check'
+    )
+    parser.add_argument(
+        '--sentry-dsn',
+        help='Sentry DSN for error tracking (or set SENTRY_DSN env var)'
+    )
+    parser.add_argument(
+        '--no-sentry',
+        action='store_true',
+        help='Disable Sentry error tracking'
+    )
 
     args = parser.parse_args()
+
+    # Initialize Sentry error tracking (before any other operations)
+    if not args.no_sentry and ERROR_TRACKING_AVAILABLE:
+        if args.sentry_dsn:
+            import os
+            os.environ['SENTRY_DSN'] = args.sentry_dsn
+        sentry_enabled = init_sentry()
+        if sentry_enabled:
+            print("✓ Sentry error tracking enabled")
+    else:
+        sentry_enabled = False
+
+    # Run system health check
+    if args.check_deps:
+        from health_check import check_system
+        check_system(verbose=True)
+        return
+
+    if not args.skip_health_check:
+        from health_check import SystemHealthChecker
+        checker = SystemHealthChecker().run_all_checks()
+        checker.print_status()
 
     # Create organizer
     organizer = ContentBasedFileOrganizer(

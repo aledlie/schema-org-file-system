@@ -5,7 +5,7 @@ A comprehensive, production-ready system for generating, validating, and managin
 Schema.org structured data for various file types.
 """
 
-__version__ = "1.0.0"
+__version__ = "1.2.0"
 __author__ = "File Organization System"
 
 from .base import SchemaOrgBase, SchemaContext
@@ -21,6 +21,21 @@ from .generators import (
 from .validator import SchemaValidator, ValidationReport
 from .integration import SchemaIntegration, OutputFormat
 from .enrichment import MetadataEnricher
+from .health_check import (
+    SystemHealthChecker,
+    check_system,
+    get_health_checker,
+    require_feature
+)
+from .error_tracking import (
+    init_sentry,
+    capture_error,
+    capture_warning,
+    track_operation,
+    track_error,
+    FileProcessingErrorTracker,
+    ErrorLevel
+)
 
 __all__ = [
     'SchemaOrgBase',
@@ -36,5 +51,16 @@ __all__ = [
     'ValidationReport',
     'SchemaIntegration',
     'OutputFormat',
-    'MetadataEnricher'
+    'MetadataEnricher',
+    'SystemHealthChecker',
+    'check_system',
+    'get_health_checker',
+    'require_feature',
+    'init_sentry',
+    'capture_error',
+    'capture_warning',
+    'track_operation',
+    'track_error',
+    'FileProcessingErrorTracker',
+    'ErrorLevel'
 ]
