@@ -232,7 +232,7 @@ class FeedbackIntegration:
 def integrate_with_organizer():
     """Print integration code for the file organizer."""
     print("""
-# Add to file_organizer_content_based.py:
+# Add to scripts/file_organizer_content_based.py:
 
 from feedback_integration import FeedbackIntegration
 
@@ -280,6 +280,6 @@ if __name__ == "__main__":
                 print(f"  {rule['pattern']} -> {rule['category']} ({rule['confidence']:.0%})")
 
         print("\nUsage:")
-        print("  python feedback_integration.py --integrate  # Show integration code")
-        print("  python correction_feedback.py add ...       # Add a correction")
-        print("  python correction_feedback.py stats         # View statistics")
+        print("  python scripts/feedback_integration.py --integrate  # Show integration code")
+        print("  python scripts/correction_feedback.py add ...       # Add a correction")
+        print("  python scripts/correction_feedback.py stats         # View statistics")

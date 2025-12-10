@@ -27,4 +27,4 @@ if [ -z "$VIRTUAL_ENV" ]; then
 fi
 
 # Run the organizer with all passed arguments
-python3 "$PROJECT_DIR/file_organizer_content_based.py" "$@"
+python3 "$PROJECT_DIR/scripts/file_organizer_content_based.py" "$@"
