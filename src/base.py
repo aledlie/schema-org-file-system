@@ -10,6 +10,7 @@ from datetime import datetime
 from typing import Any, Dict, List, Optional, Union
 from enum import Enum
 import json
+import uuid
 
 
 class SchemaContext:
@@ -57,19 +58,53 @@ class SchemaOrgBase(ABC):
 
     Provides common functionality for creating, validating, and managing
     Schema.org structured data across different file types.
+
+    All generated Schema.org objects include a valid @id field for JSON-LD
+    compliance. The @id can be:
+    - Auto-generated UUID v4 (default)
+    - Deterministic UUID v5 from a natural key
+    - Custom IRI (HTTPS URL or URN)
     """
 
-    def __init__(self, schema_type: str):
+    def __init__(self, schema_type: str, entity_id: Optional[str] = None):
         """
         Initialize the Schema.org generator.
 
         Args:
             schema_type: The Schema.org type (e.g., 'DigitalDocument', 'ImageObject')
+            entity_id: Optional entity ID. If not provided, generates UUID v4.
+                      Can be a UUID string, URN, or HTTPS URL.
+
+        Examples:
+            # Auto-generated ID
+            doc = DocumentGenerator()
+
+            # Custom UUID
+            doc = DocumentGenerator(entity_id='550e8400-e29b-41d4-a716-446655440000')
+
+            # URN format
+            doc = DocumentGenerator(entity_id='urn:sha256:abc123...')
+
+            # HTTPS URL
+            doc = DocumentGenerator(entity_id='https://example.com/docs/123')
         """
         self.schema_type = schema_type
+
+        # Generate or normalize the @id
+        if entity_id is None:
+            # Generate random UUID v4
+            normalized_id = f"urn:uuid:{uuid.uuid4()}"
+        elif entity_id.startswith(('http://', 'https://', 'urn:')):
+            # Already a valid IRI
+            normalized_id = entity_id
+        else:
+            # Assume it's a UUID string, wrap in URN
+            normalized_id = f"urn:uuid:{entity_id}"
+
         self.data: Dict[str, Any] = {
             "@context": SchemaContext.SCHEMA_ORG,
-            "@type": schema_type
+            "@type": schema_type,
+            "@id": normalized_id
         }
         self._required_properties: List[str] = []
         self._recommended_properties: List[str] = []
@@ -179,10 +214,36 @@ class SchemaOrgBase(ABC):
         self.data[property_name] = nested_schema.to_dict()
         return self
 
+    def set_id(self, entity_id: str) -> 'SchemaOrgBase':
+        """
+        Set or update the @id for this schema.
+
+        Args:
+            entity_id: Entity ID (UUID string, URN, or HTTPS URL)
+
+        Returns:
+            Self for method chaining
+        """
+        if entity_id.startswith(('http://', 'https://', 'urn:')):
+            self.data["@id"] = entity_id
+        else:
+            self.data["@id"] = f"urn:uuid:{entity_id}"
+        return self
+
+    def get_id(self) -> str:
+        """
+        Get the @id for this schema.
+
+        Returns:
+            The @id IRI string
+        """
+        return self.data.get("@id", "")
+
     def add_person(self, property_name: str, name: str,
                    email: Optional[str] = None,
                    url: Optional[str] = None,
-                   affiliation: Optional[str] = None) -> 'SchemaOrgBase':
+                   affiliation: Optional[str] = None,
+                   person_id: Optional[str] = None) -> 'SchemaOrgBase':
         """
         Add a Person schema.
 
@@ -192,12 +253,24 @@ class SchemaOrgBase(ABC):
             email: Person's email
             url: Person's URL/homepage
             affiliation: Organization affiliation
+            person_id: Optional @id for the person (for linking)
 
         Returns:
             Self for method chaining
         """
+        # Generate deterministic @id from name if not provided
+        if person_id is None:
+            person_uuid = uuid.uuid5(
+                uuid.UUID('d1e2a3b4-5678-9abc-def0-123456789012'),  # Person namespace
+                name.lower().strip()
+            )
+            person_id = f"urn:uuid:{person_uuid}"
+        elif not person_id.startswith(('http://', 'https://', 'urn:')):
+            person_id = f"urn:uuid:{person_id}"
+
         person = {
             "@type": "Person",
+            "@id": person_id,
             "name": name
         }
         if email:
@@ -205,8 +278,14 @@ class SchemaOrgBase(ABC):
         if url:
             person["url"] = url
         if affiliation:
+            # Generate deterministic @id for affiliation org
+            org_uuid = uuid.uuid5(
+                uuid.UUID('c0e1a2b3-4567-89ab-cdef-012345678901'),  # Company namespace
+                affiliation.lower().strip()
+            )
             person["affiliation"] = {
                 "@type": "Organization",
+                "@id": f"urn:uuid:{org_uuid}",
                 "name": affiliation
             }
         self.data[property_name] = person
@@ -214,7 +293,8 @@ class SchemaOrgBase(ABC):
 
     def add_organization(self, property_name: str, name: str,
                         url: Optional[str] = None,
-                        logo: Optional[str] = None) -> 'SchemaOrgBase':
+                        logo: Optional[str] = None,
+                        org_id: Optional[str] = None) -> 'SchemaOrgBase':
         """
         Add an Organization schema.
 
@@ -223,19 +303,36 @@ class SchemaOrgBase(ABC):
             name: Organization name
             url: Organization URL
             logo: Organization logo URL
+            org_id: Optional @id for the organization (for linking)
 
         Returns:
             Self for method chaining
         """
+        # Generate deterministic @id from name if not provided
+        if org_id is None:
+            org_uuid = uuid.uuid5(
+                uuid.UUID('c0e1a2b3-4567-89ab-cdef-012345678901'),  # Company namespace
+                name.lower().strip()
+            )
+            org_id = f"urn:uuid:{org_uuid}"
+        elif not org_id.startswith(('http://', 'https://', 'urn:')):
+            org_id = f"urn:uuid:{org_id}"
+
         org = {
             "@type": "Organization",
+            "@id": org_id,
             "name": name
         }
         if url:
             org["url"] = url
         if logo:
+            logo_uuid = uuid.uuid5(
+                uuid.UUID('f4e8a9c0-1234-5678-9abc-def012345678'),  # File namespace
+                logo.lower().strip()
+            )
             org["logo"] = {
                 "@type": "ImageObject",
+                "@id": f"urn:uuid:{logo_uuid}",
                 "url": logo
             }
         self.data[property_name] = org
@@ -243,7 +340,8 @@ class SchemaOrgBase(ABC):
 
     def add_place(self, property_name: str, name: str,
                   address: Optional[str] = None,
-                  geo: Optional[Dict[str, float]] = None) -> 'SchemaOrgBase':
+                  geo: Optional[Dict[str, float]] = None,
+                  place_id: Optional[str] = None) -> 'SchemaOrgBase':
         """
         Add a Place schema.
 
@@ -252,12 +350,24 @@ class SchemaOrgBase(ABC):
             name: Place name
             address: Address string
             geo: Geographic coordinates {"latitude": float, "longitude": float}
+            place_id: Optional @id for the place (for linking)
 
         Returns:
             Self for method chaining
         """
+        # Generate deterministic @id from name if not provided
+        if place_id is None:
+            place_uuid = uuid.uuid5(
+                uuid.UUID('e2e3a4b5-6789-abcd-ef01-234567890123'),  # Location namespace
+                name.lower().strip()
+            )
+            place_id = f"urn:uuid:{place_uuid}"
+        elif not place_id.startswith(('http://', 'https://', 'urn:')):
+            place_id = f"urn:uuid:{place_id}"
+
         place = {
             "@type": "Place",
+            "@id": place_id,
             "name": name
         }
         if address:
