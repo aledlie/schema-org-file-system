@@ -11,10 +11,10 @@ source venv/bin/activate
 ./scripts/run_with_sentry.sh --dry-run --limit 100 --sources ~/Downloads
 
 # Direct usage
-python3 file_organizer_content_based.py --base-path ~/Documents --sources ~/Documents/Media --limit 1000
+python3 scripts/file_organizer_content_based.py --base-path ~/Documents --sources ~/Documents/Media --limit 1000
 
 # Check dependencies
-python3 file_organizer_content_based.py --check-deps
+python3 scripts/file_organizer_content_based.py --check-deps
 ```
 
 ## Status
@@ -29,8 +29,13 @@ python3 file_organizer_content_based.py --check-deps
 ## Project Structure
 
 ```
-├── file_organizer_content_based.py  # Main AI organizer
-├── scripts/run_with_sentry.sh       # Run with error tracking
+├── scripts/
+│   ├── file_organizer_content_based.py  # Main AI organizer
+│   ├── run_with_sentry.sh               # Run with error tracking
+│   ├── data_preprocessing.py            # ML training data prep
+│   ├── correction_feedback.py           # User correction system
+│   ├── evaluate_model.py                # Model evaluation
+│   └── ...                              # Other utility scripts
 ├── src/
 │   ├── health_check.py              # Dependency validation
 │   ├── error_tracking.py            # Sentry integration

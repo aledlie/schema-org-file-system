@@ -213,9 +213,9 @@ class FeatureTracker:
         }
 
 
-# Example integration showing how to modify file_organizer_content_based.py
+# Example integration showing how to modify scripts/file_organizer_content_based.py
 INTEGRATION_EXAMPLE = '''
-# Add to file_organizer_content_based.py:
+# Add to scripts/file_organizer_content_based.py:
 
 # At top of file, add import:
 from src.cost_integration import track_feature, print_cost_summary, save_cost_report

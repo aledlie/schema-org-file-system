@@ -47,7 +47,7 @@ pip install -r requirements.txt
 brew install tesseract poppler
 
 # Verify installation
-python3 file_organizer_content_based.py --check-deps
+python3 scripts/file_organizer_content_based.py --check-deps
 ```
 
 See [DEPENDENCIES.md](DEPENDENCIES.md) for detailed installation guide.

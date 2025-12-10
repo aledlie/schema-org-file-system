@@ -97,7 +97,7 @@ Run the built-in health check to verify all dependencies:
 source venv/bin/activate
 
 # Check all dependencies
-python3 file_organizer_content_based.py --check-deps
+python3 scripts/file_organizer_content_based.py --check-deps
 
 # Or run standalone
 python3 src/health_check.py -v

@@ -41,7 +41,7 @@ Debugged and fixed critical dashboard UI errors, optimized metadata viewer perfo
 - `_site/metadata.json` - New external data file
 - `_site/index.html` - Added resource usage panel
 - `results/metadata_viewer.html` - Synced copy
-- `copy_to_site.sh` - Updated build script
+- `scripts/copy_to_site.sh` - Updated build script
 - `tests/test_metadata_viewer_errors.js` - New test suite
 
 ### Performance Metrics
@@ -108,7 +108,7 @@ Enhanced the file organization system with game asset categorization, tested on 
 
 #### 1. GameAssets Category Implementation
 
-**File:** `file_organizer_content_based.py`
+**File:** `scripts/file_organizer_content_based.py`
 
 Added dedicated GameAssets category with 4 subdirectories:
 - **Audio/** - Game sound effects (76 files)
@@ -123,7 +123,7 @@ Added dedicated GameAssets category with 4 subdirectories:
 - Music: 40+ keywords (battle, dungeon, castle, chaos, triumph, etc.)
 - Sprites: 100+ keywords (frame, sprite, leg, arm, head, torso, wing, icon, etc.)
 
-**Code location:** `file_organizer_content_based.py:945-1001`
+**Code location:** `scripts/file_organizer_content_based.py:945-1001`
 
 #### 2. File Organization Testing
 
@@ -149,7 +149,7 @@ Added dedicated GameAssets category with 4 subdirectories:
 
 #### 3. Image Metadata Renamer (New Script)
 
-**File:** `image_renamer_metadata.py`
+**File:** `scripts/image_renamer_metadata.py`
 
 Created standalone script to rename generic camera filenames to human-readable names.
 
@@ -177,13 +177,13 @@ IMG_2114.jpg → 20240713_Rio_de_Janeiro_195521.jpg
 **Usage:**
 ```bash
 # Dry run (safe preview)
-python3 image_renamer_metadata.py --dry-run --source ~/Documents/Media
+python3 scripts/image_renamer_metadata.py --dry-run --source ~/Documents/Media
 
 # Actual renaming
-python3 image_renamer_metadata.py --source ~/Documents/Media
+python3 scripts/image_renamer_metadata.py --source ~/Documents/Media
 
 # Recursive
-python3 image_renamer_metadata.py --dry-run --source ~/Documents --recursive
+python3 scripts/image_renamer_metadata.py --dry-run --source ~/Documents --recursive
 ```
 
 ### Key Implementation Details
@@ -240,9 +240,9 @@ python3 image_renamer_metadata.py --dry-run --source ~/Documents --recursive
 ### File Locations
 
 **Main scripts:**
-- `file_organizer_content_based.py` - Content-based organizer with AI vision
-- `file_organizer_by_type.py` - Simple type-based organizer
-- `image_renamer_metadata.py` - Image metadata renamer (NEW)
+- `scripts/file_organizer_content_based.py` - Content-based organizer with AI vision
+- `scripts/file_organizer_by_type.py` - Simple type-based organizer
+- `scripts/image_renamer_metadata.py` - Image metadata renamer (NEW)
 
 **Base classes:**
 - `src/base.py` - Schema.org base classes
@@ -256,14 +256,14 @@ python3 image_renamer_metadata.py --dry-run --source ~/Documents --recursive
 **File organization:**
 ```bash
 source venv/bin/activate
-python3 file_organizer_content_based.py --base-path ~/Documents --sources ~/Documents/Media --limit 100
-python3 file_organizer_content_based.py --base-path ~/Documents --sources ~/Documents/Media --limit 500
-python3 file_organizer_content_based.py --base-path ~/Documents --sources ~/Documents/Media --limit 1000
+python3 scripts/file_organizer_content_based.py --base-path ~/Documents --sources ~/Documents/Media --limit 100
+python3 scripts/file_organizer_content_based.py --base-path ~/Documents --sources ~/Documents/Media --limit 500
+python3 scripts/file_organizer_content_based.py --base-path ~/Documents --sources ~/Documents/Media --limit 1000
 ```
 
 **Image renaming:**
 ```bash
-python3 image_renamer_metadata.py --dry-run --source ~/Documents/Media/Photos/Photos
+python3 scripts/image_renamer_metadata.py --dry-run --source ~/Documents/Media/Photos/Photos
 ```
 
 ### Next Steps
@@ -304,8 +304,8 @@ brew install tesseract  # OCR engine
 ### Documentation Updated
 
 - Created: `docs/SESSION_NOTES.md` (this file)
-- Modified: `file_organizer_content_based.py` (GameAssets category)
-- Created: `image_renamer_metadata.py` (new script)
+- Modified: `scripts/file_organizer_content_based.py` (GameAssets category)
+- Created: `scripts/image_renamer_metadata.py` (new script)
 
 ---
 
