@@ -30,6 +30,20 @@ from sqlalchemy.ext.hybrid import hybrid_property
 import enum
 import hashlib
 import json
+import uuid
+
+
+# Namespace UUIDs for deterministic ID generation (UUID v5)
+# These match the namespaces in src/uri_utils.py for consistency
+NAMESPACES = {
+    'file': uuid.UUID('f4e8a9c0-1234-5678-9abc-def012345678'),
+    'category': uuid.UUID('c4e8a9c0-2345-6789-abcd-ef0123456789'),
+    'company': uuid.UUID('c0e1a2b3-4567-89ab-cdef-012345678901'),
+    'person': uuid.UUID('d1e2a3b4-5678-9abc-def0-123456789012'),
+    'location': uuid.UUID('e2e3a4b5-6789-abcd-ef01-234567890123'),
+    'session': uuid.UUID('f3e4a5b6-789a-bcde-f012-345678901234'),
+    'merge_event': uuid.UUID('a1b2c3d4-89ab-cdef-0123-456789abcdef'),
+}
 
 
 Base = declarative_base()
@@ -101,11 +115,22 @@ class File(Base):
     Central node representing a file in the system.
 
     The file ID is a SHA-256 hash of the original path for deduplication.
+
+    ID Strategy:
+    - `id`: SHA-256 hash of original path (internal, deterministic)
+    - `canonical_id`: Public IRI for JSON-LD @id (urn:sha256:{hash})
+    - `source_ids`: Historical IDs from imports/renames (for deduplication)
     """
     __tablename__ = 'files'
 
     # Primary key is hash of original path
     id = Column(String(64), primary_key=True)
+
+    # Public canonical ID for JSON-LD @id (urn:sha256:{hash} format)
+    canonical_id = Column(String(100), unique=True, index=True)
+
+    # Historical IDs for deduplication (previous paths, external IDs)
+    source_ids = Column(JSON, default=list)
 
     # File identification
     filename = Column(String(255), nullable=False, index=True)
@@ -184,6 +209,28 @@ class File(Base):
         """Generate a deterministic ID from the file path."""
         return hashlib.sha256(path.encode()).hexdigest()
 
+    @staticmethod
+    def generate_canonical_id(path: str) -> str:
+        """
+        Generate canonical IRI for JSON-LD @id from file path.
+
+        Uses SHA-256 hash of the path in URN format.
+
+        Args:
+            path: File path (absolute recommended)
+
+        Returns:
+            URN string (urn:sha256:{hash})
+        """
+        file_hash = hashlib.sha256(path.encode()).hexdigest()
+        return f"urn:sha256:{file_hash}"
+
+    def get_iri(self) -> str:
+        """Get the JSON-LD @id IRI for this file."""
+        if self.canonical_id:
+            return self.canonical_id
+        return f"urn:sha256:{self.id}"
+
     @hybrid_property
     def is_organized(self) -> bool:
         return self.status == FileStatus.ORGANIZED
@@ -192,6 +239,8 @@ class File(Base):
         """Convert to dictionary for JSON serialization."""
         return {
             'id': self.id,
+            '@id': self.get_iri(),
+            'canonical_id': self.canonical_id,
             'filename': self.filename,
             'original_path': self.original_path,
             'current_path': self.current_path,
@@ -212,10 +261,25 @@ class Category(Base):
     Category node for file classification.
 
     Supports hierarchical categories (e.g., Legal/Contracts, Media/Photos).
+
+    ID Strategy:
+    - `id`: Auto-increment integer (internal, for DB performance)
+    - `canonical_id`: Deterministic UUID v5 from name (public, for JSON-LD @id)
+    - `source_ids`: Historical IDs from merges/imports (for deduplication)
     """
     __tablename__ = 'categories'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # Canonical UUID for JSON-LD @id (deterministic from name)
+    canonical_id = Column(String(36), unique=True, index=True)
+
+    # Historical IDs for merge tracking and deduplication
+    source_ids = Column(JSON, default=list)
+
+    # Merge tracking: if this category was merged into another
+    merged_into_id = Column(Integer, ForeignKey('categories.id'))
+
     name = Column(String(100), nullable=False, unique=True, index=True)
     parent_id = Column(Integer, ForeignKey('categories.id'))
     description = Column(Text)
@@ -235,11 +299,36 @@ class Category(Base):
 
     # Relationships
     files = relationship('File', secondary=file_categories, back_populates='categories')
-    parent = relationship('Category', remote_side=[id], backref='subcategories')
+    parent = relationship('Category', remote_side=[id], backref='subcategories',
+                         foreign_keys=[parent_id])
+    merged_into = relationship('Category', remote_side=[id],
+                              foreign_keys=[merged_into_id])
+
+    @staticmethod
+    def generate_canonical_id(name: str) -> str:
+        """
+        Generate deterministic UUID v5 from category name.
+
+        Same name always produces the same canonical ID, enabling
+        deduplication across systems.
+
+        Args:
+            name: Category name
+
+        Returns:
+            UUID string (without urn:uuid: prefix)
+        """
+        return str(uuid.uuid5(NAMESPACES['category'], name.lower().strip()))
+
+    def get_iri(self) -> str:
+        """Get the JSON-LD @id IRI for this category."""
+        return f"urn:uuid:{self.canonical_id}"
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             'id': self.id,
+            '@id': self.get_iri() if self.canonical_id else None,
+            'canonical_id': self.canonical_id,
             'name': self.name,
             'full_path': self.full_path,
             'level': self.level,
@@ -252,10 +341,25 @@ class Company(Base):
     Company node for organization affiliation.
 
     Represents companies detected in documents.
+
+    ID Strategy:
+    - `id`: Auto-increment integer (internal, for DB performance)
+    - `canonical_id`: Deterministic UUID v5 from normalized name (public, for JSON-LD @id)
+    - `source_ids`: Historical IDs from merges/imports (for deduplication)
     """
     __tablename__ = 'companies'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # Canonical UUID for JSON-LD @id (deterministic from normalized name)
+    canonical_id = Column(String(36), unique=True, index=True)
+
+    # Historical IDs for merge tracking and deduplication
+    source_ids = Column(JSON, default=list)
+
+    # Merge tracking: if this company was merged into another
+    merged_into_id = Column(Integer, ForeignKey('companies.id'))
+
     name = Column(String(255), nullable=False, index=True)
     normalized_name = Column(String(255), unique=True, index=True)  # Lowercase, trimmed
     domain = Column(String(255))  # Company website domain
@@ -268,6 +372,7 @@ class Company(Base):
 
     # Relationships
     files = relationship('File', secondary=file_companies, back_populates='companies')
+    merged_into = relationship('Company', remote_side=[id])
 
     __table_args__ = (
         Index('ix_companies_normalized', 'normalized_name'),
@@ -278,9 +383,28 @@ class Company(Base):
         """Normalize company name for deduplication."""
         return name.lower().strip()
 
+    @staticmethod
+    def generate_canonical_id(name: str) -> str:
+        """
+        Generate deterministic UUID v5 from company name.
+
+        Args:
+            name: Company name
+
+        Returns:
+            UUID string (without urn:uuid: prefix)
+        """
+        return str(uuid.uuid5(NAMESPACES['company'], name.lower().strip()))
+
+    def get_iri(self) -> str:
+        """Get the JSON-LD @id IRI for this company."""
+        return f"urn:uuid:{self.canonical_id}"
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             'id': self.id,
+            '@id': self.get_iri() if self.canonical_id else None,
+            'canonical_id': self.canonical_id,
             'name': self.name,
             'domain': self.domain,
             'file_count': self.file_count,
@@ -292,10 +416,25 @@ class Person(Base):
     Person node for people detected in files.
 
     Could be authors, subjects, or mentioned individuals.
+
+    ID Strategy:
+    - `id`: Auto-increment integer (internal, for DB performance)
+    - `canonical_id`: Deterministic UUID v5 from normalized name (public, for JSON-LD @id)
+    - `source_ids`: Historical IDs from merges/imports (for deduplication)
     """
     __tablename__ = 'people'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # Canonical UUID for JSON-LD @id (deterministic from normalized name)
+    canonical_id = Column(String(36), unique=True, index=True)
+
+    # Historical IDs for merge tracking and deduplication
+    source_ids = Column(JSON, default=list)
+
+    # Merge tracking: if this person was merged into another
+    merged_into_id = Column(Integer, ForeignKey('people.id'))
+
     name = Column(String(255), nullable=False, index=True)
     normalized_name = Column(String(255), unique=True, index=True)
     email = Column(String(255))
@@ -308,15 +447,35 @@ class Person(Base):
 
     # Relationships
     files = relationship('File', secondary=file_people, back_populates='people')
+    merged_into = relationship('Person', remote_side=[id])
 
     @staticmethod
     def normalize_name(name: str) -> str:
         """Normalize person name for deduplication."""
         return name.lower().strip()
 
+    @staticmethod
+    def generate_canonical_id(name: str) -> str:
+        """
+        Generate deterministic UUID v5 from person name.
+
+        Args:
+            name: Person name
+
+        Returns:
+            UUID string (without urn:uuid: prefix)
+        """
+        return str(uuid.uuid5(NAMESPACES['person'], name.lower().strip()))
+
+    def get_iri(self) -> str:
+        """Get the JSON-LD @id IRI for this person."""
+        return f"urn:uuid:{self.canonical_id}"
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             'id': self.id,
+            '@id': self.get_iri() if self.canonical_id else None,
+            'canonical_id': self.canonical_id,
             'name': self.name,
             'email': self.email,
             'file_count': self.file_count,
@@ -328,10 +487,25 @@ class Location(Base):
     Location node for geographic data.
 
     Extracted from EXIF GPS data or document content.
+
+    ID Strategy:
+    - `id`: Auto-increment integer (internal, for DB performance)
+    - `canonical_id`: Deterministic UUID v5 from name (public, for JSON-LD @id)
+    - `source_ids`: Historical IDs from merges/imports (for deduplication)
     """
     __tablename__ = 'locations'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
+
+    # Canonical UUID for JSON-LD @id (deterministic from name)
+    canonical_id = Column(String(36), unique=True, index=True)
+
+    # Historical IDs for merge tracking and deduplication
+    source_ids = Column(JSON, default=list)
+
+    # Merge tracking: if this location was merged into another
+    merged_into_id = Column(Integer, ForeignKey('locations.id'))
+
     name = Column(String(255), nullable=False, index=True)
     city = Column(String(100))
     state = Column(String(100))
@@ -350,15 +524,35 @@ class Location(Base):
 
     # Relationships
     files = relationship('File', secondary=file_locations, back_populates='locations')
+    merged_into = relationship('Location', remote_side=[id])
 
     __table_args__ = (
         Index('ix_locations_geo', 'latitude', 'longitude'),
         Index('ix_locations_city_state', 'city', 'state'),
     )
 
+    @staticmethod
+    def generate_canonical_id(name: str) -> str:
+        """
+        Generate deterministic UUID v5 from location name.
+
+        Args:
+            name: Location name
+
+        Returns:
+            UUID string (without urn:uuid: prefix)
+        """
+        return str(uuid.uuid5(NAMESPACES['location'], name.lower().strip()))
+
+    def get_iri(self) -> str:
+        """Get the JSON-LD @id IRI for this location."""
+        return f"urn:uuid:{self.canonical_id}"
+
     def to_dict(self) -> Dict[str, Any]:
         return {
             'id': self.id,
+            '@id': self.get_iri() if self.canonical_id else None,
+            'canonical_id': self.canonical_id,
             'name': self.name,
             'city': self.city,
             'state': self.state,
@@ -532,6 +726,108 @@ class KeyValueStore(Base):
         Index('ix_kv_namespace_key', 'namespace', 'key'),
         Index('ix_kv_expires', 'expires_at'),
     )
+
+
+class MergeEventType(enum.Enum):
+    """Types of merge events."""
+    CATEGORY = "category"
+    COMPANY = "company"
+    PERSON = "person"
+    LOCATION = "location"
+    FILE = "file"
+
+
+class MergeEvent(Base):
+    """
+    Track entity merges with owl:sameAs semantics.
+
+    When entities are deduplicated or merged, this table records:
+    - Which entities were merged
+    - The canonical (surviving) entity
+    - The reasoning and confidence
+    - JSON-LD representation with owl:sameAs
+
+    This enables:
+    - Audit trail of all merges
+    - Rollback capability
+    - Linked Data compatibility via owl:sameAs
+    - Historical ID preservation
+    """
+    __tablename__ = 'merge_events'
+
+    id = Column(String(36), primary_key=True, default=lambda: str(uuid.uuid4()))
+
+    # Target entity (canonical/surviving)
+    target_entity_type = Column(SQLEnum(MergeEventType), nullable=False, index=True)
+    target_entity_id = Column(Integer, nullable=False)  # Internal DB ID
+    target_canonical_id = Column(String(36))  # UUID for JSON-LD @id
+
+    # Source entities being merged (list of internal IDs)
+    source_entity_ids = Column(JSON, nullable=False)
+
+    # Source canonical IDs (for JSON-LD owl:sameAs)
+    source_canonical_ids = Column(JSON)
+
+    # Metadata
+    merge_reason = Column(Text)  # Why these were merged
+    confidence = Column(Float, default=1.0)  # 0.0-1.0
+    performed_by = Column(String(100))  # user_id or 'system'
+    performed_at = Column(DateTime, default=datetime.utcnow, index=True)
+
+    # JSON-LD representation (for export/API)
+    jsonld = Column(JSON)
+
+    # Rollback support
+    is_rolled_back = Column(Boolean, default=False)
+    rolled_back_at = Column(DateTime)
+    rolled_back_by = Column(String(100))
+
+    __table_args__ = (
+        Index('ix_merge_entity_type', 'target_entity_type'),
+        Index('ix_merge_performed_at', 'performed_at'),
+    )
+
+    def generate_jsonld(self) -> dict:
+        """
+        Generate JSON-LD with owl:sameAs for this merge event.
+
+        Returns:
+            JSON-LD dict representing the merge
+        """
+        target_iri = f"urn:uuid:{self.target_canonical_id}" if self.target_canonical_id else None
+        source_iris = [f"urn:uuid:{cid}" for cid in (self.source_canonical_ids or [])]
+
+        return {
+            "@context": {
+                "@vocab": "https://schema.org/",
+                "owl": "http://www.w3.org/2002/07/owl#"
+            },
+            "@type": "MergeAction",
+            "@id": f"urn:uuid:{self.id}",
+            "targetEntity": {
+                "@id": target_iri,
+                "owl:sameAs": source_iris if len(source_iris) > 1 else source_iris[0] if source_iris else None
+            },
+            "description": self.merge_reason,
+            "confidence": self.confidence,
+            "agent": self.performed_by,
+            "startTime": self.performed_at.isoformat() if self.performed_at else None
+        }
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            'id': self.id,
+            'target_entity_type': self.target_entity_type.value if self.target_entity_type else None,
+            'target_entity_id': self.target_entity_id,
+            'target_canonical_id': self.target_canonical_id,
+            'source_entity_ids': self.source_entity_ids,
+            'source_canonical_ids': self.source_canonical_ids,
+            'merge_reason': self.merge_reason,
+            'confidence': self.confidence,
+            'performed_by': self.performed_by,
+            'performed_at': self.performed_at.isoformat() if self.performed_at else None,
+            'is_rolled_back': self.is_rolled_back,
+        }
 
 
 def init_db(db_path: str = 'file_organization.db') -> Session:
