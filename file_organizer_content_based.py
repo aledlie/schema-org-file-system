@@ -2231,9 +2231,10 @@ def main():
 
     # Initialize Sentry error tracking (before any other operations)
     if not args.no_sentry and ERROR_TRACKING_AVAILABLE:
-        if args.sentry_dsn:
-            import os
-            os.environ['SENTRY_DSN'] = args.sentry_dsn
+        # Priority: CLI arg > FILE_SYSTEM_SENTRY_DSN > SENTRY_DSN
+        sentry_dsn = args.sentry_dsn or os.environ.get('FILE_SYSTEM_SENTRY_DSN') or os.environ.get('SENTRY_DSN')
+        if sentry_dsn:
+            os.environ['SENTRY_DSN'] = sentry_dsn
         sentry_enabled = init_sentry()
         if sentry_enabled:
             print("✓ Sentry error tracking enabled")

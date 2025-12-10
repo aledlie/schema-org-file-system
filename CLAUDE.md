@@ -88,18 +88,63 @@ See [docs/DEPENDENCIES.md](docs/DEPENDENCIES.md) for detailed guide.
 **AI/ML:** torch, transformers, opencv-python
 **Docs:** python-docx, pypdf, openpyxl
 
-## Error Tracking (Sentry)
+## Error Tracking & Secrets Management
+
+### Sentry Integration
+
+Error tracking via [Sentry](https://sentry.io) with automatic capture of exceptions and performance metrics.
+
+**DSN Priority:**
+1. CLI argument: `--sentry-dsn "https://..."`
+2. Environment: `FILE_SYSTEM_SENTRY_DSN`
+3. Environment: `SENTRY_DSN`
 
 ```bash
-# Run with Sentry via Doppler
+# Recommended: Use helper script (auto-fetches from Doppler)
 ./scripts/run_with_sentry.sh --dry-run --limit 100
 
-# Or set DSN manually
-export SENTRY_DSN=$(doppler secrets get FILE_SYSTEM_SENTRY_DSN --project integrity-studio --config prd --plain)
+# Or export env var directly
+export FILE_SYSTEM_SENTRY_DSN="https://...@sentry.io/..."
 python3 file_organizer_content_based.py --dry-run
+
+# Disable Sentry
+python3 file_organizer_content_based.py --no-sentry --dry-run
 ```
 
-**Doppler:** `integrity-studio` project, key: `FILE_SYSTEM_SENTRY_DSN`
+**In Code:**
+```python
+from src.error_tracking import capture_error, track_operation
+
+try:
+    process_file(path)
+except Exception as e:
+    capture_error(e, context={'file_path': path})
+
+with track_operation('classify_image', file_path=path):
+    result = classifier.classify(image)
+```
+
+### Doppler Secrets
+
+Secrets stored in Doppler for secure credential management.
+
+| Project | Config | Key | Description |
+|---------|--------|-----|-------------|
+| `integrity-studio` | `prd` | `FILE_SYSTEM_SENTRY_DSN` | Sentry DSN for error tracking |
+
+```bash
+# Get secret
+doppler secrets get FILE_SYSTEM_SENTRY_DSN --project integrity-studio --config prd --plain
+
+# Set secret
+doppler secrets set FILE_SYSTEM_SENTRY_DSN="https://..." --project integrity-studio --config prd
+```
+
+### Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `scripts/run_with_sentry.sh` | Run organizer with Sentry via Doppler |
 
 ## Troubleshooting
 
