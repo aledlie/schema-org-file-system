@@ -1162,25 +1162,30 @@ class ContentBasedFileOrganizer:
                 'other': 'Creative/Other'
             },
             'property_management': 'Property_Management',
+            # Organization: root folder with entity-named subfolders
+            # Structure: Organization/{OrgName}/ for most types
+            # Exception: Organization/Clients/{OrgName}/ for clients (nested)
             'organization': {
-                'clients': 'Organization/Clients',
-                'vendors': 'Organization/Vendors',
-                'partners': 'Organization/Partners',
-                'employers': 'Organization/Employers',
-                'government': 'Organization/Government',
-                'healthcare': 'Organization/Healthcare',
-                'financial': 'Organization/Financial',
-                'educational': 'Organization/Educational',
-                'nonprofit': 'Organization/Nonprofit',
-                'other': 'Organization/Other'
+                'clients': 'Organization/Clients',  # Gets nested subfolders
+                'vendors': 'Organization',          # Root folder, entity name added dynamically
+                'partners': 'Organization',
+                'employers': 'Organization',
+                'government': 'Organization',
+                'healthcare': 'Organization',
+                'financial': 'Organization',
+                'educational': 'Organization',
+                'nonprofit': 'Organization',
+                'other': 'Organization'
             },
+            # Person: root folder with person-named subfolders
+            # Structure: Person/{PersonName}/ for all types
             'person': {
-                'contacts': 'Person/Contacts',
-                'employees': 'Person/Employees',
-                'clients': 'Person/Clients',
-                'family': 'Person/Family',
-                'references': 'Person/References',
-                'other': 'Person/Other'
+                'contacts': 'Person',               # Root folder, person name added dynamically
+                'employees': 'Person',
+                'clients': 'Person',
+                'family': 'Person',
+                'references': 'Person',
+                'other': 'Person'
             },
             'game_assets': {
                 'audio': 'GameAssets/Audio',
@@ -1292,12 +1297,16 @@ class ContentBasedFileOrganizer:
         # Regex patterns for game asset detection (numbered sprites, variants)
         import re
         self.game_sprite_patterns = [
+            re.compile(r'^\d+_\d+$'),  # 42_8, 51_3, 16_3 (sprite sheets)
             re.compile(r'^\d+_grey(_\d+)?$', re.IGNORECASE),  # 10_grey, 10_grey_1
             re.compile(r'^\d+_f(_\d+)?$', re.IGNORECASE),  # 283_f, 283_f_1
+            re.compile(r'^[a-z]+_\d+$', re.IGNORECASE),  # frame_1, item_42
             re.compile(r'^[a-z]+_[a-z]+_\d+$', re.IGNORECASE),  # assassins_deed_1
             re.compile(r'^\d+h_[a-z]+(_\d+)?$', re.IGNORECASE),  # 2h_axe, 2h_axe_1
             re.compile(r'^[a-z]+_v(_\d+)?$', re.IGNORECASE),  # arrow_v, arrow_v_1
             re.compile(r'^[a-z]+_h(_\d+)?$', re.IGNORECASE),  # arrow_h, arrow_h_1
+            re.compile(r'^(head|torso|arm|leg|body|wing|hair)_\w+', re.IGNORECASE),  # body parts
+            re.compile(r'^(weapon|armor|item|sprite|frame|tile)\d*_', re.IGNORECASE),  # game prefixes
         ]
 
         # Game font sprite sheet patterns
@@ -1971,7 +1980,7 @@ class ContentBasedFileOrganizer:
 
         return generator.to_dict()
 
-    def get_destination_path(self, file_path: Path, category: str, subcategory: str, company_name: Optional[str] = None, image_metadata: Optional[Dict] = None) -> Path:
+    def get_destination_path(self, file_path: Path, category: str, subcategory: str, company_name: Optional[str] = None, image_metadata: Optional[Dict] = None, people_names: Optional[List[str]] = None) -> Path:
         """
         Get the destination path for a file based on content category.
 
@@ -1979,8 +1988,9 @@ class ContentBasedFileOrganizer:
             file_path: Path to the file
             category: Main category
             subcategory: Subcategory
-            company_name: Optional company name for business files
+            company_name: Optional company name for business/organization files
             image_metadata: Optional metadata for images (datetime, location)
+            people_names: Optional list of people names for person-classified files
 
         Returns:
             Destination path for the file
@@ -2016,13 +2026,31 @@ class ContentBasedFileOrganizer:
         else:
             relative_path = 'Uncategorized'
 
-        # If it's a client file with a company name, create company-specific folder
-        if subcategory == 'clients' and company_name:
+        # Organization: Create entity-named subfolders under Organization/
+        # Structure: Organization/{OrgName}/ for most types
+        # Exception: Organization/Clients/{OrgName}/ for clients (nested subfolders)
+        if category == 'organization' and company_name:
             sanitized_company = self.classifier.sanitize_company_name(company_name)
-            relative_path = f"{relative_path}/{sanitized_company}"
+            if subcategory == 'clients':
+                # Clients get nested: Organization/Clients/{OrgName}/
+                relative_path = f"{relative_path}/{sanitized_company}"
+            else:
+                # All other org types: Organization/{OrgName}/
+                relative_path = f"{relative_path}/{sanitized_company}"
 
-        # For organization-classified files with a company name, add company subfolder
-        if category == 'organization' and company_name and subcategory != 'clients':
+        # Person: Create person-named subfolders under Person/
+        # Structure: Person/{PersonName}/ for all types
+        if category == 'person' and people_names:
+            # Use first person name as the folder name
+            person_name = people_names[0] if people_names else 'Unknown'
+            sanitized_person = self.classifier.sanitize_company_name(person_name)
+            relative_path = f"{relative_path}/{sanitized_person}"
+        elif category == 'person' and not people_names:
+            # Fallback for person category without extracted names
+            relative_path = f"{relative_path}/Unknown"
+
+        # Legacy: client files from business category with company name
+        if category == 'business' and subcategory == 'clients' and company_name:
             sanitized_company = self.classifier.sanitize_company_name(company_name)
             relative_path = f"{relative_path}/{sanitized_company}"
 
@@ -2211,7 +2239,7 @@ class ContentBasedFileOrganizer:
             validation_report = self.validator.validate(schema)
 
             # Get destination path (with optional date/location organization for images)
-            dest_path = self.get_destination_path(file_path, category, subcategory, company_name, image_metadata)
+            dest_path = self.get_destination_path(file_path, category, subcategory, company_name, image_metadata, people_names)
 
             # Skip if already in the right place
             if file_path == dest_path:
