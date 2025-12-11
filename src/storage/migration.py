@@ -531,6 +531,273 @@ class JSONMigrator:
         return results
 
 
+def run_migration(db_path: str = 'results/file_organization.db', dry_run: bool = False) -> Dict[str, Any]:
+    """
+    Run ID generation migration to add canonical_id to all entities.
+
+    This function:
+    1. Adds canonical_id columns if they don't exist
+    2. Backfills canonical_id for existing records using deterministic UUID v5
+    3. Creates the merge_events table if needed
+
+    Args:
+        db_path: Path to SQLite database
+        dry_run: If True, show what would be done without making changes
+
+    Returns:
+        Migration statistics
+    """
+    import sqlite3
+    import uuid
+    from pathlib import Path
+
+    # Namespace UUIDs for deterministic ID generation (must match models.py)
+    NAMESPACES = {
+        'file': uuid.UUID('f4e8a9c0-1234-5678-9abc-def012345678'),
+        'category': uuid.UUID('c4e8a9c0-2345-6789-abcd-ef0123456789'),
+        'company': uuid.UUID('c0e1a2b3-4567-89ab-cdef-012345678901'),
+        'person': uuid.UUID('d1e2a3b4-5678-9abc-def0-123456789012'),
+        'location': uuid.UUID('e2e3a4b5-6789-abcd-ef01-234567890123'),
+    }
+
+    def generate_canonical_id(namespace: str, name: str) -> str:
+        """Generate deterministic UUID v5 from name."""
+        ns_uuid = NAMESPACES.get(namespace)
+        if not ns_uuid:
+            raise ValueError(f"Unknown namespace: {namespace}")
+        return str(uuid.uuid5(ns_uuid, name.lower().strip()))
+
+    def column_exists(conn: sqlite3.Connection, table: str, column: str) -> bool:
+        """Check if a column exists in a table."""
+        cursor = conn.execute(f"PRAGMA table_info({table})")
+        columns = [row[1] for row in cursor.fetchall()]
+        return column in columns
+
+    def table_exists(conn: sqlite3.Connection, table: str) -> bool:
+        """Check if a table exists."""
+        cursor = conn.execute(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+            (table,)
+        )
+        return cursor.fetchone() is not None
+
+    db_file = Path(db_path)
+    if not db_file.exists():
+        print(f"Error: Database not found at {db_path}")
+        return {'error': 'Database not found'}
+
+    stats = defaultdict(int)
+    conn = sqlite3.connect(str(db_path))
+
+    try:
+        # Phase 1: Schema Migration
+        print("Phase 1: Schema Migration")
+        print("-" * 40)
+
+        tables_to_migrate = [
+            ('files', 'VARCHAR(100)'),
+            ('categories', 'VARCHAR(36)'),
+            ('companies', 'VARCHAR(36)'),
+            ('people', 'VARCHAR(36)'),
+            ('locations', 'VARCHAR(36)'),
+        ]
+
+        for table, col_type in tables_to_migrate:
+            if not table_exists(conn, table):
+                print(f"  Table {table} does not exist, skipping")
+                continue
+
+            if not column_exists(conn, table, 'canonical_id'):
+                if dry_run:
+                    print(f"  [DRY RUN] Would add canonical_id to {table}")
+                else:
+                    conn.execute(f"ALTER TABLE {table} ADD COLUMN canonical_id {col_type}")
+                    print(f"  Added canonical_id to {table}")
+                stats['columns_added'] += 1
+            else:
+                print(f"  canonical_id already exists in {table}")
+
+            # Add source_ids column if not exists
+            if not column_exists(conn, table, 'source_ids'):
+                if dry_run:
+                    print(f"  [DRY RUN] Would add source_ids to {table}")
+                else:
+                    conn.execute(f"ALTER TABLE {table} ADD COLUMN source_ids JSON DEFAULT '[]'")
+                    print(f"  Added source_ids to {table}")
+
+            # Add merged_into_id for entity tables (not files)
+            if table != 'files' and not column_exists(conn, table, 'merged_into_id'):
+                if dry_run:
+                    print(f"  [DRY RUN] Would add merged_into_id to {table}")
+                else:
+                    conn.execute(f"ALTER TABLE {table} ADD COLUMN merged_into_id INTEGER REFERENCES {table}(id)")
+                    print(f"  Added merged_into_id to {table}")
+
+        # Create merge_events table if not exists
+        if not table_exists(conn, 'merge_events'):
+            if dry_run:
+                print("  [DRY RUN] Would create merge_events table")
+            else:
+                conn.execute("""
+                    CREATE TABLE merge_events (
+                        id VARCHAR(36) PRIMARY KEY,
+                        target_entity_type VARCHAR(20) NOT NULL,
+                        target_entity_id INTEGER NOT NULL,
+                        target_canonical_id VARCHAR(36),
+                        source_entity_ids JSON NOT NULL,
+                        source_canonical_ids JSON,
+                        merge_reason TEXT,
+                        confidence FLOAT DEFAULT 1.0,
+                        performed_by VARCHAR(100),
+                        performed_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        jsonld JSON,
+                        is_rolled_back BOOLEAN DEFAULT FALSE,
+                        rolled_back_at DATETIME,
+                        rolled_back_by VARCHAR(100)
+                    )
+                """)
+                print("  Created merge_events table")
+
+        if not dry_run:
+            conn.commit()
+
+        # Phase 2: Data Backfill
+        print("\nPhase 2: Data Backfill")
+        print("-" * 40)
+
+        # Backfill files (use urn:sha256:{id} format)
+        if table_exists(conn, 'files'):
+            cursor = conn.execute("SELECT id, original_path FROM files WHERE canonical_id IS NULL")
+            rows = cursor.fetchall()
+            if rows:
+                print(f"  Backfilling {len(rows)} files...")
+                for file_id, _ in rows:
+                    canonical_id = f"urn:sha256:{file_id}"
+                    if not dry_run:
+                        conn.execute("UPDATE files SET canonical_id = ? WHERE id = ?", (canonical_id, file_id))
+                    stats['files_backfilled'] += 1
+                if not dry_run:
+                    conn.commit()
+            else:
+                print("  No files need backfilling")
+
+        # Backfill categories (use full_path for deterministic ID)
+        if table_exists(conn, 'categories'):
+            cursor = conn.execute("SELECT id, full_path, name FROM categories WHERE canonical_id IS NULL")
+            rows = cursor.fetchall()
+            if rows:
+                print(f"  Backfilling {len(rows)} categories...")
+                for cat_id, full_path, name in rows:
+                    canonical_id = generate_canonical_id('category', full_path or name)
+                    if not dry_run:
+                        conn.execute("UPDATE categories SET canonical_id = ? WHERE id = ?", (canonical_id, cat_id))
+                    stats['categories_backfilled'] += 1
+                if not dry_run:
+                    conn.commit()
+            else:
+                print("  No categories need backfilling")
+
+        # Backfill companies
+        if table_exists(conn, 'companies'):
+            cursor = conn.execute("SELECT id, name FROM companies WHERE canonical_id IS NULL")
+            rows = cursor.fetchall()
+            if rows:
+                print(f"  Backfilling {len(rows)} companies...")
+                for comp_id, name in rows:
+                    canonical_id = generate_canonical_id('company', name)
+                    if not dry_run:
+                        conn.execute("UPDATE companies SET canonical_id = ? WHERE id = ?", (canonical_id, comp_id))
+                    stats['companies_backfilled'] += 1
+                if not dry_run:
+                    conn.commit()
+            else:
+                print("  No companies need backfilling")
+
+        # Backfill people
+        if table_exists(conn, 'people'):
+            cursor = conn.execute("SELECT id, name FROM people WHERE canonical_id IS NULL")
+            rows = cursor.fetchall()
+            if rows:
+                print(f"  Backfilling {len(rows)} people...")
+                for person_id, name in rows:
+                    canonical_id = generate_canonical_id('person', name)
+                    if not dry_run:
+                        conn.execute("UPDATE people SET canonical_id = ? WHERE id = ?", (canonical_id, person_id))
+                    stats['people_backfilled'] += 1
+                if not dry_run:
+                    conn.commit()
+            else:
+                print("  No people need backfilling")
+
+        # Backfill locations
+        if table_exists(conn, 'locations'):
+            cursor = conn.execute("SELECT id, name FROM locations WHERE canonical_id IS NULL")
+            rows = cursor.fetchall()
+            if rows:
+                print(f"  Backfilling {len(rows)} locations...")
+                for loc_id, name in rows:
+                    canonical_id = generate_canonical_id('location', name)
+                    if not dry_run:
+                        conn.execute("UPDATE locations SET canonical_id = ? WHERE id = ?", (canonical_id, loc_id))
+                    stats['locations_backfilled'] += 1
+                if not dry_run:
+                    conn.commit()
+            else:
+                print("  No locations need backfilling")
+
+        # Phase 3: Create Indexes
+        print("\nPhase 3: Create Indexes")
+        print("-" * 40)
+
+        indexes = [
+            ("ix_files_canonical_id", "files", "canonical_id"),
+            ("ix_categories_canonical_id", "categories", "canonical_id"),
+            ("ix_companies_canonical_id", "companies", "canonical_id"),
+            ("ix_people_canonical_id", "people", "canonical_id"),
+            ("ix_locations_canonical_id", "locations", "canonical_id"),
+        ]
+
+        for index_name, table, column in indexes:
+            if not table_exists(conn, table):
+                continue
+            # Check if index exists
+            cursor = conn.execute(
+                "SELECT name FROM sqlite_master WHERE type='index' AND name=?",
+                (index_name,)
+            )
+            if cursor.fetchone():
+                print(f"  Index {index_name} already exists")
+                continue
+
+            if dry_run:
+                print(f"  [DRY RUN] Would create index {index_name}")
+            else:
+                try:
+                    conn.execute(f"CREATE INDEX IF NOT EXISTS {index_name} ON {table}({column})")
+                    print(f"  Created index {index_name}")
+                    stats['indexes_created'] += 1
+                except sqlite3.OperationalError as e:
+                    print(f"  Warning creating index {index_name}: {e}")
+
+        if not dry_run:
+            conn.commit()
+
+        # Summary
+        print("\n" + "=" * 40)
+        print("Migration Summary")
+        print("=" * 40)
+        total_backfilled = sum(v for k, v in stats.items() if 'backfilled' in k)
+        print(f"  Records backfilled: {total_backfilled}")
+        print(f"  Indexes created: {stats.get('indexes_created', 0)}")
+        if dry_run:
+            print("\n  [DRY RUN] No changes were made")
+
+    finally:
+        conn.close()
+
+    return dict(stats)
+
+
 def main():
     """Run the migration."""
     import argparse

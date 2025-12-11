@@ -104,9 +104,10 @@ class GraphStore:
                 session.commit()
                 return existing
 
-            # Create new file
+            # Create new file with canonical ID
             file = File(
                 id=file_id,
+                canonical_id=File.generate_canonical_id(original_path),
                 original_path=original_path,
                 filename=filename,
                 file_extension=Path(filename).suffix.lower() if filename else None,
@@ -287,9 +288,10 @@ class GraphStore:
                 if parent:
                     level = parent.level + 1
 
-            # Create new category
+            # Create new category with canonical ID
             category = Category(
                 name=name,
+                canonical_id=Category.generate_canonical_id(full_path),
                 parent_id=parent.id if parent else None,
                 level=level,
                 full_path=full_path
@@ -421,7 +423,8 @@ class GraphStore:
             if not company:
                 company = Company(
                     name=name,
-                    normalized_name=normalized
+                    normalized_name=normalized,
+                    canonical_id=Company.generate_canonical_id(name)
                 )
                 session.add(company)
                 # Only commit if we own the session
@@ -480,6 +483,86 @@ class GraphStore:
                 session.close()
 
     # =========================================================================
+    # Person Operations
+    # =========================================================================
+
+    def get_or_create_person(
+        self,
+        name: str,
+        email: str = None,
+        role: str = None,
+        session: Session = None
+    ) -> Optional[Person]:
+        """Get or create a person by name."""
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            normalized = Person.normalize_name(name)
+            person = session.query(Person).filter(Person.normalized_name == normalized).first()
+
+            if not person:
+                person = Person(
+                    name=name,
+                    normalized_name=normalized,
+                    canonical_id=Person.generate_canonical_id(name),
+                    email=email,
+                    role=role
+                )
+                session.add(person)
+                if close_session:
+                    session.commit()
+                else:
+                    session.flush()
+
+            return person
+
+        except IntegrityError:
+            session.rollback()
+            return session.query(Person).filter(Person.normalized_name == normalized).first()
+        finally:
+            if close_session:
+                session.close()
+
+    def add_file_to_person(
+        self,
+        file_id: str,
+        person_name: str,
+        role: str = None,
+        confidence: float = 1.0,
+        session: Session = None
+    ) -> bool:
+        """Associate a file with a person."""
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            file = session.query(File).filter(File.id == file_id).first()
+            if not file:
+                return False
+
+            person = self.get_or_create_person(person_name, role=role, session=session)
+
+            if person is None:
+                return False
+
+            if person not in file.people:
+                file.people.append(person)
+                person.file_count += 1
+                person.last_seen = datetime.utcnow()
+                if close_session:
+                    session.commit()
+
+            return True
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
+    # =========================================================================
     # Location Operations
     # =========================================================================
 
@@ -514,9 +597,10 @@ class GraphStore:
             if location:
                 return location
 
-            # Create new
+            # Create new location with canonical ID
             location = Location(
                 name=name,
+                canonical_id=Location.generate_canonical_id(name),
                 latitude=latitude,
                 longitude=longitude,
                 city=city,
@@ -534,6 +618,56 @@ class GraphStore:
         except IntegrityError:
             session.rollback()
             return session.query(Location).filter(Location.name == name).first()
+        finally:
+            if close_session:
+                session.close()
+
+    def add_file_to_location(
+        self,
+        file_id: str,
+        location_name: str,
+        location_type: str = None,
+        latitude: float = None,
+        longitude: float = None,
+        city: str = None,
+        state: str = None,
+        country: str = None,
+        confidence: float = 1.0,
+        session: Session = None
+    ) -> bool:
+        """Associate a file with a location."""
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            file = session.query(File).filter(File.id == file_id).first()
+            if not file:
+                return False
+
+            location = self.get_or_create_location(
+                name=location_name,
+                latitude=latitude,
+                longitude=longitude,
+                city=city,
+                state=state,
+                country=country,
+                session=session
+            )
+
+            if location is None:
+                return False
+
+            if location not in file.locations:
+                file.locations.append(location)
+                location.file_count += 1
+                if close_session:
+                    session.commit()
+
+            return True
+
+        except Exception as e:
+            session.rollback()
+            raise e
         finally:
             if close_session:
                 session.close()
