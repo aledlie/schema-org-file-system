@@ -52,8 +52,8 @@ except ImportError:
     EXCEL_AVAILABLE = False
     print("Warning: openpyxl not available. Install openpyxl")
 
-# Add src directory to path
-sys.path.insert(0, '/Users/alyshialedlie/schema-org-file-system/src')
+# Add src directory to path (portable)
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
 from generators import (
     DocumentGenerator,

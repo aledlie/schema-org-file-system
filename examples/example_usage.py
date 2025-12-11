@@ -5,7 +5,8 @@ Demonstrates all major features and use cases.
 """
 
 import sys
-sys.path.insert(0, '/Users/alyshialedlie/schema-org-file-system/src')
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
 from datetime import datetime
 from generators import (

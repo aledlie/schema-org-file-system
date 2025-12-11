@@ -37,8 +37,8 @@ except ImportError:
     VISION_AVAILABLE = False
     print("Warning: Vision not available. Install transformers, torch")
 
-# Add src directory to path for error tracking
-sys.path.insert(0, '/Users/alyshialedlie/schema-org-file-system/src')
+# Add src directory to path for error tracking (portable)
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
 try:
     from error_tracking import init_sentry, capture_error, track_operation

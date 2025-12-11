@@ -5,7 +5,8 @@ Tests all generator classes for proper Schema.org compliance.
 """
 
 import sys
-sys.path.insert(0, '/Users/alyshialedlie/schema-org-file-system/src')
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
 import unittest
 from datetime import datetime

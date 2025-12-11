@@ -17,8 +17,8 @@ from typing import Dict, List, Tuple, Optional
 from collections import defaultdict
 from urllib.parse import quote
 
-# Add src directory to path
-sys.path.insert(0, '/Users/alyshialedlie/schema-org-file-system/src')
+# Add src directory to path (portable)
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
 from generators import (
     DocumentGenerator,
