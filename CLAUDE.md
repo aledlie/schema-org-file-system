@@ -2,20 +2,51 @@
 
 AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and entity detection.
 
+## Installation
+
+```bash
+# Clone and setup
+git clone https://github.com/aledlie/schema-org-file-system.git
+cd schema-org-file-system
+python3 -m venv venv
+source venv/bin/activate
+
+# Install package with all features
+pip install -e ".[all]"
+
+# Or install core only
+pip install -e .
+```
+
 ## Quick Start
 
 ```bash
 source venv/bin/activate
 
-# With Sentry error tracking (recommended)
+# Unified CLI (recommended)
+organize-files content --source ~/Downloads --dry-run --limit 100
+organize-files health                    # Check dependencies
+organize-files name --source ~/Downloads  # Simple name-based organization
+
+# Direct script usage (legacy)
+python3 scripts/file_organizer_content_based.py --base-path ~/Documents --sources ~/Downloads --limit 1000
+
+# With Sentry error tracking
 ./scripts/run_with_sentry.sh --dry-run --limit 100 --sources ~/Downloads
-
-# Direct usage
-python3 scripts/file_organizer_content_based.py --base-path ~/Documents --sources ~/Documents/Media --limit 1000
-
-# Check dependencies
-python3 scripts/file_organizer_content_based.py --check-deps
 ```
+
+## CLI Commands
+
+| Command | Description |
+|---------|-------------|
+| `organize-files content` | AI-powered organization (CLIP, OCR) |
+| `organize-files name` | Filename pattern organization (no AI) |
+| `organize-files type` | Extension-based organization |
+| `organize-files health` | Check system dependencies |
+| `organize-files migrate-ids` | Run database migration |
+| `organize-files preprocess` | Prepare ML training data |
+| `organize-files evaluate` | Evaluate model performance |
+| `organize-files update-site` | Update dashboard data |
 
 ## Status
 
@@ -52,6 +83,7 @@ python3 scripts/file_organizer_content_based.py --check-deps
 ## Project Structure
 
 ```
+├── pyproject.toml                       # Package configuration
 ├── scripts/
 │   ├── file_organizer_content_based.py  # Main AI organizer
 │   ├── run_with_sentry.sh               # Run with error tracking
@@ -60,6 +92,7 @@ python3 scripts/file_organizer_content_based.py --check-deps
 │   ├── evaluate_model.py                # Model evaluation
 │   └── ...                              # Other utility scripts
 ├── src/
+│   ├── cli.py                       # Unified CLI entry point
 │   ├── health_check.py              # Dependency validation
 │   ├── error_tracking.py            # Sentry integration
 │   ├── cost_roi_calculator.py       # Cost tracking
