@@ -69,6 +69,15 @@ from enrichment import MetadataEnricher
 from validator import SchemaValidator
 from integration import SchemaRegistry
 
+# Graph storage imports
+try:
+    from storage.graph_store import GraphStore
+    from storage.models import File as FileModel, FileStatus
+    GRAPH_STORE_AVAILABLE = True
+except ImportError:
+    GRAPH_STORE_AVAILABLE = False
+    print("Warning: GraphStore not available. Database persistence disabled.")
+
 # Image content analysis imports
 try:
     from transformers import CLIPProcessor, CLIPModel
@@ -952,7 +961,8 @@ class ContentBasedFileOrganizer:
         base_path: str = None,
         organize_by_date: bool = False,
         organize_by_location: bool = False,
-        enable_cost_tracking: bool = True
+        enable_cost_tracking: bool = True,
+        db_path: str = 'results/file_organization.db'
     ):
         """
         Initialize the organizer.
@@ -962,6 +972,7 @@ class ContentBasedFileOrganizer:
             organize_by_date: If True, organize photos by date (Photos/2023/11/)
             organize_by_location: If True, organize photos by location when GPS data available
             enable_cost_tracking: If True, track costs and ROI for all features
+            db_path: Path to SQLite database for persistent storage
         """
         self.base_path = Path(base_path or os.path.expanduser("~/Documents"))
 
@@ -970,6 +981,12 @@ class ContentBasedFileOrganizer:
         if enable_cost_tracking and COST_TRACKING_AVAILABLE:
             self.cost_calculator = CostROICalculator()
             print("✓ Cost tracking enabled")
+
+        # Initialize graph store for persistent storage with canonical IDs
+        self.graph_store = None
+        if GRAPH_STORE_AVAILABLE and db_path:
+            self.graph_store = GraphStore(db_path=db_path)
+            print(f"✓ Graph store enabled ({db_path})")
 
         self.enricher = MetadataEnricher()
         self.validator = SchemaValidator()
@@ -1145,12 +1162,39 @@ class ContentBasedFileOrganizer:
                 'other': 'Creative/Other'
             },
             'property_management': 'Property_Management',
+            'organization': {
+                'clients': 'Organization/Clients',
+                'vendors': 'Organization/Vendors',
+                'partners': 'Organization/Partners',
+                'employers': 'Organization/Employers',
+                'government': 'Organization/Government',
+                'healthcare': 'Organization/Healthcare',
+                'financial': 'Organization/Financial',
+                'educational': 'Organization/Educational',
+                'nonprofit': 'Organization/Nonprofit',
+                'other': 'Organization/Other'
+            },
+            'person': {
+                'contacts': 'Person/Contacts',
+                'employees': 'Person/Employees',
+                'clients': 'Person/Clients',
+                'family': 'Person/Family',
+                'references': 'Person/References',
+                'other': 'Person/Other'
+            },
             'game_assets': {
                 'audio': 'GameAssets/Audio',
                 'music': 'GameAssets/Music',
                 'sprites': 'GameAssets/Sprites',
                 'textures': 'GameAssets/Textures',
+                'fonts': 'GameAssets/Fonts',
                 'other': 'GameAssets/Other'
+            },
+            'fonts': {
+                'truetype': 'CreativeWork/Fonts/TrueType',
+                'opentype': 'CreativeWork/Fonts/OpenType',
+                'web': 'CreativeWork/Fonts/Web',
+                'other': 'CreativeWork/Fonts/Other'
             },
             'media': {
                 'photos': {
@@ -1231,7 +1275,36 @@ class ContentBasedFileOrganizer:
             'fire', 'ice', 'sand', 'mount', 'tmount', 'deco', 'entrance',
             'pupils', 'shoulders', 'stunned', 'poisoned', 'blind', 'deaf',
             'slowed', 'levitating', 'hungry', 'strained', 'next', 'prev',
-            'groove', 'handle', 'cube', 'psf', 'inventory'
+            'groove', 'handle', 'cube', 'psf', 'inventory',
+            # Weapons and equipment
+            '2h_axe', '2h_hammer', '1h_sword', '1h_axe', 'crossbow', 'longbow',
+            'dagger', 'mace', 'flail', 'spear', 'halberd', 'scimitar',
+            # Skills and abilities
+            'assassins_deed', 'atonement', 'backstab', 'cleave', 'smite',
+            'fireball', 'lightning', 'heal', 'buff', 'debuff', 'aura',
+            # UI and icons
+            'arrow_v', 'arrow_h', 'checkbox', 'radio', 'toggle', 'add',
+            # Grayscale/variant markers (common in game assets)
+            '_grey', '_gray', '_disabled', '_hover', '_active', '_pressed',
+            '_selected', '_normal', '_highlight', '_glow', '_dark', '_light'
+        ]
+
+        # Regex patterns for game asset detection (numbered sprites, variants)
+        import re
+        self.game_sprite_patterns = [
+            re.compile(r'^\d+_grey(_\d+)?$', re.IGNORECASE),  # 10_grey, 10_grey_1
+            re.compile(r'^\d+_f(_\d+)?$', re.IGNORECASE),  # 283_f, 283_f_1
+            re.compile(r'^[a-z]+_[a-z]+_\d+$', re.IGNORECASE),  # assassins_deed_1
+            re.compile(r'^\d+h_[a-z]+(_\d+)?$', re.IGNORECASE),  # 2h_axe, 2h_axe_1
+            re.compile(r'^[a-z]+_v(_\d+)?$', re.IGNORECASE),  # arrow_v, arrow_v_1
+            re.compile(r'^[a-z]+_h(_\d+)?$', re.IGNORECASE),  # arrow_h, arrow_h_1
+        ]
+
+        # Game font sprite sheet patterns
+        self.game_font_keywords = [
+            'broguefont', 'gamefont', 'pixelfont', 'bitfont', 'font_',
+            '_font', 'fontsheet', 'font_atlas', 'fontatlas', 'charset',
+            'glyphs', 'tilefont', 'asciifont', 'ascii_font'
         ]
 
     def classify_by_filepath(self, file_path: Path) -> Optional[str]:
@@ -1319,6 +1392,10 @@ class ContentBasedFileOrganizer:
         stem = file_path.stem.lower()
         ext = file_path.suffix.lower()
 
+        # Remove timestamp suffixes for pattern matching (e.g., _20251120_164506)
+        import re
+        clean_stem = re.sub(r'_\d{8}_\d{6}$', '', stem)
+
         # Check for audio files (.wav, .ogg, .mp3)
         if ext in ['.wav', '.ogg', '.mp3', '.flac', '.aac']:
             # Check for game music patterns (usually .ogg files with specific names)
@@ -1334,14 +1411,170 @@ class ContentBasedFileOrganizer:
 
         # Check for image files that are game sprites/textures
         if ext in ['.png', '.jpg', '.jpeg', '.bmp', '.tga', '.dds']:
-            # Check for sprite/texture patterns
+            # Check for game font sprite sheets first
+            for keyword in self.game_font_keywords:
+                if keyword in stem or keyword in clean_stem:
+                    return ('game_assets', 'fonts')
+
+            # Check regex patterns for numbered sprites and variants
+            for pattern in self.game_sprite_patterns:
+                if pattern.match(clean_stem):
+                    return ('game_assets', 'sprites')
+
+            # Check for sprite/texture keyword patterns
             for keyword in self.game_sprite_keywords:
-                if keyword in stem:
+                if keyword in stem or keyword in clean_stem:
                     # Distinguish between sprites and textures
-                    if any(kw in stem for kw in ['frame', 'sprite', 'leg', 'arm', 'head', 'torso', 'body', 'wing', 'hair', 'face', 'mouth']):
+                    sprite_keywords = [
+                        'frame', 'sprite', 'leg', 'arm', 'head', 'torso', 'body',
+                        'wing', 'hair', 'face', 'mouth', '_grey', '_gray',
+                        'assassins', 'atonement', 'arrow_v', 'arrow_h', 'add',
+                        '2h_', '1h_', 'dagger', 'sword', 'axe', 'hammer', 'mace'
+                    ]
+                    if any(kw in stem or kw in clean_stem for kw in sprite_keywords):
                         return ('game_assets', 'sprites')
                     else:
                         return ('game_assets', 'textures')
+
+        # Check for font files
+        if ext in ['.ttf', '.otf', '.woff', '.woff2', '.eot', '.fon', '.fnt']:
+            if ext == '.ttf':
+                return ('fonts', 'truetype')
+            elif ext == '.otf':
+                return ('fonts', 'opentype')
+            elif ext in ['.woff', '.woff2', '.eot']:
+                return ('fonts', 'web')
+            else:
+                return ('fonts', 'other')
+
+        return None
+
+    def classify_by_organization(self, text: str, filename: str) -> Optional[Tuple[str, str, str]]:
+        """
+        Classify file primarily by Organization entity detection.
+
+        Looks for strong organization indicators like:
+        - Company names in headers/footers
+        - Official letterheads
+        - Business correspondence
+        - Invoices, contracts with company names
+
+        Returns:
+            Tuple of (category, subcategory, org_name) or None if no strong organization match
+        """
+        if not text or len(text) < 50:
+            return None
+
+        text_lower = text.lower()
+        filename_lower = filename.lower()
+
+        # Organization type indicators
+        org_indicators = {
+            'government': [
+                'department of', 'internal revenue', 'irs', 'social security',
+                'state of', 'county of', 'city of', 'municipality', 'federal',
+                'government', 'agency', 'bureau', 'commission', 'dmv',
+                'passport', 'immigration', 'customs', 'treasury'
+            ],
+            'healthcare': [
+                'hospital', 'clinic', 'medical center', 'health system',
+                'healthcare', 'physicians', 'doctor', 'patient', 'diagnosis',
+                'prescription', 'pharmacy', 'insurance claim', 'medicare',
+                'medicaid', 'hipaa', 'medical record', 'lab results'
+            ],
+            'financial': [
+                'bank', 'credit union', 'investment', 'brokerage', 'mortgage',
+                'loan', 'account statement', 'transaction', 'wire transfer',
+                'routing number', 'account number', 'fdic', 'securities'
+            ],
+            'educational': [
+                'university', 'college', 'school', 'academy', 'institute',
+                'transcript', 'diploma', 'degree', 'enrollment', 'registrar',
+                'financial aid', 'tuition', 'semester', 'course', 'student id'
+            ],
+            'nonprofit': [
+                'foundation', 'charity', 'nonprofit', 'non-profit', '501(c)',
+                'donation', 'volunteer', 'mission', 'charitable'
+            ],
+            'employers': [
+                'offer letter', 'employment agreement', 'w-2', 'w2', 'pay stub',
+                'payroll', 'human resources', 'hr department', 'employee id',
+                'benefits enrollment', 'performance review', 'termination'
+            ],
+            'vendors': [
+                'invoice', 'purchase order', 'po number', 'vendor id',
+                'supplier', 'bill to', 'ship to', 'payment terms', 'net 30'
+            ],
+            'clients': [
+                'client', 'customer', 'service agreement', 'statement of work',
+                'sow', 'proposal', 'quote', 'estimate', 'engagement letter'
+            ]
+        }
+
+        # Check for organization type indicators
+        for org_type, keywords in org_indicators.items():
+            matches = sum(1 for kw in keywords if kw in text_lower)
+            if matches >= 2:  # Require at least 2 keyword matches
+                # Try to extract organization name
+                companies = self.classifier.extract_company_names(text)
+                org_name = companies[0] if companies else None
+                if org_name:
+                    return ('organization', org_type, org_name)
+
+        return None
+
+    def classify_by_person(self, text: str, filename: str) -> Optional[Tuple[str, str, List[str]]]:
+        """
+        Classify file primarily by Person entity detection.
+
+        Looks for strong person indicators like:
+        - Resumes/CVs
+        - Contact information (vCards)
+        - Personal identification documents
+        - Reference letters
+
+        Returns:
+            Tuple of (category, subcategory, person_names) or None if no strong person match
+        """
+        if not text or len(text) < 50:
+            return None
+
+        text_lower = text.lower()
+        filename_lower = filename.lower()
+
+        # Person type indicators
+        person_indicators = {
+            'contacts': [
+                'contact', 'phone:', 'email:', 'address:', 'mobile:',
+                'tel:', 'fax:', 'linkedin', 'twitter', '@'
+            ],
+            'employees': [
+                'employee', 'staff', 'team member', 'department:', 'title:',
+                'hire date', 'start date', 'position:', 'role:'
+            ],
+            'references': [
+                'reference', 'recommendation', 'letter of', 'to whom it may concern',
+                'i am pleased to', 'i highly recommend', 'worked with'
+            ],
+            'clients': [
+                'client profile', 'customer profile', 'client information',
+                'account holder', 'policyholder'
+            ]
+        }
+
+        # Check filename patterns for resumes/CVs
+        resume_patterns = ['resume', 'cv', 'curriculum', 'vitae']
+        if any(pat in filename_lower for pat in resume_patterns):
+            people = self.classifier.extract_people_names(text)
+            return ('person', 'contacts', people if people else [])
+
+        # Check for person type indicators
+        for person_type, keywords in person_indicators.items():
+            matches = sum(1 for kw in keywords if kw in text_lower)
+            if matches >= 2:  # Require at least 2 keyword matches
+                people = self.classifier.extract_people_names(text)
+                if people:
+                    return ('person', person_type, people)
 
         return None
 
@@ -1548,61 +1781,17 @@ class ContentBasedFileOrganizer:
         Detect file category based on content.
 
         Priority order:
-        1. Game asset detection (audio, sprites, textures)
-        2. Filepath-based classification (file extensions, filenames)
-        3. Image content analysis (for home interiors)
-        4. OCR and text-based classification
+        0. Organization entity detection (highest priority for documents)
+        1. Person entity detection
+        2. Game asset detection (audio, sprites, textures)
+        3. Filepath-based classification (file extensions, filenames)
+        4. Image content analysis (for home interiors)
+        5. OCR and text-based classification
 
         Returns:
             Tuple of (main_category, subcategory, schema_type, extracted_text, company_name, people_names, image_metadata)
         """
-        # PRIORITY 0: Check for game assets FIRST (before filepath patterns)
-        game_asset = self.classify_game_asset(file_path)
-        if game_asset:
-            category, subcategory = game_asset
-            print(f"  ✓ Game asset detected: {subcategory}")
-
-            # Determine schema type
-            mime_type = self.enricher.detect_mime_type(str(file_path))
-            if mime_type:
-                if mime_type.startswith('image/'):
-                    schema_type = 'ImageObject'
-                elif mime_type.startswith('audio/'):
-                    schema_type = 'AudioObject'
-                elif mime_type.startswith('video/'):
-                    schema_type = 'VideoObject'
-                else:
-                    schema_type = 'DigitalDocument'
-            else:
-                schema_type = 'DigitalDocument'
-
-            return (category, subcategory, schema_type, '', None, [], {})
-
-        # PRIORITY 1: Check filepath patterns (most efficient and accurate for code files)
-        filepath_category = self.classify_by_filepath(file_path)
-        if filepath_category:
-            print(f"  ✓ Filepath match: {filepath_category}")
-            # Still need to determine schema type
-            mime_type = self.enricher.detect_mime_type(str(file_path))
-            if mime_type:
-                if mime_type.startswith('image/'):
-                    schema_type = 'ImageObject'
-                elif mime_type == 'application/pdf':
-                    schema_type = 'DigitalDocument'
-                elif mime_type.startswith('video/'):
-                    schema_type = 'VideoObject'
-                elif mime_type.startswith('audio/'):
-                    schema_type = 'AudioObject'
-                else:
-                    schema_type = 'DigitalDocument'
-            else:
-                schema_type = 'DigitalDocument'
-
-            # Return filepath-based category as a special marker
-            # We'll handle this in get_destination_path
-            return ('filepath', filepath_category, schema_type, '', None, [], {})
-
-        # Determine schema type for non-filepath matches
+        # Determine schema type and MIME type early (needed for multiple paths)
         mime_type = self.enricher.detect_mime_type(str(file_path))
         if mime_type:
             if mime_type.startswith('image/'):
@@ -1617,6 +1806,42 @@ class ContentBasedFileOrganizer:
                 schema_type = 'DigitalDocument'
         else:
             schema_type = 'DigitalDocument'
+
+        # PRIORITY 0: Organization and Person detection for document-type files
+        # Only apply to document/PDF types (not images, audio, video)
+        if schema_type == 'DigitalDocument' or mime_type == 'application/pdf':
+            print(f"  Checking for Organization/Person entities...")
+            extracted_text = self.extract_text(file_path)
+
+            if extracted_text and len(extracted_text) >= 50:
+                # Try Organization detection first
+                org_result = self.classify_by_organization(extracted_text, file_path.name)
+                if org_result:
+                    category, subcategory, org_name = org_result
+                    print(f"  ✓ Organization detected: {org_name} ({subcategory})")
+                    return (category, subcategory, schema_type, extracted_text, org_name, [], {})
+
+                # Try Person detection second
+                person_result = self.classify_by_person(extracted_text, file_path.name)
+                if person_result:
+                    category, subcategory, people_names = person_result
+                    print(f"  ✓ Person detected: {', '.join(people_names[:3]) if people_names else 'Unknown'} ({subcategory})")
+                    return (category, subcategory, schema_type, extracted_text, None, people_names, {})
+
+        # PRIORITY 2: Check for game assets (before filepath patterns)
+        game_asset = self.classify_game_asset(file_path)
+        if game_asset:
+            category, subcategory = game_asset
+            print(f"  ✓ Game asset detected: {subcategory}")
+            return (category, subcategory, schema_type, '', None, [], {})
+
+        # PRIORITY 3: Check filepath patterns (most efficient and accurate for code files)
+        filepath_category = self.classify_by_filepath(file_path)
+        if filepath_category:
+            print(f"  ✓ Filepath match: {filepath_category}")
+            # Return filepath-based category as a special marker
+            # We'll handle this in get_destination_path
+            return ('filepath', filepath_category, schema_type, '', None, [], {})
 
         # Extract metadata for images
         image_metadata = {}
@@ -1635,7 +1860,7 @@ class ContentBasedFileOrganizer:
             if image_metadata.get('location_name'):
                 print(f"  ✓ Location: {image_metadata['location_name']}")
 
-        # PRIORITY 1.5: Check for media files (photos, videos, audio)
+        # PRIORITY 4: Check for media files (photos, videos, audio)
         # This runs after metadata extraction so we can use GPS/datetime for classification
         media_classification = self.classify_media_file(file_path, image_metadata)
         if media_classification:
@@ -1643,7 +1868,7 @@ class ContentBasedFileOrganizer:
             print(f"  ✓ Media file detected: {media_type}/{subcategory}")
             return (category, f"{media_type}_{subcategory}", schema_type, '', None, [], image_metadata)
 
-        # PRIORITY 2: Check for photos with people (social)
+        # PRIORITY 5: Check for photos with people (social)
         if schema_type == 'ImageObject' and self.image_analyzer.vision_available:
             print(f"  Analyzing image content...")
 
@@ -1667,7 +1892,7 @@ class ContentBasedFileOrganizer:
                     print(f"  Top matches: {', '.join([f'{cat}: {score:.2%}' for cat, score in top_categories])}")
                 return ('property_management', 'other', schema_type, '', None, [], image_metadata)
 
-        # PRIORITY 3: Regular text extraction and classification
+        # PRIORITY 6: Regular text extraction and classification
         print(f"  Extracting content...")
         extracted_text = self.extract_text(file_path)
 
@@ -1796,6 +2021,11 @@ class ContentBasedFileOrganizer:
             sanitized_company = self.classifier.sanitize_company_name(company_name)
             relative_path = f"{relative_path}/{sanitized_company}"
 
+        # For organization-classified files with a company name, add company subfolder
+        if category == 'organization' and company_name and subcategory != 'clients':
+            sanitized_company = self.classifier.sanitize_company_name(company_name)
+            relative_path = f"{relative_path}/{sanitized_company}"
+
         # Date-based organization for images (if enabled and metadata available)
         if self.organize_by_date and image_metadata and image_metadata.get('year'):
             year = image_metadata['year']
@@ -1840,6 +2070,101 @@ class ContentBasedFileOrganizer:
             return True
 
         return False
+
+    def _persist_to_graph_store(
+        self,
+        file_path: Path,
+        dest_path: Path,
+        category: str,
+        subcategory: str,
+        schema: Dict,
+        extracted_text: str,
+        company_name: Optional[str],
+        people_names: List[str],
+        image_metadata: Optional[Dict]
+    ) -> None:
+        """
+        Persist file and its relationships to the graph store with canonical IDs.
+
+        This method creates:
+        - File record with canonical_id (urn:sha256:{hash})
+        - Category record with canonical_id (UUID v5 from name)
+        - Company record with canonical_id (UUID v5 from name)
+        - Person records with canonical_id (UUID v5 from name)
+        - Location record with canonical_id (UUID v5 from name)
+        - Relationships between file and entities
+        """
+        try:
+            session = self.graph_store.get_session()
+
+            # Get file stats
+            stat = file_path.stat() if file_path.exists() else dest_path.stat()
+
+            # Add file to store (generates canonical_id automatically)
+            file_record = self.graph_store.add_file(
+                original_path=str(file_path),
+                filename=file_path.name,
+                session=session,
+                current_path=str(dest_path),
+                file_size=stat.st_size,
+                mime_type=schema.get('encodingFormat'),
+                schema_type=schema.get('@type'),
+                schema_data=schema,
+                extracted_text=extracted_text[:10000] if extracted_text else None,
+                extracted_text_length=len(extracted_text) if extracted_text else 0,
+                status=FileStatus.ORGANIZED,
+                organized_at=datetime.now()
+            )
+
+            file_id = file_record.id
+
+            # Add category relationship
+            self.graph_store.add_file_to_category(
+                file_id=file_id,
+                category_name=category,
+                subcategory_name=subcategory,
+                session=session
+            )
+
+            # Add company relationship if detected
+            if company_name:
+                self.graph_store.add_file_to_company(
+                    file_id=file_id,
+                    company_name=company_name,
+                    context='content_analysis',
+                    session=session
+                )
+
+            # Add people relationships if detected
+            if people_names:
+                for person_name in people_names:
+                    self.graph_store.add_file_to_person(
+                        file_id=file_id,
+                        person_name=person_name,
+                        role='mentioned',
+                        session=session
+                    )
+
+            # Add location if available from image metadata
+            if image_metadata and image_metadata.get('location'):
+                location_info = image_metadata['location']
+                self.graph_store.add_file_to_location(
+                    file_id=file_id,
+                    location_name=location_info.get('display_name', 'Unknown'),
+                    latitude=location_info.get('latitude'),
+                    longitude=location_info.get('longitude'),
+                    city=location_info.get('city'),
+                    state=location_info.get('state'),
+                    country=location_info.get('country'),
+                    location_type='captured_at',
+                    session=session
+                )
+
+            session.commit()
+            session.close()
+
+        except Exception as e:
+            print(f"  ⚠ Graph store error (non-fatal): {e}")
 
     def organize_file(self, file_path: Path, dry_run: bool = False) -> Dict:
         """
@@ -1919,6 +2244,20 @@ class ContentBasedFileOrganizer:
                     schema,
                     metadata=metadata
                 )
+
+                # Persist to database with canonical IDs
+                if self.graph_store:
+                    self._persist_to_graph_store(
+                        file_path=file_path,
+                        dest_path=dest_path,
+                        category=category,
+                        subcategory=subcategory,
+                        schema=schema,
+                        extracted_text=extracted_text,
+                        company_name=company_name,
+                        people_names=people_names,
+                        image_metadata=image_metadata
+                    )
 
             result['status'] = 'organized' if not dry_run else 'would_organize'
             result['destination'] = str(dest_path)
@@ -2226,6 +2565,21 @@ def main():
         action='store_true',
         help='Disable Sentry error tracking'
     )
+    parser.add_argument(
+        '--db-path',
+        default='results/file_organization.db',
+        help='Path to SQLite database for persistent storage (default: results/file_organization.db)'
+    )
+    parser.add_argument(
+        '--no-db',
+        action='store_true',
+        help='Disable database persistence (use in-memory registry only)'
+    )
+    parser.add_argument(
+        '--run-migration',
+        action='store_true',
+        help='Run database migration to add canonical_id columns to existing records'
+    )
 
     args = parser.parse_args()
 
@@ -2252,10 +2606,26 @@ def main():
         checker = SystemHealthChecker().run_all_checks()
         checker.print_status()
 
-    # Create organizer
+    # Run migration if requested
+    if args.run_migration:
+        if GRAPH_STORE_AVAILABLE:
+            from storage.migration import run_migration
+            print(f"\n{'='*60}")
+            print("Running ID Generation Migration")
+            print(f"{'='*60}\n")
+            run_migration(args.db_path)
+            print("\nMigration complete. Canonical IDs have been generated for existing records.")
+            return
+        else:
+            print("Error: GraphStore not available. Cannot run migration.")
+            return
+
+    # Create organizer with database path
+    db_path = None if args.no_db else args.db_path
     organizer = ContentBasedFileOrganizer(
         base_path=args.base_path,
-        enable_cost_tracking=not args.no_cost_tracking
+        enable_cost_tracking=not args.no_cost_tracking,
+        db_path=db_path
     )
 
     # Organize directories
