@@ -5,13 +5,168 @@ Each generator is optimized for specific file types and includes
 appropriate properties and nested schemas.
 """
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 from datetime import datetime
 
 try:
     from .base import SchemaOrgBase, PropertyType
 except ImportError:
     from base import SchemaOrgBase, PropertyType
+
+
+# =============================================================================
+# Required Properties Constants
+# =============================================================================
+
+DOCUMENT_REQUIRED_PROPERTIES: Tuple[str, ...] = (
+    "name",
+    "encodingFormat",
+)
+
+IMAGE_REQUIRED_PROPERTIES: Tuple[str, ...] = (
+    "contentUrl",
+    "encodingFormat",
+)
+
+VIDEO_REQUIRED_PROPERTIES: Tuple[str, ...] = (
+    "name",
+    "contentUrl",
+    "uploadDate",
+)
+
+AUDIO_REQUIRED_PROPERTIES: Tuple[str, ...] = (
+    "name",
+    "contentUrl",
+)
+
+CODE_REQUIRED_PROPERTIES: Tuple[str, ...] = (
+    "name",
+    "programmingLanguage",
+)
+
+DATASET_REQUIRED_PROPERTIES: Tuple[str, ...] = (
+    "name",
+    "description",
+)
+
+ARCHIVE_REQUIRED_PROPERTIES: Tuple[str, ...] = (
+    "name",
+    "encodingFormat",
+)
+
+
+# =============================================================================
+# Recommended Properties Constants
+# =============================================================================
+
+DOCUMENT_RECOMMENDED_PROPERTIES: Tuple[str, ...] = (
+    "author",
+    "dateCreated",
+    "dateModified",
+    "keywords",
+    "abstract",
+    "inLanguage",
+    "contentSize",
+    "url",
+)
+
+IMAGE_RECOMMENDED_PROPERTIES: Tuple[str, ...] = (
+    "name",
+    "description",
+    "width",
+    "height",
+    "caption",
+    "creator",
+    "dateCreated",
+    "exifData",
+    "contentLocation",
+)
+
+VIDEO_RECOMMENDED_PROPERTIES: Tuple[str, ...] = (
+    "description",
+    "thumbnailUrl",
+    "duration",
+    "width",
+    "height",
+    "encodingFormat",
+    "creator",
+    "datePublished",
+)
+
+AUDIO_RECOMMENDED_PROPERTIES: Tuple[str, ...] = (
+    "description",
+    "duration",
+    "encodingFormat",
+    "creator",
+    "datePublished",
+    "inLanguage",
+)
+
+CODE_RECOMMENDED_PROPERTIES: Tuple[str, ...] = (
+    "description",
+    "author",
+    "dateCreated",
+    "dateModified",
+    "codeRepository",
+    "license",
+    "runtimePlatform",
+)
+
+DATASET_RECOMMENDED_PROPERTIES: Tuple[str, ...] = (
+    "creator",
+    "datePublished",
+    "distribution",
+    "keywords",
+    "license",
+    "spatial",
+    "temporal",
+    "variableMeasured",
+)
+
+ARCHIVE_RECOMMENDED_PROPERTIES: Tuple[str, ...] = (
+    "description",
+    "hasPart",
+    "dateCreated",
+    "contentSize",
+)
+
+ORGANIZATION_REQUIRED_PROPERTIES: Tuple[str, ...] = (
+    "name",
+)
+
+ORGANIZATION_RECOMMENDED_PROPERTIES: Tuple[str, ...] = (
+    "description",
+    "url",
+    "logo",
+    "email",
+    "telephone",
+    "address",
+    "legalName",
+    "foundingDate",
+    "founder",
+    "numberOfEmployees",
+    "areaServed",
+    "sameAs",
+)
+
+PERSON_REQUIRED_PROPERTIES: Tuple[str, ...] = (
+    "name",
+)
+
+PERSON_RECOMMENDED_PROPERTIES: Tuple[str, ...] = (
+    "givenName",
+    "familyName",
+    "email",
+    "telephone",
+    "jobTitle",
+    "worksFor",
+    "address",
+    "image",
+    "url",
+    "sameAs",
+    "birthDate",
+    "nationality",
+)
 
 
 class DocumentGenerator(SchemaOrgBase):
@@ -21,26 +176,24 @@ class DocumentGenerator(SchemaOrgBase):
     Supports: DigitalDocument, Article, Report, ScholarlyArticle
     """
 
-    def __init__(self, document_type: str = "DigitalDocument"):
+    def __init__(self, document_type: str = "DigitalDocument", entity_id: Optional[str] = None):
         """
         Initialize document generator.
 
         Args:
             document_type: Specific document type (DigitalDocument, Article, Report, etc.)
+            entity_id: Optional entity ID for @id field. If not provided, generates UUID v4.
         """
-        super().__init__(document_type)
+        super().__init__(document_type, entity_id=entity_id)
         self.document_type = document_type
 
     def get_required_properties(self) -> List[str]:
         """Required properties for documents."""
-        return ["name", "encodingFormat"]
+        return list(DOCUMENT_REQUIRED_PROPERTIES)
 
     def get_recommended_properties(self) -> List[str]:
         """Recommended properties for documents."""
-        return [
-            "author", "dateCreated", "dateModified", "keywords",
-            "abstract", "inLanguage", "contentSize", "url"
-        ]
+        return list(DOCUMENT_RECOMMENDED_PROPERTIES)
 
     def set_basic_info(self, name: str, description: Optional[str] = None,
                       abstract: Optional[str] = None) -> 'DocumentGenerator':
@@ -158,25 +311,23 @@ class ImageGenerator(SchemaOrgBase):
     Supports: ImageObject, Photograph
     """
 
-    def __init__(self, image_type: str = "ImageObject"):
+    def __init__(self, image_type: str = "ImageObject", entity_id: Optional[str] = None):
         """
         Initialize image generator.
 
         Args:
             image_type: Specific image type (ImageObject, Photograph)
+            entity_id: Optional entity ID for @id field. If not provided, generates UUID v4.
         """
-        super().__init__(image_type)
+        super().__init__(image_type, entity_id=entity_id)
 
     def get_required_properties(self) -> List[str]:
         """Required properties for images."""
-        return ["contentUrl", "encodingFormat"]
+        return list(IMAGE_REQUIRED_PROPERTIES)
 
     def get_recommended_properties(self) -> List[str]:
         """Recommended properties for images."""
-        return [
-            "name", "description", "width", "height", "caption",
-            "creator", "dateCreated", "exifData", "contentLocation"
-        ]
+        return list(IMAGE_RECOMMENDED_PROPERTIES)
 
     def set_basic_info(self, name: str, content_url: str,
                       encoding_format: str,
@@ -289,25 +440,23 @@ class VideoGenerator(SchemaOrgBase):
     Supports: VideoObject, MovieClip
     """
 
-    def __init__(self, video_type: str = "VideoObject"):
+    def __init__(self, video_type: str = "VideoObject", entity_id: Optional[str] = None):
         """
         Initialize video generator.
 
         Args:
             video_type: Specific video type (VideoObject, MovieClip)
+            entity_id: Optional entity ID for @id field. If not provided, generates UUID v4.
         """
-        super().__init__(video_type)
+        super().__init__(video_type, entity_id=entity_id)
 
     def get_required_properties(self) -> List[str]:
         """Required properties for videos."""
-        return ["name", "contentUrl", "uploadDate"]
+        return list(VIDEO_REQUIRED_PROPERTIES)
 
     def get_recommended_properties(self) -> List[str]:
         """Recommended properties for videos."""
-        return [
-            "description", "thumbnailUrl", "duration", "width", "height",
-            "encodingFormat", "creator", "datePublished"
-        ]
+        return list(VIDEO_RECOMMENDED_PROPERTIES)
 
     def set_basic_info(self, name: str, content_url: str,
                       upload_date: datetime,
@@ -396,25 +545,23 @@ class AudioGenerator(SchemaOrgBase):
     Supports: AudioObject, MusicRecording, PodcastEpisode
     """
 
-    def __init__(self, audio_type: str = "AudioObject"):
+    def __init__(self, audio_type: str = "AudioObject", entity_id: Optional[str] = None):
         """
         Initialize audio generator.
 
         Args:
             audio_type: Specific audio type (AudioObject, MusicRecording, PodcastEpisode)
+            entity_id: Optional entity ID for @id field. If not provided, generates UUID v4.
         """
-        super().__init__(audio_type)
+        super().__init__(audio_type, entity_id=entity_id)
 
     def get_required_properties(self) -> List[str]:
         """Required properties for audio."""
-        return ["name", "contentUrl"]
+        return list(AUDIO_REQUIRED_PROPERTIES)
 
     def get_recommended_properties(self) -> List[str]:
         """Recommended properties for audio."""
-        return [
-            "description", "duration", "encodingFormat", "creator",
-            "datePublished", "inLanguage"
-        ]
+        return list(AUDIO_RECOMMENDED_PROPERTIES)
 
     def set_basic_info(self, name: str, content_url: str,
                       description: Optional[str] = None,
@@ -497,20 +644,22 @@ class CodeGenerator(SchemaOrgBase):
     Supports: SoftwareSourceCode, CreativeWork
     """
 
-    def __init__(self):
-        """Initialize code generator."""
-        super().__init__("SoftwareSourceCode")
+    def __init__(self, entity_id: Optional[str] = None):
+        """
+        Initialize code generator.
+
+        Args:
+            entity_id: Optional entity ID for @id field. If not provided, generates UUID v4.
+        """
+        super().__init__("SoftwareSourceCode", entity_id=entity_id)
 
     def get_required_properties(self) -> List[str]:
         """Required properties for source code."""
-        return ["name", "programmingLanguage"]
+        return list(CODE_REQUIRED_PROPERTIES)
 
     def get_recommended_properties(self) -> List[str]:
         """Recommended properties for source code."""
-        return [
-            "description", "author", "dateCreated", "dateModified",
-            "codeRepository", "license", "runtimePlatform"
-        ]
+        return list(CODE_RECOMMENDED_PROPERTIES)
 
     def set_basic_info(self, name: str, programming_language: str,
                       description: Optional[str] = None,
@@ -605,20 +754,22 @@ class DatasetGenerator(SchemaOrgBase):
     Supports: Dataset
     """
 
-    def __init__(self):
-        """Initialize dataset generator."""
-        super().__init__("Dataset")
+    def __init__(self, entity_id: Optional[str] = None):
+        """
+        Initialize dataset generator.
+
+        Args:
+            entity_id: Optional entity ID for @id field. If not provided, generates UUID v4.
+        """
+        super().__init__("Dataset", entity_id=entity_id)
 
     def get_required_properties(self) -> List[str]:
         """Required properties for datasets."""
-        return ["name", "description"]
+        return list(DATASET_REQUIRED_PROPERTIES)
 
     def get_recommended_properties(self) -> List[str]:
         """Recommended properties for datasets."""
-        return [
-            "creator", "datePublished", "distribution", "keywords",
-            "license", "spatial", "temporal", "variableMeasured"
-        ]
+        return list(DATASET_RECOMMENDED_PROPERTIES)
 
     def set_basic_info(self, name: str, description: str,
                       url: Optional[str] = None) -> 'DatasetGenerator':
@@ -717,20 +868,23 @@ class ArchiveGenerator(SchemaOrgBase):
     Supports: DigitalDocument with hasPart relationships
     """
 
-    def __init__(self):
-        """Initialize archive generator."""
-        super().__init__("DigitalDocument")
+    def __init__(self, entity_id: Optional[str] = None):
+        """
+        Initialize archive generator.
+
+        Args:
+            entity_id: Optional entity ID for @id field. If not provided, generates UUID v4.
+        """
+        super().__init__("DigitalDocument", entity_id=entity_id)
         self.data["additionalType"] = "Archive"
 
     def get_required_properties(self) -> List[str]:
         """Required properties for archives."""
-        return ["name", "encodingFormat"]
+        return list(ARCHIVE_REQUIRED_PROPERTIES)
 
     def get_recommended_properties(self) -> List[str]:
         """Recommended properties for archives."""
-        return [
-            "description", "hasPart", "dateCreated", "contentSize"
-        ]
+        return list(ARCHIVE_RECOMMENDED_PROPERTIES)
 
     def set_basic_info(self, name: str, encoding_format: str,
                       description: Optional[str] = None,
@@ -785,4 +939,776 @@ class ArchiveGenerator(SchemaOrgBase):
         self.set_property("compressionMethod", compression_method, PropertyType.TEXT)
         if compression_ratio:
             self.set_property("compressionRatio", compression_ratio, PropertyType.NUMBER)
+        return self
+
+
+class OrganizationGenerator(SchemaOrgBase):
+    """
+    Generator for organizations.
+
+    Supports: Organization, Corporation, LocalBusiness, NGO, EducationalOrganization
+    """
+
+    def __init__(self, org_type: str = "Organization", entity_id: Optional[str] = None):
+        """
+        Initialize organization generator.
+
+        Args:
+            org_type: Specific organization type (Organization, Corporation, LocalBusiness, etc.)
+            entity_id: Optional entity ID for @id field. If not provided, generates UUID v4.
+        """
+        super().__init__(org_type, entity_id=entity_id)
+
+    def get_required_properties(self) -> List[str]:
+        """Required properties for organizations."""
+        return list(ORGANIZATION_REQUIRED_PROPERTIES)
+
+    def get_recommended_properties(self) -> List[str]:
+        """Recommended properties for organizations."""
+        return list(ORGANIZATION_RECOMMENDED_PROPERTIES)
+
+    def set_basic_info(self, name: str, description: Optional[str] = None,
+                      url: Optional[str] = None,
+                      logo: Optional[str] = None) -> 'OrganizationGenerator':
+        """
+        Set basic organization information.
+
+        Args:
+            name: Organization name
+            description: Organization description
+            url: Organization website URL
+            logo: Logo image URL
+
+        Returns:
+            Self for method chaining
+        """
+        self.set_property("name", name, PropertyType.TEXT)
+        if description:
+            self.set_property("description", description, PropertyType.TEXT)
+        if url:
+            self.set_property("url", url, PropertyType.URL)
+        if logo:
+            self.data["logo"] = {
+                "@type": "ImageObject",
+                "url": logo
+            }
+        return self
+
+    def set_legal_info(self, legal_name: Optional[str] = None,
+                      tax_id: Optional[str] = None,
+                      vat_id: Optional[str] = None,
+                      lei_code: Optional[str] = None,
+                      duns: Optional[str] = None) -> 'OrganizationGenerator':
+        """
+        Set legal and identification information.
+
+        Args:
+            legal_name: Official registered name
+            tax_id: Tax/Fiscal ID number
+            vat_id: Value-added Tax ID
+            lei_code: Legal entity identifier (ISO 17442)
+            duns: Dun & Bradstreet DUNS number
+
+        Returns:
+            Self for method chaining
+        """
+        if legal_name:
+            self.set_property("legalName", legal_name, PropertyType.TEXT)
+        if tax_id:
+            self.set_property("taxID", tax_id, PropertyType.TEXT)
+        if vat_id:
+            self.set_property("vatID", vat_id, PropertyType.TEXT)
+        if lei_code:
+            self.set_property("leiCode", lei_code, PropertyType.TEXT)
+        if duns:
+            self.set_property("duns", duns, PropertyType.TEXT)
+        return self
+
+    def set_contact_info(self, email: Optional[str] = None,
+                        telephone: Optional[str] = None,
+                        fax: Optional[str] = None) -> 'OrganizationGenerator':
+        """
+        Set contact information.
+
+        Args:
+            email: Contact email address
+            telephone: Phone number
+            fax: Fax number
+
+        Returns:
+            Self for method chaining
+        """
+        if email:
+            self.set_property("email", email, PropertyType.TEXT)
+        if telephone:
+            self.set_property("telephone", telephone, PropertyType.TEXT)
+        if fax:
+            self.set_property("faxNumber", fax, PropertyType.TEXT)
+        return self
+
+    def set_address(self, street: Optional[str] = None,
+                   city: Optional[str] = None,
+                   region: Optional[str] = None,
+                   postal_code: Optional[str] = None,
+                   country: Optional[str] = None) -> 'OrganizationGenerator':
+        """
+        Set postal address.
+
+        Args:
+            street: Street address
+            city: City/Locality
+            region: State/Province/Region
+            postal_code: Postal/ZIP code
+            country: Country name or code
+
+        Returns:
+            Self for method chaining
+        """
+        address = {"@type": "PostalAddress"}
+        if street:
+            address["streetAddress"] = street
+        if city:
+            address["addressLocality"] = city
+        if region:
+            address["addressRegion"] = region
+        if postal_code:
+            address["postalCode"] = postal_code
+        if country:
+            address["addressCountry"] = country
+
+        if len(address) > 1:  # More than just @type
+            self.data["address"] = address
+        return self
+
+    def set_founding_info(self, founding_date: Optional[str] = None,
+                         dissolution_date: Optional[str] = None,
+                         founding_location: Optional[str] = None) -> 'OrganizationGenerator':
+        """
+        Set founding information.
+
+        Args:
+            founding_date: Date organization was founded (ISO 8601)
+            dissolution_date: Date organization was dissolved (ISO 8601)
+            founding_location: Place where organization was founded
+
+        Returns:
+            Self for method chaining
+        """
+        if founding_date:
+            self.set_property("foundingDate", founding_date, PropertyType.DATE)
+        if dissolution_date:
+            self.set_property("dissolutionDate", dissolution_date, PropertyType.DATE)
+        if founding_location:
+            self.data["foundingLocation"] = {
+                "@type": "Place",
+                "name": founding_location
+            }
+        return self
+
+    def add_founder(self, name: str, person_id: Optional[str] = None) -> 'OrganizationGenerator':
+        """
+        Add a founder.
+
+        Args:
+            name: Founder's name
+            person_id: Optional @id for the person
+
+        Returns:
+            Self for method chaining
+        """
+        if "founder" not in self.data:
+            self.data["founder"] = []
+
+        founder = {
+            "@type": "Person",
+            "name": name
+        }
+        if person_id:
+            founder["@id"] = person_id
+
+        self.data["founder"].append(founder)
+        return self
+
+    def set_employee_count(self, count: int) -> 'OrganizationGenerator':
+        """
+        Set number of employees.
+
+        Args:
+            count: Number of employees
+
+        Returns:
+            Self for method chaining
+        """
+        self.data["numberOfEmployees"] = {
+            "@type": "QuantitativeValue",
+            "value": count
+        }
+        return self
+
+    def set_area_served(self, areas: Union[str, List[str]]) -> 'OrganizationGenerator':
+        """
+        Set geographic areas served.
+
+        Args:
+            areas: Area name(s) or list of area names
+
+        Returns:
+            Self for method chaining
+        """
+        if isinstance(areas, str):
+            self.set_property("areaServed", areas, PropertyType.TEXT)
+        else:
+            self.data["areaServed"] = [
+                {"@type": "Place", "name": area} for area in areas
+            ]
+        return self
+
+    def add_contact_point(self, contact_type: str,
+                         telephone: Optional[str] = None,
+                         email: Optional[str] = None,
+                         available_language: Optional[Union[str, List[str]]] = None) -> 'OrganizationGenerator':
+        """
+        Add a contact point.
+
+        Args:
+            contact_type: Type of contact (e.g., 'customer service', 'sales', 'technical support')
+            telephone: Phone number for this contact
+            email: Email for this contact
+            available_language: Language(s) available
+
+        Returns:
+            Self for method chaining
+        """
+        if "contactPoint" not in self.data:
+            self.data["contactPoint"] = []
+
+        contact = {
+            "@type": "ContactPoint",
+            "contactType": contact_type
+        }
+        if telephone:
+            contact["telephone"] = telephone
+        if email:
+            contact["email"] = email
+        if available_language:
+            if isinstance(available_language, str):
+                contact["availableLanguage"] = available_language
+            else:
+                contact["availableLanguage"] = available_language
+
+        self.data["contactPoint"].append(contact)
+        return self
+
+    def add_same_as(self, urls: Union[str, List[str]]) -> 'OrganizationGenerator':
+        """
+        Add sameAs links (social profiles, Wikipedia, etc.).
+
+        Args:
+            urls: URL or list of URLs for equivalent pages
+
+        Returns:
+            Self for method chaining
+        """
+        if isinstance(urls, str):
+            urls = [urls]
+
+        if "sameAs" not in self.data:
+            self.data["sameAs"] = []
+
+        self.data["sameAs"].extend(urls)
+        return self
+
+    def set_parent_organization(self, name: str,
+                               org_id: Optional[str] = None) -> 'OrganizationGenerator':
+        """
+        Set parent organization.
+
+        Args:
+            name: Parent organization name
+            org_id: Optional @id for the parent organization
+
+        Returns:
+            Self for method chaining
+        """
+        parent = {
+            "@type": "Organization",
+            "name": name
+        }
+        if org_id:
+            parent["@id"] = org_id
+
+        self.data["parentOrganization"] = parent
+        return self
+
+    def add_department(self, name: str, dept_id: Optional[str] = None) -> 'OrganizationGenerator':
+        """
+        Add a department/sub-organization.
+
+        Args:
+            name: Department name
+            dept_id: Optional @id for the department
+
+        Returns:
+            Self for method chaining
+        """
+        if "department" not in self.data:
+            self.data["department"] = []
+
+        dept = {
+            "@type": "Organization",
+            "name": name
+        }
+        if dept_id:
+            dept["@id"] = dept_id
+
+        self.data["department"].append(dept)
+        return self
+
+
+class PersonGenerator(SchemaOrgBase):
+    """
+    Generator for people.
+
+    Supports: Person
+    """
+
+    def __init__(self, entity_id: Optional[str] = None):
+        """
+        Initialize person generator.
+
+        Args:
+            entity_id: Optional entity ID for @id field. If not provided, generates UUID v4.
+        """
+        super().__init__("Person", entity_id=entity_id)
+
+    def get_required_properties(self) -> List[str]:
+        """Required properties for people."""
+        return list(PERSON_REQUIRED_PROPERTIES)
+
+    def get_recommended_properties(self) -> List[str]:
+        """Recommended properties for people."""
+        return list(PERSON_RECOMMENDED_PROPERTIES)
+
+    def set_name(self, name: Optional[str] = None,
+                given_name: Optional[str] = None,
+                family_name: Optional[str] = None,
+                additional_name: Optional[str] = None,
+                honorific_prefix: Optional[str] = None,
+                honorific_suffix: Optional[str] = None) -> 'PersonGenerator':
+        """
+        Set name information.
+
+        Args:
+            name: Full name
+            given_name: First name
+            family_name: Last name
+            additional_name: Middle name or additional identifier
+            honorific_prefix: Prefix (e.g., Dr., Mr., Ms.)
+            honorific_suffix: Suffix (e.g., Jr., PhD, MD)
+
+        Returns:
+            Self for method chaining
+        """
+        if name:
+            self.set_property("name", name, PropertyType.TEXT)
+        if given_name:
+            self.set_property("givenName", given_name, PropertyType.TEXT)
+        if family_name:
+            self.set_property("familyName", family_name, PropertyType.TEXT)
+        if additional_name:
+            self.set_property("additionalName", additional_name, PropertyType.TEXT)
+        if honorific_prefix:
+            self.set_property("honorificPrefix", honorific_prefix, PropertyType.TEXT)
+        if honorific_suffix:
+            self.set_property("honorificSuffix", honorific_suffix, PropertyType.TEXT)
+        return self
+
+    def set_contact_info(self, email: Optional[str] = None,
+                        telephone: Optional[str] = None,
+                        fax: Optional[str] = None) -> 'PersonGenerator':
+        """
+        Set contact information.
+
+        Args:
+            email: Email address
+            telephone: Phone number
+            fax: Fax number
+
+        Returns:
+            Self for method chaining
+        """
+        if email:
+            self.set_property("email", email, PropertyType.TEXT)
+        if telephone:
+            self.set_property("telephone", telephone, PropertyType.TEXT)
+        if fax:
+            self.set_property("faxNumber", fax, PropertyType.TEXT)
+        return self
+
+    def set_address(self, street: Optional[str] = None,
+                   city: Optional[str] = None,
+                   region: Optional[str] = None,
+                   postal_code: Optional[str] = None,
+                   country: Optional[str] = None) -> 'PersonGenerator':
+        """
+        Set postal address.
+
+        Args:
+            street: Street address
+            city: City/Locality
+            region: State/Province/Region
+            postal_code: Postal/ZIP code
+            country: Country name or code
+
+        Returns:
+            Self for method chaining
+        """
+        address = {"@type": "PostalAddress"}
+        if street:
+            address["streetAddress"] = street
+        if city:
+            address["addressLocality"] = city
+        if region:
+            address["addressRegion"] = region
+        if postal_code:
+            address["postalCode"] = postal_code
+        if country:
+            address["addressCountry"] = country
+
+        if len(address) > 1:  # More than just @type
+            self.data["address"] = address
+        return self
+
+    def set_birth_info(self, birth_date: Optional[str] = None,
+                      birth_place: Optional[str] = None) -> 'PersonGenerator':
+        """
+        Set birth information.
+
+        Args:
+            birth_date: Date of birth (ISO 8601)
+            birth_place: Place of birth
+
+        Returns:
+            Self for method chaining
+        """
+        if birth_date:
+            self.set_property("birthDate", birth_date, PropertyType.DATE)
+        if birth_place:
+            self.data["birthPlace"] = {
+                "@type": "Place",
+                "name": birth_place
+            }
+        return self
+
+    def set_death_info(self, death_date: Optional[str] = None,
+                      death_place: Optional[str] = None) -> 'PersonGenerator':
+        """
+        Set death information.
+
+        Args:
+            death_date: Date of death (ISO 8601)
+            death_place: Place of death
+
+        Returns:
+            Self for method chaining
+        """
+        if death_date:
+            self.set_property("deathDate", death_date, PropertyType.DATE)
+        if death_place:
+            self.data["deathPlace"] = {
+                "@type": "Place",
+                "name": death_place
+            }
+        return self
+
+    def set_job_info(self, job_title: Optional[str] = None,
+                    works_for: Optional[str] = None,
+                    works_for_id: Optional[str] = None) -> 'PersonGenerator':
+        """
+        Set employment information.
+
+        Args:
+            job_title: Job title/position
+            works_for: Employer organization name
+            works_for_id: Optional @id for the employer organization
+
+        Returns:
+            Self for method chaining
+        """
+        if job_title:
+            self.set_property("jobTitle", job_title, PropertyType.TEXT)
+        if works_for:
+            org = {
+                "@type": "Organization",
+                "name": works_for
+            }
+            if works_for_id:
+                org["@id"] = works_for_id
+            self.data["worksFor"] = org
+        return self
+
+    def add_affiliation(self, name: str, org_id: Optional[str] = None) -> 'PersonGenerator':
+        """
+        Add an organizational affiliation.
+
+        Args:
+            name: Organization name
+            org_id: Optional @id for the organization
+
+        Returns:
+            Self for method chaining
+        """
+        if "affiliation" not in self.data:
+            self.data["affiliation"] = []
+
+        org = {
+            "@type": "Organization",
+            "name": name
+        }
+        if org_id:
+            org["@id"] = org_id
+
+        self.data["affiliation"].append(org)
+        return self
+
+    def add_alumni_of(self, name: str, org_id: Optional[str] = None) -> 'PersonGenerator':
+        """
+        Add an educational institution as alma mater.
+
+        Args:
+            name: Institution name
+            org_id: Optional @id for the institution
+
+        Returns:
+            Self for method chaining
+        """
+        if "alumniOf" not in self.data:
+            self.data["alumniOf"] = []
+
+        org = {
+            "@type": "EducationalOrganization",
+            "name": name
+        }
+        if org_id:
+            org["@id"] = org_id
+
+        self.data["alumniOf"].append(org)
+        return self
+
+    def set_nationality(self, country: str) -> 'PersonGenerator':
+        """
+        Set nationality.
+
+        Args:
+            country: Country name or code
+
+        Returns:
+            Self for method chaining
+        """
+        self.data["nationality"] = {
+            "@type": "Country",
+            "name": country
+        }
+        return self
+
+    def set_gender(self, gender: str) -> 'PersonGenerator':
+        """
+        Set gender.
+
+        Args:
+            gender: Gender (e.g., 'Male', 'Female', or other)
+
+        Returns:
+            Self for method chaining
+        """
+        self.set_property("gender", gender, PropertyType.TEXT)
+        return self
+
+    def set_image(self, image_url: str) -> 'PersonGenerator':
+        """
+        Set profile image.
+
+        Args:
+            image_url: URL to profile image
+
+        Returns:
+            Self for method chaining
+        """
+        self.data["image"] = {
+            "@type": "ImageObject",
+            "url": image_url
+        }
+        return self
+
+    def set_url(self, url: str) -> 'PersonGenerator':
+        """
+        Set personal website URL.
+
+        Args:
+            url: Personal website URL
+
+        Returns:
+            Self for method chaining
+        """
+        self.set_property("url", url, PropertyType.URL)
+        return self
+
+    def add_same_as(self, urls: Union[str, List[str]]) -> 'PersonGenerator':
+        """
+        Add sameAs links (social profiles, Wikipedia, etc.).
+
+        Args:
+            urls: URL or list of URLs for equivalent pages
+
+        Returns:
+            Self for method chaining
+        """
+        if isinstance(urls, str):
+            urls = [urls]
+
+        if "sameAs" not in self.data:
+            self.data["sameAs"] = []
+
+        self.data["sameAs"].extend(urls)
+        return self
+
+    def add_knows(self, name: str, person_id: Optional[str] = None) -> 'PersonGenerator':
+        """
+        Add a person this person knows.
+
+        Args:
+            name: Person's name
+            person_id: Optional @id for the person
+
+        Returns:
+            Self for method chaining
+        """
+        if "knows" not in self.data:
+            self.data["knows"] = []
+
+        person = {
+            "@type": "Person",
+            "name": name
+        }
+        if person_id:
+            person["@id"] = person_id
+
+        self.data["knows"].append(person)
+        return self
+
+    def add_colleague(self, name: str, person_id: Optional[str] = None) -> 'PersonGenerator':
+        """
+        Add a colleague.
+
+        Args:
+            name: Colleague's name
+            person_id: Optional @id for the colleague
+
+        Returns:
+            Self for method chaining
+        """
+        if "colleague" not in self.data:
+            self.data["colleague"] = []
+
+        person = {
+            "@type": "Person",
+            "name": name
+        }
+        if person_id:
+            person["@id"] = person_id
+
+        self.data["colleague"].append(person)
+        return self
+
+    def set_spouse(self, name: str, person_id: Optional[str] = None) -> 'PersonGenerator':
+        """
+        Set spouse.
+
+        Args:
+            name: Spouse's name
+            person_id: Optional @id for the spouse
+
+        Returns:
+            Self for method chaining
+        """
+        spouse = {
+            "@type": "Person",
+            "name": name
+        }
+        if person_id:
+            spouse["@id"] = person_id
+
+        self.data["spouse"] = spouse
+        return self
+
+    def add_parent(self, name: str, person_id: Optional[str] = None) -> 'PersonGenerator':
+        """
+        Add a parent.
+
+        Args:
+            name: Parent's name
+            person_id: Optional @id for the parent
+
+        Returns:
+            Self for method chaining
+        """
+        if "parent" not in self.data:
+            self.data["parent"] = []
+
+        person = {
+            "@type": "Person",
+            "name": name
+        }
+        if person_id:
+            person["@id"] = person_id
+
+        self.data["parent"].append(person)
+        return self
+
+    def add_child(self, name: str, person_id: Optional[str] = None) -> 'PersonGenerator':
+        """
+        Add a child.
+
+        Args:
+            name: Child's name
+            person_id: Optional @id for the child
+
+        Returns:
+            Self for method chaining
+        """
+        if "children" not in self.data:
+            self.data["children"] = []
+
+        person = {
+            "@type": "Person",
+            "name": name
+        }
+        if person_id:
+            person["@id"] = person_id
+
+        self.data["children"].append(person)
+        return self
+
+    def add_sibling(self, name: str, person_id: Optional[str] = None) -> 'PersonGenerator':
+        """
+        Add a sibling.
+
+        Args:
+            name: Sibling's name
+            person_id: Optional @id for the sibling
+
+        Returns:
+            Self for method chaining
+        """
+        if "sibling" not in self.data:
+            self.data["sibling"] = []
+
+        person = {
+            "@type": "Person",
+            "name": name
+        }
+        if person_id:
+            person["@id"] = person_id
+
+        self.data["sibling"].append(person)
         return self
