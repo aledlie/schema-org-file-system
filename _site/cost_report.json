@@ -1,66 +1,131 @@
 {
   "metadata": {
-    "generated_at": "2025-12-09T12:58:06.790220",
-    "session_start": "2025-12-09T12:57:01.559116",
-    "session_duration_sec": 65.231111,
-    "total_usage_records": 1802
+    "generated_at": "2025-12-10T20:04:42.848339",
+    "session_start": "2025-12-10T20:02:23.657404",
+    "session_duration_sec": 139.190942,
+    "total_usage_records": 415
   },
   "cost_summary": {
-    "total_cost": 0.094605,
-    "total_files_processed": 1802,
-    "total_processing_time_sec": 59.64970064163208,
-    "avg_cost_per_file": 5.2499999999999995e-05,
+    "total_cost": 0.014450000000000001,
+    "total_files_processed": 415,
+    "total_processing_time_sec": 128.53026223182678,
+    "avg_cost_per_file": 3.481927710843374e-05,
     "feature_breakdown": {
       "clip_vision": {
         "feature_name": "clip_vision",
-        "total_invocations": 901,
-        "total_processing_time_sec": 56.25844430923462,
-        "total_cost": 0.0901,
+        "total_invocations": 36,
+        "total_processing_time_sec": 2.8367815017700195,
+        "total_cost": 0.0036000000000000003,
         "avg_cost_per_file": 0.0001,
         "success_rate": 1.0,
-        "total_files_processed": 901
+        "total_files_processed": 36
+      },
+      "tesseract_ocr": {
+        "feature_name": "tesseract_ocr",
+        "total_invocations": 18,
+        "total_processing_time_sec": 6.698145866394043,
+        "total_cost": 0.00018,
+        "avg_cost_per_file": 1e-05,
+        "success_rate": 1.0,
+        "total_files_processed": 18
       },
       "face_detection": {
         "feature_name": "face_detection",
-        "total_invocations": 901,
-        "total_processing_time_sec": 3.391256332397461,
-        "total_cost": 0.004505,
+        "total_invocations": 36,
+        "total_processing_time_sec": 0.6234557628631592,
+        "total_cost": 0.00018,
         "avg_cost_per_file": 5e-06,
         "success_rate": 1.0,
-        "total_files_processed": 901
+        "total_files_processed": 36
+      },
+      "pdf_extraction": {
+        "feature_name": "pdf_extraction",
+        "total_invocations": 181,
+        "total_processing_time_sec": 114.18559122085571,
+        "total_cost": 0.00905,
+        "avg_cost_per_file": 5e-05,
+        "success_rate": 1.0,
+        "total_files_processed": 181
+      },
+      "docx_extraction": {
+        "feature_name": "docx_extraction",
+        "total_invocations": 144,
+        "total_processing_time_sec": 4.186287879943848,
+        "total_cost": 0.00144,
+        "avg_cost_per_file": 1e-05,
+        "success_rate": 1.0,
+        "total_files_processed": 144
       }
     }
   },
   "roi_summary": {
-    "total_cost": 0.094605,
-    "total_value": 184.5798611111111,
-    "overall_roi_percentage": 195005.82010582008,
-    "total_manual_hours_saved": 7.383194444444444,
+    "total_cost": 0.014450000000000001,
+    "total_value": 210.16666666666669,
+    "overall_roi_percentage": 1454340.5997693194,
+    "total_manual_hours_saved": 8.406666666666668,
     "hourly_rate_used": 25.0,
     "feature_breakdown": {
       "clip_vision": {
         "feature_name": "clip_vision",
-        "total_cost": 0.0901,
-        "total_value": 159.55208333333331,
+        "total_cost": 0.0036000000000000003,
+        "total_value": 6.374999999999999,
         "roi_percentage": 176983.3333333333,
-        "manual_hours_saved": 6.382083333333333,
+        "manual_hours_saved": 0.25499999999999995,
         "cost_per_file": 0.0001,
         "value_per_file": 0.17708333333333334,
         "break_even_files": 1
       },
+      "tesseract_ocr": {
+        "feature_name": "tesseract_ocr",
+        "total_cost": 0.00018,
+        "total_value": 5.625,
+        "roi_percentage": 3124899.9999999995,
+        "manual_hours_saved": 0.225,
+        "cost_per_file": 1e-05,
+        "value_per_file": 0.3125,
+        "break_even_files": 1
+      },
       "face_detection": {
         "feature_name": "face_detection",
-        "total_cost": 0.004505,
-        "total_value": 25.027777777777782,
+        "total_cost": 0.00018,
+        "total_value": 1.0,
         "roi_percentage": 555455.5555555556,
-        "manual_hours_saved": 1.0011111111111113,
+        "manual_hours_saved": 0.04,
         "cost_per_file": 5e-06,
         "value_per_file": 0.02777777777777778,
+        "break_even_files": 1
+      },
+      "pdf_extraction": {
+        "feature_name": "pdf_extraction",
+        "total_cost": 0.00905,
+        "total_value": 120.66666666666667,
+        "roi_percentage": 1333233.3333333333,
+        "manual_hours_saved": 4.826666666666667,
+        "cost_per_file": 5e-05,
+        "value_per_file": 0.6666666666666667,
+        "break_even_files": 1
+      },
+      "docx_extraction": {
+        "feature_name": "docx_extraction",
+        "total_cost": 0.00144,
+        "total_value": 76.5,
+        "roi_percentage": 5312399.999999999,
+        "manual_hours_saved": 3.06,
+        "cost_per_file": 1e-05,
+        "value_per_file": 0.53125,
         "break_even_files": 1
       }
     }
   },
-  "recommendations": [],
+  "recommendations": [
+    {
+      "feature": "tesseract_ocr",
+      "type": "underutilized",
+      "severity": "low",
+      "message": "Tesseract OCR is only used for 4.3% of files but has 3124900% ROI. Consider expanding usage.",
+      "potential_savings": 0.0
+    }
+  ],
   "model_configs": {
     "clip_vision": {
       "name": "CLIP Vision Model",
@@ -219,14 +284,14 @@
           "estimated_time_sec": 1000.0,
           "estimated_time_human": "16.7 minutes",
           "estimated_value": 562.5,
-          "estimated_roi": null
+          "estimated_roi": Infinity
         },
         "keyword_classifier": {
           "estimated_cost": 0.0,
           "estimated_time_sec": 1.0,
           "estimated_time_human": "1.0 seconds",
           "estimated_value": 71.45833333333333,
-          "estimated_roi": null
+          "estimated_roi": Infinity
         },
         "pdf_extraction": {
           "estimated_cost": 0.05,
@@ -254,21 +319,21 @@
           "estimated_time_sec": 100.0,
           "estimated_time_human": "1.7 minutes",
           "estimated_value": 207.8125,
-          "estimated_roi": null
+          "estimated_roi": Infinity
         },
         "schema_generation": {
           "estimated_cost": 0.0,
           "estimated_time_sec": 50.0,
           "estimated_time_human": "50.0 seconds",
           "estimated_value": 2041.875,
-          "estimated_roi": null
+          "estimated_roi": Infinity
         },
         "game_asset_detection": {
           "estimated_cost": 0.0,
           "estimated_time_sec": 1.0,
           "estimated_time_human": "1.0 seconds",
           "estimated_value": 118.75,
-          "estimated_roi": null
+          "estimated_roi": Infinity
         }
       }
     },
@@ -306,14 +371,14 @@
           "estimated_time_sec": 10000.0,
           "estimated_time_human": "2.8 hours",
           "estimated_value": 5625.0,
-          "estimated_roi": null
+          "estimated_roi": Infinity
         },
         "keyword_classifier": {
           "estimated_cost": 0.0,
           "estimated_time_sec": 10.0,
           "estimated_time_human": "10.0 seconds",
           "estimated_value": 714.5833333333333,
-          "estimated_roi": null
+          "estimated_roi": Infinity
         },
         "pdf_extraction": {
           "estimated_cost": 0.5,
@@ -341,21 +406,21 @@
           "estimated_time_sec": 1000.0,
           "estimated_time_human": "16.7 minutes",
           "estimated_value": 2078.125,
-          "estimated_roi": null
+          "estimated_roi": Infinity
         },
         "schema_generation": {
           "estimated_cost": 0.0,
           "estimated_time_sec": 500.0,
           "estimated_time_human": "8.3 minutes",
           "estimated_value": 20418.75,
-          "estimated_roi": null
+          "estimated_roi": Infinity
         },
         "game_asset_detection": {
           "estimated_cost": 0.0,
           "estimated_time_sec": 10.0,
           "estimated_time_human": "10.0 seconds",
           "estimated_value": 1187.5,
-          "estimated_roi": null
+          "estimated_roi": Infinity
         }
       }
     },
@@ -393,14 +458,14 @@
           "estimated_time_sec": 100000.0,
           "estimated_time_human": "27.8 hours",
           "estimated_value": 56250.0,
-          "estimated_roi": null
+          "estimated_roi": Infinity
         },
         "keyword_classifier": {
           "estimated_cost": 0.0,
           "estimated_time_sec": 100.0,
           "estimated_time_human": "1.7 minutes",
           "estimated_value": 7145.833333333333,
-          "estimated_roi": null
+          "estimated_roi": Infinity
         },
         "pdf_extraction": {
           "estimated_cost": 5.0,
@@ -428,21 +493,21 @@
           "estimated_time_sec": 10000.0,
           "estimated_time_human": "2.8 hours",
           "estimated_value": 20781.25,
-          "estimated_roi": null
+          "estimated_roi": Infinity
         },
         "schema_generation": {
           "estimated_cost": 0.0,
           "estimated_time_sec": 5000.0,
           "estimated_time_human": "1.4 hours",
           "estimated_value": 204187.5,
-          "estimated_roi": null
+          "estimated_roi": Infinity
         },
         "game_asset_detection": {
           "estimated_cost": 0.0,
           "estimated_time_sec": 100.0,
           "estimated_time_human": "1.7 minutes",
           "estimated_value": 11875.0,
-          "estimated_roi": null
+          "estimated_roi": Infinity
         }
       }
     }
