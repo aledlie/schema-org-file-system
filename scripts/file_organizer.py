@@ -27,10 +27,13 @@ from generators import (
     AudioGenerator,
     CodeGenerator,
     DatasetGenerator,
-    ArchiveGenerator
+    ArchiveGenerator,
+    OrganizationGenerator,
+    PersonGenerator,
 )
 from base import PropertyType
 from enrichment import MetadataEnricher
+from uri_utils import generate_file_iri, generate_canonical_iri
 from validator import SchemaValidator
 from integration import SchemaRegistry
 
@@ -94,8 +97,68 @@ class FileOrganizer:
                 'notes': 'Research/Notes',
                 'other': 'Research/Other'
             },
+            'contacts': {
+                'people': 'Contacts/People',
+                'vcards': 'Contacts/vCards',
+                'other': 'Contacts/Other'
+            },
+            'business': {
+                'companies': 'Business/Companies',
+                'clients': 'Business/Clients',
+                'invoices': 'Business/Invoices',
+                'contracts': 'Business/Contracts',
+                'other': 'Business/Other'
+            },
+            'game_assets': {
+                'sprites': 'GameAssets/Sprites',
+                'textures': 'GameAssets/Textures',
+                'fonts': 'GameAssets/Fonts',
+                'audio': 'GameAssets/Audio',
+                'music': 'GameAssets/Music',
+                'other': 'GameAssets/Other'
+            },
+            'fonts': {
+                'truetype': 'CreativeWork/Fonts/TrueType',
+                'opentype': 'CreativeWork/Fonts/OpenType',
+                'web': 'CreativeWork/Fonts/Web',
+                'other': 'CreativeWork/Fonts/Other'
+            },
             'other': 'Other'
         }
+
+        # Game asset detection patterns
+        import re
+        self.game_sprite_keywords = [
+            'frame', 'item', 'segment', 'sprite', 'texture', 'tile',
+            'leg', 'arm', 'head', 'torso', 'body', 'wing', 'tail',
+            'hair', 'face', 'eye', 'mouth', 'hand', 'foot',
+            'wall', 'floor', 'ceiling', 'door', 'window', 'stairs',
+            'sword', 'shield', 'armor', 'helmet', 'boot', 'glove',
+            'potion', 'scroll', 'wand', 'staff', 'ring', 'amulet',
+            'monster', 'enemy', 'npc', 'character', 'player', 'hero',
+            'icon', 'button', 'ui', 'hud', 'menu', 'cursor',
+            'particle', 'effect', 'explosion', 'smoke', 'blood',
+            'corner', 'edge', 'border', 'container', 'btn', 'talent',
+            '2h_axe', '2h_hammer', '1h_sword', '1h_axe', 'crossbow',
+            'assassins_deed', 'atonement', 'backstab', 'cleave',
+            'arrow_v', 'arrow_h', 'checkbox', 'radio', 'toggle', 'add',
+            '_grey', '_gray', '_disabled', '_hover', '_active', '_pressed'
+        ]
+        self.game_sprite_patterns = [
+            re.compile(r'^\d+_grey(_\d+)?$', re.IGNORECASE),
+            re.compile(r'^\d+_f(_\d+)?$', re.IGNORECASE),
+            re.compile(r'^[a-z]+_[a-z]+_\d+$', re.IGNORECASE),
+            re.compile(r'^\d+h_[a-z]+(_\d+)?$', re.IGNORECASE),
+            re.compile(r'^[a-z]+_v(_\d+)?$', re.IGNORECASE),
+            re.compile(r'^[a-z]+_h(_\d+)?$', re.IGNORECASE),
+        ]
+
+        # Game font sprite sheet patterns
+        self.game_font_keywords = [
+            'broguefont', 'gamefont', 'pixelfont', 'bitfont', 'font_',
+            '_font', 'fontsheet', 'font_atlas', 'fontatlas', 'charset',
+            'glyphs', 'tilefont', 'asciifont', 'ascii_font'
+        ]
 
     def detect_file_category(self, file_path: Path) -> Tuple[str, str, str]:
         """
@@ -108,7 +171,47 @@ class FileOrganizer:
         file_name = file_path.name.lower()
         file_ext = file_path.suffix.lower()
 
-        # Images
+        # =====================================================================
+        # Priority 1: Contacts - vCards and contact files (check extension first)
+        # =====================================================================
+        if file_ext == '.vcf' or mime_type == 'text/vcard':
+            return ('contacts', 'vcards', 'Person')
+
+        if file_ext == '.ldif':
+            return ('contacts', 'other', 'Person')
+
+        # =====================================================================
+        # Priority 2: Business files - detect by filename patterns
+        # =====================================================================
+        if any(keyword in file_name for keyword in ['invoice', 'receipt', 'bill']):
+            return ('business', 'invoices', 'Organization')
+
+        if any(keyword in file_name for keyword in ['contract', 'agreement', 'nda', 'sow']):
+            return ('business', 'contracts', 'Organization')
+
+        if any(keyword in file_name for keyword in ['client', 'customer']):
+            return ('business', 'clients', 'Organization')
+
+        if any(keyword in file_name for keyword in ['company', 'corp', 'inc', 'llc', 'ltd']):
+            return ('business', 'companies', 'Organization')
+
+        # =====================================================================
+        # Priority 3: Font files (before game assets to catch actual fonts)
+        # =====================================================================
+        font_category = self._classify_font(file_ext)
+        if font_category:
+            return font_category
+
+        # =====================================================================
+        # Priority 4: Game Assets (check before generic images)
+        # =====================================================================
+        game_asset = self._classify_game_asset(file_path, file_name, file_ext)
+        if game_asset:
+            return game_asset
+
+        # =====================================================================
+        # Priority 5: Images
+        # =====================================================================
         if mime_type and mime_type.startswith('image/'):
             if 'screenshot' in file_name or file_name.startswith('screen'):
                 return ('images', 'screenshots', 'ImageObject')
@@ -184,6 +287,72 @@ class FileOrganizer:
         # Default
         return ('other', 'other', 'CreativeWork')
 
+    def _classify_font(self, file_ext: str) -> Optional[Tuple[str, str, str]]:
+        """
+        Classify font files based on extension.
+
+        Returns:
+            Tuple of (category, subcategory, schema_type) or None if not a font
+        """
+        font_extensions = {
+            '.ttf': ('fonts', 'truetype', 'DigitalDocument'),
+            '.otf': ('fonts', 'opentype', 'DigitalDocument'),
+            '.woff': ('fonts', 'web', 'DigitalDocument'),
+            '.woff2': ('fonts', 'web', 'DigitalDocument'),
+            '.eot': ('fonts', 'web', 'DigitalDocument'),
+            '.fon': ('fonts', 'other', 'DigitalDocument'),
+            '.fnt': ('fonts', 'other', 'DigitalDocument'),
+        }
+        return font_extensions.get(file_ext.lower())
+
+    def _classify_game_asset(self, file_path: Path, file_name: str, file_ext: str) -> Optional[Tuple[str, str, str]]:
+        """
+        Classify file as a game asset based on filename patterns.
+
+        Returns:
+            Tuple of (category, subcategory, schema_type) or None if not a game asset
+        """
+        import re
+
+        # Only check image and audio files
+        if file_ext not in ['.png', '.jpg', '.jpeg', '.bmp', '.tga', '.dds',
+                           '.wav', '.ogg', '.mp3', '.flac', '.aac']:
+            return None
+
+        stem = file_path.stem.lower()
+
+        # Remove timestamp suffixes for pattern matching (e.g., _20251120_164506)
+        clean_stem = re.sub(r'_\d{8}_\d{6}$', '', stem)
+
+        # Check for image files that are game sprites/textures
+        if file_ext in ['.png', '.jpg', '.jpeg', '.bmp', '.tga', '.dds']:
+            # Check for game font sprite sheets first
+            for keyword in self.game_font_keywords:
+                if keyword in stem or keyword in clean_stem:
+                    return ('game_assets', 'fonts', 'ImageObject')
+
+            # Check regex patterns for numbered sprites and variants
+            for pattern in self.game_sprite_patterns:
+                if pattern.match(clean_stem):
+                    return ('game_assets', 'sprites', 'ImageObject')
+
+            # Check for sprite/texture keyword patterns
+            for keyword in self.game_sprite_keywords:
+                if keyword in stem or keyword in clean_stem:
+                    # Distinguish between sprites and textures
+                    sprite_keywords = [
+                        'frame', 'sprite', 'leg', 'arm', 'head', 'torso', 'body',
+                        'wing', 'hair', 'face', 'mouth', '_grey', '_gray',
+                        'assassins', 'atonement', 'arrow_v', 'arrow_h', 'add',
+                        '2h_', '1h_', 'dagger', 'sword', 'axe', 'hammer', 'mace'
+                    ]
+                    if any(kw in stem or kw in clean_stem for kw in sprite_keywords):
+                        return ('game_assets', 'sprites', 'ImageObject')
+                    else:
+                        return ('game_assets', 'textures', 'ImageObject')
+
+        return None
+
     def generate_schema(self, file_path: Path, schema_type: str) -> Dict:
         """Generate Schema.org metadata for a file."""
         # Get file stats
@@ -194,9 +363,12 @@ class FileOrganizer:
         file_url = f"https://localhost/files/{quote(file_path.name)}"
         actual_path = str(file_path.absolute())
 
+        # Generate deterministic entity ID for this file
+        file_entity_id = generate_file_iri(str(file_path))
+
         # Select appropriate generator and set basic info based on type
         if schema_type in ['ImageObject', 'Photograph']:
-            generator = ImageGenerator(schema_type)
+            generator = ImageGenerator(schema_type, entity_id=file_entity_id)
             generator.set_basic_info(
                 name=file_path.name,
                 content_url=file_url,
@@ -205,7 +377,7 @@ class FileOrganizer:
             )
 
         elif schema_type == 'VideoObject':
-            generator = VideoGenerator()
+            generator = VideoGenerator(entity_id=file_entity_id)
             generator.set_basic_info(
                 name=file_path.name,
                 content_url=file_url,
@@ -214,7 +386,7 @@ class FileOrganizer:
             )
 
         elif schema_type in ['AudioObject', 'MusicRecording']:
-            generator = AudioGenerator(schema_type)
+            generator = AudioGenerator(schema_type, entity_id=file_entity_id)
             generator.set_basic_info(
                 name=file_path.name,
                 content_url=file_url,
@@ -222,7 +394,7 @@ class FileOrganizer:
             )
 
         elif schema_type == 'SoftwareSourceCode':
-            generator = CodeGenerator()
+            generator = CodeGenerator(entity_id=file_entity_id)
             # CodeGenerator uses different method signature
             generator.set_basic_info(
                 name=file_path.name,
@@ -232,7 +404,7 @@ class FileOrganizer:
             generator.set_property("url", file_url, PropertyType.URL)
 
         elif schema_type == 'Dataset':
-            generator = DatasetGenerator()
+            generator = DatasetGenerator(entity_id=file_entity_id)
             generator.set_basic_info(
                 name=file_path.name,
                 description=f"{schema_type}: {file_path.name}",
@@ -240,7 +412,7 @@ class FileOrganizer:
             )
 
         elif schema_type in ['DigitalDocument', 'Article', 'ScholarlyArticle']:
-            generator = DocumentGenerator(schema_type)
+            generator = DocumentGenerator(schema_type, entity_id=file_entity_id)
             generator.set_basic_info(
                 name=file_path.name,
                 description=f"{schema_type}: {file_path.name}"
@@ -251,8 +423,33 @@ class FileOrganizer:
                 content_size=stats.st_size
             )
 
+        elif schema_type == 'Organization':
+            # Extract organization name from filename (remove extension and clean up)
+            org_name = file_path.stem.replace('_', ' ').replace('-', ' ').title()
+            # Generate canonical ID based on organization name (deterministic)
+            org_entity_id = generate_canonical_iri('company', org_name)
+            generator = OrganizationGenerator(entity_id=org_entity_id)
+            generator.set_basic_info(
+                name=org_name,
+                description=f"Organization file: {file_path.name}",
+                url=file_url
+            )
+            # Try to parse vCard or extract additional info
+            self._enrich_organization_from_file(generator, file_path)
+
+        elif schema_type == 'Person':
+            # Extract person name from filename or vCard
+            person_name = file_path.stem.replace('_', ' ').replace('-', ' ').title()
+            # Generate canonical ID based on person name (deterministic)
+            person_entity_id = generate_canonical_iri('person', person_name)
+            generator = PersonGenerator(entity_id=person_entity_id)
+            generator.set_name(name=person_name)
+            generator.set_url(file_url)
+            # Try to parse vCard for additional info
+            self._enrich_person_from_vcard(generator, file_path)
+
         else:
-            generator = DocumentGenerator()
+            generator = DocumentGenerator(entity_id=file_entity_id)
             generator.set_basic_info(
                 name=file_path.name,
                 description=f"File: {file_path.name}"
@@ -320,6 +517,146 @@ class FileOrganizer:
             '.kt': 'Kotlin',
         }
         return ext_map.get(file_path.suffix.lower(), 'Unknown')
+
+    def _enrich_person_from_vcard(self, generator: 'PersonGenerator', file_path: Path) -> None:
+        """
+        Enrich PersonGenerator with data from a vCard file.
+
+        Args:
+            generator: PersonGenerator instance to enrich
+            file_path: Path to vCard file (.vcf)
+        """
+        if file_path.suffix.lower() != '.vcf':
+            return
+
+        try:
+            with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                content = f.read()
+
+            # Parse vCard properties
+            lines = content.split('\n')
+            current_value = ''
+
+            for line in lines:
+                # Handle line continuation
+                if line.startswith(' ') or line.startswith('\t'):
+                    current_value += line.strip()
+                    continue
+
+                # Process previous line
+                if current_value:
+                    self._parse_vcard_line(generator, current_value)
+
+                current_value = line.strip()
+
+            # Process last line
+            if current_value:
+                self._parse_vcard_line(generator, current_value)
+
+        except Exception:
+            pass  # Silently fail if vCard parsing fails
+
+    def _parse_vcard_line(self, generator: 'PersonGenerator', line: str) -> None:
+        """Parse a single vCard line and apply to PersonGenerator."""
+        if ':' not in line:
+            return
+
+        # Split on first colon
+        key_part, value = line.split(':', 1)
+        key = key_part.split(';')[0].upper()  # Remove parameters
+
+        if key == 'FN':
+            generator.set_name(name=value)
+        elif key == 'N':
+            # N:Last;First;Middle;Prefix;Suffix
+            parts = value.split(';')
+            if len(parts) >= 2:
+                generator.set_name(
+                    family_name=parts[0] if parts[0] else None,
+                    given_name=parts[1] if len(parts) > 1 and parts[1] else None,
+                    additional_name=parts[2] if len(parts) > 2 and parts[2] else None,
+                    honorific_prefix=parts[3] if len(parts) > 3 and parts[3] else None,
+                    honorific_suffix=parts[4] if len(parts) > 4 and parts[4] else None,
+                )
+        elif key == 'EMAIL':
+            generator.set_contact_info(email=value)
+        elif key == 'TEL':
+            generator.set_contact_info(telephone=value)
+        elif key == 'ORG':
+            generator.set_job_info(works_for=value.split(';')[0])
+        elif key == 'TITLE':
+            generator.set_job_info(job_title=value)
+        elif key == 'URL':
+            generator.set_url(value)
+        elif key == 'BDAY':
+            generator.set_birth_info(birth_date=value)
+        elif key == 'ADR':
+            # ADR:;;Street;City;Region;PostalCode;Country
+            parts = value.split(';')
+            if len(parts) >= 7:
+                generator.set_address(
+                    street=parts[2] if parts[2] else None,
+                    city=parts[3] if len(parts) > 3 and parts[3] else None,
+                    region=parts[4] if len(parts) > 4 and parts[4] else None,
+                    postal_code=parts[5] if len(parts) > 5 and parts[5] else None,
+                    country=parts[6] if len(parts) > 6 and parts[6] else None,
+                )
+
+    def _enrich_organization_from_file(self, generator: 'OrganizationGenerator', file_path: Path) -> None:
+        """
+        Enrich OrganizationGenerator with data from a file.
+
+        Attempts to extract organization info from filename patterns and file content.
+
+        Args:
+            generator: OrganizationGenerator instance to enrich
+            file_path: Path to file
+        """
+        file_name = file_path.name.lower()
+
+        # Try to detect organization type from filename
+        if 'invoice' in file_name or 'receipt' in file_name:
+            # Invoices often have company name in the filename
+            # Pattern: company_invoice_123.pdf or invoice_company_date.pdf
+            parts = file_path.stem.replace('_', ' ').replace('-', ' ').split()
+            for part in parts:
+                if part.lower() not in ['invoice', 'receipt', 'bill', 'payment']:
+                    generator.set_basic_info(name=part.title())
+                    break
+
+        elif 'contract' in file_name or 'agreement' in file_name:
+            # Contracts may have party names
+            pass  # Keep the default name from filename
+
+        # Try to parse vCard if it's a .vcf file with ORG
+        if file_path.suffix.lower() == '.vcf':
+            try:
+                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    content = f.read()
+
+                for line in content.split('\n'):
+                    line = line.strip()
+                    if line.upper().startswith('ORG:'):
+                        org_name = line.split(':', 1)[1].split(';')[0]
+                        generator.set_basic_info(name=org_name)
+                    elif line.upper().startswith('TEL:'):
+                        generator.set_contact_info(telephone=line.split(':', 1)[1])
+                    elif line.upper().startswith('EMAIL:'):
+                        generator.set_contact_info(email=line.split(':', 1)[1])
+                    elif line.upper().startswith('URL:'):
+                        generator.set_basic_info(url=line.split(':', 1)[1])
+                    elif line.upper().startswith('ADR:'):
+                        parts = line.split(':', 1)[1].split(';')
+                        if len(parts) >= 7:
+                            generator.set_address(
+                                street=parts[2] if parts[2] else None,
+                                city=parts[3] if len(parts) > 3 and parts[3] else None,
+                                region=parts[4] if len(parts) > 4 and parts[4] else None,
+                                postal_code=parts[5] if len(parts) > 5 and parts[5] else None,
+                                country=parts[6] if len(parts) > 6 and parts[6] else None,
+                            )
+            except Exception:
+                pass
 
     def get_destination_path(self, file_path: Path, category: str, subcategory: str) -> Path:
         """Get the destination path for a file."""
