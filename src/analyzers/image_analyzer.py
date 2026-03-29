@@ -15,6 +15,12 @@ try:
 except ImportError:
     VISION_AVAILABLE = False
 
+# CLIP cache support
+try:
+    from shared.clip_cache import get_cached_embedding, CLIP_CACHE_AVAILABLE
+except ImportError:
+    CLIP_CACHE_AVAILABLE = False
+
 # PIL is needed for opening images in classify_image_content
 try:
     from PIL import Image
@@ -79,14 +85,14 @@ class ImageContentAnalyzer:
 
         if self.vision_available:
             try:
-                print("Loading CLIP model for image analysis...")
-                self.model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-                self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+                if not CLIP_CACHE_AVAILABLE:
+                    print("Loading CLIP model for image analysis...")
+                    self.model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+                    self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+                    print("✓ CLIP model loaded successfully")
 
                 cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
                 self.face_cascade = cv2.CascadeClassifier(cascade_path)
-
-                print("✓ CLIP model loaded successfully")
             except Exception as e:
                 print(f"Warning: Could not load CLIP model: {e}")
                 self.vision_available = False
@@ -128,12 +134,19 @@ class ImageContentAnalyzer:
         Returns:
             Dictionary of category -> confidence score
         """
-        if not self.vision_available or self.model is None:
+        if not self.vision_available:
             return {}
 
         ctx = CostTracker(self.cost_calculator, "clip_vision") if self.cost_calculator else nullcontext()
         with ctx:
             try:
+                if CLIP_CACHE_AVAILABLE:
+                    results = get_cached_embedding(image_path, _ALL_CATEGORIES, prompt_prefix="")
+                    return {label: conf for label, conf in results}
+
+                if self.model is None:
+                    return {}
+
                 image = Image.open(image_path)
 
                 inputs = self.processor(
