@@ -173,6 +173,19 @@ try:
 except ImportError:
     ENHANCED_CLIP_AVAILABLE = False
 
+# CLIP cache support
+try:
+    from shared.clip_cache import get_cached_embedding, CLIP_CACHE_AVAILABLE
+except ImportError:
+    CLIP_CACHE_AVAILABLE = False
+
+# Reverse map: full CLIP prompt → short CLIP_CONTENT_LABELS key.
+# Built once at import time; used by enhance_weak_image_classification.
+_CLIP_PROMPT_TO_LABEL: dict = (
+    dict(zip(CLIP_CATEGORY_PROMPTS, CLIP_CONTENT_LABELS))
+    if ENHANCED_CLIP_AVAILABLE else {}
+)
+
 
 class ContentClassifier:
     """Classifies document content into categories."""
@@ -1019,15 +1032,15 @@ class ImageContentAnalyzer:
 
         if self.vision_available:
             try:
-                print("Loading CLIP model for image analysis...")
-                self.model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-                self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+                if not CLIP_CACHE_AVAILABLE:
+                    print("Loading CLIP model for image analysis...")
+                    self.model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
+                    self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
+                    print("✓ CLIP model loaded successfully")
 
                 # Load OpenCV face detection
                 cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
                 self.face_cascade = cv2.CascadeClassifier(cascade_path)
-
-                print("✓ CLIP model loaded successfully")
             except Exception as e:
                 print(f"Warning: Could not load CLIP model: {e}")
                 self.vision_available = False
@@ -1066,6 +1079,20 @@ class ImageContentAnalyzer:
                 print(f"  Face detection error: {e}")
                 return False
 
+    _CLASSIFY_CATEGORIES = [
+        "a photo of a home interior room",
+        "a photo of a living room",
+        "a photo of a bedroom",
+        "a photo of a kitchen",
+        "a photo of a bathroom",
+        "a photo of furniture",
+        "a photo of a house exterior",
+        "a photo of people",
+        "a screenshot",
+        "a photo of outdoors",
+        "a photo of nature",
+    ]
+
     def classify_image_content(self, image_path: Path) -> Dict[str, float]:
         """
         Classify image content using CLIP zero-shot classification.
@@ -1073,32 +1100,24 @@ class ImageContentAnalyzer:
         Returns:
             Dictionary of category -> confidence score
         """
-        if not self.vision_available or self.model is None:
+        if not self.vision_available:
             return {}
 
         with CostTracker(self.cost_calculator, 'clip_vision') if self.cost_calculator else nullcontext():
             try:
+                if CLIP_CACHE_AVAILABLE:
+                    results = get_cached_embedding(image_path, self._CLASSIFY_CATEGORIES, prompt_prefix="")
+                    return {label: conf for label, conf in results}
+
+                if self.model is None:
+                    return {}
+
                 # Open image
                 image = Image.open(image_path)
 
-                # Define categories to check
-                categories = [
-                    "a photo of a home interior room",
-                    "a photo of a living room",
-                    "a photo of a bedroom",
-                    "a photo of a kitchen",
-                    "a photo of a bathroom",
-                    "a photo of furniture",
-                    "a photo of a house exterior",
-                    "a photo of people",
-                    "a screenshot",
-                    "a photo of outdoors",
-                    "a photo of nature"
-                ]
-
                 # Prepare inputs
                 inputs = self.processor(
-                    text=categories,
+                    text=self._CLASSIFY_CATEGORIES,
                     images=image,
                     return_tensors="pt",
                     padding=True
@@ -1110,12 +1129,7 @@ class ImageContentAnalyzer:
                     logits_per_image = outputs.logits_per_image
                     probs = logits_per_image.softmax(dim=1)
 
-                # Convert to dictionary
-                scores = {}
-                for i, category in enumerate(categories):
-                    scores[category] = float(probs[0][i])
-
-                return scores
+                return {category: float(probs[0][i]) for i, category in enumerate(self._CLASSIFY_CATEGORIES)}
 
             except Exception as e:
                 print(f"  Image classification error: {e}")
@@ -3096,26 +3110,32 @@ class ContentBasedFileOrganizer:
         """
         if not ENHANCED_CLIP_AVAILABLE or not self.image_analyzer.vision_available:
             return None
-        if not self.image_analyzer.model or not self.image_analyzer.processor:
-            return None
-
-        try:
-            image = Image.open(file_path)
-        except Exception as e:
-            print(f"  CLIP enhance: cannot open image: {e}")
+        if not CLIP_CACHE_AVAILABLE and (not self.image_analyzer.model or not self.image_analyzer.processor):
             return None
 
         # Run full 20-category CLIP classification
         try:
-            inputs = self.image_analyzer.processor(
-                text=CLIP_CATEGORY_PROMPTS, images=image,
-                return_tensors="pt", padding=True,
-            )
-            with torch.no_grad():
-                probs = self.image_analyzer.model(**inputs).logits_per_image.softmax(dim=1)
-            scores = {label: float(probs[0][i]) for i, label in enumerate(CLIP_CONTENT_LABELS)}
-            best_label = max(scores, key=scores.get)
-            best_score = scores[best_label]
+            if CLIP_CACHE_AVAILABLE:
+                # Pass full prompts; remap back to CLIP_CONTENT_LABELS keys
+                # so _map_clip_label can look them up in CLIP_LABEL_TO_ORGANIZER.
+                results = get_cached_embedding(file_path, CLIP_CATEGORY_PROMPTS, prompt_prefix="")
+                best_prompt, best_score = results[0]
+                best_label = _CLIP_PROMPT_TO_LABEL.get(best_prompt, best_prompt)
+            else:
+                try:
+                    image = Image.open(file_path)
+                except Exception as e:
+                    print(f"  CLIP enhance: cannot open image: {e}")
+                    return None
+                inputs = self.image_analyzer.processor(
+                    text=CLIP_CATEGORY_PROMPTS, images=image,
+                    return_tensors="pt", padding=True,
+                )
+                with torch.no_grad():
+                    probs = self.image_analyzer.model(**inputs).logits_per_image.softmax(dim=1)
+                scores = {label: float(probs[0][i]) for i, label in enumerate(CLIP_CONTENT_LABELS)}
+                best_label = max(scores, key=scores.get)
+                best_score = scores[best_label]
             print(f"  CLIP enhance: {best_label} ({best_score:.1%})")
         except Exception as e:
             print(f"  CLIP enhance error: {e}")

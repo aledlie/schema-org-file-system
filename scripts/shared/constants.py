@@ -125,6 +125,7 @@ CLIP_LABEL_TO_ORGANIZER: dict[str, tuple[str, str]] = {
   "a meme or social media image": ("media", "photos_social"),
 }
 
+CLIP_BATCH_SIZE: int = 32
 CLIP_ENHANCE_THRESHOLD = 0.15      # min confidence to use CLIP result
 CLIP_ENHANCE_HIGH_THRESHOLD = 0.30  # confidence to skip OCR fallback
 

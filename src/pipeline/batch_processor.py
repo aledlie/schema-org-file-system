@@ -6,6 +6,17 @@ from typing import Any, Dict, List, Optional
 
 _SEPARATOR = "=" * 60
 
+_IMAGE_EXTENSIONS = frozenset({
+  ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".heic", ".tiff", ".tif",
+})
+
+try:
+  from shared.clip_cache import get_cached_embeddings_batch, CLIP_CACHE_AVAILABLE
+  from shared.constants import CLIP_CONTENT_LABELS, CLIP_BATCH_SIZE
+  _BATCH_PREWARM_AVAILABLE = CLIP_CACHE_AVAILABLE
+except ImportError:
+  _BATCH_PREWARM_AVAILABLE = False
+
 
 class BatchProcessor:
     """
@@ -86,6 +97,15 @@ class BatchProcessor:
             print(f"\nWARNING: Processing limited to first {limit} files for testing\n")
 
         print(f"\nTotal files to process: {len(all_files)}\n")
+
+        if _BATCH_PREWARM_AVAILABLE:
+            image_paths = [p for p in all_files if p.suffix.lower() in _IMAGE_EXTENSIONS]
+            if image_paths:
+                print(f"\nPre-warming CLIP cache: {len(image_paths)} images (batch={CLIP_BATCH_SIZE})")
+                for chunk_start in range(0, len(image_paths), CLIP_BATCH_SIZE):
+                    chunk = image_paths[chunk_start : chunk_start + CLIP_BATCH_SIZE]
+                    get_cached_embeddings_batch(chunk, CLIP_CONTENT_LABELS)
+                print("CLIP cache pre-warm complete\n")
 
         for i, file_path in enumerate(all_files, 1):
             print(f"[{i}/{len(all_files)}] Processing: {file_path.name}")
