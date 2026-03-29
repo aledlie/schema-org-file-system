@@ -5,6 +5,8 @@ import threading
 from pathlib import Path
 from typing import Dict, List, Optional
 
+from shared.constants import CLIP_BATCH_SIZE
+
 logger = logging.getLogger(__name__)
 
 CLIP_AVAILABLE = False
@@ -163,7 +165,7 @@ class CLIPClassifier:
   # --- Batch inference — sentence-transformers handles DataLoader internally ---
 
   _FALLBACK_CONFIDENCE = 0.0
-  _DEFAULT_BATCH_SIZE = 16
+  _DEFAULT_BATCH_SIZE = CLIP_BATCH_SIZE
 
   def classify_batch(
     self,
