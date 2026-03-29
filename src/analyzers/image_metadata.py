@@ -96,22 +96,15 @@ class ImageMetadataParser:
         Returns:
             datetime object or None
         """
-        exif_data = self.extract_exif_data(image_path)
+        return self._extract_datetime_from_exif(self.extract_exif_data(image_path))
 
-        if not exif_data:
-            return None
-
-        datetime_tags = ["DateTimeOriginal", "DateTimeDigitized", "DateTime"]
-
-        for tag in datetime_tags:
+    def _extract_datetime_from_exif(self, exif_data: Dict[str, Any]) -> Optional[datetime]:
+        for tag in ("DateTimeOriginal", "DateTimeDigitized", "DateTime"):
             if tag in exif_data:
                 try:
-                    dt_str = str(exif_data[tag])
-                    dt = datetime.strptime(dt_str, "%Y:%m:%d %H:%M:%S")
-                    return dt
+                    return datetime.strptime(str(exif_data[tag]), "%Y:%m:%d %H:%M:%S")
                 except (ValueError, TypeError):
                     continue
-
         return None
 
     def extract_gps_coordinates(self, image_path: Path) -> Optional[Tuple[float, float]]:
@@ -123,24 +116,18 @@ class ImageMetadataParser:
         """
         if not self.metadata_available:
             return None
+        return self._extract_gps_from_exif(self.extract_exif_data(image_path))
 
+    def _extract_gps_from_exif(self, exif_data: Dict[str, Any]) -> Optional[Tuple[float, float]]:
         try:
-            image = Image.open(image_path)
-            exif = image._getexif()  # type: ignore[attr-defined]
-
-            if not exif:
+            raw_gps = exif_data.get("GPSInfo")
+            if not raw_gps:
                 return None
 
-            gps_info: Dict[str, Any] = {}
-            for tag_id, value in exif.items():
-                tag = TAGS.get(tag_id, tag_id)
-                if tag == "GPSInfo":
-                    for gps_tag_id in value:
-                        gps_tag = GPSTAGS.get(gps_tag_id, gps_tag_id)
-                        gps_info[gps_tag] = value[gps_tag_id]
-
-            if not gps_info:
-                return None
+            gps_info: Dict[str, Any] = {
+                GPSTAGS.get(tag_id, tag_id): value
+                for tag_id, value in raw_gps.items()
+            }
 
             lat = self._convert_to_degrees(gps_info.get("GPSLatitude"))
             lon = self._convert_to_degrees(gps_info.get("GPSLongitude"))
@@ -241,14 +228,16 @@ class ImageMetadataParser:
             "date_str": None,
         }
 
-        dt = self.extract_datetime(image_path)
+        exif_data = self.extract_exif_data(image_path)
+
+        dt = self._extract_datetime_from_exif(exif_data)
         if dt:
             summary["datetime"] = dt
             summary["year"] = dt.year
             summary["month"] = dt.month
             summary["date_str"] = dt.strftime("%Y-%m")
 
-        coords = self.extract_gps_coordinates(image_path)
+        coords = self._extract_gps_from_exif(exif_data)
         if coords:
             summary["gps_coordinates"] = coords
             location = self.get_location_name(coords)

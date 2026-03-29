@@ -178,6 +178,37 @@ class ImageContentAnalyzer:
 
         return (is_interior and not has_people, scores)
 
+    def analyze_for_organization(
+        self, image_path: Path
+    ) -> Tuple[bool, bool, Dict[str, float]]:
+        """
+        Run CLIP inference once and return both organization-relevant flags.
+
+        Returns:
+            Tuple of (has_people, is_home_interior_no_people, scores)
+        """
+        if not self.vision_available:
+            return (False, False, {})
+
+        scores = self.classify_image_content(image_path)
+        if not scores:
+            return (False, False, {})
+
+        has_faces = self.detect_people(image_path)
+
+        interior_score = max(scores.get(cat, 0) for cat in _INTERIOR_CATEGORIES)
+        people_score = scores.get("a photo of people", 0)
+        screenshot_score = scores.get("a screenshot", 0)
+
+        is_interior = interior_score > _INTERIOR_SCORE_THRESHOLD
+        clip_has_people = people_score > _PEOPLE_SCORE_THRESHOLD
+        has_people = (people_score > _PEOPLE_SCORE_LOW_THRESHOLD or has_faces) and not (
+            screenshot_score > _SCREENSHOT_SCORE_THRESHOLD
+        )
+        is_home_interior_no_people = is_interior and not (clip_has_people or has_faces)
+
+        return (has_people, is_home_interior_no_people, scores)
+
     def has_people_in_photo(self, image_path: Path) -> Tuple[bool, Dict[str, float]]:
         """
         Check if image contains people (for social photos).
