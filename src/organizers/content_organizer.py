@@ -1628,12 +1628,11 @@ class ContentOrganizer(BaseOrganizer):
         image_analyzer = getattr(self, 'image_analyzer', None)
         if schema_type == 'ImageObject' and image_analyzer and getattr(image_analyzer, 'vision_available', False):
             print("  Analyzing image content...")
-            has_people, _ = image_analyzer.has_people_in_photo(file_path)
+            has_people, is_property_mgmt, _ = image_analyzer.analyze_for_organization(file_path)
             if has_people:
                 print("  ✓ Detected: Photo with people")
                 return ('media', 'photos_social', schema_type, '', None, [], image_metadata)
 
-            is_property_mgmt, _ = image_analyzer.is_home_interior_no_people(file_path)
             if is_property_mgmt:
                 print("  ✓ Detected: Home interior without people")
                 return ('property_management', 'other', schema_type, '', None, [], image_metadata)

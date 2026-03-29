@@ -49,6 +49,7 @@ def generate_file_iri(file_path: str) -> str:
 def generate_canonical_iri(entity_type: str, natural_key: str) -> str:
     ns = _IRI_NAMESPACES[entity_type.lower()]
     return f"urn:uuid:{uuid.uuid5(ns, natural_key.lower().strip())}"
+
 from integration import SchemaRegistry
 
 

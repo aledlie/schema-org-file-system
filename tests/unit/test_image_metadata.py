@@ -187,8 +187,7 @@ class TestExtractDatetime:
 
 class TestGetMetadataSummary:
     def test_all_none_when_no_exif(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
-        with patch.object(parser, "extract_datetime", return_value=None), \
-             patch.object(parser, "extract_gps_coordinates", return_value=None):
+        with patch.object(parser, "extract_exif_data", return_value={}):
             result = parser.get_metadata_summary(dummy_path)
 
         assert result["datetime"] is None
@@ -200,8 +199,8 @@ class TestGetMetadataSummary:
 
     def test_populates_datetime_fields(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
         dt = datetime(2023, 11, 26, 14, 30, 0)
-        with patch.object(parser, "extract_datetime", return_value=dt), \
-             patch.object(parser, "extract_gps_coordinates", return_value=None):
+        exif = {"DateTimeOriginal": "2023:11:26 14:30:00"}
+        with patch.object(parser, "extract_exif_data", return_value=exif):
             result = parser.get_metadata_summary(dummy_path)
 
         assert result["datetime"] == dt
@@ -211,8 +210,8 @@ class TestGetMetadataSummary:
 
     def test_populates_location_when_gps_present(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
         coords = (37.7749, -122.4194)
-        with patch.object(parser, "extract_datetime", return_value=None), \
-             patch.object(parser, "extract_gps_coordinates", return_value=coords), \
+        with patch.object(parser, "extract_exif_data", return_value={}), \
+             patch.object(parser, "_extract_gps_from_exif", return_value=coords), \
              patch.object(parser, "get_location_name", return_value="San Francisco, CA, USA"):
             result = parser.get_metadata_summary(dummy_path)
 
