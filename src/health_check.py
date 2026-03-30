@@ -108,40 +108,21 @@ class SystemHealthChecker:
             )
 
     def _check_ocr(self) -> None:
-        """Check Tesseract OCR availability."""
+        """Check docTR OCR availability."""
         try:
-            import pytesseract
-            # Check if tesseract binary is available
-            tesseract_path = shutil.which('tesseract')
-            if tesseract_path:
-                try:
-                    version = pytesseract.get_tesseract_version()
-                    self.features['ocr'] = FeatureStatus(
-                        name="OCR (Tesseract)",
-                        available=True,
-                        version=str(version),
-                        impact="Text extraction from images/screenshots"
-                    )
-                except Exception:
-                    self.features['ocr'] = FeatureStatus(
-                        name="OCR (Tesseract)",
-                        available=True,
-                        version="unknown",
-                        impact="Text extraction from images/screenshots"
-                    )
-            else:
-                self.features['ocr'] = FeatureStatus(
-                    name="OCR (Tesseract)",
-                    available=False,
-                    error="tesseract binary not found",
-                    impact="No OCR - brew install tesseract"
-                )
+            import doctr
+            self.features['ocr'] = FeatureStatus(
+                name="OCR (docTR)",
+                available=True,
+                version=doctr.__version__,
+                impact="Text extraction from images/screenshots"
+            )
         except ImportError:
             self.features['ocr'] = FeatureStatus(
-                name="OCR (Tesseract)",
+                name="OCR (docTR)",
                 available=False,
-                error="pytesseract not installed",
-                impact="No OCR - pip install pytesseract"
+                error="python-doctr not installed",
+                impact="No OCR - pip install python-doctr[torch]"
             )
 
     def _check_clip_vision(self) -> None:
