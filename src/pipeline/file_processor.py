@@ -143,6 +143,8 @@ class FileProcessor:
         company_name: Optional[str],
         people_names: List[str],
         image_metadata: Optional[Dict[str, Any]],
+        ocr_confidence: Optional[float] = None,
+        detected_language: Optional[str] = None,
     ) -> None:
         """Persist file and its entity relationships to the graph store."""
         if not self.graph_store:
@@ -163,6 +165,8 @@ class FileProcessor:
                 schema_data=schema,
                 extracted_text=extracted_text[:10000] if extracted_text else None,
                 extracted_text_length=len(extracted_text) if extracted_text else 0,
+                ocr_confidence=ocr_confidence,
+                detected_language=detected_language,
                 status=FileStatus.ORGANIZED,
                 organized_at=datetime.now(),
             )

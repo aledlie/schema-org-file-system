@@ -18,23 +18,29 @@ from collections import defaultdict
 from urllib.parse import quote
 from contextlib import nullcontext
 
-# OCR and PDF imports
+# OCR (docTR via shared.ocr_utils) and PDF imports
 try:
-    import pytesseract
+    from shared.ocr_utils import (
+        extract_ocr_text,
+        extract_ocr_text_pdf,
+        extract_ocr_with_confidence,
+        extract_ocr_pdf_with_confidence,
+        is_ocr_available,
+        OCRResult,
+    )
     from PIL import Image
     import pypdf
-    from pdf2image import convert_from_path
-    OCR_AVAILABLE = True
+    OCR_AVAILABLE = is_ocr_available()
 
-    # HEIC support for OCR
+    # HEIC support
     try:
         from pillow_heif import register_heif_opener
         register_heif_opener()
     except ImportError:
-        pass  # HEIC support optional for OCR
+        pass
 except ImportError:
     OCR_AVAILABLE = False
-    print("Warning: OCR libraries not available. Install pytesseract, Pillow, pypdf, pdf2image")
+    print("Warning: OCR libraries not available. Install python-doctr[torch], Pillow, pypdf")
 
 # Word document imports
 try:
@@ -2958,15 +2964,14 @@ class ContentBasedFileOrganizer:
         return None
 
     def extract_text_from_image(self, image_path: Path) -> str:
-        """Extract text from image using OCR."""
+        """Extract text from image using docTR OCR."""
         if not self.ocr_available:
             return ""
 
-        with CostTracker(self.cost_calculator, 'tesseract_ocr') if self.cost_calculator else nullcontext():
+        with CostTracker(self.cost_calculator, 'doctr_ocr') if self.cost_calculator else nullcontext():
             try:
-                image = Image.open(image_path)
-                text = pytesseract.image_to_string(image)
-                return text.strip()
+                result = extract_ocr_text(image_path, max_chars=0)
+                return result or ""
             except Exception as e:
                 print(f"  OCR error: {e}")
                 return ""
@@ -2983,7 +2988,7 @@ class ContentBasedFileOrganizer:
                 # First try to extract text directly (for searchable PDFs)
                 with open(pdf_path, 'rb') as f:
                     reader = pypdf.PdfReader(f)
-                    for page in reader.pages[:10]:  # Limit to first 10 pages
+                    for page in reader.pages[:10]:
                         page_text = page.extract_text()
                         if page_text:
                             text += page_text + "\n"
@@ -2992,11 +2997,11 @@ class ContentBasedFileOrganizer:
                 if len(text.strip()) > 100:
                     return text.strip()
 
-                # Otherwise, try OCR on the PDF
-                print(f"  Using OCR for scanned PDF...")
-                images = convert_from_path(pdf_path, first_page=1, last_page=5)
-                for image in images:
-                    text += pytesseract.image_to_string(image) + "\n"
+                # Otherwise, try docTR OCR on the PDF
+                print(f"  Using docTR OCR for scanned PDF...")
+                ocr_text = extract_ocr_text_pdf(pdf_path, max_pages=5)
+                if ocr_text:
+                    text += ocr_text
 
                 return text.strip()
             except Exception as e:
@@ -3824,7 +3829,7 @@ class ContentBasedFileOrganizer:
 
         if not self.ocr_available:
             print("⚠️  WARNING: OCR libraries not available")
-            print("   Install with: pip install pytesseract Pillow pypdf pdf2image")
+            print("   Install with: pip install python-doctr[torch] Pillow pypdf")
             print("   Content classification will be limited to filenames\n")
 
         # Scan all directories

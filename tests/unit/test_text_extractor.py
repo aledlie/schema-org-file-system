@@ -1,9 +1,8 @@
 """
 Unit tests for src/analyzers/text_extractor.py.
 
-All heavy optional dependencies (pytesseract, PIL, pypdf, pdf2image,
-python-docx, openpyxl) are mocked so the tests run without those
-libraries installed.
+All heavy optional dependencies (doctr, pypdf, python-docx, openpyxl)
+are mocked so the tests run without those libraries installed.
 """
 
 from __future__ import annotations
@@ -29,12 +28,8 @@ class TestExtractTextFromImage:
 
         with (
             patch("src.analyzers.text_extractor.OCR_AVAILABLE", True),
-            patch("src.analyzers.text_extractor.Image") as mock_pil,
-            patch("src.analyzers.text_extractor.pytesseract") as mock_tess,
+            patch("src.analyzers.text_extractor.extract_ocr_text", return_value="hello world"),
         ):
-            mock_tess.image_to_string.return_value = "  hello world  "
-            mock_pil.open.return_value = MagicMock()
-
             from src.analyzers.text_extractor import TextExtractor
             extractor = TextExtractor()
             extractor.ocr_available = True
@@ -59,12 +54,10 @@ class TestExtractTextFromImage:
         fake_image = tmp_path / "test.png"
         fake_image.write_bytes(b"fake")
 
-        with (
-            patch("src.analyzers.text_extractor.Image") as mock_pil,
-            patch("src.analyzers.text_extractor.pytesseract"),
+        with patch(
+            "src.analyzers.text_extractor.extract_ocr_text",
+            side_effect=RuntimeError("bad image"),
         ):
-            mock_pil.open.side_effect = RuntimeError("bad image")
-
             from src.analyzers.text_extractor import TextExtractor
             extractor = TextExtractor()
             extractor.ocr_available = True
@@ -312,3 +305,104 @@ class TestExtractTextDispatch:
         ext = self._extractor()
         result = ext.extract_text(p, mime_type=None)
         assert result == ""
+
+
+# ---------------------------------------------------------------------------
+# ExtractionResult and extract_from_image
+# ---------------------------------------------------------------------------
+
+class TestExtractFromImage:
+    def test_returns_extraction_result_with_confidence(self, tmp_path):
+        fake_image = tmp_path / "test.png"
+        fake_image.write_bytes(b"fake")
+
+        mock_ocr_result = MagicMock()
+        mock_ocr_result.text = "hello world"
+        mock_ocr_result.confidence = 0.95
+        mock_ocr_result.language = "en"
+
+        with (
+            patch("src.analyzers.text_extractor.OCR_AVAILABLE", True),
+            patch("src.analyzers.text_extractor.extract_ocr_with_confidence", return_value=mock_ocr_result),
+        ):
+            from src.analyzers.text_extractor import TextExtractor
+            extractor = TextExtractor()
+            extractor.ocr_available = True
+
+            result = extractor.extract_from_image(fake_image)
+
+        assert result.text == "hello world"
+        assert result.confidence == 0.95
+        assert result.language == "en"
+        assert result.source == "ocr"
+
+    def test_returns_empty_result_when_ocr_unavailable(self, tmp_path):
+        fake_image = tmp_path / "test.png"
+        fake_image.write_bytes(b"fake")
+
+        from src.analyzers.text_extractor import TextExtractor
+        extractor = TextExtractor()
+        extractor.ocr_available = False
+
+        result = extractor.extract_from_image(fake_image)
+        assert result.text == ""
+        assert result.source == "ocr"
+
+    def test_returns_empty_result_on_none(self, tmp_path):
+        fake_image = tmp_path / "test.png"
+        fake_image.write_bytes(b"fake")
+
+        with patch(
+            "src.analyzers.text_extractor.extract_ocr_with_confidence",
+            return_value=None,
+        ):
+            from src.analyzers.text_extractor import TextExtractor
+            extractor = TextExtractor()
+            extractor.ocr_available = True
+
+            result = extractor.extract_from_image(fake_image)
+
+        assert result.text == ""
+
+
+# ---------------------------------------------------------------------------
+# extract (rich dispatch)
+# ---------------------------------------------------------------------------
+
+class TestExtractDispatch:
+    def _extractor(self):
+        from src.analyzers.text_extractor import TextExtractor
+        return TextExtractor()
+
+    def test_routes_image_returns_extraction_result(self, tmp_path):
+        from src.analyzers.text_extractor import ExtractionResult
+        p = tmp_path / "photo.jpg"
+        p.write_bytes(b"fake")
+        ext = self._extractor()
+        ext.extract_from_image = MagicMock(
+            return_value=ExtractionResult(text="img", confidence=0.9, source="ocr")
+        )
+
+        result = ext.extract(p, mime_type="image/jpeg")
+        ext.extract_from_image.assert_called_once_with(p)
+        assert result.text == "img"
+        assert result.confidence == 0.9
+
+    def test_text_file_has_full_confidence(self, tmp_path):
+        p = tmp_path / "notes.txt"
+        p.write_text("hello text")
+
+        ext = self._extractor()
+        result = ext.extract(p, mime_type=None)
+        assert "hello text" in result.text
+        assert result.confidence == 1.0
+        assert result.source == "text"
+
+    def test_unknown_type_returns_empty(self, tmp_path):
+        p = tmp_path / "binary.bin"
+        p.write_bytes(b"\x00\x01\x02")
+
+        ext = self._extractor()
+        result = ext.extract(p, mime_type=None)
+        assert result.text == ""
+        assert result.source == "unknown"

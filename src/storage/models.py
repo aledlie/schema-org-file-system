@@ -176,6 +176,8 @@ class File(Base, SchemaOrgSerializable):
     # Extracted content
     extracted_text = Column(Text)
     extracted_text_length = Column(Integer, default=0)
+    ocr_confidence = Column(Float)          # average OCR word confidence (0.0–1.0)
+    detected_language = Column(String(10))  # ISO 639-1 language code from OCR
 
     # Schema.org metadata (stored as JSON)
     schema_type = Column(String(SHORT_STRING_LENGTH))  # ImageObject, Document, etc.
@@ -339,6 +341,9 @@ class File(Base, SchemaOrgSerializable):
         if self.extracted_text:
             # Truncate to reasonable length for embedding
             result["text"] = self.extracted_text[:2000]              # https://schema.org/text
+
+        if self.detected_language:
+            result["inLanguage"] = self.detected_language             # https://schema.org/inLanguage
 
         # Add image metadata if present
         if schema_type == "ImageObject":

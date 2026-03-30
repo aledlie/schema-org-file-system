@@ -123,7 +123,7 @@ class TestExtractOcrText:
     def test_returns_none_when_ocr_unavailable(self, sample_image_file: Path) -> None:
         from shared.ocr_utils import extract_ocr_text, OCR_AVAILABLE
         if OCR_AVAILABLE:
-            pytest.skip("easyocr is installed; skipping unavailability test")
+            pytest.skip("doctr is installed; skipping unavailability test")
         result = extract_ocr_text(sample_image_file)
         assert result is None
 
@@ -135,7 +135,36 @@ class TestExtractOcrText:
     def test_truncates_to_max_chars(self, sample_image_file: Path) -> None:
         from shared.ocr_utils import extract_ocr_text, OCR_AVAILABLE
         if not OCR_AVAILABLE:
-            pytest.skip("easyocr not installed")
+            pytest.skip("doctr not installed")
         result = extract_ocr_text(sample_image_file, max_chars=10)
         if result is not None:
             assert len(result) <= 13  # 10 chars + "..."
+
+
+# ---------------------------------------------------------------------------
+# extract_ocr_with_confidence
+# ---------------------------------------------------------------------------
+
+class TestExtractOcrWithConfidence:
+    def test_returns_none_when_ocr_unavailable(self, sample_image_file: Path) -> None:
+        from shared.ocr_utils import extract_ocr_with_confidence, OCR_AVAILABLE
+        if OCR_AVAILABLE:
+            pytest.skip("doctr is installed; skipping unavailability test")
+        result = extract_ocr_with_confidence(sample_image_file)
+        assert result is None
+
+    def test_returns_ocr_result_or_none(self, sample_image_file: Path) -> None:
+        from shared.ocr_utils import extract_ocr_with_confidence, OCRResult
+        result = extract_ocr_with_confidence(sample_image_file)
+        assert result is None or isinstance(result, OCRResult)
+
+    def test_result_has_confidence_and_metadata(self, sample_image_file: Path) -> None:
+        from shared.ocr_utils import extract_ocr_with_confidence, OCR_AVAILABLE
+        if not OCR_AVAILABLE:
+            pytest.skip("doctr not installed")
+        result = extract_ocr_with_confidence(sample_image_file)
+        if result is not None:
+            assert 0.0 <= result.confidence <= 1.0
+            assert result.word_count > 0
+            assert isinstance(result.text, str)
+            # language and orientation may be None for simple images

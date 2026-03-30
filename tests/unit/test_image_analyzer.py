@@ -64,6 +64,8 @@ _spec.loader.exec_module(_analyzer_module)  # type: ignore[union-attr]
 
 # Force VISION_AVAILABLE = True so analyzer logic executes
 _analyzer_module.VISION_AVAILABLE = True
+# Disable CLIP cache so tests exercise the inline model/processor path
+_analyzer_module.CLIP_CACHE_AVAILABLE = False
 
 ImageContentAnalyzer = _analyzer_module.ImageContentAnalyzer
 
@@ -151,7 +153,7 @@ class TestClassifyImageContent:
         assert analyzer.classify_image_content(dummy_path) == {}
 
     def test_returns_dict_with_all_categories(self, dummy_path: Path, analyzer: ImageContentAnalyzer) -> None:
-        import src.analyzers.image_analyzer as mod
+        mod = sys.modules["src.analyzers.image_analyzer"]
 
         # Build a fake probability tensor-like object
         n = len(mod._ALL_CATEGORIES)

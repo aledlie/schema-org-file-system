@@ -1,25 +1,8 @@
 """Unit tests for ContentClassifier."""
 
-import sys
-from unittest.mock import MagicMock
-
 import pytest
 
-_STUB_MODULES = [
-    "pytesseract", "PIL", "PIL.Image", "PIL.ExifTags",
-    "pypdf", "pdf2image", "docx", "openpyxl",
-    "transformers", "torch", "cv2",
-    "piexif", "geopy", "geopy.geocoders", "geopy.exc",
-    "pillow_heif",
-    "cost_roi_calculator",
-    "error_tracking",
-    "shared", "shared.constants",
-]
-for _mod in _STUB_MODULES:
-    if _mod not in sys.modules:
-        sys.modules[_mod] = MagicMock()
-
-from src.classifiers import ContentClassifier  # noqa: E402
+from src.classifiers import ContentClassifier
 
 @pytest.fixture()
 def clf() -> ContentClassifier:
