@@ -380,16 +380,23 @@ class File(Base, SchemaOrgSerializable):
         """Build relationships to other entities"""
         relationships = {}
 
-        # Add categories
+        # Add categories — primary category as mainEntityOfPage, rest as about
         if self.categories:
-            relationships["about"] = [       # https://schema.org/about
-                {
-                    "@type": "DefinedTerm",  # https://schema.org/DefinedTerm
-                    "@id": cat.get_iri(),
-                    "name": cat.name         # https://schema.org/name
-                }
-                for cat in self.categories
-            ]
+            primary = self.categories[0]
+            relationships["mainEntityOfPage"] = {  # https://schema.org/mainEntityOfPage
+                "@type": "DefinedTerm",            # https://schema.org/DefinedTerm
+                "@id": primary.get_iri(),
+                "name": primary.name               # https://schema.org/name
+            }
+            if len(self.categories) > 1:
+                relationships["about"] = [         # https://schema.org/about
+                    {
+                        "@type": "DefinedTerm",    # https://schema.org/DefinedTerm
+                        "@id": cat.get_iri(),
+                        "name": cat.name           # https://schema.org/name
+                    }
+                    for cat in self.categories[1:]
+                ]
 
         # Add companies and people
         mentions = []

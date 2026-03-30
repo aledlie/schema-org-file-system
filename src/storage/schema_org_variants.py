@@ -237,7 +237,9 @@ class FileVariants:
             result["text"] = text[:2000]
 
         if about_iris:
-            result["about"] = about_iris
+            result["mainEntityOfPage"] = about_iris[0]
+            if len(about_iris) > 1:
+                result["about"] = about_iris[1:]
 
         if mentions:
             result["mentions"] = mentions

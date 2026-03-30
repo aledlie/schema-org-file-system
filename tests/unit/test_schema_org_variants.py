@@ -470,7 +470,7 @@ class TestFileVariantsToCreativeWork:
             mentions=mentions,
         )
 
-        assert variant["about"][0]["name"] == "Research"
+        assert variant["mainEntityOfPage"]["name"] == "Research"
         assert variant["mentions"][0]["@type"] == "Organization"
 
     def test_optional_fields_absent_when_not_provided(self):
