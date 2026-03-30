@@ -42,6 +42,19 @@ except ImportError:
     OCR_AVAILABLE = False
     print("Warning: OCR libraries not available. Install python-doctr[torch], Pillow, pypdf")
 
+# KIE (Key Information Extraction) imports
+try:
+    from shared.kie_utils import (
+        extract_kie_fields,
+        extract_kie_fields_pdf,
+        is_kie_available,
+        KIEResult,
+    )
+    from shared.kie_schema_mapping import kie_result_to_schema_org
+    KIE_AVAILABLE = is_kie_available()
+except ImportError:
+    KIE_AVAILABLE = False
+
 # Word document imports
 try:
     from docx import Document
@@ -1237,6 +1250,7 @@ class ContentBasedFileOrganizer:
         # Set inside detect_file_category; consumed by _persist_to_graph_store.
         self._last_file_ocr_confidence: Optional[float] = None
         self._last_file_detected_language: Optional[str] = None
+        self._last_file_kie_result = None  # KIEResult or None
 
         # Filepath-based classification (checked FIRST before content analysis)
         self.filepath_patterns = {
@@ -3157,9 +3171,10 @@ class ContentBasedFileOrganizer:
         Returns:
             Tuple of (main_category, subcategory, schema_type, extracted_text, company_name, people_names, image_metadata)
         """
-        # Reset per-file OCR metadata before processing a new file.
+        # Reset per-file OCR/KIE metadata before processing a new file.
         self._last_file_ocr_confidence = None
         self._last_file_detected_language = None
+        self._last_file_kie_result = None
 
         # Determine schema type and MIME type early (needed for multiple paths)
         mime_type = self.enricher.detect_mime_type(str(file_path))
@@ -3257,6 +3272,9 @@ class ContentBasedFileOrganizer:
             # Store for later persistence (consumed by _persist_to_graph_store).
             self._last_file_ocr_confidence = _ocr_conf
             self._last_file_detected_language = _ocr_lang
+            # Attempt KIE structured field extraction when OCR is reliable.
+            if KIE_AVAILABLE and _ocr_conf is not None and _ocr_conf >= _OCR_CONFIDENCE_THRESHOLD:
+                self._last_file_kie_result = extract_kie_fields(file_path)
             _id_conf_ok = _ocr_conf is None or _ocr_conf >= _OCR_CONFIDENCE_THRESHOLD
             if ocr_text and len(ocr_text) >= 30 and _id_conf_ok:
                 ocr_lower = ocr_text.lower()
@@ -3338,7 +3356,19 @@ class ContentBasedFileOrganizer:
 
         if extracted_text:
             print(f"  Extracted {len(extracted_text)} characters")
-            category, subcategory, company_name, people_names = self.classifier.classify_content(extracted_text, file_path.name)
+
+            # Try KIE-based classification first (structured invoice/receipt).
+            kie_classification = None
+            if self._last_file_kie_result is not None:
+                kie_classification = self.classifier.classify_with_kie(
+                    self._last_file_kie_result, extracted_text, file_path.name,
+                )
+            if kie_classification is not None:
+                category, subcategory, company_name, people_names = kie_classification
+                print(f"  ✓ KIE classification: {category}/{subcategory}")
+            else:
+                category, subcategory, company_name, people_names = self.classifier.classify_content(extracted_text, file_path.name)
+
             if company_name:
                 print(f"  Detected company: {company_name}")
             if people_names:
@@ -3576,6 +3606,7 @@ class ContentBasedFileOrganizer:
         image_metadata: Optional[Dict],
         ocr_confidence: Optional[float] = None,
         detected_language: Optional[str] = None,
+        kie_result=None,
     ) -> None:
         """
         Persist file and its relationships to the graph store with canonical IDs.
@@ -3594,6 +3625,24 @@ class ContentBasedFileOrganizer:
             # Get file stats
             stat = file_path.stat() if file_path.exists() else dest_path.stat()
 
+            # Merge KIE-extracted Schema.org properties into schema dict.
+            kie_fields_json = None
+            if kie_result is not None:
+                try:
+                    kie_schema = kie_result_to_schema_org(kie_result)
+                    # Merge KIE properties without overwriting existing keys.
+                    for k, v in kie_schema.items():
+                        if k not in schema or k == "@type":
+                            schema[k] = v
+                    # Serialize raw fields for debugging/reprocessing.
+                    kie_fields_json = {
+                        cls: [{"value": f.value, "confidence": f.confidence}
+                              for f in fields]
+                        for cls, fields in kie_result.fields.items()
+                    }
+                except Exception:
+                    pass  # KIE merge failure must not block persistence
+
             # Add file to store (generates canonical_id automatically)
             file_record = self.graph_store.add_file(
                 original_path=str(file_path),
@@ -3608,6 +3657,7 @@ class ContentBasedFileOrganizer:
                 extracted_text_length=len(extracted_text) if extracted_text else 0,
                 ocr_confidence=ocr_confidence,
                 detected_language=detected_language,
+                kie_fields=kie_fields_json,
                 status=FileStatus.ORGANIZED,
                 organized_at=datetime.now()
             )
@@ -3763,6 +3813,7 @@ class ContentBasedFileOrganizer:
                         image_metadata=image_metadata,
                         ocr_confidence=self._last_file_ocr_confidence,
                         detected_language=self._last_file_detected_language,
+                        kie_result=self._last_file_kie_result,
                     )
 
             result['status'] = 'organized' if not dry_run else 'would_organize'

@@ -26,4 +26,12 @@ from shared.ocr_utils import (
     is_ocr_available,
     OCRResult,
 )
+from shared.kie_utils import (
+    extract_kie_fields,
+    extract_kie_fields_pdf,
+    is_kie_available,
+    KIE_AVAILABLE,
+    KIEResult,
+    KIEField,
+)
 from shared.clip_cache import get_cached_embedding, get_cached_embeddings_batch, CLIP_CACHE_AVAILABLE

@@ -1,7 +1,12 @@
 """ContentClassifier: classifies document content into categories using keyword patterns."""
+from __future__ import annotations
 
 import re
 from collections import defaultdict
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from shared.kie_utils import KIEResult
 
 
 class ContentClassifier:
@@ -494,6 +499,54 @@ class ContentClassifier:
         if len(sanitized) > 50:
             sanitized = sanitized[:50].strip()
         return sanitized if sanitized else None
+
+    # ------------------------------------------------------------------
+    # KIE-based classification (structured document extraction)
+    # ------------------------------------------------------------------
+
+    # Minimum per-field confidence for KIE to drive classification.
+    _KIE_CLASSIFICATION_MIN_CONFIDENCE = 0.5
+
+    def classify_with_kie(
+        self,
+        kie_result: KIEResult,
+        text: str = "",
+        filename: str = "",
+    ) -> tuple[str, str, str | None, list[str]] | None:
+        """Attempt classification using KIE-extracted structured fields.
+
+        Returns a ``(category, subcategory, company_name, people_names)``
+        tuple when high-confidence invoice/receipt fields are detected.
+        Returns ``None`` when the KIE result is insufficient and the caller
+        should fall through to keyword-based ``classify_content()``.
+        """
+        threshold = self._KIE_CLASSIFICATION_MIN_CONFIDENCE
+
+        # Look for strong financial document signals: a vendor/store AND
+        # an amount OR a date.
+        vendor = self._best_kie_field(kie_result, ("vendor_name", "store_name"), threshold)
+        amount = self._best_kie_field(kie_result, ("total_amount", "receipt_total"), threshold)
+        date = self._best_kie_field(kie_result, ("invoice_date", "receipt_date"), threshold)
+
+        if vendor and (amount or date):
+            people_names = self.extract_people_names(text) if text else []
+            return ("financial", "invoices", vendor.value, people_names)
+
+        return None
+
+    @staticmethod
+    def _best_kie_field(
+        kie_result: KIEResult,
+        class_names: tuple[str, ...],
+        min_confidence: float,
+    ):
+        """Return the highest-confidence KIEField across *class_names*, or None."""
+        best = None
+        for name in class_names:
+            for f in kie_result.fields.get(name, ()):
+                if f.confidence >= min_confidence and (best is None or f.confidence > best.confidence):
+                    best = f
+        return best
 
     def classify_content(
         self,

@@ -182,6 +182,7 @@ class File(Base, SchemaOrgSerializable):
     # Schema.org metadata (stored as JSON)
     schema_type = Column(String(SHORT_STRING_LENGTH))  # ImageObject, Document, etc.
     schema_data = Column(JSON)
+    kie_fields = Column(JSON)            # KIE-extracted structured fields (raw)
 
     # Image-specific metadata
     image_width = Column(Integer)
