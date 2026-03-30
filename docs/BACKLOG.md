@@ -26,9 +26,9 @@ Last updated: 2026-03-29.
 
 ## Open Items
 
-### Migrate CLIP backend to `open-clip-torch`
+### ~~Migrate CLIP backend to `open-clip-torch`~~
 
-**Status:** Open
+**Status:** Done (2026-03-29)
 **Priority:** Medium
 **Effort:** 3–4 hrs
 **Depends on:** ~~Batch CLIP inference cache layer~~ (done)
