@@ -87,6 +87,7 @@ from base import PropertyType
 from enrichment import MetadataEnricher
 from validator import SchemaValidator
 from integration import SchemaRegistry
+from image_content_renamer import ImageContentRenamer
 
 # Graph storage imports
 try:
@@ -1240,6 +1241,7 @@ class ContentBasedFileOrganizer:
         self.validator = SchemaValidator()
         self.registry = SchemaRegistry()
         self.classifier = ContentClassifier()
+        self.image_renamer = ImageContentRenamer(dry_run=False)
         self.image_analyzer = ImageContentAnalyzer(cost_calculator=self.cost_calculator)
         self.metadata_parser = ImageMetadataParser(cost_calculator=self.cost_calculator)
         self.stats = defaultdict(int)
@@ -3155,9 +3157,20 @@ class ContentBasedFileOrganizer:
             print(f"  CLIP enhance → {result[0]}/{result[1]} (medium confidence)")
         return result
 
-    def detect_file_category(self, file_path: Path) -> Tuple[str, str, str, str, Optional[str], List[str], Dict[str, Any]]:
+    def detect_file_category(
+        self,
+        file_path: Path,
+        display_path: Path | None = None,
+    ) -> Tuple[str, str, str, str, Optional[str], List[str], Dict[str, Any]]:
         """
         Detect file category based on content.
+
+        Args:
+            file_path: Physical path to the file on disk (used for content reading).
+            display_path: Optional override path whose *name* is used for
+                filename-pattern classification.  When the image renamer proposes
+                a rename in dry-run mode, display_path carries the descriptive
+                name while file_path still points to the original file.
 
         Priority order:
         0. Filename pattern detection (fastest - no content extraction needed)
@@ -3175,6 +3188,8 @@ class ContentBasedFileOrganizer:
         self._last_file_ocr_confidence = None
         self._last_file_detected_language = None
         self._last_file_kie_result = None
+
+        pattern_path = display_path or file_path
 
         # Determine schema type and MIME type early (needed for multiple paths)
         mime_type = self.enricher.detect_mime_type(str(file_path))
@@ -3194,7 +3209,7 @@ class ContentBasedFileOrganizer:
 
         # PRIORITY 0: Filename pattern detection (fastest - no content extraction needed)
         # Handles: Google invoices, resumes, technical files, legal docs, business docs, entity files
-        filename_result = self.classify_by_filename_patterns(file_path)
+        filename_result = self.classify_by_filename_patterns(pattern_path)
         if filename_result:
             category, subcategory, company_name, people_names = filename_result
             # Handle skip category for duplicates
@@ -3712,6 +3727,42 @@ class ContentBasedFileOrganizer:
         except Exception as e:
             print(f"  ⚠ Graph store error (non-fatal): {e}")
 
+    def _maybe_rename_image(self, file_path: Path, dry_run: bool) -> Path:
+        """Rename generic image files using content analysis before sorting.
+
+        When *not* dry-run, physically renames the file and returns the
+        new path.  In dry-run mode the file stays on disk but the
+        proposed new path is returned so that filename-pattern
+        classification sees the descriptive name.  Callers that need to
+        read file contents should use the original path stored in
+        ``result['source']``.
+        """
+        if not self.image_renamer.should_rename(file_path.name):
+            return file_path
+
+        if file_path.suffix.lower() not in self.image_renamer.IMAGE_EXTENSIONS:
+            return file_path
+
+        # Temporarily override the renamer's dry_run flag to match the
+        # organizer's mode so the rename actually happens when not dry.
+        orig_dry_run = self.image_renamer.dry_run
+        self.image_renamer.dry_run = dry_run
+        result = self.image_renamer.rename_file(file_path)
+        self.image_renamer.dry_run = orig_dry_run
+
+        if result['new_name']:
+            conf = result.get('confidence')
+            conf_str = f" ({conf:.0%})" if conf is not None else ""
+            new_path = file_path.parent / result['new_name']
+            if result['status'] == 'renamed':
+                print(f"  ✓ Renamed: {file_path.name} → {result['new_name']}{conf_str}")
+                return new_path
+            elif result['status'] == 'would_rename':
+                print(f"  → Would rename: {file_path.name} → {result['new_name']}{conf_str}")
+                return new_path
+
+        return file_path
+
     def organize_file(self, file_path: Path, dry_run: bool = False, force: bool = False) -> Dict:
         """
         Organize a single file based on content.
@@ -3744,8 +3795,16 @@ class ContentBasedFileOrganizer:
             return result
 
         try:
-            # Detect category based on content
-            category, subcategory, schema_type, extracted_text, company_name, people_names, image_metadata = self.detect_file_category(file_path)
+            # Rename generic image files (screenshots, IMG_, etc.) before classification.
+            # In dry-run the file stays on disk at file_path but renamed_path
+            # carries the descriptive name for pattern matching.
+            renamed_path = self._maybe_rename_image(file_path, dry_run)
+            display_path = renamed_path if renamed_path != file_path else None
+            physical_path = renamed_path if not dry_run else file_path
+
+            # Detect category: physical_path for content reading,
+            # display_path (renamed name) for filename-pattern matching.
+            category, subcategory, schema_type, extracted_text, company_name, people_names, image_metadata = self.detect_file_category(physical_path, display_path=display_path)
             result['extracted_text_length'] = len(extracted_text)
             result['company_name'] = company_name
             result['people_names'] = people_names
@@ -3765,10 +3824,11 @@ class ContentBasedFileOrganizer:
             validation_report = self.validator.validate(schema)
 
             # Get destination path (with optional date/location organization for images)
-            dest_path = self.get_destination_path(file_path, category, subcategory, company_name, image_metadata, people_names)
+            # Use renamed_path so the destination carries the descriptive filename.
+            dest_path = self.get_destination_path(renamed_path, category, subcategory, company_name, image_metadata, people_names)
 
             # Skip if already in the right place (unless force=True)
-            if file_path == dest_path and not force:
+            if physical_path == dest_path and not force:
                 result['status'] = 'already_organized'
                 result['destination'] = str(dest_path)
                 result['schema'] = schema
@@ -3779,7 +3839,7 @@ class ContentBasedFileOrganizer:
 
             # Move file if not dry run
             if not dry_run:
-                shutil.move(str(file_path), str(dest_path))
+                shutil.move(str(physical_path), str(dest_path))
 
                 # Register schema
                 schema['url'] = f"file://{dest_path.absolute()}"

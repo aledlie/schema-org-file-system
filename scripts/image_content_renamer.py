@@ -139,8 +139,11 @@ class ImageContentRenamer:
         # CLIP absent or low confidence — try OCR keyword classification
         ocr_result = self.classify_by_ocr(image_path)
         if ocr_result:
-            print(f"  ↪ OCR fallback: {ocr_result[0]} ({ocr_result[1]:.0%})")
-            return ocr_result
+            category, confidence, all_scores = ocr_result
+            # Store all_scores for consumers (e.g. rename_file result dict)
+            self._last_all_scores = all_scores
+            print(f"  ↪ OCR fallback: {category} ({confidence:.0%})")
+            return (category, confidence)
 
         return clip_result
 
@@ -165,13 +168,14 @@ class ImageContentRenamer:
             print(f"  Error analyzing image: {e}")
             return None
 
-    def classify_by_ocr(self, image_path: Path) -> tuple[str, float] | None:
+    def classify_by_ocr(self, image_path: Path) -> tuple[str, float, dict[str, float]] | None:
         """Classify image by OCR text extraction.
 
         First checks screenshot-specific patterns (dashboard, terminal, etc.),
         then falls back to ContentClassifier's Schema.org keyword taxonomy.
 
-        Returns (category, confidence) or None if OCR fails or no match.
+        Returns ``(category, confidence, all_scores)`` or ``None``.
+        *all_scores* maps every matched category to its confidence.
         """
         if not is_ocr_available():
             return None
@@ -182,38 +186,38 @@ class ImageContentRenamer:
 
         text_lower = text.lower()
 
-        # Pass 1: screenshot-specific subcategories
-        best_category = None
-        best_hits = 0
-        best_total = 0
-
+        # Screenshot-specific scores
+        screenshot_scores: dict[str, float] = {}
         for category, keywords in self._SCREENSHOT_KEYWORDS.items():
             hits = sum(1 for kw in keywords if kw in text_lower)
-            if hits > best_hits:
-                best_hits = hits
-                best_total = len(keywords)
-                best_category = category
+            if hits:
+                screenshot_scores[category] = hits / len(keywords)
 
-        if best_hits >= self._SCREENSHOT_MIN_HITS:
-            return (best_category, best_hits / best_total)
+        # Schema.org taxonomy scores
+        schema_scores = self.content_classifier.score_all_categories(text, image_path.name)
 
-        # Pass 2: Schema.org taxonomy via ContentClassifier
-        category, subcategory, _company, _people = (
-            self.content_classifier.classify_content(text, image_path.name)
-        )
+        # Merge: screenshot-specific keys take precedence
+        all_scores = {**schema_scores, **screenshot_scores}
 
-        if category != 'uncategorized':
-            label = f"{category}_{subcategory}" if subcategory != 'other' else category
-            # Approximate confidence from keyword density
-            keyword_count = sum(
-                1 for kw in self.content_classifier.patterns.get(category, {}).get('keywords', [])
-                if kw in text_lower
+        if not all_scores:
+            return None
+
+        # Pass 1: screenshot-specific winner
+        if screenshot_scores:
+            best_ss = max(screenshot_scores, key=screenshot_scores.get)
+            best_hits = sum(1 for kw in self._SCREENSHOT_KEYWORDS[best_ss] if kw in text_lower)
+            if best_hits >= self._SCREENSHOT_MIN_HITS:
+                return (best_ss, screenshot_scores[best_ss], all_scores)
+
+        # Pass 2: Schema.org taxonomy winner
+        if schema_scores:
+            best_cat = max(schema_scores, key=schema_scores.get)
+            category, subcategory, _company, _people = (
+                self.content_classifier.classify_content(text, image_path.name)
             )
-            total_keywords = len(
-                self.content_classifier.patterns.get(category, {}).get('keywords', [])
-            )
-            confidence = keyword_count / total_keywords if total_keywords else 0.0
-            return (label, confidence)
+            if category != 'uncategorized':
+                label = f"{category}_{subcategory}" if subcategory != 'other' else category
+                return (label, schema_scores.get(category, 0.0), all_scores)
 
         return None
 
@@ -296,11 +300,14 @@ class ImageContentRenamer:
 
     def rename_file(self, file_path: Path) -> dict:
         """Analyze and rename a single image file."""
+        self._last_all_scores = {}
+
         result = {
             'original': file_path.name,
             'new_name': None,
             'content': None,
             'confidence': None,
+            'all_scores': {},
             'status': 'pending',
             'error': None,
         }
@@ -323,6 +330,7 @@ class ImageContentRenamer:
         content, confidence = analysis
         result['content'] = content
         result['confidence'] = confidence
+        result['all_scores'] = self._last_all_scores
 
         # Skip if confidence is too low
         if confidence < 0.10:
@@ -397,10 +405,12 @@ class ImageContentRenamer:
                 prefix = "  → Would rename:" if self.dry_run else "  ✓ Renamed:"
                 print(f"{prefix} {result['original']} → {result['new_name']}")
                 print(f"    Content: {result['content']} ({result['confidence']:.1%})")
+                self._print_all_scores(result.get('all_scores', {}), result['content'])
             elif result['status'] == 'skipped':
                 print(f"  ⊘ Skipped: {result['error']}")
             elif result['status'] == 'low_confidence':
                 print(f"  ⊘ Low confidence: {result['content']} ({result['confidence']:.1%})")
+                self._print_all_scores(result.get('all_scores', {}), result.get('content'))
             elif result['status'] == 'no_content':
                 print(f"  ⚠ No content detected")
             elif result['status'] == 'error':
@@ -408,6 +418,21 @@ class ImageContentRenamer:
 
         # Print summary
         self._print_summary()
+
+    @staticmethod
+    def _print_all_scores(all_scores: dict[str, float], winner: str | None) -> None:
+        """Print ranked confidence scores for all matched categories."""
+        if not all_scores:
+            return
+        ranked = sorted(all_scores.items(), key=lambda x: x[1], reverse=True)
+        # Winner label may be "category_subcategory"; match on prefix too.
+        winner_base = winner.split('_')[0] if winner else None
+        parts = []
+        for cat, score in ranked:
+            is_winner = cat == winner or cat == winner_base
+            marker = "*" if is_winner else " "
+            parts.append(f"{marker}{cat}: {score:.0%}")
+        print(f"    Scores: {' | '.join(parts)}")
 
     def _print_summary(self):
         """Print processing summary."""

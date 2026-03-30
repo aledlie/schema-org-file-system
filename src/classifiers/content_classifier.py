@@ -548,6 +548,24 @@ class ContentClassifier:
                     best = f
         return best
 
+    def score_all_categories(self, text: str, filename: str = "") -> dict[str, float]:
+        """Score text against all Schema.org keyword categories.
+
+        Returns a dict of ``{category: confidence}`` where confidence is
+        the fraction of category keywords found in the text.  Categories
+        with zero hits are omitted.
+        """
+        combined = f"{text.lower()} {filename.lower()}"
+        scores: dict[str, float] = {}
+
+        for category, data in self.patterns.items():
+            keywords = data['keywords']
+            hits = sum(1 for kw in keywords if kw.lower() in combined)
+            if hits:
+                scores[category] = hits / len(keywords)
+
+        return scores
+
     def classify_content(
         self,
         text: str,
