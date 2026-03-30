@@ -19,6 +19,9 @@ except ImportError:
 from shared.clip_utils import CLIPClassifier, CLIP_AVAILABLE
 from shared.constants import IMAGE_EXTENSIONS_WIDE
 from shared.file_ops import resolve_collision
+from shared.ocr_utils import extract_ocr_text, is_ocr_available
+
+from src.classifiers.content_classifier import ContentClassifier
 
 
 _EXIF_TAG_DATETIME_ORIGINAL = 36867  # DateTimeOriginal
@@ -64,6 +67,34 @@ class ImageContentRenamer:
         "sports", "fitness", "hiking", "swimming", "yoga",
     ]
 
+    # Screenshot-specific subcategories not covered by the Schema.org
+    # taxonomy in ContentClassifier.  These are checked first; if none
+    # match, the fallback delegates to ContentClassifier.classify_content().
+    _SCREENSHOT_KEYWORDS: dict[str, list[str]] = {
+        'dashboard': [
+            'daily requests', 'monthly cost', 'active alerts', 'latency',
+            'trace pipeline', 'provider costs', 'dashboard', 'metrics',
+            'monitoring', 'uptime', 'throughput',
+        ],
+        'terminal_session': [
+            'completed:', 'next steps:', 'blocked by', 'npm run', 'git ',
+            'curl ', 'http 2', 'signup successful', 'deploy', '$ ',
+            'insert --', 'bash(', 'command:', 'exit code',
+        ],
+        'error_log': [
+            'error:', 'traceback', 'exception', 'stack trace', 'fatal',
+            'panic:', 'segfault', 'core dumped',
+        ],
+        'api_response': [
+            '"jwt":', '"token":', '"userid":', 'http 200', 'http 201',
+            'http 400', 'http 500', 'response:', 'status:',
+            'content-type:', 'application/json',
+        ],
+    }
+
+    # Minimum keyword hits for screenshot-specific matching
+    _SCREENSHOT_MIN_HITS = 2
+
     # More specific descriptions for refinement
     REFINEMENT_TERMS = {
         "sofa": ["leather sofa", "fabric sofa", "sectional sofa", "outdoor sofa", "modern sofa"],
@@ -77,6 +108,7 @@ class ImageContentRenamer:
     def __init__(self, dry_run: bool = False):
         self.dry_run = dry_run
         self.classifier = None
+        self.content_classifier = ContentClassifier()
         self.stats = {
             'total': 0,
             'renamed': 0,
@@ -88,23 +120,40 @@ class ImageContentRenamer:
         if CLIP_AVAILABLE:
             self.classifier = CLIPClassifier()
 
+    # CLIP confidence below this triggers OCR fallback
+    _CLIP_OCR_FALLBACK_THRESHOLD = 0.10
+
     def analyze_image(self, image_path: Path) -> tuple[str, float] | None:
         """
-        Analyze image content using CLIP.
+        Analyze image content using CLIP, falling back to OCR when
+        CLIP confidence is below threshold.
 
         Returns:
             Tuple of (best_category, confidence) or None if analysis fails
         """
+        clip_result = self._analyze_clip(image_path)
+
+        if clip_result and clip_result[1] >= self._CLIP_OCR_FALLBACK_THRESHOLD:
+            return clip_result
+
+        # CLIP absent or low confidence — try OCR keyword classification
+        ocr_result = self.classify_by_ocr(image_path)
+        if ocr_result:
+            print(f"  ↪ OCR fallback: {ocr_result[0]} ({ocr_result[1]:.0%})")
+            return ocr_result
+
+        return clip_result
+
+    def _analyze_clip(self, image_path: Path) -> tuple[str, float] | None:
+        """Run CLIP vision classification."""
         if not CLIP_AVAILABLE or self.classifier is None:
             return None
 
         try:
-            # First pass: broad category classification
             top_category, top_confidence = self.classifier.top_match(
                 image_path, self.CONTENT_CATEGORIES
             )
 
-            # Second pass: refinement if category has specific terms
             if top_category in self.REFINEMENT_TERMS and top_confidence > 0.15:
                 refined = self._refine_category(image_path, top_category)
                 if refined:
@@ -115,6 +164,58 @@ class ImageContentRenamer:
         except Exception as e:
             print(f"  Error analyzing image: {e}")
             return None
+
+    def classify_by_ocr(self, image_path: Path) -> tuple[str, float] | None:
+        """Classify image by OCR text extraction.
+
+        First checks screenshot-specific patterns (dashboard, terminal, etc.),
+        then falls back to ContentClassifier's Schema.org keyword taxonomy.
+
+        Returns (category, confidence) or None if OCR fails or no match.
+        """
+        if not is_ocr_available():
+            return None
+
+        text = extract_ocr_text(image_path, max_chars=1000)
+        if not text:
+            return None
+
+        text_lower = text.lower()
+
+        # Pass 1: screenshot-specific subcategories
+        best_category = None
+        best_hits = 0
+        best_total = 0
+
+        for category, keywords in self._SCREENSHOT_KEYWORDS.items():
+            hits = sum(1 for kw in keywords if kw in text_lower)
+            if hits > best_hits:
+                best_hits = hits
+                best_total = len(keywords)
+                best_category = category
+
+        if best_hits >= self._SCREENSHOT_MIN_HITS:
+            return (best_category, best_hits / best_total)
+
+        # Pass 2: Schema.org taxonomy via ContentClassifier
+        category, subcategory, _company, _people = (
+            self.content_classifier.classify_content(text, image_path.name)
+        )
+
+        if category != 'uncategorized':
+            label = f"{category}_{subcategory}" if subcategory != 'other' else category
+            # Approximate confidence from keyword density
+            keyword_count = sum(
+                1 for kw in self.content_classifier.patterns.get(category, {}).get('keywords', [])
+                if kw in text_lower
+            )
+            total_keywords = len(
+                self.content_classifier.patterns.get(category, {}).get('keywords', [])
+            )
+            confidence = keyword_count / total_keywords if total_keywords else 0.0
+            return (label, confidence)
+
+        return None
 
     def _refine_category(self, image_path: Path, category: str) -> tuple[str, float] | None:
         """Refine the category with more specific terms."""
@@ -174,6 +275,7 @@ class ImageContentRenamer:
         stem = Path(filename).stem.lower()
 
         generic_patterns = [
+            r'^screenshot[\s_-]',
             r'^img_\d+',
             r'^pxl_\d+',
             r'^dsc_?\d+',
@@ -297,6 +399,8 @@ class ImageContentRenamer:
                 print(f"    Content: {result['content']} ({result['confidence']:.1%})")
             elif result['status'] == 'skipped':
                 print(f"  ⊘ Skipped: {result['error']}")
+            elif result['status'] == 'low_confidence':
+                print(f"  ⊘ Low confidence: {result['content']} ({result['confidence']:.1%})")
             elif result['status'] == 'no_content':
                 print(f"  ⚠ No content detected")
             elif result['status'] == 'error':
