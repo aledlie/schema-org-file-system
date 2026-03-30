@@ -1,5 +1,8 @@
 """
 Image content analysis using CLIP zero-shot classification and OpenCV face detection.
+
+CLIP inference is delegated to the shared CLIPClassifier singleton
+(scripts/shared/clip_utils.py) so that a single model instance serves all callers.
 """
 
 from contextlib import nullcontext
@@ -8,24 +11,22 @@ from typing import Any, Dict, Tuple
 
 # Vision libraries are optional
 try:
-    from transformers import CLIPModel, CLIPProcessor
-    import torch
     import cv2
-    VISION_AVAILABLE = True
+    _CV2_AVAILABLE = True
 except ImportError:
-    VISION_AVAILABLE = False
+    _CV2_AVAILABLE = False
+
+# CLIP (open-clip via shared.clip_utils)
+try:
+    from shared.clip_utils import get_clip_classifier, CLIP_AVAILABLE
+except ImportError:
+    CLIP_AVAILABLE = False
 
 # CLIP cache support
 try:
     from shared.clip_cache import get_cached_embedding, CLIP_CACHE_AVAILABLE
 except ImportError:
     CLIP_CACHE_AVAILABLE = False
-
-# PIL is needed for opening images in classify_image_content
-try:
-    from PIL import Image
-except ImportError:
-    pass
 
 # Cost tracking is optional
 try:
@@ -71,28 +72,21 @@ class ImageContentAnalyzer:
     """Analyzes image content using computer vision."""
 
     def __init__(self, cost_calculator: Any = None) -> None:
-        """
-        Initialize the image content analyzer.
-
-        Args:
-            cost_calculator: Optional cost calculator for tracking usage costs
-        """
-        self.vision_available = VISION_AVAILABLE
-        self.model = None
-        self.processor = None
+        self.vision_available = _CV2_AVAILABLE and (CLIP_AVAILABLE or CLIP_CACHE_AVAILABLE)
         self.face_cascade = None
         self.cost_calculator = cost_calculator
 
-        if self.vision_available:
+        if _CV2_AVAILABLE:
             try:
-                if not CLIP_CACHE_AVAILABLE:
-                    print("Loading CLIP model for image analysis...")
-                    self.model = CLIPModel.from_pretrained("openai/clip-vit-base-patch32")
-                    self.processor = CLIPProcessor.from_pretrained("openai/clip-vit-base-patch32")
-                    print("✓ CLIP model loaded successfully")
-
                 cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"
                 self.face_cascade = cv2.CascadeClassifier(cascade_path)
+            except Exception as e:
+                print(f"Warning: Could not load face cascade: {e}")
+
+        if self.vision_available and not CLIP_CACHE_AVAILABLE:
+            try:
+                # Eagerly warm the singleton so load errors surface at init time.
+                get_clip_classifier()
             except Exception as e:
                 print(f"Warning: Could not load CLIP model: {e}")
                 self.vision_available = False
@@ -104,7 +98,7 @@ class ImageContentAnalyzer:
         Returns:
             True if people detected, False otherwise
         """
-        if not self.vision_available or self.face_cascade is None:
+        if not _CV2_AVAILABLE or self.face_cascade is None:
             return False
 
         ctx = CostTracker(self.cost_calculator, "face_detection") if self.cost_calculator else nullcontext()
@@ -144,24 +138,8 @@ class ImageContentAnalyzer:
                     results = get_cached_embedding(image_path, _ALL_CATEGORIES, prompt_prefix="")
                     return {label: conf for label, conf in results}
 
-                if self.model is None:
-                    return {}
-
-                image = Image.open(image_path)
-
-                inputs = self.processor(
-                    text=_ALL_CATEGORIES,
-                    images=image,
-                    return_tensors="pt",
-                    padding=True,
-                )
-
-                with torch.no_grad():
-                    outputs = self.model(**inputs)
-                    logits_per_image = outputs.logits_per_image
-                    probs = logits_per_image.softmax(dim=1)
-
-                return {category: float(probs[0][i]) for i, category in enumerate(_ALL_CATEGORIES)}
+                results = get_clip_classifier().classify_raw(image_path, _ALL_CATEGORIES)
+                return {label: conf for label, conf in results}
 
             except Exception as e:
                 print(f"  Image classification error: {e}")

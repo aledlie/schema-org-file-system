@@ -18,11 +18,45 @@ def _inject_stubs() -> None:
     torch_mod.no_grad = MagicMock(return_value=MagicMock(__enter__=MagicMock(return_value=None), __exit__=MagicMock(return_value=False)))
     sys.modules.setdefault("torch", torch_mod)
 
-    # transformers
-    transformers_mod = types.ModuleType("transformers")
-    transformers_mod.CLIPModel = MagicMock()
-    transformers_mod.CLIPProcessor = MagicMock()
-    sys.modules.setdefault("transformers", transformers_mod)
+    # open_clip
+    open_clip_mod = types.ModuleType("open_clip")
+    open_clip_mod.create_model_and_transforms = MagicMock(return_value=(MagicMock(), MagicMock(), MagicMock()))
+    open_clip_mod.get_tokenizer = MagicMock(return_value=MagicMock())
+    sys.modules.setdefault("open_clip", open_clip_mod)
+
+    # torch.nn and torch.nn.functional (needed by clip_utils)
+    torch_nn = types.ModuleType("torch.nn")
+    torch_nn_functional = types.ModuleType("torch.nn.functional")
+    torch_nn_functional.normalize = MagicMock()
+    torch_nn_functional.cosine_similarity = MagicMock()
+    torch_nn.functional = torch_nn_functional
+    torch_mod.nn = torch_nn
+    sys.modules.setdefault("torch.nn", torch_nn)
+    sys.modules.setdefault("torch.nn.functional", torch_nn_functional)
+
+    # torch.backends.mps
+    torch_backends = types.ModuleType("torch.backends")
+    torch_backends_mps = types.ModuleType("torch.backends.mps")
+    torch_backends_mps.is_available = MagicMock(return_value=False)
+    torch_backends.mps = torch_backends_mps
+    torch_mod.backends = torch_backends
+    torch_mod.cuda = MagicMock()
+    torch_mod.cuda.is_available = MagicMock(return_value=False)
+    torch_mod.float16 = "float16"
+    torch_mod.float32 = "float32"
+    torch_mod.stack = MagicMock()
+    sys.modules.setdefault("torch.backends", torch_backends)
+    sys.modules.setdefault("torch.backends.mps", torch_backends_mps)
+
+    # shared.clip_utils — stub the singleton factory
+    clip_utils_mod = types.ModuleType("shared.clip_utils")
+    mock_classifier = MagicMock()
+    mock_classifier.classify_raw = MagicMock(return_value=[])
+    clip_utils_mod.get_clip_classifier = MagicMock(return_value=mock_classifier)
+    clip_utils_mod.CLIP_AVAILABLE = True
+    clip_utils_mod.CLIPClassifier = MagicMock()
+    sys.modules.setdefault("shared.clip_utils", clip_utils_mod)
+    sys.modules.setdefault("shared", types.ModuleType("shared"))
 
     # cv2
     cv2_mod = types.ModuleType("cv2")
@@ -62,9 +96,10 @@ _analyzer_module = importlib.util.module_from_spec(_spec)
 sys.modules["src.analyzers.image_analyzer"] = _analyzer_module
 _spec.loader.exec_module(_analyzer_module)  # type: ignore[union-attr]
 
-# Force VISION_AVAILABLE = True so analyzer logic executes
-_analyzer_module.VISION_AVAILABLE = True
-# Disable CLIP cache so tests exercise the inline model/processor path
+# Force vision available so analyzer logic executes
+_analyzer_module._CV2_AVAILABLE = True
+_analyzer_module.CLIP_AVAILABLE = True
+# Disable CLIP cache so tests exercise the direct CLIPClassifier path
 _analyzer_module.CLIP_CACHE_AVAILABLE = False
 
 ImageContentAnalyzer = _analyzer_module.ImageContentAnalyzer
@@ -76,11 +111,9 @@ ImageContentAnalyzer = _analyzer_module.ImageContentAnalyzer
 
 @pytest.fixture()
 def analyzer() -> ImageContentAnalyzer:
-    """Return an analyzer with vision disabled at instance level (avoids model download)."""
+    """Return an analyzer with vision enabled at instance level (avoids model download)."""
     a = ImageContentAnalyzer.__new__(ImageContentAnalyzer)
     a.vision_available = True
-    a.model = MagicMock()
-    a.processor = MagicMock()
     a.face_cascade = MagicMock()
     a.cost_calculator = None
     return a
@@ -98,9 +131,9 @@ def dummy_path(tmp_path: Path) -> Path:
 # ---------------------------------------------------------------------------
 
 class TestDetectPeople:
-    def test_returns_false_when_vision_unavailable(self, dummy_path: Path, analyzer: ImageContentAnalyzer) -> None:
-        analyzer.vision_available = False
-        assert analyzer.detect_people(dummy_path) is False
+    def test_returns_false_when_cv2_unavailable(self, dummy_path: Path, analyzer: ImageContentAnalyzer) -> None:
+        with patch.object(_analyzer_module, "_CV2_AVAILABLE", False):
+            assert analyzer.detect_people(dummy_path) is False
 
     def test_returns_false_when_no_cascade(self, dummy_path: Path, analyzer: ImageContentAnalyzer) -> None:
         analyzer.face_cascade = None
@@ -148,36 +181,15 @@ class TestClassifyImageContent:
         analyzer.vision_available = False
         assert analyzer.classify_image_content(dummy_path) == {}
 
-    def test_returns_empty_when_model_none(self, dummy_path: Path, analyzer: ImageContentAnalyzer) -> None:
-        analyzer.model = None
-        assert analyzer.classify_image_content(dummy_path) == {}
-
-    def test_returns_dict_with_all_categories(self, dummy_path: Path, analyzer: ImageContentAnalyzer) -> None:
+    def test_returns_dict_via_clip_classifier(self, dummy_path: Path, analyzer: ImageContentAnalyzer) -> None:
         mod = sys.modules["src.analyzers.image_analyzer"]
-
-        # Build a fake probability tensor-like object
         n = len(mod._ALL_CATEGORIES)
-        fake_probs_row = [1.0 / n] * n
+        fake_results = [(cat, 1.0 / n) for cat in mod._ALL_CATEGORIES]
 
-        fake_probs = MagicMock()
-        fake_probs.__getitem__ = lambda self, idx: fake_probs_row
+        mock_classifier = MagicMock()
+        mock_classifier.classify_raw.return_value = fake_results
 
-        fake_logits = MagicMock()
-        fake_logits.softmax.return_value = fake_probs
-
-        fake_outputs = MagicMock()
-        fake_outputs.logits_per_image = fake_logits
-
-        analyzer.model.return_value = fake_outputs
-
-        import torch
-        ctx = MagicMock()
-        ctx.__enter__ = MagicMock(return_value=None)
-        ctx.__exit__ = MagicMock(return_value=False)
-        torch.no_grad = MagicMock(return_value=ctx)
-
-        mock_image = MagicMock()
-        with patch("src.analyzers.image_analyzer.Image.open", return_value=mock_image):
+        with patch("src.analyzers.image_analyzer.get_clip_classifier", return_value=mock_classifier):
             result = analyzer.classify_image_content(dummy_path)
 
         assert isinstance(result, dict)
@@ -185,7 +197,10 @@ class TestClassifyImageContent:
             assert cat in result
 
     def test_returns_empty_on_exception(self, dummy_path: Path, analyzer: ImageContentAnalyzer) -> None:
-        with patch("src.analyzers.image_analyzer.Image.open", side_effect=OSError("bad")):
+        mock_classifier = MagicMock()
+        mock_classifier.classify_raw.side_effect = OSError("bad")
+
+        with patch("src.analyzers.image_analyzer.get_clip_classifier", return_value=mock_classifier):
             result = analyzer.classify_image_content(dummy_path)
         assert result == {}
 

@@ -148,29 +148,29 @@ class SystemHealthChecker:
         """Check CLIP model for AI vision classification."""
         try:
             import torch
-            import transformers
+            import open_clip
             self.features['clip_vision'] = FeatureStatus(
                 name="AI Vision (CLIP)",
                 available=True,
-                version=f"torch {torch.__version__}, transformers {transformers.__version__}",
+                version=f"torch {torch.__version__}, open_clip {open_clip.__version__}",
                 impact="AI-powered image content classification"
             )
-        except ImportError as e:
+        except ImportError:
             missing = []
             try:
                 import torch
             except ImportError:
                 missing.append("torch")
             try:
-                import transformers
+                import open_clip
             except ImportError:
-                missing.append("transformers")
+                missing.append("open-clip-torch")
 
             self.features['clip_vision'] = FeatureStatus(
                 name="AI Vision (CLIP)",
                 available=False,
                 error=f"Missing: {', '.join(missing)}",
-                impact="No AI classification - pip install torch transformers"
+                impact="No AI classification - pip install torch open-clip-torch"
             )
 
     def _check_database(self) -> None:
