@@ -43,6 +43,24 @@ class TestClassifyContent:
         )
         assert cat == "financial"
 
+    def test_non_english_language_returns_uncategorized(self, clf: ContentClassifier) -> None:
+        # French OCR text that would normally classify as legal should be skipped
+        text = "Ce contrat et accord etablit les termes et conditions entre les parties."
+        cat, subcat, company, people = clf.classify_content(text, detected_language="fr")
+        assert cat == "uncategorized"
+        assert subcat == "other"
+
+    def test_english_language_classifies_normally(self, clf: ContentClassifier) -> None:
+        text = "This contract and agreement sets out the terms and conditions between the parties."
+        cat, subcat, company, people = clf.classify_content(text, detected_language="en")
+        assert cat == "legal"
+
+    def test_no_language_classifies_normally(self, clf: ContentClassifier) -> None:
+        # detected_language=None (non-OCR source) must not suppress classification
+        text = "This contract and agreement sets out the terms and conditions between the parties."
+        cat, subcat, company, people = clf.classify_content(text, detected_language=None)
+        assert cat == "legal"
+
 class TestExtractCompanyNames:
     def test_extracts_llc(self, clf: ContentClassifier) -> None:
         text = "We signed a deal with Acme Solutions LLC today."

@@ -192,6 +192,10 @@ _CLIP_PROMPT_TO_LABEL: dict = (
     if ENHANCED_CLIP_AVAILABLE else {}
 )
 
+# Minimum OCR confidence required to treat text as reliable for ID doc detection.
+# Low-confidence OCR on a photo (e.g. a blurry selfie) must not trigger passport detection.
+_OCR_CONFIDENCE_THRESHOLD = 0.3
+
 
 class ContentClassifier:
     """Classifies document content into categories."""
@@ -1229,6 +1233,10 @@ class ContentBasedFileOrganizer:
         self.ocr_available = OCR_AVAILABLE
         self.organize_by_date = organize_by_date
         self.organize_by_location = organize_by_location
+        # Temporary OCR metadata for the current file being processed.
+        # Set inside detect_file_category; consumed by _persist_to_graph_store.
+        self._last_file_ocr_confidence: Optional[float] = None
+        self._last_file_detected_language: Optional[str] = None
 
         # Filepath-based classification (checked FIRST before content analysis)
         self.filepath_patterns = {
@@ -3149,6 +3157,10 @@ class ContentBasedFileOrganizer:
         Returns:
             Tuple of (main_category, subcategory, schema_type, extracted_text, company_name, people_names, image_metadata)
         """
+        # Reset per-file OCR metadata before processing a new file.
+        self._last_file_ocr_confidence = None
+        self._last_file_detected_language = None
+
         # Determine schema type and MIME type early (needed for multiple paths)
         mime_type = self.enricher.detect_mime_type(str(file_path))
         if mime_type:
@@ -3236,9 +3248,17 @@ class ContentBasedFileOrganizer:
         # PRIORITY 3.5: Check for identification documents in images (passport, ID, license)
         # These should go to Person/ folder, not Media/
         if schema_type == 'ImageObject' and self.ocr_available:
-            # Extract text from image via OCR
-            ocr_text = self.extract_text_from_image(file_path)
-            if ocr_text and len(ocr_text) >= 30:
+            # Extract text from image via OCR with confidence metadata.
+            # Low-confidence results (e.g. blurry photos) must not trigger ID detection.
+            _ocr_result = extract_ocr_with_confidence(file_path, max_chars=0) if self.ocr_available else None
+            ocr_text = _ocr_result.text if _ocr_result else ""
+            _ocr_conf = _ocr_result.confidence if _ocr_result else None
+            _ocr_lang = _ocr_result.language if _ocr_result else None
+            # Store for later persistence (consumed by _persist_to_graph_store).
+            self._last_file_ocr_confidence = _ocr_conf
+            self._last_file_detected_language = _ocr_lang
+            _id_conf_ok = _ocr_conf is None or _ocr_conf >= _OCR_CONFIDENCE_THRESHOLD
+            if ocr_text and len(ocr_text) >= 30 and _id_conf_ok:
                 ocr_lower = ocr_text.lower()
                 # Check for identification document keywords
                 id_keywords = ['passport', 'driver license', "driver's license", 'identification',
@@ -3553,7 +3573,9 @@ class ContentBasedFileOrganizer:
         extracted_text: str,
         company_name: Optional[str],
         people_names: List[str],
-        image_metadata: Optional[Dict]
+        image_metadata: Optional[Dict],
+        ocr_confidence: Optional[float] = None,
+        detected_language: Optional[str] = None,
     ) -> None:
         """
         Persist file and its relationships to the graph store with canonical IDs.
@@ -3584,6 +3606,8 @@ class ContentBasedFileOrganizer:
                 schema_data=schema,
                 extracted_text=extracted_text[:10000] if extracted_text else None,
                 extracted_text_length=len(extracted_text) if extracted_text else 0,
+                ocr_confidence=ocr_confidence,
+                detected_language=detected_language,
                 status=FileStatus.ORGANIZED,
                 organized_at=datetime.now()
             )
@@ -3736,7 +3760,9 @@ class ContentBasedFileOrganizer:
                         extracted_text=extracted_text,
                         company_name=company_name,
                         people_names=people_names,
-                        image_metadata=image_metadata
+                        image_metadata=image_metadata,
+                        ocr_confidence=self._last_file_ocr_confidence,
+                        detected_language=self._last_file_detected_language,
                     )
 
             result['status'] = 'organized' if not dry_run else 'would_organize'

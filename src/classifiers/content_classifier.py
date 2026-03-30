@@ -496,16 +496,32 @@ class ContentClassifier:
         return sanitized if sanitized else None
 
     def classify_content(
-        self, text: str, filename: str = ""
+        self,
+        text: str,
+        filename: str = "",
+        detected_language: str | None = None,
     ) -> tuple[str, str, str | None, list[str]]:
         """
         Classify content based on extracted text.
         Uses Schema.org person-company relationships to improve categorization.
 
+        Args:
+            text: Extracted document text.
+            filename: Original filename (used as secondary signal).
+            detected_language: BCP-47 language code from OCR (e.g. ``"en"``, ``"fr"``).
+                When a non-English language is detected the English keyword matching
+                is skipped to avoid false positives; the document routes to
+                ``("uncategorized", "other")``.
+
         Returns:
             Tuple of (category, subcategory, company_name, people_names)
         """
         if not text:
+            return ('uncategorized', 'other', None, [])
+
+        # Non-English OCR text — English keyword patterns are unreliable.
+        # Skip keyword classification and let the caller handle routing.
+        if detected_language is not None and detected_language != 'en':
             return ('uncategorized', 'other', None, [])
 
         text_lower = text.lower()

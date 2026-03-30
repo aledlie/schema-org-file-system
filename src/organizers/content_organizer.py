@@ -12,6 +12,14 @@ try:
 except ImportError:
     ContentClassifier = Any  # type: ignore[assignment,misc]
 
+try:
+    from src.analyzers.text_extractor import ExtractionResult as _ExtractionResult
+    _EXTRACTION_RESULT_AVAILABLE = True
+except ImportError:
+    _EXTRACTION_RESULT_AVAILABLE = False
+
+_OCR_CONFIDENCE_THRESHOLD = 0.3
+
 # CLIP enhancement constants
 try:
     from shared.constants import (
@@ -1638,14 +1646,32 @@ class ContentOrganizer(BaseOrganizer):
                 return ('property_management', 'other', schema_type, '', None, [], image_metadata)
 
         print("  Extracting content...")
+        ocr_confidence: Optional[float] = None
+        extract_rich = getattr(self, 'extract_rich', None)
         extract_text = getattr(self, 'extract_text', None)
-        if extract_text:
+        if extract_rich:
+            rich_result = extract_rich(file_path)
+            extracted_text = rich_result.text
+            ocr_confidence = rich_result.confidence
+        elif extract_text:
             extracted_text = extract_text(file_path)
 
-        if extracted_text:
+        low_confidence = (
+            ocr_confidence is not None and ocr_confidence < _OCR_CONFIDENCE_THRESHOLD
+        )
+
+        if extracted_text and not low_confidence:
             print(f"  Extracted {len(extracted_text)} characters")
             category, subcategory, company_name, people_names = self.classifier.classify_content(
                 extracted_text, file_path.name
+            )
+        elif extracted_text and low_confidence:
+            print(
+                f"  Extracted {len(extracted_text)} characters "
+                f"(OCR confidence {ocr_confidence:.2f} < {_OCR_CONFIDENCE_THRESHOLD} — skipping keyword classification)"
+            )
+            category, subcategory, company_name, people_names = self.classifier.classify_content(
+                "", file_path.name
             )
         else:
             print("  No text extracted, using filename")

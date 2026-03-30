@@ -1,7 +1,7 @@
 """Unit tests for ContentOrganizer."""
 
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -277,3 +277,89 @@ class TestClassifyByFilenamePatterns:
     def test_unknown_returns_none(self, organizer: ContentOrganizer) -> None:
         result = organizer.classify_by_filename_patterns(Path("/random/xyzxyz_unique_file.pdf"))
         assert result is None
+
+
+# ------------------------------------------------------------------ #
+# OCR confidence gating in detect_file_category                       #
+# ------------------------------------------------------------------ #
+
+class TestOcrConfidenceGating:
+    """detect_file_category must skip keyword classification for low-confidence OCR."""
+
+    def _make_organizer(self, tmp_path: Path, mock_classifier: MagicMock) -> "ContentOrganizer":
+        org = ContentOrganizer(base_path=tmp_path, content_classifier=mock_classifier)
+        # Stub out all heavyweight dependencies used inside detect_file_category
+        org.enricher = MagicMock()
+        org.enricher.detect_mime_type.return_value = "application/pdf"
+        org.classify_by_filename_patterns = MagicMock(return_value=None)
+        org.classify_by_organization = MagicMock(return_value=None)
+        org.classify_by_person = MagicMock(return_value=None)
+        org.classify_game_asset = MagicMock(return_value=None)
+        org.classify_by_filepath = MagicMock(return_value=None)
+        org.classify_media_file = MagicMock(return_value=None)
+        org.image_analyzer = MagicMock()
+        org.image_analyzer.vision_available = False
+        return org
+
+    def test_high_confidence_ocr_classifies(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        from src.analyzers.text_extractor import ExtractionResult
+
+        org = self._make_organizer(tmp_path, mock_classifier)
+        mock_classifier.classify_content.return_value = ("legal", "contracts", None, [])
+
+        legal_text = "contract terms and conditions agreement"
+        org.extract_rich = lambda _p: ExtractionResult(
+            text=legal_text, confidence=0.85, language="en", source="ocr"
+        )
+
+        fake_pdf = tmp_path / "doc.pdf"
+        fake_pdf.write_bytes(b"%PDF")
+
+        cat, subcat, *_ = org.detect_file_category(fake_pdf)
+
+        # classify_content called with the real text (high confidence)
+        mock_classifier.classify_content.assert_called_once()
+        args = mock_classifier.classify_content.call_args[0]
+        assert args[0] == legal_text
+
+    def test_low_confidence_ocr_skips_keyword_classification(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        from src.analyzers.text_extractor import ExtractionResult
+
+        org = self._make_organizer(tmp_path, mock_classifier)
+        mock_classifier.classify_content.return_value = ("uncategorized", "other", None, [])
+
+        legal_text = "contract terms and conditions"
+        org.extract_rich = lambda _p: ExtractionResult(
+            text=legal_text, confidence=0.15, language="en", source="ocr"
+        )
+
+        fake_pdf = tmp_path / "blurry_scan.pdf"
+        fake_pdf.write_bytes(b"%PDF")
+
+        org.detect_file_category(fake_pdf)
+
+        # classify_content must be called with empty string, not the low-confidence text
+        mock_classifier.classify_content.assert_called_once()
+        args = mock_classifier.classify_content.call_args[0]
+        assert args[0] == ""
+
+    def test_no_extract_rich_falls_back_to_extract_text(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        org = self._make_organizer(tmp_path, mock_classifier)
+        mock_classifier.classify_content.return_value = ("financial", "invoices", None, [])
+
+        org.extract_text = lambda _p: "invoice payment amount"
+
+        fake_pdf = tmp_path / "invoice.pdf"
+        fake_pdf.write_bytes(b"%PDF")
+
+        org.detect_file_category(fake_pdf)
+
+        mock_classifier.classify_content.assert_called_once()
+        args = mock_classifier.classify_content.call_args[0]
+        assert args[0] == "invoice payment amount"
