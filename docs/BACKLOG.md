@@ -50,9 +50,9 @@ Replace the current dual CLIP implementations (`transformers.CLIPModel` in `scri
 
 **Out of scope:** model variant upgrade (ViT-B-32 → ViT-L/14) — treat as a separate backlog item.
 
-### Wire OCR confidence into classification pipeline
+### ~~Wire OCR confidence into classification pipeline~~
 
-**Status:** Open
+**Status:** Done (2026-03-30)
 **Priority:** Low
 **Effort:** 1–2 hrs
 **Depends on:** ~~docTR migration~~ (done)
