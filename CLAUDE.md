@@ -96,7 +96,7 @@ pip install -e ".[all]" && brew install tesseract poppler
 | Issue | Solution |
 |-------|----------|
 | HEIC fails | `pip install pillow-heif` |
-| No OCR | `brew install tesseract` |
+| No OCR | `pip install python-doctr[torch]` |
 | No AI | `pip install torch transformers` |
 
 ## Schema.org Reference
