@@ -1524,6 +1524,17 @@ class ContentBasedFileOrganizer:
             'uncategorized': 'Uncategorized'
         }
 
+        # Extend screenshot sub-folders from classifier taxonomies so that
+        # content labels map directly to folder paths without a separate lookup.
+        _screenshots = self.category_paths['media']['photos']['screenshots']
+        for key in self.image_renamer._SCREENSHOT_KEYWORDS:
+            if key not in _screenshots:
+                folder = key.replace('_', ' ').title().replace(' ', '')
+                _screenshots[key] = f'Media/Photos/Screenshots/{folder}'
+        for key in self.classifier.patterns:
+            if key not in _screenshots:
+                _screenshots[key] = f'Media/Photos/Screenshots/{key.title()}'
+
         # Game asset detection patterns
         self.game_audio_keywords = [
             'bolt', 'spell', 'magic', 'cast', 'chirp', 'crossbow', 'dagger',
@@ -3207,7 +3218,24 @@ class ContentBasedFileOrganizer:
         else:
             schema_type = 'DigitalDocument'
 
-        # PRIORITY 0: Filename pattern detection (fastest - no content extraction needed)
+        # PRIORITY 0a: Renamed screenshots → route to category sub-folder
+        # When the image renamer classified a screenshot (e.g. "Screenshot ..." →
+        # "20260320_terminal_session.png"), match the content label against
+        # _SCREENSHOT_KEYWORDS and ContentClassifier.patterns keys directly.
+        if (
+            display_path
+            and display_path != file_path
+            and 'screenshot' in file_path.stem.lower()
+        ):
+            renamed_stem = display_path.stem.lower()
+            screenshots_dict = self.category_paths['media']['photos']['screenshots']
+            # Check longer keys first so "terminal_session" matches before "terminal"
+            for key in sorted(screenshots_dict, key=len, reverse=True):
+                if key != 'other' and key in renamed_stem:
+                    print(f"  ✓ Screenshot content: {key}")
+                    return ('media', f'photos_screenshots_{key}', schema_type, '', None, [], {})
+
+        # PRIORITY 0b: Filename pattern detection (fastest - no content extraction needed)
         # Handles: Google invoices, resumes, technical files, legal docs, business docs, entity files
         filename_result = self.classify_by_filename_patterns(pattern_path)
         if filename_result:
