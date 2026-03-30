@@ -11,9 +11,6 @@ Pillow>=12.0.0                    # Image loading, EXIF extraction, thumbnails
 pillow_heif>=1.1.1                # HEIC/HEIF image support (iPhone photos)
 piexif>=1.1.3                     # EXIF metadata read/write
 
-# OCR text extraction
-easyocr>=1.7.0                    # GPU-accelerated OCR, better accuracy on screenshots/mobile
-
 # Geolocation
 geopy>=2.4.1                      # Geocoding (GPS coords to location names)
 
