@@ -58,8 +58,7 @@ dependencies = [
 ai = [
     "torch>=2.5.0",
     "torchvision>=0.20.0",
-    "transformers>=4.40.0",
-    "huggingface-hub>=0.30.0",
+    "open-clip-torch>=2.29.0",
     "opencv-python>=4.10.0",
     "numpy>=2.0.0",
 ]

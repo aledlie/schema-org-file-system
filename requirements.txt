@@ -25,13 +25,9 @@ SQLAlchemy>=2.0.0                 # ORM for graph-based file storage
 # =============================================================================
 
 # Deep learning framework
-sentence-transformers>=3.0.0      # CLIP inference with built-in batching (replaces bare transformers)
+open-clip-torch>=2.29.0           # CLIP inference with direct tensor API (ViT-B-32, openai weights)
 torch>=2.9.0                      # PyTorch ML framework
 torchvision>=0.24.0               # Computer vision utilities
-
-# Transformer models
-transformers>=4.57.0              # Hugging Face transformers (CLIP model)
-huggingface-hub>=0.36.0           # Model downloading and caching
 
 # Computer vision
 opencv-python>=4.12.0             # OpenCV for image processing
