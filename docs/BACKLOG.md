@@ -54,3 +54,14 @@ Last updated: 2026-03-30.
 - `scripts/collect_kie_training_data.py`: scan Financial/ docs, export OCR word boxes for manual labeling
 - `scripts/train_kie_model.py`: fine-tune KIE classification head (frozen backbones), save weights to `models/kie_invoice_v1.pt`
 - 19 unit tests in `tests/unit/test_kie_utils.py`
+
+### Improve OCR preprocessing for dark-background screenshots
+
+**Status:** Open
+**Depends on:** docTR migration (done)
+**Context:** Priority 4.5 screenshot sub-classification (added 2026-03-31) correctly routes screenshots to OCR/CLIP, but ~87 raw `Screenshot*` files in `~/Documents/Media/Photos/Screenshots/` remain unclassified because docTR produces no usable text on dark-background terminal/IDE/dashboard screenshots and CLIP scores are uniformly ~5% (below the 15% threshold).
+
+- Add image inversion preprocessing in `scripts/shared/ocr_utils.py` for dark-background images (detect mean luminance < threshold, invert before OCR)
+- Consider adaptive contrast enhancement (CLAHE) as a second pass when initial OCR yields < 30 chars
+- Evaluate lowering `CLIP_ENHANCE_THRESHOLD` for screenshot-specific classification (currently 0.15, screenshots score ~0.05)
+- Add `_SCREENSHOT_KEYWORDS` entries for IDE/code patterns (`import`, `function`, `class`, `def`, `const`) and browser patterns (`http`, `www`, `.com`, `search`)
