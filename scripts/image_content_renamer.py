@@ -16,7 +16,7 @@ try:
 except ImportError:
     pass
 
-from shared.clip_utils import CLIPClassifier, CLIP_AVAILABLE
+from shared.clip_utils import get_clip_classifier, CLIP_AVAILABLE
 from shared.constants import IMAGE_EXTENSIONS_WIDE
 from shared.file_ops import resolve_collision
 from shared.ocr_utils import extract_ocr_text, is_ocr_available
@@ -117,8 +117,12 @@ class ImageContentRenamer:
             'no_content': 0,
         }
 
+        # OCR text from the last classify_by_ocr call, exposed so the
+        # organizer can reuse it instead of re-running OCR.
+        self._last_ocr_text: str | None = None
+
         if CLIP_AVAILABLE:
-            self.classifier = CLIPClassifier()
+            self.classifier = get_clip_classifier()
 
     # CLIP confidence below this triggers OCR fallback
     _CLIP_OCR_FALLBACK_THRESHOLD = 0.10
@@ -181,6 +185,7 @@ class ImageContentRenamer:
             return None
 
         text = extract_ocr_text(image_path, max_chars=1000)
+        self._last_ocr_text = text
         if not text:
             return None
 
@@ -301,6 +306,7 @@ class ImageContentRenamer:
     def rename_file(self, file_path: Path) -> dict:
         """Analyze and rename a single image file."""
         self._last_all_scores = {}
+        self._last_ocr_text = None
 
         result = {
             'original': file_path.name,

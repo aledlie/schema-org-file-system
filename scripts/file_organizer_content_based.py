@@ -856,14 +856,19 @@ class ImageMetadataParser:
             print(f"  EXIF extraction error: {e}")
             return {}
 
-    def extract_datetime(self, image_path: Path) -> Optional[datetime]:
+    def extract_datetime(self, image_path: Path, exif_data: Optional[Dict[str, Any]] = None) -> Optional[datetime]:
         """
         Extract the datetime when the photo was taken.
+
+        Args:
+            image_path: Path to the image file
+            exif_data: Pre-extracted EXIF data to avoid redundant Image.open() calls
 
         Returns:
             datetime object or None
         """
-        exif_data = self.extract_exif_data(image_path)
+        if exif_data is None:
+            exif_data = self.extract_exif_data(image_path)
 
         if not exif_data:
             return None
@@ -883,9 +888,13 @@ class ImageMetadataParser:
 
         return None
 
-    def extract_gps_coordinates(self, image_path: Path) -> Optional[Tuple[float, float]]:
+    def extract_gps_coordinates(self, image_path: Path, exif_data: Optional[Dict[str, Any]] = None) -> Optional[Tuple[float, float]]:
         """
         Extract GPS coordinates from image EXIF data.
+
+        Args:
+            image_path: Path to the image file
+            exif_data: Pre-extracted EXIF data to avoid redundant Image.open() calls
 
         Returns:
             Tuple of (latitude, longitude) or None
@@ -894,20 +903,19 @@ class ImageMetadataParser:
             return None
 
         try:
-            image = Image.open(image_path)
-            exif = image._getexif()
+            if exif_data is None:
+                exif_data = self.extract_exif_data(image_path)
 
-            if not exif:
+            if not exif_data:
                 return None
 
-            # Get GPS info
+            # Get GPS info from pre-extracted EXIF data
             gps_info = {}
-            for tag_id, value in exif.items():
-                tag = TAGS.get(tag_id, tag_id)
-                if tag == 'GPSInfo':
-                    for gps_tag_id in value:
-                        gps_tag = GPSTAGS.get(gps_tag_id, gps_tag_id)
-                        gps_info[gps_tag] = value[gps_tag_id]
+            gps_raw = exif_data.get('GPSInfo')
+            if gps_raw and isinstance(gps_raw, dict):
+                for gps_tag_id, value in gps_raw.items():
+                    gps_tag = GPSTAGS.get(gps_tag_id, gps_tag_id)
+                    gps_info[gps_tag] = value
 
             if not gps_info:
                 return None
@@ -1018,8 +1026,11 @@ class ImageMetadataParser:
             'date_str': None
         }
 
+        # Extract EXIF once, pass to both datetime and GPS extraction
+        exif_data = self.extract_exif_data(image_path)
+
         # Extract datetime
-        dt = self.extract_datetime(image_path)
+        dt = self.extract_datetime(image_path, exif_data=exif_data)
         if dt:
             summary['datetime'] = dt
             summary['year'] = dt.year
@@ -1027,7 +1038,7 @@ class ImageMetadataParser:
             summary['date_str'] = dt.strftime("%Y-%m")
 
         # Extract GPS
-        coords = self.extract_gps_coordinates(image_path)
+        coords = self.extract_gps_coordinates(image_path, exif_data=exif_data)
         if coords:
             summary['gps_coordinates'] = coords
             # Get location name (with rate limiting consideration)
@@ -1051,6 +1062,8 @@ class ImageContentAnalyzer:
         self.vision_available = VISION_AVAILABLE
         self.face_cascade = None
         self.cost_calculator = cost_calculator
+        # Per-file CLIP result cache: (image_path, tuple(labels)) -> Dict[str, float]
+        self._clip_result_cache: Dict[tuple, Dict[str, float]] = {}
 
         if self.vision_available:
             try:
@@ -1113,6 +1126,10 @@ class ImageContentAnalyzer:
         "a photo of nature",
     ]
 
+    def clear_clip_cache(self) -> None:
+        """Clear the per-file CLIP result cache. Call at the start of each new file."""
+        self._clip_result_cache.clear()
+
     def classify_image_content(self, image_path: Path) -> Dict[str, float]:
         """
         Classify image content using CLIP zero-shot classification.
@@ -1123,14 +1140,22 @@ class ImageContentAnalyzer:
         if not self.vision_available:
             return {}
 
+        cache_key = (str(image_path), tuple(self._CLASSIFY_CATEGORIES))
+        if cache_key in self._clip_result_cache:
+            return self._clip_result_cache[cache_key]
+
         with CostTracker(self.cost_calculator, 'clip_vision') if self.cost_calculator else nullcontext():
             try:
                 if CLIP_CACHE_AVAILABLE:
                     results = get_cached_embedding(image_path, self._CLASSIFY_CATEGORIES, prompt_prefix="")
-                    return {label: conf for label, conf in results}
+                    result_dict = {label: conf for label, conf in results}
+                    self._clip_result_cache[cache_key] = result_dict
+                    return result_dict
 
                 results = get_clip_classifier().classify_raw(image_path, self._CLASSIFY_CATEGORIES)
-                return {label: conf for label, conf in results}
+                result_dict = {label: conf for label, conf in results}
+                self._clip_result_cache[cache_key] = result_dict
+                return result_dict
 
             except Exception as e:
                 print(f"  Image classification error: {e}")
@@ -1253,6 +1278,9 @@ class ContentBasedFileOrganizer:
         self._last_file_ocr_confidence: Optional[float] = None
         self._last_file_detected_language: Optional[str] = None
         self._last_file_kie_result = None  # KIEResult or None
+        self._last_file_ocr_text: Optional[str] = None  # cached OCR text to avoid re-running
+        # Per-file CLIP enhance cache: (file_path, tuple(labels)) -> List of results
+        self._clip_enhance_cache: Dict[tuple, list] = {}
 
         # Filepath-based classification (checked FIRST before content analysis)
         self.filepath_patterns = {
@@ -2976,9 +3004,17 @@ class ContentBasedFileOrganizer:
         return None
 
     def extract_text_from_image(self, image_path: Path) -> str:
-        """Extract text from image using docTR OCR."""
+        """Extract text from image using docTR OCR.
+
+        Reuses cached OCR text from ID detection or the image renamer
+        when available, avoiding a redundant OCR pass.
+        """
         if not self.ocr_available:
             return ""
+
+        # Return cached OCR text from an earlier pipeline stage if available.
+        if self._last_file_ocr_text:
+            return self._last_file_ocr_text
 
         with CostTracker(self.cost_calculator, 'doctr_ocr') if self.cost_calculator else nullcontext():
             try:
@@ -3129,11 +3165,16 @@ class ContentBasedFileOrganizer:
             return None
 
         # Run full 20-category CLIP classification (cache or direct singleton).
+        enhance_cache_key = (str(file_path), tuple(CLIP_CATEGORY_PROMPTS))
         try:
-            if CLIP_CACHE_AVAILABLE:
+            if enhance_cache_key in self._clip_enhance_cache:
+                results = self._clip_enhance_cache[enhance_cache_key]
+            elif CLIP_CACHE_AVAILABLE:
                 results = get_cached_embedding(file_path, CLIP_CATEGORY_PROMPTS, prompt_prefix="")
+                self._clip_enhance_cache[enhance_cache_key] = results
             else:
                 results = get_clip_classifier().classify_raw(file_path, CLIP_CATEGORY_PROMPTS)
+                self._clip_enhance_cache[enhance_cache_key] = results
             best_prompt, best_score = results[0]
             best_label = _CLIP_PROMPT_TO_LABEL.get(best_prompt, best_prompt)
             print(f"  CLIP enhance: {best_label} ({best_score:.1%})")
@@ -3198,6 +3239,10 @@ class ContentBasedFileOrganizer:
         # Reset per-file OCR/KIE metadata before processing a new file.
         self._last_file_ocr_confidence = None
         self._last_file_detected_language = None
+        self._last_file_ocr_text = None
+        # Clear per-file CLIP caches to avoid stale results across files.
+        self.image_analyzer.clear_clip_cache()
+        self._clip_enhance_cache.clear()
         self._last_file_kie_result = None
 
         pattern_path = display_path or file_path
@@ -3315,6 +3360,9 @@ class ContentBasedFileOrganizer:
             # Store for later persistence (consumed by _persist_to_graph_store).
             self._last_file_ocr_confidence = _ocr_conf
             self._last_file_detected_language = _ocr_lang
+            # Cache OCR text so extract_text_from_image can reuse it.
+            if ocr_text:
+                self._last_file_ocr_text = ocr_text
             # Attempt KIE structured field extraction when OCR is reliable.
             if KIE_AVAILABLE and _ocr_conf is not None and _ocr_conf >= _OCR_CONFIDENCE_THRESHOLD:
                 self._last_file_kie_result = extract_kie_fields(file_path)
@@ -3778,6 +3826,11 @@ class ContentBasedFileOrganizer:
         result = self.image_renamer.rename_file(file_path)
         self.image_renamer.dry_run = orig_dry_run
 
+        # Propagate any OCR text the renamer extracted so later stages
+        # (ID detection, text extraction) can reuse it without re-running OCR.
+        if self.image_renamer._last_ocr_text:
+            self._last_file_ocr_text = self.image_renamer._last_ocr_text
+
         if result['new_name']:
             conf = result.get('confidence')
             conf_str = f" ({conf:.0%})" if conf is not None else ""
@@ -3845,8 +3898,10 @@ class ContentBasedFileOrganizer:
                 self.stats['skipped'] += 1
                 return result
 
-            # Generate schema with extracted content
-            schema = self.generate_schema(file_path, schema_type, extracted_text)
+            # Generate schema with extracted content.
+            # Use physical_path (current path on disk) since the file may have
+            # been renamed by _maybe_rename_image before reaching this point.
+            schema = self.generate_schema(physical_path, schema_type, extracted_text)
 
             # Validate schema
             validation_report = self.validator.validate(schema)

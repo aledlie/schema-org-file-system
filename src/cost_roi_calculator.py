@@ -116,6 +116,19 @@ class CostROICalculator:
             manual_time_saved_sec=60.0     # 1 min to manually read/transcribe
         ),
 
+        # OCR (docTR - neural network, local model)
+        "doctr_ocr": ModelCostConfig(
+            name="docTR OCR",
+            cost_type=CostType.COMPUTE,
+            cost_per_unit=0.0,             # Local model, no API cost
+            unit_type="invocation",
+            avg_processing_time_sec=3.0,   # Slower than Tesseract; DL inference
+            success_rate=0.92,
+            description="docTR deep-learning OCR for text extraction",
+            files_correctly_classified=0.82,
+            manual_time_saved_sec=60.0     # 1 min to manually read/transcribe
+        ),
+
         # Face Detection (OpenCV)
         "face_detection": ModelCostConfig(
             name="OpenCV Face Detection",
