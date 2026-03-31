@@ -31,20 +31,56 @@ _DET_ARCH = 'fast_base'          # default since docTR v0.9, faster than db_resn
 _RECO_ARCH = 'crnn_vgg16_bn'     # reliable baseline recognition
 
 
+def _detect_device() -> str:
+    """Detect best available torch device: CUDA > MPS > CPU."""
+    try:
+        import torch
+    except ImportError:
+        return "cpu"
+
+    if torch.cuda.is_available():
+        return "cuda"
+
+    try:
+        if hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
+            return "mps"
+    except Exception:
+        pass
+
+    return "cpu"
+
+
 def _get_predictor():
     global _predictor
     if _predictor is None:
-        _predictor = ocr_predictor(
-            det_arch=_DET_ARCH,
-            reco_arch=_RECO_ARCH,
-            pretrained=True,
-            assume_straight_pages=False,   # support rotated/skewed scans
-            straighten_pages=True,         # auto-correct page rotation
-            detect_orientation=True,       # classify page orientation (0/90/180/270)
-            detect_language=True,          # per-page language detection
-            resolve_blocks=True,           # group lines into blocks for reading order
-            resolve_lines=True,            # group words into lines
-        )
+        device = _detect_device()
+        try:
+            _predictor = ocr_predictor(
+                det_arch=_DET_ARCH,
+                reco_arch=_RECO_ARCH,
+                pretrained=True,
+                assume_straight_pages=False,   # support rotated/skewed scans
+                straighten_pages=True,         # auto-correct page rotation
+                detect_orientation=True,       # classify page orientation (0/90/180/270)
+                detect_language=True,          # per-page language detection
+                resolve_blocks=True,           # group lines into blocks for reading order
+                resolve_lines=True,            # group words into lines
+                device=device,
+            )
+        except Exception:
+            # MPS or other accelerator may not be supported by docTR; fall back to CPU
+            _predictor = ocr_predictor(
+                det_arch=_DET_ARCH,
+                reco_arch=_RECO_ARCH,
+                pretrained=True,
+                assume_straight_pages=False,
+                straighten_pages=True,
+                detect_orientation=True,
+                detect_language=True,
+                resolve_blocks=True,
+                resolve_lines=True,
+                device="cpu",
+            )
     return _predictor
 
 

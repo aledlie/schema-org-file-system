@@ -8,7 +8,7 @@ from urllib.parse import quote
 
 from src.generators import DocumentGenerator, ImageGenerator
 from src.base import PropertyType
-from src.enrichment import MetadataEnricher
+from src.enrichment import MetadataEnricher, cached_stat
 from src.validator import SchemaValidator
 from src.integration import SchemaRegistry
 
@@ -78,7 +78,7 @@ class FileProcessor:
         extracted_text: str = "",
     ) -> Dict[str, Any]:
         """Generate Schema.org metadata for a file with extracted content."""
-        stats = file_path.stat()
+        stats = cached_stat(str(file_path))
         mime_type = self.enricher.detect_mime_type(str(file_path))
         file_url = f"https://localhost/files/{quote(file_path.name)}"
         actual_path = str(file_path.absolute())
@@ -152,7 +152,7 @@ class FileProcessor:
         try:
             session = self.graph_store.get_session()
 
-            stat = file_path.stat() if file_path.exists() else dest_path.stat()
+            stat = cached_stat(str(file_path)) if file_path.exists() else cached_stat(str(dest_path))
 
             file_record = self.graph_store.add_file(
                 original_path=str(file_path),

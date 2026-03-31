@@ -11,12 +11,13 @@ from functools import wraps
 from typing import Callable, Optional, Dict, Any, Generator
 from pathlib import Path
 from contextlib import contextmanager
-
 from cost_roi_calculator import CostROICalculator, CostTracker
 try:
     from .constants import SEPARATOR_WIDTH_LARGE, SEPARATOR_WIDTH_SMALL
+    from .enrichment import cached_stat
 except ImportError:
     from constants import SEPARATOR_WIDTH_LARGE, SEPARATOR_WIDTH_SMALL
+    from enrichment import cached_stat
 
 
 # Global calculator instance for easy integration
@@ -82,7 +83,7 @@ def track_feature(
     calculator = get_calculator()
     file_size = 0
     if file_path and Path(file_path).exists():
-        file_size = Path(file_path).stat().st_size
+        file_size = cached_stat(str(file_path)).st_size
 
     with CostTracker(
         calculator,

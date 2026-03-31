@@ -7,10 +7,23 @@ EXIF, document properties, NLP results, and embeddings.
 
 from typing import Any, Dict, Union
 from datetime import datetime
+from functools import lru_cache
 from pathlib import Path
 import mimetypes
 import hashlib
+import os
 import uuid
+
+
+@lru_cache(maxsize=1024)
+def cached_stat(path: str) -> os.stat_result:
+    """Return stat result for *path*, caching up to 1024 entries.
+
+    Key is the string representation of the path so it is hashable.
+    Call ``cached_stat.cache_clear()`` between processing batches if
+    files may be modified in-place.
+    """
+    return Path(path).stat()
 
 try:
     from .constants import SECONDS_PER_HOUR, SECONDS_PER_MINUTE
@@ -124,7 +137,7 @@ class MetadataEnricher:
         if not path.exists():
             return {}
 
-        stats = path.stat()
+        stats = cached_stat(str(path))
 
         # Generate deterministic @id from absolute path hash
         abs_path = str(path.absolute())

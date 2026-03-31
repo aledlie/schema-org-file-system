@@ -1,7 +1,7 @@
 """CLIP inference cache backed by pickle files.
 
-Caches classify() results by SHA-256 of image content so duplicate files
-skip model inference entirely. Cache is stored in .cache/clip_embeddings/.
+Caches classify() results by file identity (mtime + size + name) so
+duplicate inferences are skipped. Cache is stored in .cache/clip_embeddings/.
 Supports a probe-without-execute pattern for batch inference.
 """
 from __future__ import annotations
@@ -10,6 +10,12 @@ import logging
 import pickle
 from pathlib import Path
 
+try:
+  import xxhash
+  _HAS_XXHASH = True
+except ImportError:
+  _HAS_XXHASH = False
+
 logger = logging.getLogger(__name__)
 
 CLIP_CACHE_AVAILABLE = True
@@ -17,12 +23,13 @@ CLIP_CACHE_AVAILABLE = True
 _CACHE_DIR = Path(__file__).resolve().parents[2] / ".cache" / "clip_embeddings"
 
 
-def _sha256(path: Path) -> str:
-  h = hashlib.sha256()
-  with open(path, "rb") as f:
-    for chunk in iter(lambda: f.read(65536), b""):
-      h.update(chunk)
-  return h.hexdigest()
+def _file_identity(path: Path) -> str:
+  """Fast cache key from file metadata (no content hashing)."""
+  stat = path.stat()
+  raw = f"{path.name}_{stat.st_mtime}_{stat.st_size}"
+  if _HAS_XXHASH:
+    return xxhash.xxh64(raw.encode()).hexdigest()
+  return hashlib.md5(raw.encode()).hexdigest()
 
 
 def _cache_key(content_hash: str, labels: list[str], prompt_prefix: str) -> str:
@@ -55,10 +62,10 @@ def get_cached_embedding(
 ) -> list[tuple[str, float]]:
   """Return classify() results, served from disk cache when possible.
 
-  Cache key: SHA-256 of image file content + labels + prompt_prefix.
+  Cache key: file identity (mtime + size + name) + labels + prompt_prefix.
   """
   from shared.clip_utils import get_clip_classifier
-  key = _cache_key(_sha256(image_path), labels, prompt_prefix)
+  key = _cache_key(_file_identity(image_path), labels, prompt_prefix)
   cached = _load(_cache_path(key))
   if cached is not None:
     return cached
@@ -78,7 +85,7 @@ def get_cached_embeddings_batch(
   to amortize model-load cost across the batch.
   """
   from shared.clip_utils import get_clip_classifier
-  hashes = [_sha256(p) for p in image_paths]
+  hashes = [_file_identity(p) for p in image_paths]
   keys = [_cache_key(h, labels, prompt_prefix) for h in hashes]
 
   output: dict[int, list] = {}

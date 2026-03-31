@@ -84,7 +84,7 @@ from generators import (
     ArchiveGenerator
 )
 from base import PropertyType
-from enrichment import MetadataEnricher
+from enrichment import MetadataEnricher, cached_stat
 from validator import SchemaValidator
 from integration import SchemaRegistry
 from image_content_renamer import ImageContentRenamer
@@ -3480,7 +3480,7 @@ class ContentBasedFileOrganizer:
 
     def generate_schema(self, file_path: Path, schema_type: str, extracted_text: str = "") -> Dict:
         """Generate Schema.org metadata for a file with extracted content."""
-        stats = file_path.stat()
+        stats = cached_stat(str(file_path))
         mime_type = self.enricher.detect_mime_type(str(file_path))
         file_url = f"https://localhost/files/{quote(file_path.name)}"
         actual_path = str(file_path.absolute())
@@ -3714,7 +3714,7 @@ class ContentBasedFileOrganizer:
             session = self.graph_store.get_session()
 
             # Get file stats
-            stat = file_path.stat() if file_path.exists() else dest_path.stat()
+            stat = cached_stat(str(file_path)) if file_path.exists() else cached_stat(str(dest_path))
 
             # Merge KIE-extracted Schema.org properties into schema dict.
             kie_fields_json = None
