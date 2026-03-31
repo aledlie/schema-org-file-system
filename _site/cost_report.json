@@ -1,85 +1,93 @@
 {
   "metadata": {
-    "generated_at": "2026-03-10T14:58:24.026633",
-    "session_start": "2026-03-10T14:58:20.731444",
-    "session_duration_sec": 3.295191,
-    "total_usage_records": 13
+    "generated_at": "2026-03-30T20:13:51.623994",
+    "session_start": "2026-03-30T20:05:13.805927",
+    "session_duration_sec": 517.818092,
+    "total_usage_records": 32
   },
   "cost_summary": {
-    "total_cost": 0.00047000000000000004,
-    "total_files_processed": 13,
-    "total_processing_time_sec": 0.8400018215179443,
-    "avg_cost_per_file": 3.615384615384616e-05,
+    "total_cost": 0.0013650000000000001,
+    "total_files_processed": 32,
+    "total_processing_time_sec": 62.543233156204224,
+    "avg_cost_per_file": 4.2656250000000003e-05,
     "feature_breakdown": {
       "clip_vision": {
         "feature_name": "clip_vision",
-        "total_invocations": 4,
-        "total_processing_time_sec": 0.2449936866760254,
-        "total_cost": 0.0004,
-        "avg_cost_per_file": 0.0001,
+        "total_invocations": 13,
+        "total_processing_time_sec": 5.91311240196228,
+        "total_cost": 0.0013000000000000002,
+        "avg_cost_per_file": 0.00010000000000000002,
         "success_rate": 1.0,
-        "total_files_processed": 4
+        "total_files_processed": 13
       },
-      "tesseract_ocr": {
-        "feature_name": "tesseract_ocr",
-        "total_invocations": 5,
-        "total_processing_time_sec": 0.3781712055206299,
-        "total_cost": 5e-05,
-        "avg_cost_per_file": 1e-05,
+      "doctr_ocr": {
+        "feature_name": "doctr_ocr",
+        "total_invocations": 6,
+        "total_processing_time_sec": 55.07151174545288,
+        "total_cost": 0.0,
+        "avg_cost_per_file": 0.0,
         "success_rate": 1.0,
-        "total_files_processed": 5
+        "total_files_processed": 6
       },
       "face_detection": {
         "feature_name": "face_detection",
-        "total_invocations": 4,
-        "total_processing_time_sec": 0.21683692932128906,
-        "total_cost": 2e-05,
+        "total_invocations": 13,
+        "total_processing_time_sec": 1.5586090087890625,
+        "total_cost": 6.500000000000001e-05,
         "avg_cost_per_file": 5e-06,
         "success_rate": 1.0,
-        "total_files_processed": 4
+        "total_files_processed": 13
       }
     }
   },
   "roi_summary": {
-    "total_cost": 0.00047000000000000004,
-    "total_value": 2.381944444444444,
-    "overall_roi_percentage": 506696.6903073285,
-    "total_manual_hours_saved": 0.09527777777777778,
+    "total_cost": 0.0013650000000000001,
+    "total_value": 4.7131944444444445,
+    "overall_roi_percentage": 345188.9702889703,
+    "total_manual_hours_saved": 0.18852777777777777,
     "hourly_rate_used": 25.0,
     "feature_breakdown": {
       "clip_vision": {
         "feature_name": "clip_vision",
-        "total_cost": 0.0004,
-        "total_value": 0.7083333333333333,
-        "roi_percentage": 176983.3333333333,
-        "manual_hours_saved": 0.028333333333333332,
-        "cost_per_file": 0.0001,
+        "total_cost": 0.0013000000000000002,
+        "total_value": 2.302083333333333,
+        "roi_percentage": 176983.33333333328,
+        "manual_hours_saved": 0.09208333333333332,
+        "cost_per_file": 0.00010000000000000002,
         "value_per_file": 0.17708333333333334,
-        "break_even_files": 1
-      },
-      "tesseract_ocr": {
-        "feature_name": "tesseract_ocr",
-        "total_cost": 5e-05,
-        "total_value": 1.5625,
-        "roi_percentage": 3124899.9999999995,
-        "manual_hours_saved": 0.0625,
-        "cost_per_file": 1e-05,
-        "value_per_file": 0.3125,
         "break_even_files": 1
       },
       "face_detection": {
         "feature_name": "face_detection",
-        "total_cost": 2e-05,
-        "total_value": 0.1111111111111111,
+        "total_cost": 6.500000000000001e-05,
+        "total_value": 0.3611111111111111,
         "roi_percentage": 555455.5555555555,
-        "manual_hours_saved": 0.0044444444444444444,
+        "manual_hours_saved": 0.014444444444444444,
         "cost_per_file": 5e-06,
         "value_per_file": 0.02777777777777778,
         "break_even_files": 1
+      },
+      "doctr_ocr": {
+        "feature_name": "doctr_ocr",
+        "total_cost": 0.0,
+        "total_value": 2.0500000000000003,
+        "roi_percentage": Infinity,
+        "manual_hours_saved": 0.082,
+        "cost_per_file": 0.0,
+        "value_per_file": 0.3416666666666667,
+        "break_even_files": 0
       }
     }
   },
-  "recommendations": [],
+  "recommendations": [
+    {
+      "feature": "doctr_ocr",
+      "type": "slow_processing",
+      "severity": "medium",
+      "message": "docTR OCR is taking 9.18s per invocation (expected 3.00s). Consider optimization.",
+      "potential_savings": 0.0
+    }
+  ],
   "model_configs": {
     "clip_vision": {
       "name": "CLIP Vision Model",
@@ -101,6 +109,17 @@
       "success_rate": 0.9,
       "description": "Tesseract OCR for text extraction",
       "files_correctly_classified": 0.75,
+      "manual_time_saved_sec": 60.0
+    },
+    "doctr_ocr": {
+      "name": "docTR OCR",
+      "cost_type": "CostType.COMPUTE",
+      "cost_per_unit": 0.0,
+      "unit_type": "invocation",
+      "avg_processing_time_sec": 3.0,
+      "success_rate": 0.92,
+      "description": "docTR deep-learning OCR for text extraction",
+      "files_correctly_classified": 0.82,
       "manual_time_saved_sec": 60.0
     },
     "face_detection": {
@@ -207,10 +226,10 @@
     "1000_files": {
       "file_count": 1000,
       "total_estimated_cost": 0.195,
-      "total_estimated_time_sec": 10152.0,
-      "total_estimated_time_human": "2.8 hours",
-      "total_estimated_value": 5446.840277777777,
-      "estimated_roi": 2793151.4245014247,
+      "total_estimated_time_sec": 13152.0,
+      "total_estimated_time_human": "3.7 hours",
+      "total_estimated_value": 5761.173611111111,
+      "estimated_roi": 2954348.0056980057,
       "feature_estimates": {
         "clip_vision": {
           "estimated_cost": 0.1,
@@ -225,6 +244,13 @@
           "estimated_time_human": "25.0 minutes",
           "estimated_value": 281.25,
           "estimated_roi": 2812400.0
+        },
+        "doctr_ocr": {
+          "estimated_cost": 0.0,
+          "estimated_time_sec": 3000.0,
+          "estimated_time_human": "50.0 minutes",
+          "estimated_value": 314.33333333333337,
+          "estimated_roi": Infinity
         },
         "face_detection": {
           "estimated_cost": 0.005,
@@ -294,10 +320,10 @@
     "10000_files": {
       "file_count": 10000,
       "total_estimated_cost": 1.9500000000000002,
-      "total_estimated_time_sec": 101520.0,
-      "total_estimated_time_human": "28.2 hours",
-      "total_estimated_value": 54468.40277777778,
-      "estimated_roi": 2793151.4245014247,
+      "total_estimated_time_sec": 131520.0,
+      "total_estimated_time_human": "36.5 hours",
+      "total_estimated_value": 57611.73611111111,
+      "estimated_roi": 2954348.005698005,
       "feature_estimates": {
         "clip_vision": {
           "estimated_cost": 1.0,
@@ -312,6 +338,13 @@
           "estimated_time_human": "4.2 hours",
           "estimated_value": 2812.5,
           "estimated_roi": 2812400.0
+        },
+        "doctr_ocr": {
+          "estimated_cost": 0.0,
+          "estimated_time_sec": 30000.0,
+          "estimated_time_human": "8.3 hours",
+          "estimated_value": 3143.3333333333335,
+          "estimated_roi": Infinity
         },
         "face_detection": {
           "estimated_cost": 0.05,
@@ -381,10 +414,10 @@
     "100000_files": {
       "file_count": 100000,
       "total_estimated_cost": 19.5,
-      "total_estimated_time_sec": 1015200.0,
-      "total_estimated_time_human": "282.0 hours",
-      "total_estimated_value": 544684.0277777778,
-      "estimated_roi": 2793151.4245014247,
+      "total_estimated_time_sec": 1315200.0,
+      "total_estimated_time_human": "365.3 hours",
+      "total_estimated_value": 576117.3611111111,
+      "estimated_roi": 2954348.0056980057,
       "feature_estimates": {
         "clip_vision": {
           "estimated_cost": 10.0,
@@ -399,6 +432,13 @@
           "estimated_time_human": "41.7 hours",
           "estimated_value": 28125.0,
           "estimated_roi": 2812400.0
+        },
+        "doctr_ocr": {
+          "estimated_cost": 0.0,
+          "estimated_time_sec": 300000.0,
+          "estimated_time_human": "83.3 hours",
+          "estimated_value": 31433.333333333332,
+          "estimated_roi": Infinity
         },
         "face_detection": {
           "estimated_cost": 0.5,
