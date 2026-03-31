@@ -1758,7 +1758,8 @@ class ContentBasedFileOrganizer:
                     return ('game_assets', 'audio')
 
         # Check for image files that are game sprites/textures
-        if ext in ['.png', '.jpg', '.jpeg', '.bmp', '.tga', '.dds']:
+        # Exclude files with 'screenshot' in name — those are screen captures
+        if ext in ['.png', '.jpg', '.jpeg', '.bmp', '.tga', '.dds'] and 'screenshot' not in stem:
             # Check for game font sprite sheets first
             for keyword in self.game_font_keywords:
                 if keyword in stem or keyword in clean_stem:
@@ -1970,9 +1971,10 @@ class ContentBasedFileOrganizer:
 
         # Photos - .jpg, .jpeg, .png, .heic, .gif, .webp, .bmp
         if ext in ['.jpg', '.jpeg', '.png', '.heic', '.gif', '.webp', '.bmp', '.tiff', '.tif']:
-            # Screenshots (highest priority for photos)
-            if filename.startswith('screenshot') or 'screen shot' in filename:
-                return ('media', 'photos', 'screenshots')
+            # Screenshots — fall through to None so CLIP/OCR sub-classification
+            # at Priority 4.5 can route to Browser/Terminal/Docs/etc.
+            if filename.startswith('screenshot') or 'screen shot' in filename or 'screenshot' in stem:
+                return None
 
             # Scanned documents/receipts (OCR will detect text)
             if 'scan' in stem or 'receipt' in stem or 'document' in stem or 'invoice' in stem:
@@ -2197,11 +2199,12 @@ class ContentBasedFileOrganizer:
             return ('organization', 'vendors', 'Google', [])
 
         # =========================================================
-        # SCREENSHOTS: Files with 'screenshot' in name → Media/Photos/Screenshots
+        # SCREENSHOTS: Files with 'screenshot' in name
+        # Image files fall through to CLIP/OCR sub-classification
+        # (Priority 4.5) so they can be routed to Browser/Terminal/etc.
+        # Non-image files with 'screenshot' in name are skipped (e.g.
+        # ScreenshotResult.js.map is not a screenshot).
         # =========================================================
-        if 'screenshot' in stem:
-            print(f"  ✓ Filename pattern: Screenshot")
-            return ('media', 'photos_screenshots_other', None, [])
 
         # =========================================================
         # SURVEYS: Survey/questionnaire documents → Business/Other
@@ -2655,7 +2658,7 @@ class ContentBasedFileOrganizer:
             # Pattern: name_hash.png (animal_57886bff.png, drop_2_6.png)
             # Exclude files where original stem has uppercase — those are human-named, not generated assets
             has_uppercase = any(c.isupper() for c in original_stem)
-            if not is_camera_photo and not is_software_screenshot and not has_uppercase and re.match(r'^[a-z]+(_[a-z0-9]+)+$', stem):
+            if not is_camera_photo and not is_software_screenshot and not has_uppercase and 'screenshot' not in stem and re.match(r'^[a-z]+(_[a-z0-9]+)+$', stem):
                 print(f"  ✓ Filename pattern: Game asset (named)")
                 return ('game_assets', 'sprites', None, [])
             # Pattern: _hash or _name (starts with underscore, like _RWOIsUgWGL.png)
@@ -2663,7 +2666,8 @@ class ContentBasedFileOrganizer:
                 print(f"  ✓ Filename pattern: Game asset (underscore prefix)")
                 return ('game_assets', 'sprites', None, [])
             # Pattern: number_word (17_in.png, 17_out_1.png)
-            if not is_camera_photo and re.match(r'^\d+_[a-z]+(_\d+)?$', stem):
+            # Exclude date-prefixed screenshots (20260130_screenshot)
+            if not is_camera_photo and 'screenshot' not in stem and re.match(r'^\d+_[a-z]+(_\d+)?$', stem):
                 print(f"  ✓ Filename pattern: Game asset (numbered)")
                 return ('game_assets', 'sprites', None, [])
             # Pattern: hex codes for emoji/unicode (1f4a8.png, 1f600.png)
@@ -3416,6 +3420,50 @@ class ContentBasedFileOrganizer:
                     return (enhanced[0], enhanced[1], schema_type, '', None, [], image_metadata)
             print(f"  ✓ Media file detected: {media_type}/{subcategory}")
             return (category, f"{media_type}_{subcategory}", schema_type, '', None, [], image_metadata)
+
+        # PRIORITY 4.5: Screenshot sub-classification via OCR + CLIP
+        # Raw screenshots (e.g. "Screenshot 2025-*") that bypassed Priority 4
+        # because classify_media_file returned None.  Try OCR first (reliable
+        # for screenshots with text), then CLIP for non-text images.
+        _stem_lower = file_path.stem.lower()
+        if schema_type == 'ImageObject' and (
+            _stem_lower.startswith('screenshot')
+            or 'screen shot' in _stem_lower
+            or (
+                'screenshot' in _stem_lower
+                and not re.match(r'^(browser|terminal|code|docs|settings|product|chat|dashboard)_', _stem_lower)
+            )
+        ):
+            screenshots_dict = self.category_paths['media']['photos']['screenshots']
+
+            # Step 1: OCR-based sub-classification (dashboard, terminal, etc.)
+            ocr_result = self.image_renamer.classify_by_ocr(file_path)
+            if ocr_result:
+                ocr_category, ocr_confidence, _ = ocr_result
+                if ocr_category in screenshots_dict:
+                    print(f"  ✓ Screenshot OCR sub-class: {ocr_category} ({ocr_confidence:.0%})")
+                    return ('media', f'photos_screenshots_{ocr_category}', schema_type, '', None, [], image_metadata)
+                # OCR matched a non-screenshot Schema.org category — use it
+                if '_' in ocr_category:
+                    print(f"  ✓ Screenshot OCR reclassified: {ocr_category}")
+                    return (ocr_category.split('_')[0], ocr_category, schema_type, '', None, [], image_metadata)
+
+            # Step 2: CLIP enhancement for images OCR couldn't classify
+            enhanced = self.enhance_weak_image_classification(file_path, image_metadata)
+            if enhanced:
+                ecat, esubcat = enhanced
+                # CLIP identified non-media content (e.g. game_assets) — use that
+                if ecat not in ('media',):
+                    print(f"  ✓ Screenshot reclassified: {ecat}/{esubcat}")
+                    return (ecat, esubcat, schema_type, '', None, [], image_metadata)
+                # CLIP identified a specific screenshot subcategory
+                if 'screenshots' in esubcat and esubcat != 'photos_screenshots_other':
+                    print(f"  ✓ Screenshot CLIP sub-class: {esubcat}")
+                    return ('media', esubcat, schema_type, '', None, [], image_metadata)
+
+            # Fallback: generic screenshot folder
+            print(f"  ✓ Screenshot (unclassified)")
+            return ('media', 'photos_screenshots_other', schema_type, '', None, [], image_metadata)
 
         # PRIORITY 5: Check for photos with people (social)
         if schema_type == 'ImageObject' and self.image_analyzer.vision_available:
