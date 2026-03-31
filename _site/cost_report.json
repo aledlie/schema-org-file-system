@@ -1,93 +1,26 @@
 {
   "metadata": {
-    "generated_at": "2026-03-30T20:13:51.623994",
-    "session_start": "2026-03-30T20:05:13.805927",
-    "session_duration_sec": 517.818092,
-    "total_usage_records": 32
+    "generated_at": "2026-03-31T12:14:57.596201",
+    "session_start": "2026-03-31T11:50:46.427857",
+    "session_duration_sec": 1451.168349,
+    "total_usage_records": 0
   },
   "cost_summary": {
-    "total_cost": 0.0013650000000000001,
-    "total_files_processed": 32,
-    "total_processing_time_sec": 62.543233156204224,
-    "avg_cost_per_file": 4.2656250000000003e-05,
-    "feature_breakdown": {
-      "clip_vision": {
-        "feature_name": "clip_vision",
-        "total_invocations": 13,
-        "total_processing_time_sec": 5.91311240196228,
-        "total_cost": 0.0013000000000000002,
-        "avg_cost_per_file": 0.00010000000000000002,
-        "success_rate": 1.0,
-        "total_files_processed": 13
-      },
-      "doctr_ocr": {
-        "feature_name": "doctr_ocr",
-        "total_invocations": 6,
-        "total_processing_time_sec": 55.07151174545288,
-        "total_cost": 0.0,
-        "avg_cost_per_file": 0.0,
-        "success_rate": 1.0,
-        "total_files_processed": 6
-      },
-      "face_detection": {
-        "feature_name": "face_detection",
-        "total_invocations": 13,
-        "total_processing_time_sec": 1.5586090087890625,
-        "total_cost": 6.500000000000001e-05,
-        "avg_cost_per_file": 5e-06,
-        "success_rate": 1.0,
-        "total_files_processed": 13
-      }
-    }
+    "total_cost": 0.0,
+    "total_files_processed": 0,
+    "total_processing_time_sec": 0.0,
+    "avg_cost_per_file": 0.0,
+    "feature_breakdown": {}
   },
   "roi_summary": {
-    "total_cost": 0.0013650000000000001,
-    "total_value": 4.7131944444444445,
-    "overall_roi_percentage": 345188.9702889703,
-    "total_manual_hours_saved": 0.18852777777777777,
+    "total_cost": 0.0,
+    "total_value": 0.0,
+    "overall_roi_percentage": Infinity,
+    "total_manual_hours_saved": 0.0,
     "hourly_rate_used": 25.0,
-    "feature_breakdown": {
-      "clip_vision": {
-        "feature_name": "clip_vision",
-        "total_cost": 0.0013000000000000002,
-        "total_value": 2.302083333333333,
-        "roi_percentage": 176983.33333333328,
-        "manual_hours_saved": 0.09208333333333332,
-        "cost_per_file": 0.00010000000000000002,
-        "value_per_file": 0.17708333333333334,
-        "break_even_files": 1
-      },
-      "face_detection": {
-        "feature_name": "face_detection",
-        "total_cost": 6.500000000000001e-05,
-        "total_value": 0.3611111111111111,
-        "roi_percentage": 555455.5555555555,
-        "manual_hours_saved": 0.014444444444444444,
-        "cost_per_file": 5e-06,
-        "value_per_file": 0.02777777777777778,
-        "break_even_files": 1
-      },
-      "doctr_ocr": {
-        "feature_name": "doctr_ocr",
-        "total_cost": 0.0,
-        "total_value": 2.0500000000000003,
-        "roi_percentage": Infinity,
-        "manual_hours_saved": 0.082,
-        "cost_per_file": 0.0,
-        "value_per_file": 0.3416666666666667,
-        "break_even_files": 0
-      }
-    }
+    "feature_breakdown": {}
   },
-  "recommendations": [
-    {
-      "feature": "doctr_ocr",
-      "type": "slow_processing",
-      "severity": "medium",
-      "message": "docTR OCR is taking 9.18s per invocation (expected 3.00s). Consider optimization.",
-      "potential_savings": 0.0
-    }
-  ],
+  "recommendations": [],
   "model_configs": {
     "clip_vision": {
       "name": "CLIP Vision Model",
