@@ -1203,7 +1203,12 @@ class ContentOrganizer(BaseOrganizer):
                 elif stem.startswith(('landing_', 'infographic_')):
                     print("  ✓ Filename pattern: Marketing screenshot")
                     return ('business', 'marketing', None, [])
-            if not is_camera_photo and not is_software_screenshot and re.match(r'^[a-z]+(_[a-z0-9]+)+$', stem):
+            if (
+                not is_camera_photo
+                and not is_software_screenshot
+                and re.match(r'^[a-z]+(_[a-z0-9]+)+$', stem)
+                and any(kw in stem.split('_') for kw in self.game_sprite_keywords)
+            ):
                 print("  ✓ Filename pattern: Game asset (named)")
                 return ('game_assets', 'sprites', None, [])
             if not is_camera_photo and re.match(r'^_[A-Za-z0-9]+(_\d{8}_\d{6})?$', stem):
