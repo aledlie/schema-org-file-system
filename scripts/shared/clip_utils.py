@@ -66,7 +66,7 @@ class CLIPClassifier:
 
     logger.info("Loading CLIP model %s (pretrained=%s)", self.MODEL_NAME, self.PRETRAINED)
     model, _, preprocess_val = open_clip.create_model_and_transforms(
-      self.MODEL_NAME, pretrained=self.PRETRAINED,
+      self.MODEL_NAME, pretrained=self.PRETRAINED, force_quick_gelu=True,
     )
     self.model = model.to(self.device, dtype=self._dtype)
     self.model.eval()
