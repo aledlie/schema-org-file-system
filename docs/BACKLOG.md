@@ -65,3 +65,33 @@ Last updated: 2026-03-30.
 - Consider adaptive contrast enhancement (CLAHE) as a second pass when initial OCR yields < 30 chars
 - Evaluate lowering `CLIP_ENHANCE_THRESHOLD` for screenshot-specific classification (currently 0.15, screenshots score ~0.05)
 - Add `_SCREENSHOT_KEYWORDS` entries for IDE/code patterns (`import`, `function`, `class`, `def`, `const`) and browser patterns (`http`, `www`, `.com`, `search`)
+
+### Game-sprite keyword gate may false-positive on short substrings
+
+**Status:** Open
+**Context:** `src/organizers/content_organizer.py:1206` and `scripts/file_organizer_content_based.py:2661` gate the broad snake_case `^[a-z]+(_[a-z0-9]+)+$` "Game asset (named)" rule on `any(kw in stem for kw in self.game_sprite_keywords)` (added 2026-04-19 to stop non-game snake_case files like `flipside_swolmates_map.png` being misrouted to `GameAssets/Sprites/`).
+
+`self.game_sprite_keywords` contains short tokens (`arm`, `leg`, `ring`, `ore`, `icon`, `ui`, `up`, `over`, `main`, `bar`, `body`, `eye`, `hand`) that are substrings of common non-game words. Examples of likely false-positives:
+
+- `legal_doc.png` → matches `leg`
+- `earrings_vendor.png` → matches `ring` / `earring`
+- `main_menu_mockup.png` → matches `main` / `menu`
+- `iconography_notes.png` → matches `icon`
+- `barn_photo.png` → matches `bar`
+
+**Proposed fix:** switch `kw in stem` to word-boundary matching against `stem.split('_')` tokens, i.e. `any(kw in tokens for kw in self.game_sprite_keywords)` where `tokens = stem.split('_')`. Aligns intent (keyword is a filename component) with implementation.
+
+**Affected:**
+- `src/organizers/content_organizer.py:1206-1211`
+- `scripts/file_organizer_content_based.py:2661-2671`
+
+### Filename-pattern classification duplicated across two organizers
+
+**Status:** Open
+**Context:** `src/organizers/content_organizer.py` and `scripts/file_organizer_content_based.py` both carry near-identical filename-pattern rule sets (including the `Game asset (named)` regex + keyword-gate added 2026-04-19). Any rule change must be applied in both places or classification drifts between entry points.
+
+**Proposed fix:** extract the filename-pattern rules into a shared module (e.g. `scripts/shared/filename_classifier.py` or `src/classifiers/filename_patterns.py`) returning `(category, subcategory, organization, schema_data)`. Both organizers import and call one function.
+
+**Affected:**
+- `src/organizers/content_organizer.py` (classify_file filename-pattern block, ~lines 1100-1250)
+- `scripts/file_organizer_content_based.py` (same logic, ~lines 2600-2780)
