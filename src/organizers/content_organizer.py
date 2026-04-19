@@ -1203,11 +1203,20 @@ class ContentOrganizer(BaseOrganizer):
                 elif stem.startswith(('landing_', 'infographic_')):
                     print("  ✓ Filename pattern: Marketing screenshot")
                     return ('business', 'marketing', None, [])
+            # Pre-split once; single-word kws require token match (word boundary);
+            # underscore-prefixed kws (_grey) strip the prefix then check tokens;
+            # compound kws (mad_carpenter, arrow_v) fall back to substring of stem.
+            _stem_tokens = stem.split('_')
             if (
                 not is_camera_photo
                 and not is_software_screenshot
                 and re.match(r'^[a-z]+(_[a-z0-9]+)+$', stem)
-                and any(kw in stem.split('_') for kw in self.game_sprite_keywords)
+                and any(
+                    kw in _stem_tokens if '_' not in kw
+                    else kw.lstrip('_') in _stem_tokens if '_' not in kw.lstrip('_')
+                    else kw in stem
+                    for kw in self.game_sprite_keywords
+                )
             ):
                 print("  ✓ Filename pattern: Game asset (named)")
                 return ('game_assets', 'sprites', None, [])
