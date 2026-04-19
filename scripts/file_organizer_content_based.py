@@ -2658,7 +2658,14 @@ class ContentBasedFileOrganizer:
             # Pattern: name_hash.png (animal_57886bff.png, drop_2_6.png)
             # Exclude files where original stem has uppercase — those are human-named, not generated assets
             has_uppercase = any(c.isupper() for c in original_stem)
-            if not is_camera_photo and not is_software_screenshot and not has_uppercase and 'screenshot' not in stem and re.match(r'^[a-z]+(_[a-z0-9]+)+$', stem):
+            if (
+                not is_camera_photo
+                and not is_software_screenshot
+                and not has_uppercase
+                and 'screenshot' not in stem
+                and re.match(r'^[a-z]+(_[a-z0-9]+)+$', stem)
+                and any(kw in stem.split('_') for kw in self.game_sprite_keywords)
+            ):
                 print(f"  ✓ Filename pattern: Game asset (named)")
                 return ('game_assets', 'sprites', None, [])
             # Pattern: _hash or _name (starts with underscore, like _RWOIsUgWGL.png)
