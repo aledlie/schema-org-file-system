@@ -20,8 +20,7 @@ import hashlib
 import json
 
 from shared.clip_utils import CLIPClassifier, CLIP_AVAILABLE
-from shared.ocr_classifier import apply_ocr_fallback
-from shared.clip_classification import classify_image as clip_classify_image
+from shared.clip_classification import classify_with_ocr_fallback
 from shared.ocr_utils import extract_ocr_text, is_ocr_available
 from shared.file_ops import resolve_collision
 
@@ -184,22 +183,6 @@ class ScreenshotAnalyzer:
         """Extract text from image using OCR."""
         return extract_ocr_text(image_path, config='--psm 10 --oem 3') or ""
 
-    def classify_image(self, image_path: Path) -> Tuple[str, float, Dict[str, float]]:
-        """
-        Classify image content using CLIP.
-
-        Returns:
-            Tuple of (best_category, confidence, all_scores)
-        """
-        result = clip_classify_image(
-            image_path,
-            self.game_categories,
-            collect_all_scores=True,
-        )
-        if result:
-            return result
-        return ("unknown", 0.0, {})
-
     def detect_number(self, image_path: Path) -> Optional[str]:
         """Try to detect if image contains a number."""
         # First try OCR
@@ -246,16 +229,19 @@ class ScreenshotAnalyzer:
             'top_scores': {}
         }
 
-        # Classify with CLIP and apply OCR fallback if needed
-        best_category, confidence, scores = self.classify_image(image_path)
-
-        best_category, confidence, scores, _ = apply_ocr_fallback(
-            best_category, confidence, scores,
+        # Classify with CLIP and OCR fallback
+        result = classify_with_ocr_fallback(
             image_path,
-            clip_threshold=self._CLIP_OCR_FALLBACK_THRESHOLD,
-            content_classifier=None,
+            self.game_categories,
+            ocr_threshold=self._CLIP_OCR_FALLBACK_THRESHOLD,
+            collect_all_scores=True,
             verbose=False,
         )
+
+        if result:
+            best_category, confidence, scores = result
+        else:
+            best_category, confidence, scores = "unknown", 0.0, {}
 
         result['category'] = best_category
         result['confidence'] = confidence
