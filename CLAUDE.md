@@ -40,7 +40,12 @@ organize-files health                    # Check dependencies
 │       ├── schema_org_variants.py   # CategoryVariants, PersonVariants, FileVariants
 │       └── schema_org_base.py       # Shared base types
 ├── scripts/
-│   ├── shared/                          # Shared utilities (clip, db, ocr, file ops)
+│   ├── shared/                          # Shared utilities
+│   │   ├── clip_classification.py       # Unified CLIP+OCR pipeline (classify_with_ocr_fallback, CLIPResult)
+│   │   ├── ocr_classifier.py            # OCR fallback logic (classify_by_ocr, apply_ocr_fallback)
+│   │   ├── clip_utils.py                # CLIPClassifier singleton (ViT-B-32)
+│   │   ├── clip_cache.py                # Embedding cache (.cache/clip_embeddings_v2/)
+│   │   └── ...                          # file_ops, filename_utils, constants, ocr_utils
 │   ├── file_organizer_content_based.py  # Main AI organizer
 │   ├── image_content_renamer.py         # CLIP-based image renaming
 │   ├── screenshot_renamer.py            # CLIP screenshot renamer (standalone, --dry-run / --execute)
@@ -126,11 +131,13 @@ Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 | Large images silently skipped | Pillow rejects images >178M pixels (decompression-bomb guard); affects oversized PNGs like maps/renders |
 | CLIP embedding cache | Lives at `.cache/clip_embeddings_v2/` (fp32 `.npy` per image); safe to `rm -rf` to reset |
 | `scripts/shared/` import path | Scripts must run from project root so `from shared.x import y` resolves; `organize-files` CLI handles this automatically |
+| Standalone script flags | `image_content_renamer.py --dry-run --source <dir>` and `screenshot_renamer.py --dry-run / --execute`; both must run with `venv` active from project root |
+| Unified CLIP+OCR API | `classify_with_ocr_fallback()` in `scripts/shared/clip_classification.py` is the shared entry point; returns `CLIPResult(category, confidence, all_scores)`; both renamer tools call it |
 
 ## Testing
 
 ```bash
-pytest tests/unit/           # 102 unit tests
+pytest tests/unit/           # 753 unit tests (2 pre-existing failures in test_text_extractor.py — pypdf, unrelated)
 pytest tests/integration/    # schema.org export pipeline
 pytest tests/performance/ --benchmark-only -m "not slow"   # benchmarks (skip 10k)
 pytest tests/e2e/            # Playwright E2E
