@@ -66,9 +66,9 @@ Last updated: 2026-03-30.
 - Evaluate lowering `CLIP_ENHANCE_THRESHOLD` for screenshot-specific classification (currently 0.15, screenshots score ~0.05)
 - Add `_SCREENSHOT_KEYWORDS` entries for IDE/code patterns (`import`, `function`, `class`, `def`, `const`) and browser patterns (`http`, `www`, `.com`, `search`)
 
-### Game-sprite keyword gate may false-positive on short substrings
+### ~~Game-sprite keyword gate may false-positive on short substrings~~
 
-**Status:** Open
+**Status:** Done (2026-04-19, fix(organizer) commit)
 **Context:** `src/organizers/content_organizer.py:1206` and `scripts/file_organizer_content_based.py:2661` gate the broad snake_case `^[a-z]+(_[a-z0-9]+)+$` "Game asset (named)" rule on `any(kw in stem for kw in self.game_sprite_keywords)` (added 2026-04-19 to stop non-game snake_case files like `flipside_swolmates_map.png` being misrouted to `GameAssets/Sprites/`).
 
 `self.game_sprite_keywords` contains short tokens (`arm`, `leg`, `ring`, `ore`, `icon`, `ui`, `up`, `over`, `main`, `bar`, `body`, `eye`, `hand`) that are substrings of common non-game words. Examples of likely false-positives:
@@ -95,3 +95,45 @@ Last updated: 2026-03-30.
 **Affected:**
 - `src/organizers/content_organizer.py` (classify_file filename-pattern block, ~lines 1100-1250)
 - `scripts/file_organizer_content_based.py` (same logic, ~lines 2600-2780)
+
+### ~~ImageContentRenamer status strings → Enum~~
+
+**Status:** Done (2026-04-19)
+**Context:** `rename_file()` returns a result dict with stringly-typed `status` values (`'pending'`, `'skipped'`, `'renamed'`, `'would_rename'`, `'no_content'`, `'low_confidence'`, `'error'`). `process_directory()` branches on these strings with a long if/elif chain. No single source of truth; typos would silently fall through.
+
+**Proposed fix:** introduce `RenameStatus(Enum)`; replace string literals and collapse the print branches in `process_directory()` into a status→formatter lookup dict.
+
+**Affected:**
+- `scripts/image_content_renamer.py:306-425`
+
+### ~~ImageContentRenamer `_get_date_string` duplicates `ImageMetadataParser.extract_datetime`~~
+
+**Status:** Done (2026-04-19)
+**Context:** `ImageContentRenamer._get_date_string()` (scripts/image_content_renamer.py:260) performs EXIF + mtime extraction that duplicates `src/analyzers/image_metadata.py:ImageMetadataParser.extract_datetime()` (lines 92-108). The `ImageMetadataParser` version handles more EXIF tag names and has stronger error handling.
+
+**Proposed fix:** delete `_get_date_string` and call `ImageMetadataParser.extract_datetime()`; format the returned datetime as `YYYYMMDD` at the callsite in `generate_filename()`.
+
+**Affected:**
+- `scripts/image_content_renamer.py:27-28` (delete `_EXIF_TAG_*` constants)
+- `scripts/image_content_renamer.py:260-280` (delete `_get_date_string`)
+
+### ~~ImageContentRenamer `should_rename` patterns duplicate `image_renamer_metadata.is_generic_filename`~~
+
+**Status:** Done (2026-04-19) — merged patterns into `scripts/shared/filename_utils.py`
+**Context:** `scripts/image_content_renamer.py:282` and `scripts/image_renamer_metadata.py:69-77` both maintain generic-filename regex lists. The `image_renamer_metadata` version has a more complete pattern set (MD5 hashes, Unix timestamps, UUIDs) that's missing here.
+
+**Proposed fix:** move the merged pattern list into `scripts/shared/filename_utils.py` (new module) as `GENERIC_FILENAME_PATTERNS` plus `is_generic_filename(name)` helper. Both renamers import and call it.
+
+**Affected:**
+- `scripts/image_content_renamer.py:282-304`
+- `scripts/image_renamer_metadata.py:69-77`
+
+### ~~ImageContentRenamer TOCTOU on collision resolution~~
+
+**Status:** Done (2026-04-19)
+**Context:** `rename_file()` checks `new_path.exists()` before `file_path.rename(new_path)` (lines 356/364). A concurrent process creating `new_path` between the check and the rename would cause a silent overwrite on POSIX or a `FileExistsError` depending on platform.
+
+**Proposed fix:** drop the pre-check and wrap `rename()` in try/except `FileExistsError`; on failure, call `resolve_collision()` and retry once.
+
+**Affected:**
+- `scripts/image_content_renamer.py:354-370`
