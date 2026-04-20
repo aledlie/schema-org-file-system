@@ -9,23 +9,27 @@ from __future__ import annotations
 import argparse
 import re
 from datetime import datetime
+from enum import Enum
 from pathlib import Path
-
-try:
-    from PIL import Image
-except ImportError:
-    pass
 
 from shared.clip_utils import get_clip_classifier, CLIP_AVAILABLE
 from shared.constants import IMAGE_EXTENSIONS_WIDE
 from shared.file_ops import resolve_collision
+from shared.filename_utils import is_generic_filename
 from shared.ocr_utils import extract_ocr_text, is_ocr_available
 
+from src.analyzers.image_metadata import ImageMetadataParser
 from src.classifiers.content_classifier import ContentClassifier
 
 
-_EXIF_TAG_DATETIME_ORIGINAL = 36867  # DateTimeOriginal
-_EXIF_TAG_DATETIME = 306             # DateTime
+class RenameStatus(Enum):
+    PENDING = 'pending'
+    SKIPPED = 'skipped'
+    RENAMED = 'renamed'
+    WOULD_RENAME = 'would_rename'
+    NO_CONTENT = 'no_content'
+    LOW_CONFIDENCE = 'low_confidence'
+    ERROR = 'error'
 
 
 class ImageContentRenamer:
@@ -95,6 +99,15 @@ class ImageContentRenamer:
     # Minimum keyword hits for screenshot-specific matching
     _SCREENSHOT_MIN_HITS = 2
 
+    # CLIP confidence below this triggers OCR fallback
+    _CLIP_OCR_FALLBACK_THRESHOLD = 0.10
+    # Minimum CLIP confidence to attempt refinement with more specific terms
+    _CLIP_REFINEMENT_MIN_CONFIDENCE = 0.15
+    # Minimum confidence for a refined term to be accepted
+    _CLIP_REFINEMENT_ACCEPT_CONFIDENCE = 0.30
+    # Minimum confidence to proceed with renaming
+    _RENAME_CONFIDENCE_THRESHOLD = 0.30
+
     # More specific descriptions for refinement
     REFINEMENT_TERMS = {
         "sofa": ["leather sofa", "fabric sofa", "sectional sofa", "outdoor sofa", "modern sofa"],
@@ -124,32 +137,30 @@ class ImageContentRenamer:
         if CLIP_AVAILABLE:
             self.classifier = get_clip_classifier()
 
-    # CLIP confidence below this triggers OCR fallback
-    _CLIP_OCR_FALLBACK_THRESHOLD = 0.10
-
-    def analyze_image(self, image_path: Path) -> tuple[str, float] | None:
+    def analyze_image(
+        self, image_path: Path
+    ) -> tuple[str, float, dict[str, float]] | None:
         """
         Analyze image content using CLIP, falling back to OCR when
         CLIP confidence is below threshold.
 
-        Returns:
-            Tuple of (best_category, confidence) or None if analysis fails
+        Returns ``(category, confidence, all_scores)`` or ``None``.
+        ``all_scores`` is empty for CLIP-only results.
         """
         clip_result = self._analyze_clip(image_path)
 
         if clip_result and clip_result[1] >= self._CLIP_OCR_FALLBACK_THRESHOLD:
-            return clip_result
+            return (clip_result[0], clip_result[1], {})
 
-        # CLIP absent or low confidence — try OCR keyword classification
         ocr_result = self.classify_by_ocr(image_path)
         if ocr_result:
             category, confidence, all_scores = ocr_result
-            # Store all_scores for consumers (e.g. rename_file result dict)
-            self._last_all_scores = all_scores
             print(f"  ↪ OCR fallback: {category} ({confidence:.0%})")
-            return (category, confidence)
+            return (category, confidence, all_scores)
 
-        return clip_result
+        if clip_result:
+            return (clip_result[0], clip_result[1], {})
+        return None
 
     def _analyze_clip(self, image_path: Path) -> tuple[str, float] | None:
         """Run CLIP vision classification."""
@@ -161,7 +172,7 @@ class ImageContentRenamer:
                 image_path, self.CONTENT_CATEGORIES
             )
 
-            if top_category in self.REFINEMENT_TERMS and top_confidence > 0.15:
+            if top_category in self.REFINEMENT_TERMS and top_confidence > self._CLIP_REFINEMENT_MIN_CONFIDENCE:
                 refined = self._refine_category(image_path, top_category)
                 if refined:
                     return refined
@@ -193,9 +204,11 @@ class ImageContentRenamer:
 
         # Screenshot-specific scores
         screenshot_scores: dict[str, float] = {}
+        screenshot_hits: dict[str, int] = {}
         for category, keywords in self._SCREENSHOT_KEYWORDS.items():
             hits = sum(1 for kw in keywords if kw in text_lower)
             if hits:
+                screenshot_hits[category] = hits
                 screenshot_scores[category] = hits / len(keywords)
 
         # Schema.org taxonomy scores
@@ -210,8 +223,7 @@ class ImageContentRenamer:
         # Pass 1: screenshot-specific winner
         if screenshot_scores:
             best_ss = max(screenshot_scores, key=screenshot_scores.get)
-            best_hits = sum(1 for kw in self._SCREENSHOT_KEYWORDS[best_ss] if kw in text_lower)
-            if best_hits >= self._SCREENSHOT_MIN_HITS:
+            if screenshot_hits[best_ss] >= self._SCREENSHOT_MIN_HITS:
                 return (best_ss, screenshot_scores[best_ss], all_scores)
 
         # Pass 2: Schema.org taxonomy winner
@@ -234,18 +246,24 @@ class ImageContentRenamer:
 
         top_term, top_confidence = self.classifier.top_match(image_path, refinements)
 
-        if top_confidence > 0.3:
+        if top_confidence > self._CLIP_REFINEMENT_ACCEPT_CONFIDENCE:
             return (top_term, top_confidence)
         return None
 
-    def generate_filename(self, image_path: Path, content: str, confidence: float) -> str:
+    def generate_filename(self, image_path: Path, content: str) -> str:
         """Generate a new filename based on content analysis."""
         # Clean up content for filename
         clean_content = content.lower().replace(" ", "_")
         clean_content = re.sub(r'[^a-z0-9_]', '', clean_content)
 
-        # Try to get date from file metadata
-        date_str = self._get_date_string(image_path)
+        # Try to get date from EXIF or mtime via ImageMetadataParser
+        dt = ImageMetadataParser().extract_datetime(image_path)
+        if dt is None:
+            try:
+                dt = datetime.fromtimestamp(image_path.stat().st_mtime)
+            except Exception:
+                dt = None
+        date_str = dt.strftime("%Y%m%d") if dt else None
 
         # Build filename
         ext = image_path.suffix.lower()
@@ -257,55 +275,12 @@ class ImageContentRenamer:
 
         return new_name
 
-    def _get_date_string(self, image_path: Path) -> str | None:
-        """Extract date from image EXIF or file modification time."""
-        try:
-            with Image.open(image_path) as image:
-                exif = image._getexif()
-            if exif:
-                for tag_id in [_EXIF_TAG_DATETIME_ORIGINAL, _EXIF_TAG_DATETIME]:
-                    if tag_id in exif:
-                        date_str = exif[tag_id]
-                        dt = datetime.strptime(date_str, "%Y:%m:%d %H:%M:%S")
-                        return dt.strftime("%Y%m%d")
-        except Exception:
-            pass
-
-        # Fallback to file modification time
-        try:
-            mtime = image_path.stat().st_mtime
-            dt = datetime.fromtimestamp(mtime)
-            return dt.strftime("%Y%m%d")
-        except Exception:
-            return None
-
     def should_rename(self, filename: str) -> bool:
         """Check if file has a generic name that should be renamed."""
-        stem = Path(filename).stem.lower()
-
-        generic_patterns = [
-            r'^screenshot[\s_-]',
-            r'^img_\d+',
-            r'^pxl_\d+',
-            r'^dsc_?\d+',
-            r'^dcim_\d+',
-            r'^\d{8}_\d{6}',
-            r'^\d+$',
-            r'^[a-f0-9]{32}',
-            r'^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}',
-            r'^image\d*$',
-            r'^photo\d*$',
-            r'^unnamed',
-        ]
-
-        for pattern in generic_patterns:
-            if re.match(pattern, stem):
-                return True
-        return False
+        return is_generic_filename(filename)
 
     def rename_file(self, file_path: Path) -> dict:
         """Analyze and rename a single image file."""
-        self._last_all_scores = {}
         self._last_ocr_text = None
 
         result = {
@@ -314,13 +289,13 @@ class ImageContentRenamer:
             'content': None,
             'confidence': None,
             'all_scores': {},
-            'status': 'pending',
+            'status': RenameStatus.PENDING,
             'error': None,
         }
 
         # Check if already has descriptive name
         if not self.should_rename(file_path.name):
-            result['status'] = 'skipped'
+            result['status'] = RenameStatus.SKIPPED
             result['error'] = 'Already has descriptive name'
             self.stats['skipped'] += 1
             return result
@@ -328,48 +303,54 @@ class ImageContentRenamer:
         # Analyze content
         analysis = self.analyze_image(file_path)
         if not analysis:
-            result['status'] = 'no_content'
+            result['status'] = RenameStatus.NO_CONTENT
             result['error'] = 'Could not analyze content'
             self.stats['no_content'] += 1
             return result
 
-        content, confidence = analysis
+        content, confidence, all_scores = analysis
         result['content'] = content
         result['confidence'] = confidence
-        result['all_scores'] = self._last_all_scores
+        result['all_scores'] = all_scores
 
-        # Skip if confidence is too low. OCR-fallback matches below this gate
-        # produce unreliable labels that mislead downstream classification.
-        _RENAME_CONFIDENCE_THRESHOLD = 0.30
-        if confidence < _RENAME_CONFIDENCE_THRESHOLD:
-            result['status'] = 'low_confidence'
+        # OCR-fallback matches below this gate produce unreliable labels
+        # that mislead downstream classification.
+        if confidence < self._RENAME_CONFIDENCE_THRESHOLD:
+            result['status'] = RenameStatus.LOW_CONFIDENCE
             result['error'] = f'Confidence too low: {confidence:.1%}'
             self.stats['skipped'] += 1
             return result
 
-        # Generate new filename
-        new_name = self.generate_filename(file_path, content, confidence)
+        new_name = self.generate_filename(file_path, content)
         result['new_name'] = new_name
 
-        # Handle duplicates
         new_path = file_path.parent / new_name
-        if new_path.exists() and new_path != file_path:
-            new_path = resolve_collision(new_path)
-            new_name = new_path.name
-            result['new_name'] = new_name
 
         # Perform rename
         if not self.dry_run:
             try:
                 file_path.rename(new_path)
-                result['status'] = 'renamed'
+                result['status'] = RenameStatus.RENAMED
                 self.stats['renamed'] += 1
+            except FileExistsError:
+                # Concurrent collision: resolve and retry once
+                new_path = resolve_collision(new_path)
+                new_name = new_path.name
+                result['new_name'] = new_name
+                try:
+                    file_path.rename(new_path)
+                    result['status'] = RenameStatus.RENAMED
+                    self.stats['renamed'] += 1
+                except Exception as e:
+                    result['status'] = RenameStatus.ERROR
+                    result['error'] = str(e)
+                    self.stats['errors'] += 1
             except Exception as e:
-                result['status'] = 'error'
+                result['status'] = RenameStatus.ERROR
                 result['error'] = str(e)
                 self.stats['errors'] += 1
         else:
-            result['status'] = 'would_rename'
+            result['status'] = RenameStatus.WOULD_RENAME
             self.stats['renamed'] += 1
 
         return result
@@ -389,10 +370,14 @@ class ImageContentRenamer:
 
         # Find all image files
         if recursive:
+            seen: set[Path] = set()
             files = []
             for ext in self.IMAGE_EXTENSIONS:
-                files.extend(source_dir.rglob(f"*{ext}"))
-                files.extend(source_dir.rglob(f"*{ext.upper()}"))
+                for pattern in (f"*{ext}", f"*{ext.upper()}"):
+                    for f in source_dir.rglob(pattern):
+                        if f not in seen:
+                            seen.add(f)
+                            files.append(f)
         else:
             files = [f for f in source_dir.iterdir()
                     if f.is_file() and f.suffix.lower() in self.IMAGE_EXTENSIONS]
@@ -404,25 +389,33 @@ class ImageContentRenamer:
         generic_files = [f for f in files if self.should_rename(f.name)]
         print(f"Generic filenames to process: {len(generic_files)}\n")
 
+        _STATUS_FORMATTERS: dict[RenameStatus, object] = {
+            RenameStatus.RENAMED: lambda r: (
+                print(f"  ✓ Renamed: {r['original']} → {r['new_name']}"),
+                print(f"    Content: {r['content']} ({r['confidence']:.1%})"),
+                self._print_all_scores(r.get('all_scores', {}), r['content']),
+            ),
+            RenameStatus.WOULD_RENAME: lambda r: (
+                print(f"  → Would rename: {r['original']} → {r['new_name']}"),
+                print(f"    Content: {r['content']} ({r['confidence']:.1%})"),
+                self._print_all_scores(r.get('all_scores', {}), r['content']),
+            ),
+            RenameStatus.SKIPPED: lambda r: print(f"  ⊘ Skipped: {r['error']}"),
+            RenameStatus.LOW_CONFIDENCE: lambda r: (
+                print(f"  ⊘ Low confidence: {r['content']} ({r['confidence']:.1%})"),
+                self._print_all_scores(r.get('all_scores', {}), r.get('content')),
+            ),
+            RenameStatus.NO_CONTENT: lambda r: print("  ⚠ No content detected"),
+            RenameStatus.ERROR: lambda r: print(f"  ✗ Error: {r['error']}"),
+        }
+
         # Process each file
         for i, file_path in enumerate(generic_files, 1):
             print(f"[{i}/{len(generic_files)}] {file_path.name}")
             result = self.rename_file(file_path)
-
-            if result['status'] in ('renamed', 'would_rename'):
-                prefix = "  → Would rename:" if self.dry_run else "  ✓ Renamed:"
-                print(f"{prefix} {result['original']} → {result['new_name']}")
-                print(f"    Content: {result['content']} ({result['confidence']:.1%})")
-                self._print_all_scores(result.get('all_scores', {}), result['content'])
-            elif result['status'] == 'skipped':
-                print(f"  ⊘ Skipped: {result['error']}")
-            elif result['status'] == 'low_confidence':
-                print(f"  ⊘ Low confidence: {result['content']} ({result['confidence']:.1%})")
-                self._print_all_scores(result.get('all_scores', {}), result.get('content'))
-            elif result['status'] == 'no_content':
-                print(f"  ⚠ No content detected")
-            elif result['status'] == 'error':
-                print(f"  ✗ Error: {result['error']}")
+            formatter = _STATUS_FORMATTERS.get(result['status'])
+            if formatter:
+                formatter(result)
 
         # Print summary
         self._print_summary()
