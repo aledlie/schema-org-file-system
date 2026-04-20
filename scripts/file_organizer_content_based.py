@@ -3456,12 +3456,17 @@ class ContentBasedFileOrganizer:
             ocr_result = self.image_renamer.classify_by_ocr(file_path)
             if ocr_result:
                 ocr_category, ocr_confidence, _ = ocr_result
-                if ocr_category in screenshots_dict:
+                if ocr_confidence < _OCR_CONFIDENCE_THRESHOLD:
+                    print(
+                        f"  ↪ Screenshot OCR low confidence ({ocr_confidence:.0%} < "
+                        f"{_OCR_CONFIDENCE_THRESHOLD:.0%}) — falling back to CLIP"
+                    )
+                elif ocr_category in screenshots_dict:
                     print(f"  ✓ Screenshot OCR sub-class: {ocr_category} ({ocr_confidence:.0%})")
                     return ('media', f'photos_screenshots_{ocr_category}', schema_type, '', None, [], image_metadata)
                 # OCR matched a non-screenshot Schema.org category — use it
-                if '_' in ocr_category:
-                    print(f"  ✓ Screenshot OCR reclassified: {ocr_category}")
+                elif '_' in ocr_category:
+                    print(f"  ✓ Screenshot OCR reclassified: {ocr_category} ({ocr_confidence:.0%})")
                     return (ocr_category.split('_')[0], ocr_category, schema_type, '', None, [], image_metadata)
 
             # Step 2: CLIP enhancement for images OCR couldn't classify

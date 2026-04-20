@@ -338,8 +338,10 @@ class ImageContentRenamer:
         result['confidence'] = confidence
         result['all_scores'] = self._last_all_scores
 
-        # Skip if confidence is too low
-        if confidence < 0.10:
+        # Skip if confidence is too low. OCR-fallback matches below this gate
+        # produce unreliable labels that mislead downstream classification.
+        _RENAME_CONFIDENCE_THRESHOLD = 0.30
+        if confidence < _RENAME_CONFIDENCE_THRESHOLD:
             result['status'] = 'low_confidence'
             result['error'] = f'Confidence too low: {confidence:.1%}'
             self.stats['skipped'] += 1
