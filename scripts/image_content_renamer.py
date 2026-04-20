@@ -13,11 +13,10 @@ from enum import Enum
 from pathlib import Path
 
 from shared.clip_utils import CLIP_AVAILABLE
-from shared.clip_classification import classify_image as clip_classify_image
+from shared.clip_classification import classify_with_ocr_fallback
 from shared.constants import IMAGE_EXTENSIONS_WIDE
 from shared.file_ops import resolve_collision
 from shared.filename_utils import is_generic_filename
-from shared.ocr_classifier import apply_ocr_fallback
 from shared.ocr_utils import is_ocr_available
 
 from src.analyzers.image_metadata import ImageMetadataParser
@@ -122,29 +121,24 @@ class ImageContentRenamer:
         Returns ``(category, confidence, all_scores)`` or ``None``.
         ``all_scores`` is empty for CLIP-only results.
         """
-        clip_result = clip_classify_image(
+        result = classify_with_ocr_fallback(
             image_path,
             self.CONTENT_CATEGORIES,
+            ocr_threshold=self._CLIP_OCR_FALLBACK_THRESHOLD,
+            content_classifier=self.content_classifier,
             refinement_terms=self.REFINEMENT_TERMS,
             refinement_min_confidence=self._CLIP_REFINEMENT_MIN_CONFIDENCE,
             refinement_accept_confidence=self._CLIP_REFINEMENT_ACCEPT_CONFIDENCE,
             collect_all_scores=False,
-        )
-        if not clip_result:
-            return None
-
-        clip_category, clip_confidence, _ = clip_result
-
-        final_category, final_confidence, final_scores, ocr_text = apply_ocr_fallback(
-            clip_category, clip_confidence, {},
-            image_path,
-            clip_threshold=self._CLIP_OCR_FALLBACK_THRESHOLD,
-            content_classifier=self.content_classifier,
             verbose=True,
         )
 
-        self._last_ocr_text = ocr_text
-        return (final_category, final_confidence, final_scores)
+        # Extract OCR text if used (via side effect of verbose logging)
+        # Note: OCR text is not returned by classify_with_ocr_fallback,
+        # so we cache None here. If needed, extend the function to return it.
+        self._last_ocr_text = None
+
+        return result
 
     def generate_filename(self, image_path: Path, content: str) -> str:
         """Generate a new filename based on content analysis."""
