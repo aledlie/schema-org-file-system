@@ -32,6 +32,57 @@ SCREENSHOT_KEYWORDS: dict[str, list[str]] = {
 }
 
 
+def apply_ocr_fallback(
+    clip_category: str,
+    clip_confidence: float,
+    clip_scores: dict[str, float],
+    image_path: Path,
+    clip_threshold: float = 0.10,
+    content_classifier=None,
+    verbose: bool = False,
+) -> tuple[str, float, dict[str, float], str | None]:
+  """Apply unified OCR fallback logic with threshold+decision layer.
+
+  Decides whether to use CLIP result as-is, try OCR, or merge results.
+
+  Args:
+    clip_category: Best CLIP match category
+    clip_confidence: CLIP confidence score
+    clip_scores: All CLIP scores dict
+    image_path: Path to image file
+    clip_threshold: Min confidence to skip OCR (default 0.10)
+    content_classifier: Optional ContentClassifier for schema.org fallback
+    verbose: Print fallback decisions
+
+  Returns:
+    Tuple of (final_category, final_confidence, final_scores, ocr_text).
+    ocr_text is None if OCR wasn't used or failed.
+  """
+  # If CLIP confidence is acceptable, return as-is
+  if clip_confidence >= clip_threshold:
+    return (clip_category, clip_confidence, clip_scores, None)
+
+  # CLIP confidence too low; try OCR fallback
+  ocr_result = classify_by_ocr(image_path, content_classifier)
+
+  if not ocr_result:
+    # OCR failed; return original CLIP result
+    return (clip_category, clip_confidence, clip_scores, None)
+
+  ocr_category, ocr_confidence, ocr_scores, ocr_text = ocr_result
+
+  # Use OCR if it's better than CLIP
+  if ocr_confidence > clip_confidence:
+    if verbose:
+      print(f"  ↪ OCR fallback: {ocr_category} ({ocr_confidence:.0%})")
+    # Merge scores: OCR overrides but keep CLIP scores too
+    merged_scores = {**clip_scores, **ocr_scores}
+    return (ocr_category, ocr_confidence, merged_scores, ocr_text)
+
+  # CLIP was better; return original
+  return (clip_category, clip_confidence, clip_scores, ocr_text)
+
+
 def classify_by_ocr(
     image_path: Path,
     content_classifier=None,
