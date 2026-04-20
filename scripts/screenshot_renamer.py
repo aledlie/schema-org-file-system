@@ -21,6 +21,7 @@ import json
 
 from shared.clip_utils import CLIPClassifier, CLIP_AVAILABLE
 from shared.ocr_classifier import apply_ocr_fallback
+from shared.clip_classification import classify_image as clip_classify_image
 from shared.ocr_utils import extract_ocr_text, is_ocr_available
 from shared.file_ops import resolve_collision
 
@@ -46,16 +47,8 @@ class ScreenshotAnalyzer:
     _CLIP_OCR_FALLBACK_THRESHOLD = 0.10
 
     def __init__(self):
-        self.classifier = None
         self.vision_available = CLIP_AVAILABLE
         self.ocr_available = is_ocr_available()
-
-        if self.vision_available:
-            try:
-                self.classifier = CLIPClassifier()
-            except Exception as e:
-                print(f"Warning: Could not load CLIP: {e}")
-                self.vision_available = False
 
         # Define game asset categories for CLIP classification
         self.game_categories = [
@@ -198,21 +191,14 @@ class ScreenshotAnalyzer:
         Returns:
             Tuple of (best_category, confidence, all_scores)
         """
-        if not self.vision_available or self.classifier is None:
-            return ("unknown", 0.0, {})
-
-        try:
-            raw_results = self.classifier.classify_raw(image_path, self.game_categories)
-
-            scores = {prompt: conf for prompt, conf in raw_results}
-            best_category = raw_results[0][0]
-            confidence = raw_results[0][1]
-
-            return (best_category, confidence, scores)
-
-        except Exception as e:
-            print(f"  Classification error for {image_path.name}: {e}")
-            return ("unknown", 0.0, {})
+        result = clip_classify_image(
+            image_path,
+            self.game_categories,
+            collect_all_scores=True,
+        )
+        if result:
+            return result
+        return ("unknown", 0.0, {})
 
     def detect_number(self, image_path: Path) -> Optional[str]:
         """Try to detect if image contains a number."""

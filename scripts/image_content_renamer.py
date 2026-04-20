@@ -12,7 +12,8 @@ from datetime import datetime
 from enum import Enum
 from pathlib import Path
 
-from shared.clip_utils import get_clip_classifier, CLIP_AVAILABLE
+from shared.clip_utils import CLIP_AVAILABLE
+from shared.clip_classification import classify_image as clip_classify_image
 from shared.constants import IMAGE_EXTENSIONS_WIDE
 from shared.file_ops import resolve_collision
 from shared.filename_utils import is_generic_filename
@@ -97,7 +98,6 @@ class ImageContentRenamer:
 
     def __init__(self, dry_run: bool = False):
         self.dry_run = dry_run
-        self.classifier = None
         self.content_classifier = ContentClassifier()
         self._metadata_parser = ImageMetadataParser()
         self.stats = {
@@ -112,9 +112,6 @@ class ImageContentRenamer:
         # organizer can reuse it instead of re-running OCR.
         self._last_ocr_text: str | None = None
 
-        if CLIP_AVAILABLE:
-            self.classifier = get_clip_classifier()
-
     def analyze_image(
         self, image_path: Path
     ) -> tuple[str, float, dict[str, float]] | None:
@@ -125,11 +122,18 @@ class ImageContentRenamer:
         Returns ``(category, confidence, all_scores)`` or ``None``.
         ``all_scores`` is empty for CLIP-only results.
         """
-        clip_result = self._analyze_clip(image_path)
+        clip_result = clip_classify_image(
+            image_path,
+            self.CONTENT_CATEGORIES,
+            refinement_terms=self.REFINEMENT_TERMS,
+            refinement_min_confidence=self._CLIP_REFINEMENT_MIN_CONFIDENCE,
+            refinement_accept_confidence=self._CLIP_REFINEMENT_ACCEPT_CONFIDENCE,
+            collect_all_scores=False,
+        )
         if not clip_result:
             return None
 
-        clip_category, clip_confidence = clip_result
+        clip_category, clip_confidence, _ = clip_result
 
         final_category, final_confidence, final_scores, ocr_text = apply_ocr_fallback(
             clip_category, clip_confidence, {},
@@ -141,39 +145,6 @@ class ImageContentRenamer:
 
         self._last_ocr_text = ocr_text
         return (final_category, final_confidence, final_scores)
-
-    def _analyze_clip(self, image_path: Path) -> tuple[str, float] | None:
-        """Run CLIP vision classification."""
-        if not CLIP_AVAILABLE or self.classifier is None:
-            return None
-
-        try:
-            top_category, top_confidence = self.classifier.top_match(
-                image_path, self.CONTENT_CATEGORIES
-            )
-
-            if top_category in self.REFINEMENT_TERMS and top_confidence > self._CLIP_REFINEMENT_MIN_CONFIDENCE:
-                refined = self._refine_category(image_path, top_category)
-                if refined:
-                    return refined
-
-            return (top_category, top_confidence)
-
-        except Exception as e:
-            print(f"  Error analyzing image: {e}")
-            return None
-
-    def _refine_category(self, image_path: Path, category: str) -> tuple[str, float] | None:
-        """Refine the category with more specific terms."""
-        refinements = self.REFINEMENT_TERMS.get(category, [])
-        if not refinements:
-            return None
-
-        top_term, top_confidence = self.classifier.top_match(image_path, refinements)
-
-        if top_confidence > self._CLIP_REFINEMENT_ACCEPT_CONFIDENCE:
-            return (top_term, top_confidence)
-        return None
 
     def generate_filename(self, image_path: Path, content: str) -> str:
         """Generate a new filename based on content analysis."""
