@@ -122,6 +122,7 @@ class ImageContentRenamer:
         self.dry_run = dry_run
         self.classifier = None
         self.content_classifier = ContentClassifier()
+        self._metadata_parser = ImageMetadataParser()
         self.stats = {
             'total': 0,
             'renamed': 0,
@@ -252,12 +253,9 @@ class ImageContentRenamer:
 
     def generate_filename(self, image_path: Path, content: str) -> str:
         """Generate a new filename based on content analysis."""
-        # Clean up content for filename
-        clean_content = content.lower().replace(" ", "_")
-        clean_content = re.sub(r'[^a-z0-9_]', '', clean_content)
+        clean_content = re.sub(r'[^a-z0-9_]', '', content.lower().replace(" ", "_"))
 
-        # Try to get date from EXIF or mtime via ImageMetadataParser
-        dt = ImageMetadataParser().extract_datetime(image_path)
+        dt = self._metadata_parser.extract_datetime(image_path)
         if dt is None:
             try:
                 dt = datetime.fromtimestamp(image_path.stat().st_mtime)
@@ -265,15 +263,10 @@ class ImageContentRenamer:
                 dt = None
         date_str = dt.strftime("%Y%m%d") if dt else None
 
-        # Build filename
         ext = image_path.suffix.lower()
-
         if date_str:
-            new_name = f"{date_str}_{clean_content}{ext}"
-        else:
-            new_name = f"{clean_content}{ext}"
-
-        return new_name
+            return f"{date_str}_{clean_content}{ext}"
+        return f"{clean_content}{ext}"
 
     def should_rename(self, filename: str) -> bool:
         """Check if file has a generic name that should be renamed."""
@@ -293,14 +286,12 @@ class ImageContentRenamer:
             'error': None,
         }
 
-        # Check if already has descriptive name
         if not self.should_rename(file_path.name):
             result['status'] = RenameStatus.SKIPPED
             result['error'] = 'Already has descriptive name'
             self.stats['skipped'] += 1
             return result
 
-        # Analyze content
         analysis = self.analyze_image(file_path)
         if not analysis:
             result['status'] = RenameStatus.NO_CONTENT
@@ -323,10 +314,8 @@ class ImageContentRenamer:
 
         new_name = self.generate_filename(file_path, content)
         result['new_name'] = new_name
-
         new_path = file_path.parent / new_name
 
-        # Perform rename
         if not self.dry_run:
             try:
                 file_path.rename(new_path)
@@ -389,36 +378,31 @@ class ImageContentRenamer:
         generic_files = [f for f in files if self.should_rename(f.name)]
         print(f"Generic filenames to process: {len(generic_files)}\n")
 
-        _STATUS_FORMATTERS: dict[RenameStatus, object] = {
-            RenameStatus.RENAMED: lambda r: (
-                print(f"  ✓ Renamed: {r['original']} → {r['new_name']}"),
-                print(f"    Content: {r['content']} ({r['confidence']:.1%})"),
-                self._print_all_scores(r.get('all_scores', {}), r['content']),
-            ),
-            RenameStatus.WOULD_RENAME: lambda r: (
-                print(f"  → Would rename: {r['original']} → {r['new_name']}"),
-                print(f"    Content: {r['content']} ({r['confidence']:.1%})"),
-                self._print_all_scores(r.get('all_scores', {}), r['content']),
-            ),
-            RenameStatus.SKIPPED: lambda r: print(f"  ⊘ Skipped: {r['error']}"),
-            RenameStatus.LOW_CONFIDENCE: lambda r: (
-                print(f"  ⊘ Low confidence: {r['content']} ({r['confidence']:.1%})"),
-                self._print_all_scores(r.get('all_scores', {}), r.get('content')),
-            ),
-            RenameStatus.NO_CONTENT: lambda r: print("  ⚠ No content detected"),
-            RenameStatus.ERROR: lambda r: print(f"  ✗ Error: {r['error']}"),
-        }
-
-        # Process each file
         for i, file_path in enumerate(generic_files, 1):
             print(f"[{i}/{len(generic_files)}] {file_path.name}")
             result = self.rename_file(file_path)
-            formatter = _STATUS_FORMATTERS.get(result['status'])
-            if formatter:
-                formatter(result)
+            self._print_result(result)
 
         # Print summary
         self._print_summary()
+
+    def _print_result(self, result: dict) -> None:
+        """Dispatch result to the appropriate status formatter."""
+        status = result['status']
+        if status in (RenameStatus.RENAMED, RenameStatus.WOULD_RENAME):
+            prefix = "  → Would rename:" if status == RenameStatus.WOULD_RENAME else "  ✓ Renamed:"
+            print(f"{prefix} {result['original']} → {result['new_name']}")
+            print(f"    Content: {result['content']} ({result['confidence']:.1%})")
+            self._print_all_scores(result.get('all_scores', {}), result['content'])
+        elif status == RenameStatus.SKIPPED:
+            print(f"  ⊘ Skipped: {result['error']}")
+        elif status == RenameStatus.LOW_CONFIDENCE:
+            print(f"  ⊘ Low confidence: {result['content']} ({result['confidence']:.1%})")
+            self._print_all_scores(result.get('all_scores', {}), result.get('content'))
+        elif status == RenameStatus.NO_CONTENT:
+            print("  ⚠ No content detected")
+        elif status == RenameStatus.ERROR:
+            print(f"  ✗ Error: {result['error']}")
 
     @staticmethod
     def _print_all_scores(all_scores: dict[str, float], winner: str | None) -> None:
