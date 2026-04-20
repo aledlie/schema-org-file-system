@@ -72,6 +72,13 @@ class CLIPClassifier:
     self.model.eval()
     self.preprocess = preprocess_val
     self.tokenizer = open_clip.get_tokenizer(self.MODEL_NAME)
+    # torch.compile on CUDA only — MPS backend is unreliable, CPU compile is net-negative.
+    if self.device == "cuda":
+      try:
+        self.model = torch.compile(self.model, mode="reduce-overhead", dynamic=True)
+        logger.info("CLIP model compiled with torch.compile (cuda)")
+      except Exception as exc:
+        logger.warning("torch.compile failed, falling back to eager: %s", exc)
     logger.info("CLIP model loaded (device: %s, dtype: %s)", self.device, self._dtype)
 
   @classmethod
@@ -126,14 +133,66 @@ class CLIPClassifier:
     with Image.open(image_path) as img:
       return self.preprocess(img.convert("RGB")).unsqueeze(0).to(self.device, dtype=self._dtype)
 
-  @torch.no_grad()
+  @torch.inference_mode()
   def _encode_image(self, image_path: Path) -> "torch.Tensor":
     """Return a normalised [D] image embedding."""
     pixel_values = self._preprocess_image(image_path)
     emb = self.model.encode_image(pixel_values)  # [1, D]
     return F.normalize(emb, dim=-1).squeeze(0)
 
-  @torch.no_grad()
+  def encode_image_to_numpy(self, image_path: Path):
+    """Return a normalised [D] image embedding as a CPU float32 numpy array.
+
+    Portable representation suitable for disk caching — device/dtype-agnostic.
+    """
+    return self._encode_image(image_path).to(dtype=torch.float32, device="cpu").numpy()
+
+  @torch.inference_mode()
+  def encode_images_to_numpy(self, image_paths: List[Path], batch_size: int = CLIP_BATCH_SIZE):
+    """Return [(index, [D] numpy embedding)] for images that opened successfully.
+
+    Failed opens are omitted — caller inspects returned indices to detect them.
+    """
+    results: list = []
+    for chunk_start in range(0, len(image_paths), batch_size):
+      chunk = image_paths[chunk_start : chunk_start + batch_size]
+      tensors: list = []
+      valid_idx: list[int] = []
+      for i, path in enumerate(chunk):
+        try:
+          with Image.open(path) as img:
+            tensors.append(self.preprocess(img.convert("RGB")))
+          valid_idx.append(chunk_start + i)
+        except Exception:
+          logger.warning("CLIP encode: failed to open %s", path)
+      if tensors:
+        pixel_values = torch.stack(tensors).to(self.device, dtype=self._dtype)
+        img_emb = self.model.encode_image(pixel_values)
+        img_norm = F.normalize(img_emb, dim=-1).to(dtype=torch.float32, device="cpu").numpy()
+        for row, idx in enumerate(valid_idx):
+          results.append((idx, img_norm[row]))
+    return results
+
+  def score_embedding(
+    self,
+    image_emb,
+    labels: list[str],
+    prompt_prefix: str = "a photo of ",
+  ) -> list[tuple[str, float]]:
+    """Score a pre-computed [D] embedding (numpy or tensor) against labels.
+
+    Skips image encoding — reuses a cached embedding across different label sets.
+    """
+    text_prompts = [f"{prompt_prefix}{lbl}" for lbl in labels]
+    if not isinstance(image_emb, torch.Tensor):
+      image_emb = torch.as_tensor(image_emb)
+    image_emb = image_emb.to(self.device, dtype=self._dtype)
+    probs = self._similarities(image_emb, text_prompts)
+    results = [(labels[i], probs[i].item()) for i in range(len(labels))]
+    results.sort(key=lambda x: x[1], reverse=True)
+    return results
+
+  @torch.inference_mode()
   def _encode_text(self, text_prompts: list[str]) -> "torch.Tensor":
     """Return normalised [N, D] text embeddings."""
     tokens = self.tokenizer(text_prompts).to(self.device)
@@ -235,7 +294,7 @@ class CLIPClassifier:
     all_results = self.classify_batch(image_paths, labels, prompt_prefix, batch_size)
     return [res[0] if res else ("unknown", self._FALLBACK_CONFIDENCE) for res in all_results]
 
-  @torch.no_grad()
+  @torch.inference_mode()
   def _run_batch(
     self,
     image_paths: List[Path],

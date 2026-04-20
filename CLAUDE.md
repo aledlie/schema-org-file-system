@@ -20,6 +20,7 @@ organize-files health                    # Check dependencies
 | `organize-files health` | Check system dependencies |
 | `organize-files migrate-ids` | Run database migration |
 | `organize-files update-site` | Update dashboard data |
+| `organize-files timeline` | Generate timeline visualization data |
 
 ## Project Structure
 
@@ -42,6 +43,7 @@ organize-files health                    # Check dependencies
 │   ├── shared/                          # Shared utilities (clip, db, ocr, file ops)
 │   ├── file_organizer_content_based.py  # Main AI organizer
 │   ├── image_content_renamer.py         # CLIP-based image renaming
+│   ├── screenshot_renamer.py            # CLIP screenshot renamer (standalone, --dry-run / --execute)
 │   └── image_content_analyzer.py        # Image content analysis
 ├── tests/
 │   ├── unit/               # Unit tests (pytest)
@@ -116,6 +118,14 @@ FastAPI app at `src/api/schema_org_api.py`. Key endpoints:
 | `GET /schema/context` | Standalone JSON-LD `@context` document |
 
 Entity types: `files`, `categories`, `companies`, `people`, `locations`.
+
+## Gotchas
+
+| Issue | Detail |
+|-------|--------|
+| Large images silently skipped | Pillow rejects images >178M pixels (decompression-bomb guard); affects oversized PNGs like maps/renders |
+| CLIP embedding cache | Lives at `.cache/clip_embeddings_v2/` (fp32 `.npy` per image); safe to `rm -rf` to reset |
+| `scripts/shared/` import path | Scripts must run from project root so `from shared.x import y` resolves; `organize-files` CLI handles this automatically |
 
 ## Testing
 

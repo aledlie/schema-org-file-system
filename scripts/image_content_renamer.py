@@ -16,7 +16,8 @@ from shared.clip_utils import get_clip_classifier, CLIP_AVAILABLE
 from shared.constants import IMAGE_EXTENSIONS_WIDE
 from shared.file_ops import resolve_collision
 from shared.filename_utils import is_generic_filename
-from shared.ocr_utils import extract_ocr_text, is_ocr_available
+from shared.ocr_classifier import classify_by_ocr as shared_classify_by_ocr
+from shared.ocr_utils import is_ocr_available
 
 from src.analyzers.image_metadata import ImageMetadataParser
 from src.classifiers.content_classifier import ContentClassifier
@@ -74,30 +75,6 @@ class ImageContentRenamer:
     # Screenshot-specific subcategories not covered by the Schema.org
     # taxonomy in ContentClassifier.  These are checked first; if none
     # match, the fallback delegates to ContentClassifier.classify_content().
-    _SCREENSHOT_KEYWORDS: dict[str, list[str]] = {
-        'dashboard': [
-            'daily requests', 'monthly cost', 'active alerts', 'latency',
-            'trace pipeline', 'provider costs', 'dashboard', 'metrics',
-            'monitoring', 'uptime', 'throughput',
-        ],
-        'terminal_session': [
-            'completed:', 'next steps:', 'blocked by', 'npm run', 'git ',
-            'curl ', 'http 2', 'signup successful', 'deploy', '$ ',
-            'insert --', 'bash(', 'command:', 'exit code',
-        ],
-        'error_log': [
-            'error:', 'traceback', 'exception', 'stack trace', 'fatal',
-            'panic:', 'segfault', 'core dumped',
-        ],
-        'api_response': [
-            '"jwt":', '"token":', '"userid":', 'http 200', 'http 201',
-            'http 400', 'http 500', 'response:', 'status:',
-            'content-type:', 'application/json',
-        ],
-    }
-
-    # Minimum keyword hits for screenshot-specific matching
-    _SCREENSHOT_MIN_HITS = 2
 
     # CLIP confidence below this triggers OCR fallback
     _CLIP_OCR_FALLBACK_THRESHOLD = 0.10
@@ -153,9 +130,10 @@ class ImageContentRenamer:
         if clip_result and clip_result[1] >= self._CLIP_OCR_FALLBACK_THRESHOLD:
             return (clip_result[0], clip_result[1], {})
 
-        ocr_result = self.classify_by_ocr(image_path)
+        ocr_result = shared_classify_by_ocr(image_path, self.content_classifier)
         if ocr_result:
-            category, confidence, all_scores = ocr_result
+            category, confidence, all_scores, text = ocr_result
+            self._last_ocr_text = text
             print(f"  ↪ OCR fallback: {category} ({confidence:.0%})")
             return (category, confidence, all_scores)
 
@@ -183,61 +161,6 @@ class ImageContentRenamer:
         except Exception as e:
             print(f"  Error analyzing image: {e}")
             return None
-
-    def classify_by_ocr(self, image_path: Path) -> tuple[str, float, dict[str, float]] | None:
-        """Classify image by OCR text extraction.
-
-        First checks screenshot-specific patterns (dashboard, terminal, etc.),
-        then falls back to ContentClassifier's Schema.org keyword taxonomy.
-
-        Returns ``(category, confidence, all_scores)`` or ``None``.
-        *all_scores* maps every matched category to its confidence.
-        """
-        if not is_ocr_available():
-            return None
-
-        text = extract_ocr_text(image_path, max_chars=1000)
-        self._last_ocr_text = text
-        if not text:
-            return None
-
-        text_lower = text.lower()
-
-        # Screenshot-specific scores
-        screenshot_scores: dict[str, float] = {}
-        screenshot_hits: dict[str, int] = {}
-        for category, keywords in self._SCREENSHOT_KEYWORDS.items():
-            hits = sum(1 for kw in keywords if kw in text_lower)
-            if hits:
-                screenshot_hits[category] = hits
-                screenshot_scores[category] = hits / len(keywords)
-
-        # Schema.org taxonomy scores
-        schema_scores = self.content_classifier.score_all_categories(text, image_path.name)
-
-        # Merge: screenshot-specific keys take precedence
-        all_scores = {**schema_scores, **screenshot_scores}
-
-        if not all_scores:
-            return None
-
-        # Pass 1: screenshot-specific winner
-        if screenshot_scores:
-            best_ss = max(screenshot_scores, key=screenshot_scores.get)
-            if screenshot_hits[best_ss] >= self._SCREENSHOT_MIN_HITS:
-                return (best_ss, screenshot_scores[best_ss], all_scores)
-
-        # Pass 2: Schema.org taxonomy winner
-        if schema_scores:
-            best_cat = max(schema_scores, key=schema_scores.get)
-            category, subcategory, _company, _people = (
-                self.content_classifier.classify_content(text, image_path.name)
-            )
-            if category != 'uncategorized':
-                label = f"{category}_{subcategory}" if subcategory != 'other' else category
-                return (label, schema_scores.get(category, 0.0), all_scores)
-
-        return None
 
     def _refine_category(self, image_path: Path, category: str) -> tuple[str, float] | None:
         """Refine the category with more specific terms."""

@@ -20,6 +20,7 @@ import hashlib
 import json
 
 from shared.clip_utils import CLIPClassifier, CLIP_AVAILABLE
+from shared.ocr_classifier import classify_by_ocr as shared_classify_by_ocr
 from shared.ocr_utils import extract_ocr_text, is_ocr_available
 from shared.file_ops import resolve_collision
 
@@ -40,6 +41,9 @@ except ImportError:
 
 class ScreenshotAnalyzer:
     """Analyzes screenshots using CLIP and OCR to identify content."""
+
+    # CLIP confidence below this triggers OCR fallback
+    _CLIP_OCR_FALLBACK_THRESHOLD = 0.10
 
     def __init__(self):
         self.classifier = None
@@ -258,6 +262,16 @@ class ScreenshotAnalyzer:
 
         # Classify with CLIP
         best_category, confidence, scores = self.classify_image(image_path)
+
+        # OCR fallback if CLIP confidence is very low
+        if confidence < self._CLIP_OCR_FALLBACK_THRESHOLD:
+            ocr_result = shared_classify_by_ocr(image_path)
+            if ocr_result:
+                ocr_category, ocr_confidence, ocr_scores, _text = ocr_result
+                if ocr_confidence > confidence:
+                    best_category = ocr_category
+                    confidence = ocr_confidence
+                    scores = ocr_scores
 
         result['category'] = best_category
         result['confidence'] = confidence
