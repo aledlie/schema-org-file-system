@@ -16,7 +16,7 @@ from shared.clip_utils import get_clip_classifier, CLIP_AVAILABLE
 from shared.constants import IMAGE_EXTENSIONS_WIDE
 from shared.file_ops import resolve_collision
 from shared.filename_utils import is_generic_filename
-from shared.ocr_classifier import classify_by_ocr as shared_classify_by_ocr
+from shared.ocr_classifier import apply_ocr_fallback
 from shared.ocr_utils import is_ocr_available
 
 from src.analyzers.image_metadata import ImageMetadataParser
@@ -126,20 +126,21 @@ class ImageContentRenamer:
         ``all_scores`` is empty for CLIP-only results.
         """
         clip_result = self._analyze_clip(image_path)
+        if not clip_result:
+            return None
 
-        if clip_result and clip_result[1] >= self._CLIP_OCR_FALLBACK_THRESHOLD:
-            return (clip_result[0], clip_result[1], {})
+        clip_category, clip_confidence = clip_result
 
-        ocr_result = shared_classify_by_ocr(image_path, self.content_classifier)
-        if ocr_result:
-            category, confidence, all_scores, text = ocr_result
-            self._last_ocr_text = text
-            print(f"  ↪ OCR fallback: {category} ({confidence:.0%})")
-            return (category, confidence, all_scores)
+        final_category, final_confidence, final_scores, ocr_text = apply_ocr_fallback(
+            clip_category, clip_confidence, {},
+            image_path,
+            clip_threshold=self._CLIP_OCR_FALLBACK_THRESHOLD,
+            content_classifier=self.content_classifier,
+            verbose=True,
+        )
 
-        if clip_result:
-            return (clip_result[0], clip_result[1], {})
-        return None
+        self._last_ocr_text = ocr_text
+        return (final_category, final_confidence, final_scores)
 
     def _analyze_clip(self, image_path: Path) -> tuple[str, float] | None:
         """Run CLIP vision classification."""
