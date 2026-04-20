@@ -230,7 +230,7 @@ class ScreenshotAnalyzer:
         }
 
         # Classify with CLIP and OCR fallback
-        result = classify_with_ocr_fallback(
+        clip_result = classify_with_ocr_fallback(
             image_path,
             self.game_categories,
             ocr_threshold=self._CLIP_OCR_FALLBACK_THRESHOLD,
@@ -238,8 +238,8 @@ class ScreenshotAnalyzer:
             verbose=False,
         )
 
-        if result:
-            best_category, confidence, scores = result
+        if clip_result:
+            best_category, confidence, scores = clip_result
         else:
             best_category, confidence, scores = "unknown", 0.0, {}
 

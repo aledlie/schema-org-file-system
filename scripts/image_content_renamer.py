@@ -119,7 +119,6 @@ class ImageContentRenamer:
         CLIP confidence is below threshold.
 
         Returns ``(category, confidence, all_scores)`` or ``None``.
-        ``all_scores`` is empty for CLIP-only results.
         """
         result = classify_with_ocr_fallback(
             image_path,
@@ -129,13 +128,10 @@ class ImageContentRenamer:
             refinement_terms=self.REFINEMENT_TERMS,
             refinement_min_confidence=self._CLIP_REFINEMENT_MIN_CONFIDENCE,
             refinement_accept_confidence=self._CLIP_REFINEMENT_ACCEPT_CONFIDENCE,
-            collect_all_scores=False,
+            collect_all_scores=True,
             verbose=True,
         )
 
-        # Extract OCR text if used (via side effect of verbose logging)
-        # Note: OCR text is not returned by classify_with_ocr_fallback,
-        # so we cache None here. If needed, extend the function to return it.
         self._last_ocr_text = None
 
         return result
