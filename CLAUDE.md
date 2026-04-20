@@ -137,7 +137,7 @@ Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 ## Testing
 
 ```bash
-pytest tests/unit/           # 753 unit tests (2 pre-existing failures in test_text_extractor.py — pypdf, unrelated)
+pytest tests/unit/           # 753 unit tests
 pytest tests/integration/    # schema.org export pipeline
 pytest tests/performance/ --benchmark-only -m "not slow"   # benchmarks (skip 10k)
 pytest tests/e2e/            # Playwright E2E
