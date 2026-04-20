@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
-# OCR (docTR via shared.ocr_utils) and PDF imports
+# OCR (docTR via shared.ocr_utils) imports
 try:
     from shared.ocr_utils import (
         extract_ocr_text,
@@ -19,10 +19,15 @@ try:
         is_ocr_available,
         OCRResult,
     )
-    import pypdf
     OCR_AVAILABLE = is_ocr_available()
 except ImportError:
     OCR_AVAILABLE = False
+
+# PDF imports
+try:
+    import pypdf
+except ImportError:
+    pypdf = None  # type: ignore[assignment]
 
 # Word document imports
 try:
