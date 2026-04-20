@@ -16,13 +16,15 @@ from pathlib import Path
 from datetime import datetime
 from typing import Dict, List, Tuple, Optional
 from collections import defaultdict
-import hashlib
 import json
 
 from shared.clip_utils import CLIPClassifier, CLIP_AVAILABLE
 from shared.clip_classification import classify_with_ocr_fallback
+from shared.clip_naming import generate_filename as generate_clip_filename
+from shared.confidence_gate import check_confidence
 from shared.ocr_utils import extract_ocr_text, is_ocr_available
 from shared.file_ops import resolve_collision
+from shared.status import ProcessingStatus, create_result_dict, update_stats_from_status
 
 # Add src directory to path for error tracking (portable)
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
@@ -138,7 +140,7 @@ class ScreenshotAnalyzer:
         }
 
         # Short name prefixes for renaming
-        self.name_prefixes = {
+        self. = {
             # Software/App Screenshots
             "a software dashboard or admin panel": "dashboard",
             "a terminal or command line interface": "terminal",
@@ -203,45 +205,34 @@ class ScreenshotAnalyzer:
 
         return None
 
-    def get_image_hash(self, image_path: Path) -> str:
-        """Get a short hash of image content for uniqueness."""
-        try:
-            with open(image_path, 'rb') as f:
-                return hashlib.sha256(f.read()).hexdigest()[:8]
-        except Exception:
-            return datetime.now().strftime("%H%M%S")
+    
 
     def analyze_image(self, image_path: Path) -> Dict:
         """
         Fully analyze an image and return rename/category info.
 
         Returns:
-            Dict with: category, folder, new_name, confidence, detected_text
+            Dict with: category, folder, new_name, confidence, detected_text, status
         """
-        result = {
-            'original_path': str(image_path),
-            'original_name': image_path.name,
-            'category': 'unknown',
-            'folder': 'Uncategorized',
-            'new_name': None,
-            'confidence': 0.0,
-            'detected_text': None,
-            'top_scores': {}
-        }
+        result = create_result_dict(image_path.name)
+        result['folder'] = 'Uncategorized'
+        result['detected_text'] = None
+        result['top_scores'] = {}
 
         # Classify with CLIP and OCR fallback
         clip_result = classify_with_ocr_fallback(
             image_path,
             self.game_categories,
             ocr_threshold=self._CLIP_OCR_FALLBACK_THRESHOLD,
-            collect_all_scores=True,
             verbose=False,
         )
 
         if clip_result:
             best_category, confidence, scores = clip_result
+            result['status'] = ProcessingStatus.PENDING
         else:
             best_category, confidence, scores = "unknown", 0.0, {}
+            result['status'] = ProcessingStatus.NO_CONTENT
 
         result['category'] = best_category
         result['confidence'] = confidence
@@ -255,16 +246,13 @@ class ScreenshotAnalyzer:
         if detected_num:
             result['detected_text'] = detected_num
 
-        # Generate new name
-        prefix = self.name_prefixes.get(best_category, 'asset')
-        img_hash = self.get_image_hash(image_path)
-        ext = image_path.suffix.lower()
-
+        # Generate new name with detected number as suffix if available
         if detected_num and best_category == "a number or digit icon":
-            # For number icons, use the number in name
-            result['new_name'] = f"num_{detected_num}_{img_hash}{ext}"
+            content_label = f"{best_category}_{detected_num}"
         else:
-            result['new_name'] = f"{prefix}_{img_hash}{ext}"
+            content_label = best_category
+
+        result['new_name'] = generate_clip_filename(image_path, content_label)
 
         return result
 
@@ -333,16 +321,30 @@ class ScreenshotOrganizer:
         print(f"Mode: {'DRY RUN' if self.dry_run else 'LIVE'}")
         print(f"{'='*60}\n")
 
+        self.stats['total'] = total
+
         for i, image_path in enumerate(images, 1):
             print(f"[{i}/{total}] Processing: {image_path.name}")
 
             try:
                 result = self.process_image(image_path)
+                
+                # Check confidence gate
+                gate = check_confidence(result['category'], result['confidence'], min_confidence)
+                if not gate.accepted:
+                    result['status'] = ProcessingStatus.LOW_CONFIDENCE
+                    result['error'] = gate.reason
+                    update_stats_from_status(self.stats, result['status'])
+                    print(f"  ⊘ {gate.reason}")
+                    self.results.append(result)
+                    continue
+                
+                result['status'] = ProcessingStatus.RENAMED if not self.dry_run else ProcessingStatus.WOULD_RENAME
                 self.results.append(result)
 
                 # Update stats
-                self.stats['processed'] += 1
-                self.stats[result['folder']] += 1
+                self.stats['processed'] = self.stats.get('processed', 0) + 1
+                self.stats[result['folder']] = self.stats.get(result['folder'], 0) + 1
 
                 # Show result
                 conf_str = f"{result['confidence']*100:.1f}%"
@@ -358,11 +360,12 @@ class ScreenshotOrganizer:
 
                     # Copy or move file
                     shutil.copy2(image_path, dest_path)
-                    self.stats['moved'] += 1
+                    self.stats['moved'] = self.stats.get('moved', 0) + 1
+                    update_stats_from_status(self.stats, result['status'])
 
             except Exception as e:
                 print(f"  ✗ Error: {e}")
-                self.stats['errors'] += 1
+                self.stats['errors'] = self.stats.get('errors', 0) + 1
                 if ERROR_TRACKING_AVAILABLE:
                     capture_error(e, context={'file': str(image_path)})
 

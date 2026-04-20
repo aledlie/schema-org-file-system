@@ -7,30 +7,23 @@ Uses CLIP vision model to analyze image content and generate descriptive filenam
 from __future__ import annotations
 
 import argparse
-import re
-from datetime import datetime
-from enum import Enum
 from pathlib import Path
 
 from shared.clip_utils import CLIP_AVAILABLE
 from shared.clip_classification import classify_with_ocr_fallback
+from shared.clip_naming import generate_filename as generate_clip_filename
+from shared.confidence_gate import check_confidence
 from shared.constants import IMAGE_EXTENSIONS_WIDE
 from shared.file_ops import resolve_collision
 from shared.filename_utils import is_generic_filename
 from shared.ocr_utils import is_ocr_available
+from shared.status import ProcessingStatus, create_result_dict, update_stats_from_status
 
 from src.analyzers.image_metadata import ImageMetadataParser
 from src.classifiers.content_classifier import ContentClassifier
 
-
-class RenameStatus(Enum):
-    PENDING = 'pending'
-    SKIPPED = 'skipped'
-    RENAMED = 'renamed'
-    WOULD_RENAME = 'would_rename'
-    NO_CONTENT = 'no_content'
-    LOW_CONFIDENCE = 'low_confidence'
-    ERROR = 'error'
+# Backwards compatibility alias
+RenameStatus = ProcessingStatus
 
 
 class ImageContentRenamer:
@@ -82,8 +75,6 @@ class ImageContentRenamer:
     _CLIP_REFINEMENT_MIN_CONFIDENCE = 0.15
     # Minimum confidence for a refined term to be accepted
     _CLIP_REFINEMENT_ACCEPT_CONFIDENCE = 0.30
-    # Minimum confidence to proceed with renaming
-    _RENAME_CONFIDENCE_THRESHOLD = 0.30
 
     # More specific descriptions for refinement
     REFINEMENT_TERMS = {
@@ -95,8 +86,9 @@ class ImageContentRenamer:
         "cat": ["tabby cat", "black cat", "white cat", "orange cat", "calico cat"],
     }
 
-    def __init__(self, dry_run: bool = False):
+    def __init__(self, dry_run: bool = False, min_confidence: float = 0.30):
         self.dry_run = dry_run
+        self.min_confidence = min_confidence
         self.content_classifier = ContentClassifier()
         self._metadata_parser = ImageMetadataParser()
         self.stats = {
@@ -128,7 +120,6 @@ class ImageContentRenamer:
             refinement_terms=self.REFINEMENT_TERMS,
             refinement_min_confidence=self._CLIP_REFINEMENT_MIN_CONFIDENCE,
             refinement_accept_confidence=self._CLIP_REFINEMENT_ACCEPT_CONFIDENCE,
-            collect_all_scores=True,
             verbose=True,
         )
 
@@ -138,20 +129,7 @@ class ImageContentRenamer:
 
     def generate_filename(self, image_path: Path, content: str) -> str:
         """Generate a new filename based on content analysis."""
-        clean_content = re.sub(r'[^a-z0-9_]', '', content.lower().replace(" ", "_"))
-
-        dt = self._metadata_parser.extract_datetime(image_path)
-        if dt is None:
-            try:
-                dt = datetime.fromtimestamp(image_path.stat().st_mtime)
-            except Exception:
-                dt = None
-        date_str = dt.strftime("%Y%m%d") if dt else None
-
-        ext = image_path.suffix.lower()
-        if date_str:
-            return f"{date_str}_{clean_content}{ext}"
-        return f"{clean_content}{ext}"
+        return generate_clip_filename(image_path, content, self._metadata_parser)
 
     def should_rename(self, filename: str) -> bool:
         """Check if file has a generic name that should be renamed."""
@@ -161,27 +139,19 @@ class ImageContentRenamer:
         """Analyze and rename a single image file."""
         self._last_ocr_text = None
 
-        result = {
-            'original': file_path.name,
-            'new_name': None,
-            'content': None,
-            'confidence': None,
-            'all_scores': {},
-            'status': RenameStatus.PENDING,
-            'error': None,
-        }
+        result = create_result_dict(file_path.name)
 
         if not self.should_rename(file_path.name):
-            result['status'] = RenameStatus.SKIPPED
+            result['status'] = ProcessingStatus.SKIPPED
             result['error'] = 'Already has descriptive name'
-            self.stats['skipped'] += 1
+            update_stats_from_status(self.stats, result['status'])
             return result
 
         analysis = self.analyze_image(file_path)
         if not analysis:
-            result['status'] = RenameStatus.NO_CONTENT
+            result['status'] = ProcessingStatus.NO_CONTENT
             result['error'] = 'Could not analyze content'
-            self.stats['no_content'] += 1
+            update_stats_from_status(self.stats, result['status'])
             return result
 
         content, confidence, all_scores = analysis
@@ -189,12 +159,11 @@ class ImageContentRenamer:
         result['confidence'] = confidence
         result['all_scores'] = all_scores
 
-        # OCR-fallback matches below this gate produce unreliable labels
-        # that mislead downstream classification.
-        if confidence < self._RENAME_CONFIDENCE_THRESHOLD:
-            result['status'] = RenameStatus.LOW_CONFIDENCE
-            result['error'] = f'Confidence too low: {confidence:.1%}'
-            self.stats['skipped'] += 1
+        gate = check_confidence(content, confidence, self.min_confidence)
+        if not gate.accepted:
+            result['status'] = ProcessingStatus.LOW_CONFIDENCE
+            result['error'] = gate.reason
+            update_stats_from_status(self.stats, result['status'])
             return result
 
         new_name = self.generate_filename(file_path, content)
@@ -204,8 +173,8 @@ class ImageContentRenamer:
         if not self.dry_run:
             try:
                 file_path.rename(new_path)
-                result['status'] = RenameStatus.RENAMED
-                self.stats['renamed'] += 1
+                result['status'] = ProcessingStatus.RENAMED
+                update_stats_from_status(self.stats, result['status'])
             except FileExistsError:
                 # Concurrent collision: resolve and retry once
                 new_path = resolve_collision(new_path)
@@ -213,19 +182,19 @@ class ImageContentRenamer:
                 result['new_name'] = new_name
                 try:
                     file_path.rename(new_path)
-                    result['status'] = RenameStatus.RENAMED
-                    self.stats['renamed'] += 1
+                    result['status'] = ProcessingStatus.RENAMED
+                    update_stats_from_status(self.stats, result['status'])
                 except Exception as e:
-                    result['status'] = RenameStatus.ERROR
+                    result['status'] = ProcessingStatus.ERROR
                     result['error'] = str(e)
-                    self.stats['errors'] += 1
+                    update_stats_from_status(self.stats, result['status'])
             except Exception as e:
-                result['status'] = RenameStatus.ERROR
+                result['status'] = ProcessingStatus.ERROR
                 result['error'] = str(e)
-                self.stats['errors'] += 1
+                update_stats_from_status(self.stats, result['status'])
         else:
-            result['status'] = RenameStatus.WOULD_RENAME
-            self.stats['renamed'] += 1
+            result['status'] = ProcessingStatus.WOULD_RENAME
+            update_stats_from_status(self.stats, result['status'])
 
         return result
 
