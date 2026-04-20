@@ -7,6 +7,7 @@ Uses CLIP vision model to analyze image content and generate descriptive filenam
 from __future__ import annotations
 
 import argparse
+import re
 from pathlib import Path
 
 from shared.clip_utils import CLIP_AVAILABLE
@@ -16,8 +17,9 @@ from shared.confidence_gate import check_confidence
 from shared.constants import IMAGE_EXTENSIONS_WIDE
 from shared.file_ops import resolve_collision
 from shared.filename_utils import is_generic_filename
-from shared.ocr_utils import is_ocr_available
-from shared.status import ProcessingStatus, create_result_dict, update_stats_from_status
+from shared.ocr_utils import extract_ocr_text
+from shared.status import ProcessingStatus, create_result_dict
+from shared.file_organizer import FileOrganizer
 
 from src.analyzers.image_metadata import ImageMetadataParser
 from src.classifiers.content_classifier import ContentClassifier
@@ -26,12 +28,9 @@ from src.classifiers.content_classifier import ContentClassifier
 RenameStatus = ProcessingStatus
 
 
-class ImageContentRenamer:
-    """Rename images based on visual content analysis."""
+class ImageAnalyzer:
+    """Analyzes images using CLIP and OCR to identify content."""
 
-    IMAGE_EXTENSIONS = IMAGE_EXTENSIONS_WIDE
-
-    # Content categories for CLIP classification
     CONTENT_CATEGORIES = [
         # Furniture & Home
         "sofa", "couch", "sectional", "chair", "table", "desk", "bed", "lamp",
@@ -65,18 +64,10 @@ class ImageContentRenamer:
         "sports", "fitness", "hiking", "swimming", "yoga",
     ]
 
-    # Screenshot-specific subcategories not covered by the Schema.org
-    # taxonomy in ContentClassifier.  These are checked first; if none
-    # match, the fallback delegates to ContentClassifier.classify_content().
-
-    # CLIP confidence below this triggers OCR fallback
     _CLIP_OCR_FALLBACK_THRESHOLD = 0.10
-    # Minimum CLIP confidence to attempt refinement with more specific terms
     _CLIP_REFINEMENT_MIN_CONFIDENCE = 0.15
-    # Minimum confidence for a refined term to be accepted
     _CLIP_REFINEMENT_ACCEPT_CONFIDENCE = 0.30
 
-    # More specific descriptions for refinement
     REFINEMENT_TERMS = {
         "sofa": ["leather sofa", "fabric sofa", "sectional sofa", "outdoor sofa", "modern sofa"],
         "living room": ["cozy living room", "modern living room", "minimalist living room"],
@@ -86,33 +77,20 @@ class ImageContentRenamer:
         "cat": ["tabby cat", "black cat", "white cat", "orange cat", "calico cat"],
     }
 
-    def __init__(self, dry_run: bool = False, min_confidence: float = 0.30):
-        self.dry_run = dry_run
-        self.min_confidence = min_confidence
+    def __init__(self):
         self.content_classifier = ContentClassifier()
         self._metadata_parser = ImageMetadataParser()
-        self.stats = {
-            'total': 0,
-            'renamed': 0,
-            'skipped': 0,
-            'errors': 0,
-            'no_content': 0,
-        }
 
-        # OCR text from the last classify_by_ocr call, exposed so the
-        # organizer can reuse it instead of re-running OCR.
-        self._last_ocr_text: str | None = None
+    def analyze_image(self, image_path: Path) -> dict:
+        """Analyze image and return result dict."""
+        result = create_result_dict(image_path.name)
 
-    def analyze_image(
-        self, image_path: Path
-    ) -> tuple[str, float, dict[str, float]] | None:
-        """
-        Analyze image content using CLIP, falling back to OCR when
-        CLIP confidence is below threshold.
+        if not is_generic_filename(image_path.name):
+            result['status'] = ProcessingStatus.SKIPPED
+            result['error'] = 'Already has descriptive name'
+            return result
 
-        Returns ``(category, confidence, all_scores)`` or ``None``.
-        """
-        result = classify_with_ocr_fallback(
+        clip_result = classify_with_ocr_fallback(
             image_path,
             self.CONTENT_CATEGORIES,
             ocr_threshold=self._CLIP_OCR_FALLBACK_THRESHOLD,
@@ -123,172 +101,65 @@ class ImageContentRenamer:
             verbose=True,
         )
 
-        self._last_ocr_text = None
-
-        return result
-
-    def generate_filename(self, image_path: Path, content: str) -> str:
-        """Generate a new filename based on content analysis."""
-        return generate_clip_filename(image_path, content, self._metadata_parser)
-
-    def should_rename(self, filename: str) -> bool:
-        """Check if file has a generic name that should be renamed."""
-        return is_generic_filename(filename)
-
-    def rename_file(self, file_path: Path) -> dict:
-        """Analyze and rename a single image file."""
-        self._last_ocr_text = None
-
-        result = create_result_dict(file_path.name)
-
-        if not self.should_rename(file_path.name):
-            result['status'] = ProcessingStatus.SKIPPED
-            result['error'] = 'Already has descriptive name'
-            update_stats_from_status(self.stats, result['status'])
-            return result
-
-        analysis = self.analyze_image(file_path)
-        if not analysis:
+        if not clip_result:
             result['status'] = ProcessingStatus.NO_CONTENT
             result['error'] = 'Could not analyze content'
-            update_stats_from_status(self.stats, result['status'])
             return result
 
-        content, confidence, all_scores = analysis
-        result['content'] = content
+        content, confidence, all_scores = clip_result
+        result['category'] = content
         result['confidence'] = confidence
         result['all_scores'] = all_scores
-
-        gate = check_confidence(content, confidence, self.min_confidence)
-        if not gate.accepted:
-            result['status'] = ProcessingStatus.LOW_CONFIDENCE
-            result['error'] = gate.reason
-            update_stats_from_status(self.stats, result['status'])
-            return result
-
-        new_name = self.generate_filename(file_path, content)
-        result['new_name'] = new_name
-        new_path = file_path.parent / new_name
-
-        if not self.dry_run:
-            try:
-                file_path.rename(new_path)
-                result['status'] = ProcessingStatus.RENAMED
-                update_stats_from_status(self.stats, result['status'])
-            except FileExistsError:
-                # Concurrent collision: resolve and retry once
-                new_path = resolve_collision(new_path)
-                new_name = new_path.name
-                result['new_name'] = new_name
-                try:
-                    file_path.rename(new_path)
-                    result['status'] = ProcessingStatus.RENAMED
-                    update_stats_from_status(self.stats, result['status'])
-                except Exception as e:
-                    result['status'] = ProcessingStatus.ERROR
-                    result['error'] = str(e)
-                    update_stats_from_status(self.stats, result['status'])
-            except Exception as e:
-                result['status'] = ProcessingStatus.ERROR
-                result['error'] = str(e)
-                update_stats_from_status(self.stats, result['status'])
-        else:
-            result['status'] = ProcessingStatus.WOULD_RENAME
-            update_stats_from_status(self.stats, result['status'])
+        result['new_name'] = generate_clip_filename(image_path, content, self._metadata_parser)
+        result['status'] = ProcessingStatus.PENDING
 
         return result
+
+
+class ImageContentRenamer:
+    """Rename images based on visual content analysis using FileOrganizer."""
+
+    IMAGE_EXTENSIONS = IMAGE_EXTENSIONS_WIDE
+
+    def __init__(self, dry_run: bool = False, min_confidence: float = 0.30, mode: str = 'in-place'):
+        self.dry_run = dry_run
+        self.min_confidence = min_confidence
+        self.mode = mode
+        self.analyzer = ImageAnalyzer()
+        self.organizer = FileOrganizer(
+            analyzer=self.analyzer,
+            source_dir=Path('.'),  # Will be set in process_directory
+            dry_run=dry_run,
+            find_images_fn=self._find_images,
+            mode=mode,
+        )
+
+    def _find_images(self):
+        """Find image files, filtering for generic names."""
+        files = []
+        for ext in self.IMAGE_EXTENSIONS:
+            files.extend(self.organizer.source_dir.glob(f'*{ext}'))
+            files.extend(self.organizer.source_dir.glob(f'*{ext.upper()}'))
+
+        # Filter for generic filenames only
+        return sorted([f for f in files if f.is_file() and is_generic_filename(f.name)])
 
     def process_directory(self, source_dir: Path, recursive: bool = False):
         """Process all images in a directory."""
-        print(f"\n{'=' * 60}")
-        print(f"Image Content Renamer {'(DRY RUN)' if self.dry_run else ''}")
-        print(f"{'=' * 60}\n")
-
         if not CLIP_AVAILABLE:
             print("Error: CLIP not available. Install torch and transformers.")
             return
 
-        print(f"Scanning: {source_dir}")
-        print(f"Recursive: {recursive}\n")
-
-        # Find all image files
         if recursive:
-            seen: set[Path] = set()
-            files = []
-            for ext in self.IMAGE_EXTENSIONS:
-                for pattern in (f"*{ext}", f"*{ext.upper()}"):
-                    for f in source_dir.rglob(pattern):
-                        if f not in seen:
-                            seen.add(f)
-                            files.append(f)
-        else:
-            files = [f for f in source_dir.iterdir()
-                    if f.is_file() and f.suffix.lower() in self.IMAGE_EXTENSIONS]
-
-        self.stats['total'] = len(files)
-        print(f"Total image files: {len(files)}")
-
-        # Filter for generic filenames
-        generic_files = [f for f in files if self.should_rename(f.name)]
-        print(f"Generic filenames to process: {len(generic_files)}\n")
-
-        for i, file_path in enumerate(generic_files, 1):
-            print(f"[{i}/{len(generic_files)}] {file_path.name}")
-            result = self.rename_file(file_path)
-            self._print_result(result)
-
-        # Print summary
-        self._print_summary()
-
-    def _print_result(self, result: dict) -> None:
-        """Dispatch result to the appropriate status formatter."""
-        status = result['status']
-        if status in (RenameStatus.RENAMED, RenameStatus.WOULD_RENAME):
-            prefix = "  → Would rename:" if status == RenameStatus.WOULD_RENAME else "  ✓ Renamed:"
-            print(f"{prefix} {result['original']} → {result['new_name']}")
-            print(f"    Content: {result['content']} ({result['confidence']:.1%})")
-            self._print_all_scores(result.get('all_scores', {}), result['content'])
-        elif status == RenameStatus.SKIPPED:
-            print(f"  ⊘ Skipped: {result['error']}")
-        elif status == RenameStatus.LOW_CONFIDENCE:
-            print(f"  ⊘ Low confidence: {result['content']} ({result['confidence']:.1%})")
-            self._print_all_scores(result.get('all_scores', {}), result.get('content'))
-        elif status == RenameStatus.NO_CONTENT:
-            print("  ⚠ No content detected")
-        elif status == RenameStatus.ERROR:
-            print(f"  ✗ Error: {result['error']}")
-
-    @staticmethod
-    def _print_all_scores(all_scores: dict[str, float], winner: str | None) -> None:
-        """Print ranked confidence scores for all matched categories."""
-        if not all_scores:
+            print("Warning: recursive mode not yet supported with FileOrganizer")
             return
-        ranked = sorted(all_scores.items(), key=lambda x: x[1], reverse=True)
-        # Winner label may be "category_subcategory"; match on prefix too.
-        winner_base = winner.split('_')[0] if winner else None
-        parts = []
-        for cat, score in ranked:
-            is_winner = cat == winner or cat == winner_base
-            marker = "*" if is_winner else " "
-            parts.append(f"{marker}{cat}: {score:.0%}")
-        print(f"    Scores: {' | '.join(parts)}")
 
-    def _print_summary(self):
-        """Print processing summary."""
-        print(f"\n{'=' * 60}")
-        print("Renaming Summary")
-        print(f"{'=' * 60}\n")
-        print(f"Total image files: {self.stats['total']}")
-        print(f"Successfully renamed: {self.stats['renamed']}")
-        print(f"Skipped: {self.stats['skipped']}")
-        print(f"No content detected: {self.stats['no_content']}")
-        print(f"Errors: {self.stats['errors']}")
-
-        if self.dry_run:
-            print(f"\n⚠️  This was a DRY RUN - no files were renamed")
+        self.organizer.source_dir = Path(source_dir)
+        self.organizer.organize(min_confidence=self.min_confidence)
 
 
 def main():
+    import os
     parser = argparse.ArgumentParser(
         description="Rename images based on visual content analysis using CLIP"
     )
@@ -298,30 +169,28 @@ def main():
                        help="Source directory to scan (default: ~/Documents)")
     parser.add_argument("--recursive", action="store_true",
                        help="Recursively scan subdirectories")
-    parser.add_argument("--file", type=str,
-                       help="Process a single file instead of directory")
+    parser.add_argument("--mode", type=str, default=None,
+                       choices=['in-place', 'folder'],
+                       help="Organization mode (in-place or folder-based)")
+    parser.add_argument("--min-confidence", type=float, default=0.30,
+                       help="Minimum confidence threshold (default: 0.30)")
 
     args = parser.parse_args()
 
-    renamer = ImageContentRenamer(dry_run=args.dry_run)
+    # Get mode from arg or environment variable
+    mode = args.mode or os.environ.get('FILE_ORGANIZE_MODE', 'in-place')
 
-    if args.file:
-        file_path = Path(args.file).expanduser()
-        if not file_path.exists():
-            print(f"Error: File not found: {file_path}")
-            return
-        print(f"\nAnalyzing: {file_path.name}")
-        result = renamer.rename_file(file_path)
-        if result['content']:
-            print(f"Content: {result['content']} ({result['confidence']:.1%})")
-        if result['new_name']:
-            print(f"New name: {result['new_name']}")
-    else:
-        source_dir = Path(args.source).expanduser()
-        if not source_dir.exists():
-            print(f"Error: Directory not found: {source_dir}")
-            return
-        renamer.process_directory(source_dir, recursive=args.recursive)
+    renamer = ImageContentRenamer(
+        dry_run=args.dry_run,
+        min_confidence=args.min_confidence,
+        mode=mode
+    )
+
+    source_dir = Path(args.source).expanduser()
+    if not source_dir.exists():
+        print(f"Error: Directory not found: {source_dir}")
+        return
+    renamer.process_directory(source_dir, recursive=args.recursive)
 
 
 if __name__ == "__main__":
