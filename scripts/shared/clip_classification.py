@@ -2,9 +2,17 @@
 from __future__ import annotations
 
 from pathlib import Path
+from typing import NamedTuple
 
 from shared.clip_utils import get_clip_classifier, CLIP_AVAILABLE
 from shared.ocr_classifier import apply_ocr_fallback as apply_ocr_fallback_logic
+
+
+class CLIPResult(NamedTuple):
+  """Unified CLIP classification result."""
+  category: str
+  confidence: float
+  all_scores: dict[str, float]
 
 
 def classify_image(
@@ -14,7 +22,7 @@ def classify_image(
     refinement_min_confidence: float = 0.15,
     refinement_accept_confidence: float = 0.30,
     collect_all_scores: bool = False,
-) -> tuple[str, float, dict[str, float]] | None:
+) -> CLIPResult | None:
   """Classify image with optional refinement and score collection.
 
   Args:
@@ -56,7 +64,7 @@ def classify_image(
       raw_results = classifier.classify_raw(image_path, labels)
       all_scores = {prompt: conf for prompt, conf in raw_results}
 
-    return (best_category, confidence, all_scores)
+    return CLIPResult(best_category, confidence, all_scores)
 
   except Exception as e:
     print(f"  CLIP classification error for {image_path.name}: {e}")
@@ -73,7 +81,7 @@ def classify_with_ocr_fallback(
     refinement_accept_confidence: float = 0.30,
     collect_all_scores: bool = False,
     verbose: bool = False,
-) -> tuple[str, float, dict[str, float]] | None:
+) -> CLIPResult | None:
   """Unified CLIP classification with optional OCR fallback.
 
   Orchestrates CLIP classification + OCR fallback decision in single call.
@@ -116,4 +124,4 @@ def classify_with_ocr_fallback(
       verbose=verbose,
   )
 
-  return (final_category, final_confidence, final_scores)
+  return CLIPResult(final_category, final_confidence, final_scores)
