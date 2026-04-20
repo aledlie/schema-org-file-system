@@ -10,24 +10,23 @@ Analyzes screenshot images to:
 
 import sys
 import os
-import shutil
 import re
 from pathlib import Path
-from datetime import datetime
-from typing import Dict, List, Tuple, Optional
-from collections import defaultdict
-import json
+from typing import Dict, Optional
 
-from shared.clip_utils import CLIPClassifier, CLIP_AVAILABLE
+from shared.clip_utils import CLIP_AVAILABLE
 from shared.clip_classification import classify_with_ocr_fallback
 from shared.clip_naming import generate_filename as generate_clip_filename
 from shared.confidence_gate import check_confidence
 from shared.ocr_utils import extract_ocr_text, is_ocr_available
 from shared.file_ops import resolve_collision
-from shared.status import ProcessingStatus, create_result_dict, update_stats_from_status
+from shared.status import ProcessingStatus, create_result_dict
+from shared.file_organizer import FileOrganizer
 
 # Add src directory to path for error tracking (portable)
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+
+from src.classifiers.content_classifier import ContentClassifier
 
 try:
     from error_tracking import init_sentry, capture_error, track_operation
@@ -46,12 +45,17 @@ class ScreenshotAnalyzer:
 
     # CLIP confidence below this triggers OCR fallback
     _CLIP_OCR_FALLBACK_THRESHOLD = 0.10
+    # Minimum CLIP confidence to attempt refinement with more specific terms
+    _CLIP_REFINEMENT_MIN_CONFIDENCE = 0.15
+    # Minimum confidence for a refined term to be accepted
+    _CLIP_REFINEMENT_ACCEPT_CONFIDENCE = 0.30
 
     def __init__(self):
         self.vision_available = CLIP_AVAILABLE
         self.ocr_available = is_ocr_available()
+        self.content_classifier = ContentClassifier()
 
-        # Define game asset categories for CLIP classification
+        # Base game asset categories for CLIP classification (game-specific)
         self.game_categories = [
             # Software/App Screenshots (check first to avoid game misclassification)
             "a software dashboard or admin panel",
@@ -139,8 +143,52 @@ class ScreenshotAnalyzer:
             "an explosion or fire effect": "Effects/Explosions",
         }
 
+        # Refinement terms for more specific classification
+        self.refinement_terms = {
+            "a game character sprite": [
+                "a warrior or knight character",
+                "a dragon or monster sprite",
+                "a skeleton or undead character",
+                "a goblin or troll character",
+                "a fairy or magical creature",
+                "a wizard or mage character",
+                "a spider or insect creature",
+                "a robot or mechanical character",
+                "an animal character sprite",
+            ],
+            "a warrior or knight character": [
+                "a knight in full armor",
+                "a warrior with a sword",
+                "a knight with a shield",
+            ],
+            "a dragon or monster sprite": [
+                "a red dragon",
+                "a green dragon",
+                "a blue dragon",
+                "a fire-breathing dragon",
+            ],
+            "a game UI button or icon": [
+                "a rounded button",
+                "a square button",
+                "a circular icon",
+                "a highlighted button",
+            ],
+            "a weapon sprite (sword, bow, staff)": [
+                "a sword sprite",
+                "a bow sprite",
+                "a staff sprite",
+                "a magic wand",
+            ],
+            "a potion or magical item": [
+                "a red potion",
+                "a blue potion",
+                "a green potion",
+                "a health potion",
+            ],
+        }
+
         # Short name prefixes for renaming
-        self. = {
+        self.short_names = {
             # Software/App Screenshots
             "a software dashboard or admin panel": "dashboard",
             "a terminal or command line interface": "terminal",
@@ -224,6 +272,10 @@ class ScreenshotAnalyzer:
             image_path,
             self.game_categories,
             ocr_threshold=self._CLIP_OCR_FALLBACK_THRESHOLD,
+            content_classifier=self.content_classifier,
+            refinement_terms=self.refinement_terms,
+            refinement_min_confidence=self._CLIP_REFINEMENT_MIN_CONFIDENCE,
+            refinement_accept_confidence=self._CLIP_REFINEMENT_ACCEPT_CONFIDENCE,
             verbose=False,
         )
 
@@ -260,42 +312,31 @@ class ScreenshotAnalyzer:
 class ScreenshotOrganizer:
     """Organizes screenshots by renaming and categorizing them."""
 
-    def __init__(self, source_dir: Path, output_dir: Path = None, dry_run: bool = True):
+    def __init__(self, source_dir: Path, output_dir: Path = None, dry_run: bool = True, mode: str = 'folder'):
         self.source_dir = Path(source_dir)
         self.output_dir = output_dir or self.source_dir
         self.dry_run = dry_run
-        self.analyzer = ScreenshotAnalyzer()
-        self.results = []
-        self.stats = defaultdict(int)
+        self.mode = mode
+        analyzer = ScreenshotAnalyzer()
+        self.organizer = FileOrganizer(
+            analyzer=analyzer,
+            source_dir=self.source_dir,
+            output_dir=self.output_dir,
+            dry_run=dry_run,
+            find_images_fn=self._find_images,
+            mode=mode,
+        )
 
-    def find_images(self) -> List[Path]:
+    def _find_images(self):
         """Find all image files in source directory."""
         extensions = {'.png', '.jpg', '.jpeg', '.webp', '.gif'}
         images = []
-
         for ext in extensions:
             images.extend(self.source_dir.glob(f'*{ext}'))
             images.extend(self.source_dir.glob(f'*{ext.upper()}'))
-
         return sorted(images)
 
-    def process_image(self, image_path: Path) -> Dict:
-        """Process a single image."""
-        result = self.analyzer.analyze_image(image_path)
-
-        # Determine destination
-        dest_folder = self.output_dir / result['folder']
-        dest_path = dest_folder / result['new_name']
-
-        # Handle name collisions
-        dest_path = resolve_collision(dest_path)
-
-        result['dest_folder'] = str(dest_folder)
-        result['dest_path'] = str(dest_path)
-
-        return result
-
-    def organize(self, limit: int = None, min_confidence: float = 0.1) -> List[Dict]:
+    def organize(self, limit: int = None, min_confidence: float = 0.1):
         """
         Organize all images in source directory.
 
@@ -306,105 +347,28 @@ class ScreenshotOrganizer:
         Returns:
             List of processing results
         """
-        images = self.find_images()
+        # For folder mode, enhance analyzer results with dest paths
+        if self.mode == 'folder':
+            original_analyze = self.organizer.analyzer.analyze_image
 
-        if limit:
-            images = images[:limit]
+            def analyze_with_dest(image_path):
+                result = original_analyze(image_path)
+                # Determine destination
+                dest_folder = self.output_dir / result['folder']
+                dest_path = dest_folder / result['new_name']
+                # Handle name collisions
+                dest_path = resolve_collision(dest_path)
+                result['dest_folder'] = str(dest_folder)
+                result['dest_path'] = str(dest_path)
+                return result
 
-        total = len(images)
-        print(f"\n{'='*60}")
-        print(f"Screenshot Renamer & Organizer")
-        print(f"{'='*60}")
-        print(f"Source: {self.source_dir}")
-        print(f"Output: {self.output_dir}")
-        print(f"Images: {total}")
-        print(f"Mode: {'DRY RUN' if self.dry_run else 'LIVE'}")
-        print(f"{'='*60}\n")
+            self.organizer.analyzer.analyze_image = analyze_with_dest
 
-        self.stats['total'] = total
-
-        for i, image_path in enumerate(images, 1):
-            print(f"[{i}/{total}] Processing: {image_path.name}")
-
-            try:
-                result = self.process_image(image_path)
-                
-                # Check confidence gate
-                gate = check_confidence(result['category'], result['confidence'], min_confidence)
-                if not gate.accepted:
-                    result['status'] = ProcessingStatus.LOW_CONFIDENCE
-                    result['error'] = gate.reason
-                    update_stats_from_status(self.stats, result['status'])
-                    print(f"  ⊘ {gate.reason}")
-                    self.results.append(result)
-                    continue
-                
-                result['status'] = ProcessingStatus.RENAMED if not self.dry_run else ProcessingStatus.WOULD_RENAME
-                self.results.append(result)
-
-                # Update stats
-                self.stats['processed'] = self.stats.get('processed', 0) + 1
-                self.stats[result['folder']] = self.stats.get(result['folder'], 0) + 1
-
-                # Show result
-                conf_str = f"{result['confidence']*100:.1f}%"
-                print(f"  → {result['folder']}/{result['new_name']} ({conf_str})")
-
-                # Actually move/rename if not dry run
-                if not self.dry_run:
-                    dest_folder = Path(result['dest_folder'])
-                    dest_path = Path(result['dest_path'])
-
-                    # Create destination folder
-                    dest_folder.mkdir(parents=True, exist_ok=True)
-
-                    # Copy or move file
-                    shutil.copy2(image_path, dest_path)
-                    self.stats['moved'] = self.stats.get('moved', 0) + 1
-                    update_stats_from_status(self.stats, result['status'])
-
-            except Exception as e:
-                print(f"  ✗ Error: {e}")
-                self.stats['errors'] = self.stats.get('errors', 0) + 1
-                if ERROR_TRACKING_AVAILABLE:
-                    capture_error(e, context={'file': str(image_path)})
-
-        self.print_summary()
-        return self.results
-
-    def print_summary(self):
-        """Print organization summary."""
-        print(f"\n{'='*60}")
-        print("SUMMARY")
-        print(f"{'='*60}")
-        print(f"Total processed: {self.stats['processed']}")
-
-        if not self.dry_run:
-            print(f"Files moved: {self.stats['moved']}")
-
-        print(f"Errors: {self.stats['errors']}")
-
-        print(f"\nBy Category:")
-        for key, count in sorted(self.stats.items()):
-            if key not in ('processed', 'moved', 'errors') and '/' in key:
-                print(f"  {key}: {count}")
+        return self.organizer.organize(limit=limit, min_confidence=min_confidence)
 
     def save_results(self, output_file: Path = None):
         """Save results to JSON file."""
-        if output_file is None:
-            output_file = self.output_dir / 'organization_results.json'
-
-        with open(output_file, 'w') as f:
-            json.dump({
-                'timestamp': datetime.now().isoformat(),
-                'source_dir': str(self.source_dir),
-                'output_dir': str(self.output_dir),
-                'dry_run': self.dry_run,
-                'stats': dict(self.stats),
-                'results': self.results
-            }, f, indent=2)
-
-        print(f"\nResults saved to: {output_file}")
+        self.organizer.save_results(output_file)
 
 
 def main():
@@ -446,6 +410,13 @@ def main():
         help='Minimum confidence threshold (default: 0.1)'
     )
     parser.add_argument(
+        '--mode', '-m',
+        type=str,
+        default=None,
+        choices=['folder', 'in-place'],
+        help='Organization mode (folder-based or in-place rename)'
+    )
+    parser.add_argument(
         '--sentry-dsn',
         help='Sentry DSN for error tracking'
     )
@@ -464,6 +435,9 @@ def main():
     # Determine dry run mode
     dry_run = not args.execute
 
+    # Get mode from arg or environment variable
+    mode = args.mode or os.environ.get('FILE_ORGANIZE_MODE', 'folder')
+
     if not source_dir.exists():
         print(f"Error: Source directory not found: {source_dir}")
         sys.exit(1)
@@ -472,7 +446,8 @@ def main():
     organizer = ScreenshotOrganizer(
         source_dir=source_dir,
         output_dir=output_dir,
-        dry_run=dry_run
+        dry_run=dry_run,
+        mode=mode
     )
 
     results = organizer.organize(
