@@ -14,7 +14,7 @@ class ContentClassifier:
 
     def __init__(self) -> None:
         """Initialize classifier with keyword patterns."""
-        # Company name patterns
+        # Company name patterns (compiled lazily below)
         self.company_patterns = [
             r'\b([A-Z][A-Za-z0-9\s&\-\.]{2,50})\s+LLC\b',
             r'\b([A-Z][A-Za-z0-9\s&\-\.]{2,50})\s+L\.L\.C\.\b',
@@ -182,6 +182,54 @@ class ContentClassifier:
             }
         }
 
+        # Pre-compile regex patterns once (hot path: classify_content)
+        self._company_regexes = [re.compile(p) for p in self.company_patterns]
+        self._people_regexes = [re.compile(p) for p in self.people_patterns]
+        self._relationship_regexes = [
+            re.compile(p) for p in (
+                r'([A-Z][a-z]+\s+[A-Z][a-z]+)\s+(?:at|from)\s+([A-Z][A-Za-z0-9\s&\-\.]{2,50}(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))',
+                r'([A-Z][a-z]+\s+[A-Z][a-z]+),?\s+(?:CEO|CFO|CTO|COO|President|Director|Manager|Founder)\s+(?:of|at)\s+([A-Z][A-Za-z0-9\s&\-\.]{2,50}(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))',
+                r'([A-Z][A-Za-z0-9\s&\-\.]{2,50}(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))\s*[-:]\s*(?:Contact|Representative):\s*([A-Z][a-z]+\s+[A-Z][a-z]+)',
+                r'([A-Z][a-z]+\s+[A-Z][a-z]+)\s+\(([A-Z][A-Za-z0-9\s&\-\.]{2,50}(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))\)',
+                r'([A-Z][a-z]+\s+[A-Z][a-z]+)\s+<[a-zA-Z0-9._%+-]+@([a-zA-Z0-9.-]+)\.[a-zA-Z]{2,}>',
+            )
+        ]
+        self._spaced_letters_re = re.compile(r'\b([A-Z] ){2,}[A-Z]\b')
+        self._sentence_regexes = [
+            re.compile(p) for p in (
+                r'\b(?:is|are|was|were|be|been|being)\b',
+                r'\b(?:to|of|in|on|at|by)\s+(?:the|a|an)\b',
+                r'\b(?:you|your|we|our|they|their|it|its)\b',
+                r'\b(?:can|could|will|would|shall|should|may|might|must)\b',
+                r'\b(?:and|or|but|nor|yet|so)\s+\w+\s+\w+',
+            )
+        ]
+        self._copyright_regexes = [
+            re.compile(p, re.IGNORECASE) for p in (
+                r'(?:copyright|©|\(c\))\s*(?:\(c\))?\s*(?:\d{4}(?:\s*[-–—]\s*\d{4})?)\s+(.+)',
+                r'^\d{4}(?:\s*[-–—]\s*\d{4})?\s+([A-Z][A-Za-z0-9\s&\-\.]+)$',
+                r'(?:copyright|©|\(c\))\s+([A-Z][A-Za-z0-9\s&\-\.]+?)\s+\d{4}',
+                r'^(?:copyright|©|\(c\))\s+([A-Za-z][A-Za-z0-9\s&\-\.]+)$',
+            )
+        ]
+        self._year_prefix_re = re.compile(r'^(\d{4}(?:\s*[-–—]\s*\d{4})?)\s+(.+)$')
+        self._legal_suffix_re = re.compile(
+            r'\s+(?:Incorporated|Corporation|Limited|Company|L\.L\.C\.|L\.L\.P\.|'
+            r'LLC\.?|LLP\.?|Inc\.?|Corp\.?|Ltd\.?|Co\.?|PLC\.?|LP\.?|SA|GmbH|AG)$',
+            re.IGNORECASE,
+        )
+        self._folder_sanitize_re = re.compile(r'[<>:"/\\|?*]')
+
+        # Pre-lowercase keywords and subcategory keyword lists
+        self._keywords_lower: dict[str, list[str]] = {
+            cat: [kw.lower() for kw in data['keywords']]
+            for cat, data in self.patterns.items()
+        }
+        self._subcats_lower: dict[str, dict[str, list[str]]] = {
+            cat: {sc: [kw.lower() for kw in kws] for sc, kws in data['subcategories'].items()}
+            for cat, data in self.patterns.items()
+        }
+
     def extract_company_names(self, text: str) -> list[str]:
         """
         Extract company names from text using regex patterns.
@@ -190,9 +238,8 @@ class ContentClassifier:
             List of detected company names
         """
         companies: list[str] = []
-        for pattern in self.company_patterns:
-            matches = re.findall(pattern, text)
-            companies.extend(matches)
+        for regex in self._company_regexes:
+            companies.extend(regex.findall(text))
 
         # Remove duplicates and clean up
         unique_companies: list[str] = []
@@ -222,8 +269,7 @@ class ContentClassifier:
 
         # Find sequences of spaced single uppercase letters
         # Pattern matches: capital letter, space, capital letter (repeated)
-        result = re.sub(r'\b([A-Z] ){2,}[A-Z]\b', collapse_match, text)
-        return result
+        return self._spaced_letters_re.sub(collapse_match, text)
 
     def extract_people_names(self, text: str) -> list[str]:
         """
@@ -236,8 +282,8 @@ class ContentClassifier:
         text = self._collapse_spaced_text(text)
 
         people: list[str] = []
-        for pattern in self.people_patterns:
-            matches = re.findall(pattern, text)
+        for regex in self._people_regexes:
+            matches = regex.findall(text)
             # Pattern can return tuples (first, last) or single strings
             for match in matches:
                 if isinstance(match, tuple):
@@ -273,22 +319,8 @@ class ContentClassifier:
         """
         relationships: dict[str, str] = {}
 
-        # Patterns for person-company relationships
-        relationship_patterns = [
-            # "John Doe at Company LLC"
-            r'([A-Z][a-z]+\s+[A-Z][a-z]+)\s+(?:at|from)\s+([A-Z][A-Za-z0-9\s&\-\.]{2,50}(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))',
-            # "John Doe, CEO of Company LLC"
-            r'([A-Z][a-z]+\s+[A-Z][a-z]+),?\s+(?:CEO|CFO|CTO|COO|President|Director|Manager|Founder)\s+(?:of|at)\s+([A-Z][A-Za-z0-9\s&\-\.]{2,50}(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))',
-            # "Company LLC - Contact: John Doe"
-            r'([A-Z][A-Za-z0-9\s&\-\.]{2,50}(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))\s*[-:]\s*(?:Contact|Representative):\s*([A-Z][a-z]+\s+[A-Z][a-z]+)',
-            # "John Doe (Company LLC)"
-            r'([A-Z][a-z]+\s+[A-Z][a-z]+)\s+\(([A-Z][A-Za-z0-9\s&\-\.]{2,50}(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))\)',
-            # Email pattern: john.doe@company.com -> John Doe at Company
-            r'([A-Z][a-z]+\s+[A-Z][a-z]+)\s+<[a-zA-Z0-9._%+-]+@([a-zA-Z0-9.-]+)\.[a-zA-Z]{2,}>',
-        ]
-
-        for pattern in relationship_patterns:
-            matches = re.findall(pattern, text)
+        for regex in self._relationship_regexes:
+            matches = regex.findall(text)
             for match in matches:
                 if len(match) == 2:
                     person, company = match
@@ -349,16 +381,8 @@ class ContentClassifier:
             return False
 
         # Sentence patterns - these indicate full sentences, not company names
-        sentence_patterns = [
-            r'\b(?:is|are|was|were|be|been|being)\b',  # Verbs
-            r'\b(?:to|of|in|on|at|by)\s+(?:the|a|an)\b',  # Preposition + article
-            r'\b(?:you|your|we|our|they|their|it|its)\b',  # Pronouns
-            r'\b(?:can|could|will|would|shall|should|may|might|must)\b',  # Modal verbs
-            r'\b(?:and|or|but|nor|yet|so)\s+\w+\s+\w+',  # Conjunction + multiple words
-        ]
-
-        for pattern in sentence_patterns:
-            if re.search(pattern, name_lower):
+        for regex in self._sentence_regexes:
+            if regex.search(name_lower):
                 return False
 
         # Check for specific problematic patterns
@@ -412,70 +436,31 @@ class ContentClassifier:
         if not company_name:
             return company_name
 
-        # Patterns to extract company name from copyright notices
-        copyright_patterns = [
-            # "Copyright 2024 Google" or "Copyright (C) 2024 Google"
-            r'(?:copyright|©|\(c\))\s*(?:\(c\))?\s*(?:\d{4}(?:\s*[-–—]\s*\d{4})?)\s+(.+)',
-            # "2024 Google" (just year followed by company)
-            r'^\d{4}(?:\s*[-–—]\s*\d{4})?\s+([A-Z][A-Za-z0-9\s&\-\.]+)$',
-            # "(c) Google 2024" (company before year)
-            r'(?:copyright|©|\(c\))\s+([A-Z][A-Za-z0-9\s&\-\.]+?)\s+\d{4}',
-            # "Copyright Google" or "© Google" (without year)
-            r'^(?:copyright|©|\(c\))\s+([A-Za-z][A-Za-z0-9\s&\-\.]+)$',
-        ]
-
         name_lower = company_name.lower().strip()
         result = company_name
 
         # Check if this looks like a copyright notice
-        if any(indicator in name_lower for indicator in ['copyright', '©', '(c)']):
-            for pattern in copyright_patterns:
-                match = re.search(pattern, company_name, re.IGNORECASE)
+        if any(indicator in name_lower for indicator in ('copyright', '©', '(c)')):
+            for regex in self._copyright_regexes:
+                match = regex.search(company_name)
                 if match:
                     extracted = match.group(1).strip()
                     # Clean up trailing punctuation
-                    extracted = re.sub(r'[.,;:]+$', '', extracted).strip()
+                    extracted = extracted.rstrip('.,;:').strip()
                     if extracted and len(extracted) >= 2:
                         result = extracted
                         break
 
         # Check for year prefix pattern (e.g., "2024 Google")
         if result == company_name:
-            year_prefix_match = re.match(r'^(\d{4}(?:\s*[-–—]\s*\d{4})?)\s+(.+)$', company_name)
+            year_prefix_match = self._year_prefix_re.match(company_name)
             if year_prefix_match:
                 extracted = year_prefix_match.group(2).strip()
                 if extracted and len(extracted) >= 2:
                     result = extracted
 
-        # Strip legal suffixes to consolidate company variants
-        # Order matters: check longer suffixes first
-        legal_suffixes = [
-            # Full words with variations
-            r'\s+Incorporated$',
-            r'\s+Corporation$',
-            r'\s+Limited$',
-            r'\s+Company$',
-            # Abbreviations with optional period
-            r'\s+L\.L\.C\.$',
-            r'\s+L\.L\.P\.$',
-            r'\s+LLC\.?$',
-            r'\s+LLP\.?$',
-            r'\s+Inc\.?$',
-            r'\s+Corp\.?$',
-            r'\s+Ltd\.?$',
-            r'\s+Co\.?$',
-            # Other common suffixes
-            r'\s+PLC\.?$',
-            r'\s+LP\.?$',
-            r'\s+SA$',
-            r'\s+GmbH$',
-            r'\s+AG$',
-        ]
-
-        for suffix_pattern in legal_suffixes:
-            result = re.sub(suffix_pattern, '', result, flags=re.IGNORECASE).strip()
-
-        return result
+        # Strip one trailing legal suffix (matches original behavior)
+        return self._legal_suffix_re.sub('', result).strip()
 
     def sanitize_company_name(self, company_name: str) -> str | None:
         """
@@ -492,7 +477,7 @@ class ContentClassifier:
             return None
 
         # Remove special characters that aren't allowed in folder names
-        sanitized = re.sub(r'[<>:"/\\|?*]', '', normalized)
+        sanitized = self._folder_sanitize_re.sub('', normalized)
         # Replace multiple spaces with single space
         sanitized = ' '.join(sanitized.split())
         # Limit length
@@ -558,9 +543,8 @@ class ContentClassifier:
         combined = f"{text.lower()} {filename.lower()}"
         scores: dict[str, float] = {}
 
-        for category, data in self.patterns.items():
-            keywords = data['keywords']
-            hits = sum(1 for kw in keywords if kw.lower() in combined)
+        for category, keywords in self._keywords_lower.items():
+            hits = sum(1 for kw in keywords if kw in combined)
             if hits:
                 scores[category] = hits / len(keywords)
 
@@ -648,22 +632,38 @@ class ContentClassifier:
                     primary_company = person_company_relationships[person]
                     break
 
-        # Score each category
+        # Score each category. Subcategory match is keyword-independent, so
+        # compute it once per category and reuse across all keyword hits.
         scores: dict[str, int] = defaultdict(int)
         category_subcats: dict[str, dict[str, int]] = {}
 
-        for category, data in self.patterns.items():
-            for keyword in data['keywords']:
-                count = combined.count(keyword.lower())
-                if count > 0:
-                    scores[category] += count
+        for category, keywords in self._keywords_lower.items():
+            # Short-circuit: skip count() pass entirely if no keyword is present.
+            # `in` stops at first hit; count() always scans the full string.
+            if not any(kw in combined for kw in keywords):
+                continue
 
-                    # Track which subcategory keywords matched
-                    for subcat, subcat_keywords in data['subcategories'].items():
-                        if any(sk.lower() in combined for sk in subcat_keywords):
-                            if category not in category_subcats:
-                                category_subcats[category] = defaultdict(int)
-                            category_subcats[category][subcat] += count
+            subcat_map = self._subcats_lower[category]
+            matched_subcats: list[str] | None = None
+
+            for keyword in keywords:
+                count = combined.count(keyword)
+                if count == 0:
+                    continue
+                scores[category] += count
+
+                if matched_subcats is None:
+                    matched_subcats = [
+                        sc for sc, sc_kws in subcat_map.items()
+                        if any(sk in combined for sk in sc_kws)
+                    ]
+                    if matched_subcats:
+                        category_subcats[category] = defaultdict(int)
+
+                if matched_subcats:
+                    bucket = category_subcats[category]
+                    for sc in matched_subcats:
+                        bucket[sc] += count
 
         if not scores:
             return ('uncategorized', 'other', primary_company, people_names)
