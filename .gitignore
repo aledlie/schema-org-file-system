@@ -66,4 +66,5 @@ test-results/
 
 # Claude Code
 .claude/settings.local.json
+.claude/py-cache/
 .cache/
