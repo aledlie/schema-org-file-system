@@ -22,6 +22,18 @@ organize-files health                    # Check dependencies
 | `organize-files update-site` | Update dashboard data |
 | `organize-files timeline` | Generate timeline visualization data |
 
+## Development Commands
+
+```bash
+# Start REST API (FastAPI)
+uvicorn src.api.schema_org_api:app --reload
+
+# Lint, format, typecheck
+black src/ scripts/           # format
+flake8 src/ scripts/          # lint
+mypy src/                     # type check
+```
+
 ## Project Structure
 
 ```
@@ -29,6 +41,11 @@ organize-files health                    # Check dependencies
 │   ├── cli.py              # Unified CLI entry point
 │   ├── generators.py       # Schema.org metadata generation
 │   ├── error_tracking.py   # Sentry integration
+│   ├── classifiers/        # Content classification logic
+│   ├── organizers/         # File organizer implementations (base, content)
+│   ├── pipeline/           # Batch processing pipeline (batch_processor, file_processor)
+│   ├── analyzers/          # Image/content analyzers
+│   ├── utils/              # Shared utilities
 │   ├── api/
 │   │   ├── schema_org_api.py    # FastAPI JSON-LD REST endpoints
 │   │   └── schema_org_models.py # Pydantic request/response models
