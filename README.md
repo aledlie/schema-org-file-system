@@ -2,7 +2,7 @@
 
 AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and entity detection.
 
-**Version:** 2.0.0 | **Python:** 3.8 - 3.14 | **Files Processed:** 265,000+
+**Version:** 2.0.0 | **Python:** 3.8 - 3.13 (recommended: 3.13) | **Files Processed:** 265,000+
 
 ## Quick Start
 
@@ -10,14 +10,16 @@ AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and en
 # Setup
 git clone https://github.com/aledlie/schema-org-file-system.git
 cd schema-org-file-system
-python3 -m venv venv && source venv/bin/activate
+python3.13 -m venv venv && source venv/bin/activate
 pip install -e ".[all]"
 brew install tesseract poppler
 
 # Run
 organize-files content --source ~/Downloads --dry-run --limit 100
-organize-files health  # Check dependencies
+organize-files health  # Should report 9/9 features operational
 ```
+
+> **macOS 26 note:** Homebrew's `python@3.13` and `python@3.14` bottles link `pyexpat` against a newer `libexpat` than macOS 26 ships, which breaks `pip` on fresh installs. If you see `Symbol not found: _XML_SetAllocTrackerActivationThreshold`, see [Troubleshooting](#troubleshooting).
 
 ## CLI Commands
 
@@ -166,6 +168,7 @@ flowchart LR
 | No OCR | `brew install tesseract` |
 | No AI | `pip install torch transformers` |
 | Check deps | `organize-files health` |
+| `pyexpat` / `_XML_SetAllocTrackerActivationThreshold` on macOS 26 | `brew install expat`, then repoint and re-sign the broken module: `install_name_tool -change /usr/lib/libexpat.1.dylib /opt/homebrew/opt/expat/lib/libexpat.1.dylib $(python3.13 -c 'import pyexpat,os;print(pyexpat.__file__)')` and `codesign --force --sign - $(python3.13 -c 'import pyexpat;print(pyexpat.__file__)')` |
 
 ## Visual Architecture
 

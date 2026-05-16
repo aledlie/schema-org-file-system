@@ -5,9 +5,14 @@ AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and en
 ## Quick Start
 
 ```bash
+# First-time setup
+python3.13 -m venv venv && source venv/bin/activate
+pip install -e ".[all]" && brew install tesseract poppler
+
+# Daily use
 source venv/bin/activate
 organize-files content --source ~/Downloads --dry-run --limit 100
-organize-files health                    # Check dependencies
+organize-files health                    # Should report 9/9 features
 ```
 
 ## CLI Commands
@@ -113,7 +118,10 @@ mypy src/                     # type check
 
 ## Dependencies
 
+Requires Python 3.13 (3.14 broken on macOS 26 — see Troubleshooting).
+
 ```bash
+python3.13 -m venv venv && source venv/bin/activate
 pip install -e ".[all]" && brew install tesseract poppler
 ```
 
@@ -122,8 +130,9 @@ pip install -e ".[all]" && brew install tesseract poppler
 | Issue | Solution |
 |-------|----------|
 | HEIC fails | `pip install pillow-heif` |
-| No OCR | `pip install python-doctr[torch]` |
+| No OCR | `pip install 'python-doctr[torch]'` |
 | No AI | `pip install torch transformers` |
+| `pyexpat` / `_XML_SetAllocTrackerActivationThreshold` on macOS 26 | brew's `python@3.13`/`@3.14` bottles link against newer `libexpat` than macOS ships. Fix: `brew install expat`, then `install_name_tool -change /usr/lib/libexpat.1.dylib /opt/homebrew/opt/expat/lib/libexpat.1.dylib $(python3.13 -c 'import pyexpat;print(pyexpat.__file__)')` and `codesign --force --sign - $(python3.13 -c 'import pyexpat;print(pyexpat.__file__)')` |
 
 ## Schema.org Reference
 
@@ -156,11 +165,11 @@ Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 ## Testing
 
 ```bash
-pytest tests/unit/           # 753 unit tests
+pytest tests/unit/           # 755 unit tests
 pytest tests/integration/    # schema.org export pipeline
 pytest tests/performance/ --benchmark-only -m "not slow"   # benchmarks (skip 10k)
 pytest tests/e2e/            # Playwright E2E
 ```
 
 ---
-**Python:** 3.14 | **Version:** 2.0.0 | **Files:** 265,000+ processed
+**Python:** 3.13 (3.14 blocked by macOS 26 libexpat ABI) | **Version:** 2.0.0 | **Files:** 265,000+ processed
