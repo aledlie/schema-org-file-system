@@ -28,6 +28,10 @@ try:
         is_ocr_available,
         OCRResult,
     )
+    from shared.ocr_classifier import SCREENSHOT_KEYWORDS, classify_by_ocr as _shared_classify_by_ocr
+    from shared.filename_utils import is_generic_filename
+    from shared.file_ops import resolve_collision
+    from shared.status import ProcessingStatus
     from PIL import Image
     import pypdf
     OCR_AVAILABLE = is_ocr_available()
@@ -1555,7 +1559,7 @@ class ContentBasedFileOrganizer:
         # Extend screenshot sub-folders from classifier taxonomies so that
         # content labels map directly to folder paths without a separate lookup.
         _screenshots = self.category_paths['media']['photos']['screenshots']
-        for key in self.image_renamer._SCREENSHOT_KEYWORDS:
+        for key in SCREENSHOT_KEYWORDS:
             if key not in _screenshots:
                 folder = key.replace('_', ' ').title().replace(' ', '')
                 _screenshots[key] = f'Media/Photos/Screenshots/{folder}'
@@ -3453,9 +3457,14 @@ class ContentBasedFileOrganizer:
             screenshots_dict = self.category_paths['media']['photos']['screenshots']
 
             # Step 1: OCR-based sub-classification (dashboard, terminal, etc.)
-            ocr_result = self.image_renamer.classify_by_ocr(file_path)
+            ocr_result = _shared_classify_by_ocr(
+                file_path,
+                content_classifier=getattr(self.image_renamer.analyzer, 'content_classifier', None),
+            )
             if ocr_result:
-                ocr_category, ocr_confidence, _ = ocr_result
+                ocr_category, ocr_confidence, _ocr_scores, ocr_text = ocr_result
+                if ocr_text:
+                    self._last_file_ocr_text = ocr_text
                 if ocr_confidence < _OCR_CONFIDENCE_THRESHOLD:
                     print(
                         f"  ↪ Screenshot OCR low confidence ({ocr_confidence:.0%} < "
@@ -3882,36 +3891,29 @@ class ContentBasedFileOrganizer:
         read file contents should use the original path stored in
         ``result['source']``.
         """
-        if not self.image_renamer.should_rename(file_path.name):
+        if not is_generic_filename(file_path.name):
             return file_path
 
         if file_path.suffix.lower() not in self.image_renamer.IMAGE_EXTENSIONS:
             return file_path
 
-        # Temporarily override the renamer's dry_run flag to match the
-        # organizer's mode so the rename actually happens when not dry.
-        orig_dry_run = self.image_renamer.dry_run
-        self.image_renamer.dry_run = dry_run
-        result = self.image_renamer.rename_file(file_path)
-        self.image_renamer.dry_run = orig_dry_run
+        result = self.image_renamer.analyzer.analyze_image(file_path)
 
-        # Propagate any OCR text the renamer extracted so later stages
-        # (ID detection, text extraction) can reuse it without re-running OCR.
-        if self.image_renamer._last_ocr_text:
-            self._last_file_ocr_text = self.image_renamer._last_ocr_text
+        new_name = result.get('new_name')
+        if not new_name or result.get('status') != ProcessingStatus.PENDING:
+            return file_path
 
-        if result['new_name']:
-            conf = result.get('confidence')
-            conf_str = f" ({conf:.0%})" if conf is not None else ""
-            new_path = file_path.parent / result['new_name']
-            if result['status'] == 'renamed':
-                print(f"  ✓ Renamed: {file_path.name} → {result['new_name']}{conf_str}")
-                return new_path
-            elif result['status'] == 'would_rename':
-                print(f"  → Would rename: {file_path.name} → {result['new_name']}{conf_str}")
-                return new_path
+        conf = result.get('confidence')
+        conf_str = f" ({conf:.0%})" if conf is not None else ""
+        new_path = resolve_collision(file_path.parent / new_name)
 
-        return file_path
+        if dry_run:
+            print(f"  → Would rename: {file_path.name} → {new_path.name}{conf_str}")
+            return new_path
+
+        file_path.rename(new_path)
+        print(f"  ✓ Renamed: {file_path.name} → {new_path.name}{conf_str}")
+        return new_path
 
     def organize_file(self, file_path: Path, dry_run: bool = False, force: bool = False) -> Dict:
         """

@@ -188,7 +188,8 @@ class TestJsonExportPipeline:
         records = json.loads(out.read_text())
         invoice = next(r for r in records if r["name"] == "invoice.pdf")
         assert "mentions" in invoice
-        assert "about" in invoice
+        # Single category maps to mainEntityOfPage; "about" only appears with 2+ categories
+        assert "mainEntityOfPage" in invoice
         assert "spatialCoverage" in invoice
 
     def test_category_is_defined_term(self, exporter: SchemaOrgExporter, tmp_path: Path):
