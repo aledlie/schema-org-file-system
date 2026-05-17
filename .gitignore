@@ -68,3 +68,7 @@ test-results/
 .claude/settings.local.json
 .claude/py-cache/
 .cache/
+
+# Repomix
+repomix-output.xml
+docs/repomix/*
