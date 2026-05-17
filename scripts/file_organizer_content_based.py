@@ -4179,7 +4179,7 @@ class ContentBasedFileOrganizer:
                         image_metadata=image_metadata,
                         ocr_confidence=self._last_file_ocr_confidence,
                         detected_language=self._last_file_detected_language,
-                        kie_result=self._last_file_kie_result,
+                        kie_result=self._last_file_state.get('kie_result'),
                     )
 
             result['status'] = 'organized' if not dry_run else 'would_organize'
