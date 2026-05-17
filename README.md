@@ -2,7 +2,7 @@
 
 AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and entity detection.
 
-**Version:** 2.0.0 | **Python:** 3.8 - 3.13 (recommended: 3.13) | **Files Processed:** 265,000+
+**Version:** 2.0.0 | **Python:** 3.13 (3.14 blocked by macOS 26 libexpat ABI) | **Files Processed:** 265,000+
 
 ## Quick Start
 
@@ -32,6 +32,8 @@ organize-files health  # Should report 9/9 features operational
 | `organize-files migrate-ids` | Run database migration |
 | `organize-files update-site` | Update dashboard data |
 | `organize-files timeline` | Generate timeline visualization data |
+| `organize-files preprocess` | Data preprocessing pipeline for ML model training (`--input`, `--output`) |
+| `organize-files evaluate` | Run evaluation metrics on test dataset (`--test-data`, `--model`) |
 
 ## Architecture
 
@@ -69,13 +71,17 @@ flowchart LR
 │   ├── generators.py                # Schema.org generators
 │   ├── api/
 │   │   ├── schema_org_api.py        # FastAPI JSON-LD REST endpoints
-│   │   └── schema_org_models.py     # Pydantic models
+│   │   ├── schema_org_models.py     # Pydantic models
+│   │   └── timeline_api.py          # Timeline data endpoints
 │   └── storage/
 │       ├── graph_store.py           # GraphStore + canonical IDs
 │       ├── models.py                # ORM models with to_schema_org()
+│       ├── migration.py             # ID generation migration
+│       ├── kv_store.py              # Key-value storage layer
 │       ├── schema_org_exporter.py   # Bulk export (JSON / NDJSON / @graph)
 │       ├── schema_org_context.py    # JSON-LD @context generation
-│       └── schema_org_variants.py   # Typed representation variants
+│       ├── schema_org_variants.py   # Typed representation variants
+│       └── schema_org_base.py       # Shared base types
 ├── scripts/                         # Organizer scripts
 ├── tests/
 │   ├── unit/                        # 755 unit tests
@@ -112,8 +118,8 @@ flowchart LR
 
 | Layer | Technology |
 |-------|------------|
-| AI/ML | PyTorch, CLIP, OpenCV |
-| OCR | Tesseract |
+| AI/ML | PyTorch, open-clip-torch, OpenCV |
+| OCR | docTR (PyTorch) |
 | Database | SQLite + SQLAlchemy |
 | API | FastAPI |
 | Monitoring | Sentry SDK |
@@ -121,8 +127,7 @@ flowchart LR
 
 ## Documentation
 
-- [CHANGELOG](docs/CHANGELOG.md) - Version history
-- [DEPENDENCIES](docs/DEPENDENCIES.md) - Installation guide
+- [CHANGELOG (v2.0.0)](docs/changelog/2.0.0/CHANGELOG.md) - Version history
 - [ARCHITECTURE_REFACTOR](docs/ARCHITECTURE_REFACTOR.md) - Design decisions
 - [SCHEMA_ORG_ARCHITECTURE](docs/SCHEMA_ORG_ARCHITECTURE.md) - Schema.org type mappings, IRI patterns, JSON-LD context, and implementation reference
 
@@ -142,7 +147,7 @@ flowchart LR
 - `/api/schema-org/export`, `/api/schema-org/graph`, `/schema/context` endpoints
 
 **Testing**
-- 102 unit tests, 26 integration tests, performance benchmarks (100 / 1k / 10k entities)
+- 26 integration tests, performance benchmarks (100 / 1k / 10k entities)
 - Per-entity `to_schema_org()` benchmarks and relationship-overhead baseline
 
 ### v1.4.0 (2026-03-19)
@@ -167,7 +172,7 @@ flowchart LR
 | Issue | Solution |
 |-------|----------|
 | HEIC fails | `pip install pillow-heif` |
-| No OCR | `brew install tesseract` |
+| No OCR | `pip install 'python-doctr[torch]'` |
 | No AI | `pip install torch transformers` |
 | Check deps | `organize-files health` |
 | `pyexpat` / `_XML_SetAllocTrackerActivationThreshold` on macOS 26 | `brew install expat`, then repoint and re-sign the broken module: `install_name_tool -change /usr/lib/libexpat.1.dylib /opt/homebrew/opt/expat/lib/libexpat.1.dylib $(python3.13 -c 'import pyexpat,os;print(pyexpat.__file__)')` and `codesign --force --sign - $(python3.13 -c 'import pyexpat;print(pyexpat.__file__)')` |
@@ -190,7 +195,7 @@ flowchart TB
         CO -->|type| TY[Type Organizer]
 
         AI --> CLIP[CLIP Vision]
-        AI --> OCR[Tesseract OCR]
+        AI --> OCR[docTR OCR]
         AI --> ED[Entity Detection]
         AI --> GAD[Game Asset Detection]
         AI --> LCD[Legal/Contract]
@@ -216,7 +221,7 @@ flowchart TB
     end
 
     subgraph External
-        CLIP -.-> HF[HuggingFace]
+        CLIP -.-> HF[open-clip-torch]
         ED -.-> NOM[Nominatim]
     end
 ```
@@ -328,8 +333,8 @@ graph TB
     end
 
     subgraph External
-        torch[PyTorch/CLIP]
-        tess[Tesseract]
+        torch[PyTorch/open-clip]
+        doctr[docTR]
         sentry[Sentry SDK]
         sa[SQLAlchemy]
         fa[FastAPI]
@@ -340,7 +345,7 @@ graph TB
     icr & ica --> torch
     gs --> models --> sa
     err --> sentry
-    foc --> torch & tess
+    foc --> torch & doctr
     soa --> exp & ctx & models & som
     soa --> fa
     exp --> models
