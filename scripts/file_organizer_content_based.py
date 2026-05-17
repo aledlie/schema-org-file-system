@@ -212,7 +212,17 @@ _CLIP_PROMPT_TO_LABEL: dict = (
 
 # Minimum OCR confidence required to treat text as reliable for ID doc detection.
 # Low-confidence OCR on a photo (e.g. a blurry selfie) must not trigger passport detection.
+# Uses docTR word-level confidence (true 0–1 scale).
 _OCR_CONFIDENCE_THRESHOLD = 0.3
+
+# Minimum keyword-hit ratio to accept a screenshot OCR sub-classification.
+# classify_by_ocr() scores as hits/len(keywords), so this is calibrated to that
+# scale — NOT to CLIP probability space.  With SCREENSHOT_MIN_HITS=2 and the
+# largest category having 14 keywords, 2 hits = 14.3%.  A threshold of 0.10
+# accepts any category that cleared SCREENSHOT_MIN_HITS (the real quality bar);
+# the 0.30 gate previously used was copied from _OCR_CONFIDENCE_THRESHOLD and
+# silently rejected valid 3–18% scores as "low confidence".
+_SCREENSHOT_OCR_KEYWORD_THRESHOLD = 0.10
 
 # Unified-scoring weights for the image classification path.
 # CLIP score (already 0-1) is used as-is; OCR-text contributes a prior scaled by
@@ -237,6 +247,42 @@ _HUMAN_CONTACT_PHRASES = (
     'social security', 'ssn:', 'driver license', "driver's license",
     'maiden name', 'next of kin', 'emergency contact',
 )
+
+
+# Publisher-prefix patterns for Schema.org ScholarlyArticle detection.
+# Order matters: explicit publisher prefixes are checked before bare identifiers
+# so "arxiv-2401.12345" is attributed to arXiv rather than matched twice.
+_RESEARCH_PREFIX_PATTERNS = (
+    (re.compile(r'^ssrn[-_]?(?:id)?[-_]?(\d{4,})', re.IGNORECASE),
+     'ssrn', 'SSRN', 'https://ssrn.com/abstract={id}'),
+    (re.compile(r'^arxiv[-_:]?(\d{4}\.\d{4,5}(?:v\d+)?)', re.IGNORECASE),
+     'arxiv', 'arXiv', 'https://arxiv.org/abs/{id}'),
+    (re.compile(r'^doi[-_:]?(10\.\d{4,}[/._-][^\s]+)', re.IGNORECASE),
+     'doi', 'DOI', 'https://doi.org/{id}'),
+    (re.compile(r'^(\d{4}\.\d{4,5}(?:v\d+)?)$'),
+     'arxiv', 'arXiv', 'https://arxiv.org/abs/{id}'),
+    (re.compile(r'^(10\.\d{4,}[/._-][\w.\-/]+)'),
+     'doi', 'DOI', 'https://doi.org/{id}'),
+)
+
+
+def _detect_research_publisher(filename_stem: str) -> Optional[Tuple[str, str, str, str]]:
+    """Detect a scholarly publisher prefix in a filename stem.
+
+    Returns (publisher_key, identifier, publisher_name, canonical_url) when the
+    stem starts with a recognized prefix (ssrn-, arxiv-, doi-) or matches a
+    bare arXiv ID / DOI pattern. Returns None otherwise. Publisher key is the
+    lowercase subcategory; publisher_name is the display name used as the
+    schema.org Organization label.
+    """
+    stem = filename_stem.strip().rstrip('._-')
+    for pattern, publisher_key, publisher_name, url_template in _RESEARCH_PREFIX_PATTERNS:
+        match = pattern.search(stem)
+        if match:
+            identifier = match.group(1)
+            url = url_template.format(id=identifier)
+            return (publisher_key, identifier, publisher_name, url)
+    return None
 
 
 def _has_human_name_signal(text: str, names: List[str]) -> bool:
@@ -1493,6 +1539,14 @@ class ContentBasedFileOrganizer:
                 'records': 'Education/Records',
                 'other': 'Education/Other'
             },
+            # Research papers (Schema.org ScholarlyArticle) grouped by publisher.
+            # See: https://schema.org/ScholarlyArticle
+            'research': {
+                'arxiv': 'Research/Papers/arXiv',
+                'ssrn': 'Research/Papers/SSRN',
+                'doi': 'Research/Papers/DOI',
+                'other': 'Research/Papers/Other',
+            },
             'technical': {
                 'documentation': 'Technical/Documentation',
                 'architecture': 'Technical/Architecture',
@@ -2081,6 +2135,20 @@ class ContentBasedFileOrganizer:
         if re.search(r'_\d{8}_\d{6}$', file_path.stem):
             print(f"  ⚠ Duplicate file (timestamped copy) - skipping")
             return ('skip', 'duplicate', None, [])
+
+        # =========================================================
+        # RESEARCH PAPERS: arXiv, SSRN, DOI publisher prefixes
+        # Schema.org ScholarlyArticle — fires first so academic PDFs aren't
+        # captured by downstream legal/contract or technical/documentation
+        # keyword matchers (e.g. SSRN papers containing "agreement").
+        # =========================================================
+        if ext == '.pdf':
+            research = _detect_research_publisher(file_path.stem)
+            if research:
+                publisher_key, identifier, publisher_name, _url = research
+                print(f"  ✓ Filename pattern: ScholarlyArticle ({publisher_name} {identifier})")
+                self._last_file_research = research
+                return ('research', publisher_key, publisher_name, [])
 
         # =========================================================
         # LOG FILES: System logs, reorganization logs → Technical/Logs
@@ -3398,6 +3466,7 @@ class ContentBasedFileOrganizer:
         self.image_analyzer.clear_clip_cache()
         self._clip_enhance_cache.clear()
         self._last_file_kie_result = None
+        self._last_file_research = None
 
         pattern_path = display_path or file_path
 
@@ -3442,6 +3511,11 @@ class ContentBasedFileOrganizer:
             # Handle skip category for duplicates
             if category == 'skip':
                 return ('skip', subcategory, schema_type, '', None, [], {})
+            # Research papers carry a schema.org-specific @type (ScholarlyArticle)
+            # so the JSON-LD export preserves their scholarly nature instead of
+            # defaulting to DigitalDocument.
+            if category == 'research':
+                schema_type = 'ScholarlyArticle'
             # Point A: enhance weak photos_other from filename patterns for images
             if subcategory == 'photos_other' and schema_type == 'ImageObject':
                 enhanced = self.enhance_weak_image_classification(file_path)
@@ -3595,10 +3669,10 @@ class ContentBasedFileOrganizer:
                 ocr_category, ocr_confidence, _ocr_scores, ocr_text = ocr_result
                 if ocr_text:
                     self._last_file_ocr_text = ocr_text
-                if ocr_confidence < _OCR_CONFIDENCE_THRESHOLD:
+                if ocr_confidence < _SCREENSHOT_OCR_KEYWORD_THRESHOLD:
                     print(
                         f"  ↪ Screenshot OCR low confidence ({ocr_confidence:.0%} < "
-                        f"{_OCR_CONFIDENCE_THRESHOLD:.0%}) — falling back to CLIP"
+                        f"{_SCREENSHOT_OCR_KEYWORD_THRESHOLD:.0%}) — falling back to CLIP"
                     )
                 elif ocr_category in screenshots_dict:
                     print(f"  ✓ Screenshot OCR sub-class: {ocr_category} ({ocr_confidence:.0%})")
@@ -3721,7 +3795,7 @@ class ContentBasedFileOrganizer:
                 encoding_format=mime_type or 'image/png',
                 description=f"{file_path.name}"
             )
-        elif schema_type in ['DigitalDocument', 'Article']:
+        elif schema_type in ['DigitalDocument', 'Article', 'ScholarlyArticle', 'Report']:
             generator = DocumentGenerator(schema_type)
             generator.set_basic_info(
                 name=file_path.name,
@@ -3732,6 +3806,21 @@ class ContentBasedFileOrganizer:
                 url=file_url,
                 content_size=stats.st_size
             )
+            # Attach publisher identifier/URL when this file was classified as a
+            # scholarly article via filename-prefix detection (arXiv/SSRN/DOI).
+            research = getattr(self, '_last_file_research', None)
+            if schema_type == 'ScholarlyArticle' and research:
+                _publisher_key, identifier, publisher_name, canonical_url = research
+                try:
+                    generator.set_property('identifier', identifier, PropertyType.TEXT)
+                    generator.set_property('sameAs', canonical_url, PropertyType.URL)
+                    generator.set_property(
+                        'publisher',
+                        {'@type': 'Organization', 'name': publisher_name},
+                        PropertyType.OBJECT,
+                    )
+                except Exception:
+                    pass
         else:
             generator = DocumentGenerator()
             generator.set_basic_info(

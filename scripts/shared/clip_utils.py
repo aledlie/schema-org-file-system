@@ -128,9 +128,23 @@ class CLIPClassifier:
 
   # --- Encoding helpers (direct tensor API, no DataLoader overhead) ---
 
+  # CLIP input resolution — images are resized to this before embedding.
+  # Matches ViT-B-32 input; used as the thumbnail cap for oversized images.
+  _CLIP_INPUT_SIZE = 224
+
   def _preprocess_image(self, image_path: Path) -> "torch.Tensor":
-    """Load, preprocess, and return a single image tensor on device."""
+    """Load, preprocess, and return a single image tensor on device.
+
+    Handles oversized images (e.g. 1.7B-pixel maps) that would otherwise raise
+    Pillow's DecompressionBombError: thumbnails down to _CLIP_INPUT_SIZE before
+    converting to RGB so CLIP receives the same effective resolution it would
+    after its own resize step, without triggering the bomb guard.
+    """
     with Image.open(image_path) as img:
+      if img.width * img.height > Image.MAX_IMAGE_PIXELS:
+        img.thumbnail(
+            (self._CLIP_INPUT_SIZE, self._CLIP_INPUT_SIZE), Image.Resampling.LANCZOS
+        )
       return self.preprocess(img.convert("RGB")).unsqueeze(0).to(self.device, dtype=self._dtype)
 
   @torch.inference_mode()
@@ -161,6 +175,10 @@ class CLIPClassifier:
       for i, path in enumerate(chunk):
         try:
           with Image.open(path) as img:
+            if img.width * img.height > Image.MAX_IMAGE_PIXELS:
+              img.thumbnail(
+                  (self._CLIP_INPUT_SIZE, self._CLIP_INPUT_SIZE), Image.Resampling.LANCZOS
+              )
             tensors.append(self.preprocess(img.convert("RGB")))
           valid_idx.append(chunk_start + i)
         except Exception:
@@ -321,6 +339,10 @@ class CLIPClassifier:
       for i, path in enumerate(chunk):
         try:
           with Image.open(path) as img:
+            if img.width * img.height > Image.MAX_IMAGE_PIXELS:
+              img.thumbnail(
+                  (self._CLIP_INPUT_SIZE, self._CLIP_INPUT_SIZE), Image.Resampling.LANCZOS
+              )
             tensors.append(self.preprocess(img.convert("RGB")))
           valid_idx.append(i)
         except Exception:

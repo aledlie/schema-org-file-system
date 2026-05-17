@@ -40,6 +40,7 @@ class FileCategorizationModel:
         filename_tokens = feature.get('filename_tokens', [])
         extension = feature.get('extension', '').lower()
         extension_category = feature.get('extension_category', '')
+        parent_folder = feature.get('parent_folder', '')
 
         # Check for screenshots first
         if self._matches_patterns(filename, SCREENSHOT_PATTERNS):
@@ -58,6 +59,12 @@ class FileCategorizationModel:
 
         # Media files
         if extension_category == 'image':
+            # Filepath fallback: if no stronger signal fired and the file lives in
+            # a Games/ folder, prefer game_assets (matches production's filepath
+            # priority stage in detect_file_category).
+            if parent_folder == 'Games':
+                subcategory = self._determine_game_subcategory(filename_tokens, extension)
+                return ('game_assets', subcategory, 0.7)
             return ('media', 'photos_other', 0.6)
         elif extension_category == 'video':
             return ('media', 'videos_recordings', 0.6)
