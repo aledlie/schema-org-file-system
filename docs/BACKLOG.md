@@ -137,3 +137,53 @@ Last updated: 2026-03-30.
 
 **Affected:**
 - `scripts/image_content_renamer.py:354-370`
+
+### Expand GAME_SPRITE_KEYWORDS for sprite anatomy/UI vocabulary
+
+**Status:** Open
+**Priority:** P1 (highest yield — 629 game_assets → media misclassifications)
+**Source:** model-evaluation session, 2026-05-16
+**Context:** After fixing underscore-stripped keywords, plural matching, and threshold ≥ 0.3 + parent_folder=Games override, evaluation accuracy improved from 74.57% to 83.87%. This is the highest-yield improvement identified: 629 game_asset files are still being misclassified as media (e.g., `c_rug_3.png`, `feet_brown_2.png`, `glow_01_3.png`, `mee_2_1.png`) due to missing sprite anatomy/game-UI vocabulary in `GAME_SPRITE_KEYWORDS`.
+
+**Proposed fix:** add body-part and game-UI terms to `scripts/shared/constants.py` `GAME_SPRITE_KEYWORDS`: `rug`, `glow`, `mee`, `gelf`, `salamander`, `blob`, `bubble`, `lever`, `spine`, `mandible`, `pupils`. Potential accuracy gain: 84%+.
+
+**Caveat:** This touches `scripts/shared/constants.py` which is used by production code (`file_organizer_content_based.py` and `image_content_renamer.py`), not just the evaluator simulator. Requires careful regression review against production classification patterns.
+
+**Affected:**
+- `scripts/shared/constants.py` (GAME_SPRITE_KEYWORDS)
+- `scripts/file_organizer_content_based.py` (imports GAME_SPRITE_KEYWORDS)
+- `scripts/image_content_renamer.py` (imports GAME_SPRITE_KEYWORDS)
+- `scripts/evaluate_model.py` (test harness)
+
+### Add low-confidence → uncategorized rule in evaluator
+
+**Status:** Open
+**Priority:** P2 (271 uncategorized → media misclassifications)
+**Source:** model-evaluation session, 2026-05-16
+**Context:** 271 uncategorized files are being misclassified as media. Root cause: `FileCategorizationModel.predict_category` never emits 'uncategorized' for image files — it always falls through to `('media', 'photos_other', 0.6)`. The evaluator needs explicit logic to route low-confidence predictions to uncategorized.
+
+**Proposed fix:** Two options:
+  1. Add explicit low-confidence threshold (e.g., max score < 0.5) that routes to 'uncategorized' instead of falling through to default media category.
+  2. Further relabel the test set (scripts/data_preprocessing.py) if these low-confidence files are actually disguised game assets or other hard categories.
+
+**Affected:**
+- `scripts/evaluate_model.py:60-61` (prediction routing)
+- `src/classifiers/file_categorization_model.py` (predict_category logic, if choosing option 1)
+- `scripts/data_preprocessing.py` (test set relabeling, if choosing option 2)
+
+### Test set class imbalance in model evaluation
+
+**Status:** Open
+**Priority:** P3 (support starvation issue — not a model issue)
+**Source:** model-evaluation session, 2026-05-16
+**Context:** Classes with ≤2 samples (financial, property, technical, business, personal, legal, medical, filepath, creative) all score 0% precision/recall in evaluation. This is a test set issue, not a model issue — the classes have insufficient representation to meaningfully test or train.
+
+**Proposed fix:** Two options:
+  1. Rebalance the test set in `scripts/data_preprocessing.py` to ensure all categories have ≥30 samples (or adjust threshold as appropriate).
+  2. Report evaluation metrics weighted only on classes with adequate support (e.g., support ≥ 30) to avoid reporting misleading per-class metrics.
+
+Consider which approach aligns with project goals: broader coverage (option 1) or more honest metrics on well-represented classes (option 2).
+
+**Affected:**
+- `scripts/data_preprocessing.py` (class rebalancing, if choosing option 1)
+- `scripts/evaluate_model.py` (metric filtering, if choosing option 2)
