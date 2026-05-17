@@ -249,6 +249,11 @@ _HUMAN_CONTACT_PHRASES = (
 )
 
 
+# Research category key and Schema.org type for scholarly articles.
+# See: https://schema.org/ScholarlyArticle
+RESEARCH_CATEGORY = 'research'
+SCHOLARLY_ARTICLE_SCHEMA_TYPE = 'ScholarlyArticle'
+
 # Publisher-prefix patterns for Schema.org ScholarlyArticle detection.
 # Order matters: explicit publisher prefixes are checked before bare identifiers
 # so "arxiv-2401.12345" is attributed to arXiv rather than matched twice.
@@ -1365,8 +1370,11 @@ class ContentBasedFileOrganizer:
         # Set inside detect_file_category; consumed by _persist_to_graph_store.
         self._last_file_ocr_confidence: Optional[float] = None
         self._last_file_detected_language: Optional[str] = None
-        self._last_file_kie_result = None  # KIEResult or None
         self._last_file_ocr_text: Optional[str] = None  # cached OCR text to avoid re-running
+        # Structured per-file outputs (KIE result, research-paper metadata).
+        # Keyed dict so new metadata types can land here without growing the
+        # attribute surface.
+        self._last_file_state: Dict[str, Any] = {}
         # Per-file CLIP enhance cache: (file_path, tuple(labels)) -> List of results
         self._clip_enhance_cache: Dict[tuple, list] = {}
 
@@ -1525,9 +1533,7 @@ class ContentBasedFileOrganizer:
                 'records': 'Education/Records',
                 'other': 'Education/Other'
             },
-            # Research papers (Schema.org ScholarlyArticle) grouped by publisher.
-            # See: https://schema.org/ScholarlyArticle
-            'research': {
+            RESEARCH_CATEGORY: {
                 'arxiv': 'Research/Papers/arXiv',
                 'ssrn': 'Research/Papers/SSRN',
                 'doi': 'Research/Papers/DOI',
@@ -1684,53 +1690,8 @@ class ContentBasedFileOrganizer:
             'breeze', 'clockwork', 'knowledge', 'oddisey', 'final', 'welcome'
         ]
 
-        self.game_sprite_keywords = [
-            'frame', 'item', 'segment', 'sprite', 'texture', 'tile',
-            'leg', 'arm', 'head', 'torso', 'body', 'wing', 'tail',
-            'hair', 'face', 'eye', 'mouth', 'hand', 'foot',
-            # Character customization sprites
-            'beard', 'bling', 'hiero', 'mustache', 'scar', 'tattoo',
-            'earring', 'necklace', 'bracelet', 'glasses', 'mask', 'hood',
-            'wall', 'floor', 'ceiling', 'door', 'window', 'stairs',
-            'tree', 'rock', 'grass', 'water', 'lava', 'cloud',
-            'sword', 'shield', 'armor', 'helmet', 'boot', 'glove',
-            'potion', 'scroll', 'wand', 'staff', 'ring', 'amulet',
-            'coin', 'gem', 'crystal', 'ore', 'metal', 'wood',
-            'monster', 'enemy', 'npc', 'character', 'player', 'hero',
-            'icon', 'button', 'ui', 'hud', 'menu', 'cursor',
-            'particle', 'effect', 'explosion', 'smoke', 'blood',
-            'corner', 'edge', 'border', 'container', 'btn', 'talent',
-            'bar', 'over', 'down', 'up', 'left', 'right', 'main',
-            'bottom', 'top', 'extension', 'descend', 'ascend',
-            'mad_carpenter', 'no_more', 'bedroom', 'front', 'back',
-            'upper', 'lower', 'middle', 'dead', 'alive', 'sleeping',
-            'female', 'male', 'white', 'black', 'red', 'blue', 'green',
-            'silver', 'gold', 'bronze', 'iron', 'steel', 'mithril',
-            'hills', 'road', 'path', 'bridge', 'gate', 'fence',
-            # Additional game environment and UI keywords
-            'tentacle', 'shadow', 'altar', 'dungeon', 'throne', 'torch',
-            'cloak', 'champion', 'curse', 'warning', 'mouse', 'slider',
-            'decal', 'column', 'banner', 'sewer', 'statue', 'pillar',
-            'orc', 'dwarf', 'elf', 'hurth', 'helf', 'troll', 'goblin',
-            'fire', 'ice', 'sand', 'mount', 'tmount', 'deco', 'entrance',
-            'pupils', 'shoulders', 'stunned', 'poisoned', 'blind', 'deaf',
-            'slowed', 'levitating', 'hungry', 'strained', 'next', 'prev',
-            'groove', 'handle', 'cube', 'psf', 'inventory',
-            # Sprite anatomy and game-specific entity names
-            'rug', 'glow', 'mee', 'gelf', 'salamander', 'blob', 'bubble',
-            'lever', 'spine', 'mandible',
-            # Weapons and equipment
-            '2h_axe', '2h_hammer', '1h_sword', '1h_axe', 'crossbow', 'longbow',
-            'dagger', 'mace', 'flail', 'spear', 'halberd', 'scimitar',
-            # Skills and abilities
-            'assassins_deed', 'atonement', 'backstab', 'cleave', 'smite',
-            'fireball', 'lightning', 'heal', 'buff', 'debuff', 'aura',
-            # UI and icons
-            'arrow_v', 'arrow_h', 'checkbox', 'radio', 'toggle', 'add',
-            # Grayscale/variant markers (common in game assets)
-            '_grey', '_gray', '_disabled', '_hover', '_active', '_pressed',
-            '_selected', '_normal', '_highlight', '_glow', '_dark', '_light'
-        ]
+        from shared.constants import GAME_SPRITE_KEYWORDS
+        self.game_sprite_keywords = GAME_SPRITE_KEYWORDS
 
         # Regex patterns for game asset detection (numbered sprites, variants)
         import re
@@ -2135,9 +2096,9 @@ class ContentBasedFileOrganizer:
             research = _detect_research_publisher(file_path.stem)
             if research:
                 publisher_key, identifier, publisher_name, _url = research
-                print(f"  ✓ Filename pattern: ScholarlyArticle ({publisher_name} {identifier})")
-                self._last_file_research = research
-                return ('research', publisher_key, publisher_name, [])
+                print(f"  ✓ Filename pattern: {SCHOLARLY_ARTICLE_SCHEMA_TYPE} ({publisher_name} {identifier})")
+                self._last_file_state['research'] = research
+                return (RESEARCH_CATEGORY, publisher_key, publisher_name, [])
 
         # =========================================================
         # LOG FILES: System logs, reorganization logs → Technical/Logs
@@ -3433,15 +3394,12 @@ class ContentBasedFileOrganizer:
         Returns:
             Tuple of (main_category, subcategory, schema_type, extracted_text, company_name, people_names, image_metadata)
         """
-        # Reset per-file OCR/KIE metadata before processing a new file.
         self._last_file_ocr_confidence = None
         self._last_file_detected_language = None
         self._last_file_ocr_text = None
-        # Clear per-file CLIP caches to avoid stale results across files.
+        self._last_file_state.clear()
         self.image_analyzer.clear_clip_cache()
         self._clip_enhance_cache.clear()
-        self._last_file_kie_result = None
-        self._last_file_research = None
 
         pattern_path = display_path or file_path
 
@@ -3486,11 +3444,8 @@ class ContentBasedFileOrganizer:
             # Handle skip category for duplicates
             if category == 'skip':
                 return ('skip', subcategory, schema_type, '', None, [], {})
-            # Research papers carry a schema.org-specific @type (ScholarlyArticle)
-            # so the JSON-LD export preserves their scholarly nature instead of
-            # defaulting to DigitalDocument.
-            if category == 'research':
-                schema_type = 'ScholarlyArticle'
+            if category == RESEARCH_CATEGORY:
+                schema_type = SCHOLARLY_ARTICLE_SCHEMA_TYPE
             # Point A: enhance weak photos_other from filename patterns for images
             if subcategory == 'photos_other' and schema_type == 'ImageObject':
                 enhanced = self.enhance_weak_image_classification(file_path)
@@ -3568,7 +3523,7 @@ class ContentBasedFileOrganizer:
                 self._last_file_ocr_text = ocr_text
             # Attempt KIE structured field extraction when OCR is reliable.
             if KIE_AVAILABLE and _ocr_conf is not None and _ocr_conf >= _OCR_CONFIDENCE_THRESHOLD:
-                self._last_file_kie_result = extract_kie_fields(file_path)
+                self._last_file_state['kie_result'] = extract_kie_fields(file_path)
             _id_conf_ok = _ocr_conf is None or _ocr_conf >= _OCR_CONFIDENCE_THRESHOLD
             if ocr_text and len(ocr_text) >= 30 and _id_conf_ok:
                 ocr_lower = ocr_text.lower()
@@ -3705,11 +3660,11 @@ class ContentBasedFileOrganizer:
         if extracted_text:
             print(f"  Extracted {len(extracted_text)} characters")
 
-            # Try KIE-based classification first (structured invoice/receipt).
+            kie_result = self._last_file_state.get('kie_result')
             kie_classification = None
-            if self._last_file_kie_result is not None:
+            if kie_result is not None:
                 kie_classification = self.classifier.classify_with_kie(
-                    self._last_file_kie_result, extracted_text, file_path.name,
+                    kie_result, extracted_text, file_path.name,
                 )
             if kie_classification is not None:
                 category, subcategory, company_name, people_names = kie_classification
@@ -3756,7 +3711,7 @@ class ContentBasedFileOrganizer:
                 encoding_format=mime_type or 'image/png',
                 description=f"{file_path.name}"
             )
-        elif schema_type in ['DigitalDocument', 'Article', 'ScholarlyArticle', 'Report']:
+        elif schema_type in ['DigitalDocument', 'Article', SCHOLARLY_ARTICLE_SCHEMA_TYPE, 'Report']:
             generator = DocumentGenerator(schema_type)
             generator.set_basic_info(
                 name=file_path.name,
@@ -3767,10 +3722,8 @@ class ContentBasedFileOrganizer:
                 url=file_url,
                 content_size=stats.st_size
             )
-            # Attach publisher identifier/URL when this file was classified as a
-            # scholarly article via filename-prefix detection (arXiv/SSRN/DOI).
-            research = getattr(self, '_last_file_research', None)
-            if schema_type == 'ScholarlyArticle' and research:
+            research = self._last_file_state.get('research')
+            if schema_type == SCHOLARLY_ARTICLE_SCHEMA_TYPE and research:
                 _publisher_key, identifier, publisher_name, canonical_url = research
                 try:
                     generator.set_property('identifier', identifier, PropertyType.TEXT)
@@ -3780,8 +3733,8 @@ class ContentBasedFileOrganizer:
                         {'@type': 'Organization', 'name': publisher_name},
                         PropertyType.OBJECT,
                     )
-                except Exception:
-                    pass
+                except Exception as e:
+                    print(f"  Warning: could not attach scholarly metadata: {e}")
         else:
             generator = DocumentGenerator()
             generator.set_basic_info(
