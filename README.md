@@ -39,16 +39,23 @@ organize-files health  # Should report 9/9 features operational
 
 ```mermaid
 flowchart LR
-    A[Source Files] --> B[CLI]
-    B --> C{Organizer}
-    C --> D[CLIP Vision]
-    C --> E[OCR]
-    C --> F[Entity Detection]
-    D & E & F --> G[Category Assignment]
-    G --> H[GraphStore]
-    H --> I[(SQLite)]
-    H --> J[Schema.org JSON-LD]
-    I & J --> K[Dashboard]
+    A[Source Files] -->|scan| B[organize-files CLI]
+    B --> C{Organizer<br/>Strategy}
+
+    C -->|vision| D[CLIP Vision]
+    C -->|text| E[docTR OCR]
+    C -->|metadata| F[Entity Detection]
+
+    D --> G[Category Assignment]
+    E --> G
+    F --> G
+
+    G -->|persist| H[GraphStore]
+    H --> I[(SQLite DB)]
+    H --> J[Schema.org<br/>JSON-LD]
+
+    I --> K[Web Dashboard]
+    J --> K
 ```
 
 ## Classification Priority
@@ -183,47 +190,83 @@ flowchart LR
 
 ```mermaid
 flowchart TB
-    subgraph Input
-        U[User] --> CLI[organize-files CLI]
-        F[Source Files] --> CLI
+    subgraph Input["1 - Input"]
+        U[User]
+        F[Source Files]
     end
 
-    subgraph Processing["Processing Pipeline"]
-        CLI --> CO{Organizer Type}
-        CO -->|content| AI[AI Organizer]
-        CO -->|name| NM[Name Organizer]
-        CO -->|type| TY[Type Organizer]
+    subgraph Processing["2 - Processing Pipeline"]
+        CLI[organize-files CLI]
+        CO{Organizer<br/>Type}
+        AI[AI Organizer]
+        NM[Name Organizer]
+        TY[Type Organizer]
 
-        AI --> CLIP[CLIP Vision]
-        AI --> OCR[docTR OCR]
-        AI --> ED[Entity Detection]
-        AI --> GAD[Game Asset Detection]
-        AI --> LCD[Legal/Contract]
-        AI --> ECD[E-commerce]
-        AI --> SUI[Software UI]
+        subgraph Classifiers["Classifiers"]
+            CLIP[CLIP Vision]
+            OCR[docTR OCR]
+            ED[Entity Detection]
+            GAD[Game Asset]
+            LCD[Legal / Contract]
+            ECD[E-commerce]
+            SUI[Software UI]
+        end
     end
 
-    subgraph Storage
-        CLIP & OCR & ED & GAD & LCD & ECD & SUI --> GS[GraphStore]
-        GS --> DB[(SQLite)]
-        GS --> JSON[Schema.org JSON-LD]
+    subgraph Storage["3 - Storage"]
+        GS[GraphStore]
+        DB[(SQLite)]
+        JSON[Schema.org JSON-LD]
     end
 
-    subgraph Output
-        DB --> DASH[Web Dashboard]
-        JSON --> DASH
-        DB --> RPT[Reports]
+    subgraph Output["4 - Output"]
+        DASH[Web Dashboard]
+        RPT[Reports]
     end
 
-    subgraph Monitoring
-        AI -.-> SENTRY[Sentry]
-        AI -.-> COST[Cost Tracker]
+    subgraph Monitoring["Cross-Cutting"]
+        SENTRY[Sentry]
+        COST[Cost Tracker]
     end
 
-    subgraph External
-        CLIP -.-> HF[open-clip-torch]
-        ED -.-> NOM[Nominatim]
+    subgraph External["External Services"]
+        HF[open-clip-torch]
+        NOM[Nominatim Geocoder]
     end
+
+    U --> CLI
+    F --> CLI
+    CLI --> CO
+    CO -->|content| AI
+    CO -->|name| NM
+    CO -->|type| TY
+
+    AI --> CLIP
+    AI --> OCR
+    AI --> ED
+    AI --> GAD
+    AI --> LCD
+    AI --> ECD
+    AI --> SUI
+
+    CLIP --> GS
+    OCR --> GS
+    ED --> GS
+    GAD --> GS
+    LCD --> GS
+    ECD --> GS
+    SUI --> GS
+
+    GS --> DB
+    GS --> JSON
+    DB --> DASH
+    JSON --> DASH
+    DB --> RPT
+
+    AI -.->|errors| SENTRY
+    AI -.->|usage| COST
+    CLIP -.->|model| HF
+    ED -.->|geo lookup| NOM
 ```
 
 ### Database Schema
@@ -303,28 +346,28 @@ erDiagram
 
 ```mermaid
 graph TB
-    subgraph CLI
+    subgraph CLI["CLI Layer"]
         cli[src/cli.py]
     end
 
-    subgraph API
+    subgraph API["API Layer"]
         soa[schema_org_api.py]
         som[schema_org_models.py]
     end
 
-    subgraph Scripts
+    subgraph Scripts["Organizer Scripts"]
         foc[file_organizer_content_based.py]
         icr[image_content_renamer.py]
         ica[image_content_analyzer.py]
     end
 
-    subgraph Core
+    subgraph Core["Core Library"]
         gen[generators.py]
         err[error_tracking.py]
         cost[cost_roi_calculator.py]
     end
 
-    subgraph Storage
+    subgraph Storage["Storage Layer"]
         gs[graph_store.py]
         models[models.py]
         exp[schema_org_exporter.py]
@@ -332,8 +375,8 @@ graph TB
         var[schema_org_variants.py]
     end
 
-    subgraph External
-        torch[PyTorch/open-clip]
+    subgraph External["External Dependencies"]
+        torch[PyTorch / open-clip]
         doctr[docTR]
         sentry[Sentry SDK]
         sa[SQLAlchemy]
@@ -341,13 +384,26 @@ graph TB
     end
 
     cli --> foc
-    foc --> gen & err & cost & gs
-    icr & ica --> torch
-    gs --> models --> sa
-    err --> sentry
-    foc --> torch & doctr
-    soa --> exp & ctx & models & som
+
+    foc --> gen
+    foc --> err
+    foc --> cost
+    foc --> gs
+    foc --> torch
+    foc --> doctr
+
+    icr --> torch
+    ica --> torch
+
+    soa --> exp
+    soa --> ctx
+    soa --> models
+    soa --> som
     soa --> fa
+
     exp --> models
     var --> models
+    gs --> models
+    models --> sa
+    err --> sentry
 ```
