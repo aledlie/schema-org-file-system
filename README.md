@@ -31,6 +31,7 @@ organize-files health  # Should report 9/9 features operational
 | `organize-files health` | Check system dependencies |
 | `organize-files migrate-ids` | Run database migration |
 | `organize-files update-site` | Update dashboard data |
+| `organize-files timeline` | Generate timeline visualization data |
 
 ## Architecture
 
@@ -77,7 +78,7 @@ flowchart LR
 │       └── schema_org_variants.py   # Typed representation variants
 ├── scripts/                         # Organizer scripts
 ├── tests/
-│   ├── unit/                        # 102 unit tests
+│   ├── unit/                        # 755 unit tests
 │   ├── integration/                 # Export pipeline integration tests
 │   ├── performance/                 # pytest-benchmark suite
 │   └── e2e/                         # Playwright + OpenTelemetry
@@ -158,6 +159,7 @@ flowchart LR
 | Variable | Description |
 |----------|-------------|
 | `FILE_SYSTEM_SENTRY_DSN` | Sentry error tracking (Doppler) |
+| `FILE_ORGANIZE_MODE` | `in-place` (default for image renamer) or `folder` (default for screenshot renamer) |
 | `--sentry-dsn` | CLI override |
 
 ## Troubleshooting
