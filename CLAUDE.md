@@ -26,6 +26,8 @@ organize-files health                    # Should report 9/9 features
 | `organize-files migrate-ids` | Run database migration |
 | `organize-files update-site` | Update dashboard data |
 | `organize-files timeline` | Generate timeline visualization data |
+| `organize-files preprocess` | ML data preprocessing (`--input`, `--output`) |
+| `organize-files evaluate` | Run evaluation metrics (`--test-data`, `--model`) |
 
 ## Development Commands
 
@@ -36,7 +38,7 @@ uvicorn src.api.schema_org_api:app --reload
 # Lint, format, typecheck
 black src/ scripts/           # format
 flake8 src/ scripts/          # lint
-mypy src/                     # type check
+mypy src/ scripts/            # type check
 ```
 
 ## Project Structure
