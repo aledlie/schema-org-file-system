@@ -24,11 +24,10 @@ class FileCategorizationModel:
     """Simulates the categorization logic from file_organizer_content_based.py"""
 
     def __init__(self):
-        self.all_game_keywords = set(
-            GAME_AUDIO_KEYWORDS +
-            GAME_MUSIC_KEYWORDS +
-            GAME_SPRITE_KEYWORDS
-        )
+        self.all_game_keywords = {
+            k.lstrip('_')
+            for k in GAME_AUDIO_KEYWORDS + GAME_MUSIC_KEYWORDS + GAME_SPRITE_KEYWORDS
+        }
 
     def predict_category(self, feature: Dict) -> Tuple[str, str, float]:
         """
@@ -49,7 +48,7 @@ class FileCategorizationModel:
 
         # Check for game assets
         game_score = self._calculate_game_asset_score(filename_tokens, extension)
-        if game_score > 0.5:
+        if game_score >= 0.3:
             subcategory = self._determine_game_subcategory(filename_tokens, extension)
             return ('game_assets', subcategory, game_score)
 
@@ -84,8 +83,14 @@ class FileCategorizationModel:
         if not tokens:
             return 0.0
 
-        # Count matching keywords
-        matches = sum(1 for t in tokens if t.lower() in self.all_game_keywords)
+        # Count matching keywords (also try singular form for plurals)
+        def _matches(token: str) -> bool:
+            t = token.lower()
+            if t in self.all_game_keywords:
+                return True
+            return t.endswith('s') and t[:-1] in self.all_game_keywords
+
+        matches = sum(1 for t in tokens if _matches(t))
 
         # Base score from keyword matches
         score = min(matches / max(len(tokens), 1) * 1.5, 1.0)

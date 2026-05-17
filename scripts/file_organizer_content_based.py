@@ -214,6 +214,58 @@ _CLIP_PROMPT_TO_LABEL: dict = (
 # Low-confidence OCR on a photo (e.g. a blurry selfie) must not trigger passport detection.
 _OCR_CONFIDENCE_THRESHOLD = 0.3
 
+# Unified-scoring weights for the image classification path.
+# CLIP score (already 0-1) is used as-is; OCR-text contributes a prior scaled by
+# extraction length, plus an agreement boost when both signals point at the same
+# (category, subcategory). Values are tuned so that text — which is typically
+# more semantically specific than CLIP — wins ties on longer OCR extractions,
+# while CLIP retains primacy when text extraction is sparse or unparseable.
+_TEXT_SIGNAL_PRIOR = 0.80
+_TEXT_LENGTH_FULL_CHARS = 200
+_TEXT_MIN_CHARS = 30
+_SIGNAL_AGREEMENT_BOOST = 0.15
+
+# Personal titles that strongly indicate a human (vs. an org/brand name).
+_HUMAN_TITLE_RE = re.compile(
+    r'\b(?:Mr|Mrs|Ms|Miss|Dr|Prof|Sir|Madam|Hon|Rev|Esq|Atty)\.?\s+[A-Z]',
+)
+# First-person / signatory phrases that only humans write about themselves.
+_HUMAN_CONTACT_PHRASES = (
+    'date of birth', 'd.o.b', 'dob:',
+    'signed by', 'signature of', 'undersigned',
+    'to whom it may concern', 'i hereby', 'i am pleased to',
+    'social security', 'ssn:', 'driver license', "driver's license",
+    'maiden name', 'next of kin', 'emergency contact',
+)
+
+
+def _has_human_name_signal(text: str, names: List[str]) -> bool:
+    """
+    Require evidence that a detected name refers to a human, not an org/brand.
+
+    Org-precedence rule: when none of these signals appear, defer person
+    classification so org/document-type classifiers can win on names like
+    "Morning Train" that look human but aren't.
+    """
+    if _HUMAN_TITLE_RE.search(text):
+        return True
+    text_lower = text.lower()
+    if any(phrase in text_lower for phrase in _HUMAN_CONTACT_PHRASES):
+        return True
+    # Title immediately preceding a detected name (e.g. "Dr. Jane Smith").
+    for name in names:
+        first_token = name.split()[0] if name else ''
+        if not first_token:
+            continue
+        near = re.search(
+            r'\b(?:Mr|Mrs|Ms|Miss|Dr|Prof|Sir|Madam|Hon|Rev|Esq|Atty)\.?\s+'
+            + re.escape(first_token),
+            text,
+        )
+        if near:
+            return True
+    return False
+
 
 class ContentClassifier:
     """Classifies document content into categories."""
@@ -1929,7 +1981,7 @@ class ContentBasedFileOrganizer:
             matches = sum(1 for kw in keywords if kw in text_lower)
             if matches >= 2:  # Require at least 2 keyword matches
                 people = self.classifier.extract_people_names(text)
-                if people:
+                if people and _has_human_name_signal(text, people):
                     return ('person', person_type, people)
 
         return None
@@ -3177,6 +3229,66 @@ class ContentBasedFileOrganizer:
             cat, subcat = "media", "photos_travel"
         return (cat, subcat)
 
+    def _merge_clip_text_scores(
+        self,
+        clip_candidate: Optional[Tuple[str, str]],
+        clip_score: float,
+        text_candidate: Optional[Tuple[str, str]],
+        text_chars: int,
+    ) -> Optional[Tuple[Tuple[str, str], float, str]]:
+        """Combine CLIP and OCR-text signals into a per-(category, subcategory)
+        weighted score. Returns (winner, total_score, sources_str) or None.
+
+        Used by both the main image path and enhance_weak_image_classification
+        so that PDF/PNG sibling files of the same content converge on the same
+        category regardless of which extraction modality dominates.
+        """
+        scores: Dict[Tuple[str, str], float] = {}
+        sources: Dict[Tuple[str, str], List[str]] = {}
+        if clip_candidate and clip_score > 0:
+            scores[clip_candidate] = scores.get(clip_candidate, 0.0) + clip_score
+            sources.setdefault(clip_candidate, []).append(f"CLIP {clip_score:.2f}")
+        if text_candidate and text_chars >= _TEXT_MIN_CHARS:
+            text_score = _TEXT_SIGNAL_PRIOR * min(1.0, text_chars / _TEXT_LENGTH_FULL_CHARS)
+            scores[text_candidate] = scores.get(text_candidate, 0.0) + text_score
+            sources.setdefault(text_candidate, []).append(f"text {text_score:.2f}")
+        if clip_candidate and text_candidate and clip_candidate == text_candidate:
+            scores[clip_candidate] += _SIGNAL_AGREEMENT_BOOST
+            sources[clip_candidate].append("agree")
+        if not scores:
+            return None
+        winner, top = max(scores.items(), key=lambda kv: kv[1])
+        return winner, top, ", ".join(sources[winner])
+
+    def _run_clip_signal(
+        self, file_path: Path, image_metadata: Optional[Dict] = None,
+    ) -> Tuple[Optional[Tuple[str, str]], float]:
+        """Run the 20-category CLIP classifier and map its top label.
+
+        Returns (candidate, score) or (None, 0.0) if CLIP is unavailable or
+        below the enhancement threshold.
+        """
+        if not ENHANCED_CLIP_AVAILABLE or not self.image_analyzer.vision_available:
+            return (None, 0.0)
+        enhance_cache_key = (str(file_path), tuple(CLIP_CATEGORY_PROMPTS))
+        try:
+            if enhance_cache_key in self._clip_enhance_cache:
+                results = self._clip_enhance_cache[enhance_cache_key]
+            elif CLIP_CACHE_AVAILABLE:
+                results = get_cached_embedding(file_path, CLIP_CATEGORY_PROMPTS, prompt_prefix="")
+                self._clip_enhance_cache[enhance_cache_key] = results
+            else:
+                results = get_clip_classifier().classify_raw(file_path, CLIP_CATEGORY_PROMPTS)
+                self._clip_enhance_cache[enhance_cache_key] = results
+            best_prompt, best_score = results[0]
+            best_label = _CLIP_PROMPT_TO_LABEL.get(best_prompt, best_prompt)
+        except Exception as e:
+            print(f"  CLIP signal error: {e}")
+            return (None, 0.0)
+        if best_score < CLIP_ENHANCE_THRESHOLD:
+            return (None, 0.0)
+        return (self._map_clip_label(best_label, image_metadata), best_score)
+
     def enhance_weak_image_classification(
         self, file_path: Path, image_metadata: Dict = None
     ) -> Optional[Tuple[str, str]]:
@@ -3209,29 +3321,47 @@ class ContentBasedFileOrganizer:
         if best_score < CLIP_ENHANCE_THRESHOLD:
             return None
 
-        # High confidence — map directly, skip OCR
-        if best_score >= CLIP_ENHANCE_HIGH_THRESHOLD:
-            result = self._map_clip_label(best_label, image_metadata)
-            if result:
-                print(f"  CLIP enhance → {result[0]}/{result[1]} (high confidence)")
-                return result
+        clip_candidate = self._map_clip_label(best_label, image_metadata)
 
-        # Medium confidence — try OCR first, fall back to CLIP mapping
+        # Collect the text signal in parallel with CLIP. We always run OCR when
+        # available (regardless of CLIP confidence band) so that a strong text
+        # signal can override or reinforce a strong visual signal, producing
+        # consistent classification across format-pair siblings (e.g. the PDF
+        # and PNG of the same placement map).
+        text_candidate: Optional[Tuple[str, str]] = None
+        text_chars = 0
         if self.ocr_available:
             try:
                 ocr_text = self.extract_text_from_image(file_path)
-                if ocr_text and len(ocr_text) >= 30:
+                if ocr_text and len(ocr_text) >= _TEXT_MIN_CHARS:
+                    text_chars = len(ocr_text)
                     text_cat, text_subcat, _, _ = self.classifier.classify_content(ocr_text, file_path.name)
                     if text_cat != "uncategorized":
-                        print(f"  CLIP enhance → {text_cat}/{text_subcat} (OCR fallback)")
-                        return (text_cat, text_subcat)
+                        text_candidate = (text_cat, text_subcat)
             except Exception as e:
                 print(f"  CLIP enhance OCR error: {e}")
 
-        result = self._map_clip_label(best_label, image_metadata)
-        if result:
-            print(f"  CLIP enhance → {result[0]}/{result[1]} (medium confidence)")
-        return result
+        scores: Dict[Tuple[str, str], float] = {}
+        sources: Dict[Tuple[str, str], List[str]] = {}
+        if clip_candidate:
+            scores[clip_candidate] = scores.get(clip_candidate, 0.0) + best_score
+            sources.setdefault(clip_candidate, []).append(f"CLIP {best_score:.2f}")
+        if text_candidate:
+            text_score = _TEXT_SIGNAL_PRIOR * min(1.0, text_chars / _TEXT_LENGTH_FULL_CHARS)
+            scores[text_candidate] = scores.get(text_candidate, 0.0) + text_score
+            sources.setdefault(text_candidate, []).append(f"text {text_score:.2f}")
+
+        if clip_candidate and text_candidate and clip_candidate == text_candidate:
+            scores[clip_candidate] += _SIGNAL_AGREEMENT_BOOST
+            sources[clip_candidate].append("agree")
+
+        if not scores:
+            return None
+
+        winner, top_score = max(scores.items(), key=lambda kv: kv[1])
+        src = ", ".join(sources[winner])
+        print(f"  Unified → {winner[0]}/{winner[1]} ({src}; total {top_score:.2f})")
+        return winner
 
     def detect_file_category(
         self,
@@ -3543,6 +3673,25 @@ class ContentBasedFileOrganizer:
             if people_names:
                 print(f"  Detected people: {', '.join(people_names[:3])}{' ...' if len(people_names) > 3 else ''}")
             print(f"  Classified as: {category}/{subcategory}")
+
+            # Unified scoring: when this is an image with a categorical text
+            # result, cross-check against CLIP. If CLIP outscores text, or
+            # confirms text with an agreement boost, swap to the unified
+            # winner. Keeps text result when CLIP is unavailable or weaker.
+            if schema_type == 'ImageObject' and category != 'uncategorized':
+                clip_candidate, clip_score = self._run_clip_signal(file_path, image_metadata)
+                if clip_candidate:
+                    merged = self._merge_clip_text_scores(
+                        clip_candidate=clip_candidate,
+                        clip_score=clip_score,
+                        text_candidate=(category, subcategory),
+                        text_chars=len(extracted_text),
+                    )
+                    if merged:
+                        (m_cat, m_sub), m_score, m_src = merged
+                        if (m_cat, m_sub) != (category, subcategory):
+                            print(f"  Unified → {m_cat}/{m_sub} ({m_src}; total {m_score:.2f})")
+                            category, subcategory = m_cat, m_sub
         else:
             print(f"  No text extracted, using filename")
             category, subcategory, company_name, people_names = self.classifier.classify_content("", file_path.name)
