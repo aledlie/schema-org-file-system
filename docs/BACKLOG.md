@@ -138,9 +138,9 @@ Last updated: 2026-03-30.
 **Affected:**
 - `scripts/image_content_renamer.py:354-370`
 
-### Expand GAME_SPRITE_KEYWORDS for sprite anatomy/UI vocabulary
+### ~~Expand GAME_SPRITE_KEYWORDS for sprite anatomy/UI vocabulary~~
 
-**Status:** Open
+**Status:** Done (2026-05-16)
 **Priority:** P1 (highest yield — 629 game_assets → media misclassifications)
 **Source:** model-evaluation session, 2026-05-16
 **Context:** After fixing underscore-stripped keywords, plural matching, and threshold ≥ 0.3 + parent_folder=Games override, evaluation accuracy improved from 74.57% to 83.87%. This is the highest-yield improvement identified: 629 game_asset files are still being misclassified as media (e.g., `c_rug_3.png`, `feet_brown_2.png`, `glow_01_3.png`, `mee_2_1.png`) due to missing sprite anatomy/game-UI vocabulary in `GAME_SPRITE_KEYWORDS`.

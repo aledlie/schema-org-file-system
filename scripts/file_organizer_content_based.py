@@ -1730,6 +1730,9 @@ class ContentBasedFileOrganizer:
             'pupils', 'shoulders', 'stunned', 'poisoned', 'blind', 'deaf',
             'slowed', 'levitating', 'hungry', 'strained', 'next', 'prev',
             'groove', 'handle', 'cube', 'psf', 'inventory',
+            # Sprite anatomy and game-specific entity vocabulary (added 2026-05-16)
+            'rug', 'glow', 'mee', 'gelf', 'salamander', 'blob', 'bubble',
+            'lever', 'spine', 'mandible',
             # Weapons and equipment
             '2h_axe', '2h_hammer', '1h_sword', '1h_axe', 'crossbow', 'longbow',
             'dagger', 'mace', 'flail', 'spear', 'halberd', 'scimitar',
