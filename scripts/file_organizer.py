@@ -143,25 +143,8 @@ class FileOrganizer:
 
         # Game asset detection patterns
         import re
-        self.game_sprite_keywords = [
-            'frame', 'item', 'segment', 'sprite', 'texture', 'tile',
-            'leg', 'arm', 'head', 'torso', 'body', 'wing', 'tail',
-            'hair', 'face', 'eye', 'mouth', 'hand', 'foot',
-            'wall', 'floor', 'ceiling', 'door', 'window', 'stairs',
-            'sword', 'shield', 'armor', 'helmet', 'boot', 'glove',
-            'potion', 'scroll', 'wand', 'staff', 'ring', 'amulet',
-            'monster', 'enemy', 'npc', 'character', 'player', 'hero',
-            'icon', 'button', 'ui', 'hud', 'menu', 'cursor',
-            'particle', 'effect', 'explosion', 'smoke', 'blood',
-            'corner', 'edge', 'border', 'container', 'btn', 'talent',
-            '2h_axe', '2h_hammer', '1h_sword', '1h_axe', 'crossbow',
-            'assassins_deed', 'atonement', 'backstab', 'cleave',
-            'arrow_v', 'arrow_h', 'checkbox', 'radio', 'toggle', 'add',
-            '_grey', '_gray', '_disabled', '_hover', '_active', '_pressed',
-            # Sprite anatomy and game-specific entity names
-            'rug', 'glow', 'mee', 'gelf', 'salamander', 'blob', 'bubble',
-            'lever', 'spine', 'mandible', 'pupils',
-        ]
+        from shared.constants import GAME_SPRITE_KEYWORDS
+        self.game_sprite_keywords = GAME_SPRITE_KEYWORDS
         self.game_sprite_patterns = [
             re.compile(r'^\d+_grey(_\d+)?$', re.IGNORECASE),
             re.compile(r'^\d+_f(_\d+)?$', re.IGNORECASE),
