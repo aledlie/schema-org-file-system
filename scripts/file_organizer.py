@@ -157,7 +157,10 @@ class FileOrganizer:
             '2h_axe', '2h_hammer', '1h_sword', '1h_axe', 'crossbow',
             'assassins_deed', 'atonement', 'backstab', 'cleave',
             'arrow_v', 'arrow_h', 'checkbox', 'radio', 'toggle', 'add',
-            '_grey', '_gray', '_disabled', '_hover', '_active', '_pressed'
+            '_grey', '_gray', '_disabled', '_hover', '_active', '_pressed',
+            # Sprite anatomy and game-specific entity names
+            'rug', 'glow', 'mee', 'gelf', 'salamander', 'blob', 'bubble',
+            'lever', 'spine', 'mandible', 'pupils',
         ]
         self.game_sprite_patterns = [
             re.compile(r'^\d+_grey(_\d+)?$', re.IGNORECASE),

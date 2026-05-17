@@ -169,7 +169,7 @@ GAME_SPRITE_KEYWORDS = [
   'assassins_deed', 'atonement', 'backstab', 'cleave',
   'arrow_v', 'arrow_h', 'checkbox', 'radio', 'toggle', 'add',
   '_grey', '_gray', '_disabled', '_hover', '_active', '_pressed',
-  # Sprite anatomy and game-specific entity vocabulary (added 2026-05-16)
+  # Sprite anatomy and game-specific entity names
   'rug', 'glow', 'mee', 'gelf', 'salamander', 'blob', 'bubble',
   'lever', 'spine', 'mandible', 'pupils',
 ]
