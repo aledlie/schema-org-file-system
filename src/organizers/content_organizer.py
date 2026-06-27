@@ -9,6 +9,7 @@ from src.organizers.base_organizer import BaseOrganizer
 from shared.filename_classifier import (
     classify_by_filename_patterns as _classify_by_filename_patterns,
 )
+from shared.constants import SIDECAR_DIR_SUFFIXES
 
 try:
     from src.classifiers import ContentClassifier
@@ -1051,6 +1052,14 @@ class ContentOrganizer(BaseOrganizer):
             return True
 
         if any(skip_dir in file_path.parts for skip_dir in skip_dirs):
+            return True
+
+        # Skip browser "Save Page As" sidecar folders (e.g. "foo_files/"): the
+        # file lives under a parent dir whose name ends with a known suffix.
+        if any(
+            part.lower().endswith(SIDECAR_DIR_SUFFIXES)
+            for part in file_path.parent.parts
+        ):
             return True
 
         return False
