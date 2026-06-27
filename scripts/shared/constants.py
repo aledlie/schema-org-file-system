@@ -126,8 +126,14 @@ CLIP_LABEL_TO_ORGANIZER: dict[str, tuple[str, str]] = {
 }
 
 CLIP_BATCH_SIZE: int = 32
-CLIP_ENHANCE_THRESHOLD = 0.15      # min confidence to use CLIP result
-CLIP_ENHANCE_HIGH_THRESHOLD = 0.30  # confidence to skip OCR fallback
+
+# Canonical CLIP confidence thresholds (single source of truth).
+CLIP_OCR_FALLBACK_THRESHOLD = 0.10       # min CLIP confidence before OCR fallback
+CLIP_REFINEMENT_MIN_CONFIDENCE = 0.15    # min confidence to attempt refinement
+CLIP_REFINEMENT_ACCEPT_CONFIDENCE = 0.30  # min confidence to accept refinement
+
+CLIP_ENHANCE_THRESHOLD = CLIP_REFINEMENT_MIN_CONFIDENCE       # min confidence to use CLIP result
+CLIP_ENHANCE_HIGH_THRESHOLD = CLIP_REFINEMENT_ACCEPT_CONFIDENCE  # confidence to skip OCR fallback
 
 # Content type -> short abbreviation (from add_content_descriptions.py)
 CONTENT_ABBREVIATIONS: dict[str, str] = {
