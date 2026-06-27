@@ -219,9 +219,16 @@ Consider which approach aligns with project goals: broader coverage (option 1) o
 - `scripts/file_organizer_content_based.py` (priority chain)
 - `scripts/shared/constants.py` (`CLIP_ENHANCE_THRESHOLD` / `CLIP_ENHANCE_HIGH_THRESHOLD` may need tuning)
 
-### Collapse private `ImageContentAnalyzer` into the shared CLIP+OCR pipeline
+### ~~Collapse private `ImageContentAnalyzer` into the shared CLIP+OCR pipeline~~
 
-**Status:** Open
+**Status:** Done (2026-06-26)
+- Deleted the script-local `ImageContentAnalyzer` (~176 LOC) from `scripts/file_organizer_content_based.py`; the organizer now imports the superset `analyzers.image_analyzer.ImageContentAnalyzer` (`src/analyzers/`), which already delegates CLIP to the shared singleton + disk cache and is covered by `tests/unit/test_image_analyzer.py`.
+- Thresholds preserved exactly — the src class already encodes interior 0.3 / people 0.2 / people-low 0.15 / screenshot 0.4, identical to the deleted class's hardcoded values (the 0.15-vs-0.2 distinction is intact).
+- Category list now single-homed in `src/analyzers/image_analyzer.py` (`_ALL_CATEGORIES`); the duplicate `_CLASSIFY_CATEGORIES` is gone (subsumes "unify category sets").
+- Dropped the per-file `_clip_result_cache` and its `clear_clip_cache()` call; tier 5 now uses `analyze_for_organization` (one CLIP scoring + one face-detect instead of two each — byte-identical decision logic).
+- Made `src/analyzers/__init__.py` use relative imports so the module resolves under both the CLI path (bare `analyzers.x`) and `src.analyzers.x`.
+- Verified: 770 unit tests pass; December eval holds at 90.74%.
+- **Deferred:** `_clip_enhance_cache` (organizer's own enhance-signal cache) left in place; face-cascade loader still duplicated between `src/analyzers/image_analyzer.py` and the organizer's former path (now single — the cascade lives only in `src/analyzers`); no separate `vision_utils.py` created since face detection is already centralized in `src/analyzers`.
 **Priority:** P1 (removes a parallel CLIP entry point; ~180 LOC)
 **Source:** simplification audit, 2026-06-26
 **Depends on:** none (pairs with "Compute CLIP embedding once per image" below)
@@ -243,9 +250,14 @@ Consider which approach aligns with project goals: broader coverage (option 1) o
 
 **Validation (GATED):** the people thresholds differ by method — `0.15` in `has_people_in_photo` vs `0.2` in `is_home_interior_no_people`. Preserve each exactly during the move; do NOT harmonize without a dedicated eval run. After refactor run `pytest tests/unit/` and `organize-files evaluate --test-data results/ml_data_dec/test_relabeled.json`; confirm category accuracy holds at the 90.74% baseline before merging.
 
-### Compute CLIP embedding once per image, reuse across rename + classification tiers
+### ~~Compute CLIP embedding once per image, reuse across rename + classification tiers~~
 
-**Status:** Open
+**Status:** Done (2026-06-26)
+- `shared/clip_classification.py:classify_image` (the rename pre-step) previously encoded each image **2–3×** (`top_match` → `classify`, `refine` → `top_match`, then `classify_raw`) and bypassed the disk cache. It now encodes once via the new `CLIPClassifier.encode_image()` and scores every prompt set against that single embedding with `score_embedding(...)`. Byte-identical to the old per-call paths (same `_similarities` routine; the prefixed/raw distinction is preserved: `"a photo of "` for the top match/refine, `""` for `all_scores`).
+- `refine_classification` now takes the precomputed embedding instead of re-encoding.
+- Added `CLIPClassifier.embedding_to_numpy()` and `shared/clip_cache.py:store_embedding()`; `classify_image` seeds the disk cache (`.cache/clip_embeddings_v2/`) so tiers 4.5/5/6 reuse the same embedding (in dry-run, image encoded once across rename + all tiers). The stored fp32 array is the same representation `encode_image_to_numpy` produces, so cached and freshly-encoded tier scores are byte-identical.
+- Tier 5 collapsed two CLIP scorings into one via `analyze_for_organization` (see item above).
+- **Validation:** runtime-verified byte-identical with `open-clip-torch` installed (mps/fp16). On real images, the new `classify_image` (encode-once) reproduces the pre-refactor `top_match`/refine/`classify_raw` output exactly — category, confidence to 6 decimals, and full `all_scores` — including the refinement-accept branch. Disk-cache seeding confirmed: a tier reading the embedding seeded by `classify_image` yields scores identical to a fresh direct encode. Also: 770 unit tests pass and the December eval holds at 90.74%.
 **Priority:** P1 (1–2 redundant model passes per image)
 **Source:** simplification audit, 2026-06-26
 **Depends on:** pairs with "Collapse private `ImageContentAnalyzer`" (shared cache)
