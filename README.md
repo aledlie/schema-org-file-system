@@ -4,6 +4,28 @@ AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and en
 
 **Version:** 2.0.0 | **Python:** 3.13 (3.14 blocked by macOS 26 libexpat ABI) | **Files Processed:** 265,000+
 
+## Capabilities
+
+Scans directories, classifies files by content, organizes them into a semantic folder hierarchy, and builds a Schema.org-typed knowledge graph that is queryable over REST.
+
+- **Content classification** — layered priority pipeline: organization → person → legal → research paper → e-commerce → software UI → game assets → filepath → CLIP/OCR content analysis → MIME fallback (see [Classification Priority](#classification-priority)).
+- **CLIP + OCR vision** — unified `classify_with_ocr_fallback()` (CLIP ViT-B-32 + cached embeddings) with OCR fallback for low-confidence predictions.
+- **Image/screenshot renaming** — `rename_images.py --profile {photo,screenshot}` selects vocabulary and in-place vs. folder mode.
+- **Schema.org graph store** — SQLAlchemy ORM with canonical IDs; every entity exposes `to_schema_org()`, plus bulk JSON/NDJSON/`@graph` export and JSON-LD `@context` generation.
+- **ML support** — training-data preprocessing and model evaluation.
+- **Dashboard + timeline** — static UI in `_site/`, fed by `update-site` and `timeline` data generators.
+
+All entry points share one backing SQLite graph (`results/file_organization.db`): the CLI writes classifications, the API serves them as JSON-LD, and the dashboard visualizes them.
+
+## Entry Points
+
+| Surface | How to launch |
+|---------|---------------|
+| **CLI** | `organize-files <command>` (console script → `src.cli:main`) — see [CLI Commands](#cli-commands) |
+| **REST API** | `uvicorn src.api.schema_org_api:app --reload` — JSON-LD endpoints for `files`, `categories`, `companies`, `people`, `locations` (see [REST API](#rest-api)) |
+| **Library** | Import organizers/classifiers from `scripts/` and the graph store from `src.storage` (run from project root so `from shared.x import y` resolves) |
+| **Dashboard** | Static UI in `_site/`, consuming data from `update-site` / `timeline` |
+
 ## Quick Start
 
 ```bash
@@ -34,6 +56,22 @@ organize-files health  # Should report 9/9 features operational
 | `organize-files timeline` | Generate timeline visualization data |
 | `organize-files preprocess` | Data preprocessing pipeline for ML model training (`--input`, `--output`) |
 | `organize-files evaluate` | Run evaluation metrics on test dataset (`--test-data`, `--model`) |
+
+## REST API
+
+FastAPI app at `src/api/schema_org_api.py`. Start with `uvicorn src.api.schema_org_api:app --reload`.
+
+| Endpoint | Description |
+|----------|-------------|
+| `GET /api/{entity}/{id}/schema-org` | Single entity as JSON-LD |
+| `GET /api/{entity}/schema-org/bulk` | Filtered list as `{"@context":…,"@graph":[…]}` |
+| `GET /api/{companies\|people\|locations}/schema-org/by-name/{name}` | Lookup by name |
+| `GET /api/schema-org/export` | Full `@graph` document, filterable by entity type |
+| `GET /api/schema-org/graph` | Full graph, all entity types |
+| `GET /schema/context` | Standalone JSON-LD `@context` document |
+| `GET /health` | Service health check |
+
+Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 
 ## Architecture
 
