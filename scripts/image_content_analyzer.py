@@ -216,7 +216,7 @@ def generate_csv(image_path: Path, output_path: Path, min_confidence: float = 0.
         print("Error: CLIP not available")
         return
 
-    classifier = CLIPClassifier()
+    classifier = CLIPClassifier.get_instance()
 
     print(f"\nAnalyzing: {image_path.name}")
     results = analyze_image(image_path, classifier)

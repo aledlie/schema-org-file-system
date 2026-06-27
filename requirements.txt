@@ -29,6 +29,9 @@ torchvision>=0.24.0               # Computer vision utilities
 # Computer vision
 opencv-python>=4.12.0             # OpenCV for image processing
 
+# OCR text extraction
+easyocr>=1.7.0                    # GPU-accelerated OCR, better accuracy on screenshots/mobile
+
 # =============================================================================
 # DOCUMENT PROCESSING (Optional - for document metadata)
 # =============================================================================

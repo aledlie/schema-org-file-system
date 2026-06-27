@@ -38,7 +38,7 @@ class RenamedFileAnalyzer:
 
         if self.vision_available:
             try:
-                self.classifier = CLIPClassifier()
+                self.classifier = CLIPClassifier.get_instance()
             except Exception as e:
                 print(f"Warning: Could not load CLIP model: {e}")
                 self.vision_available = False
