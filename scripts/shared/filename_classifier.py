@@ -1121,10 +1121,14 @@ def classify_by_filename_patterns(
             print("  ✓ Filename pattern: Game asset (underscore prefix)")
             return ("game_assets", "sprites", None, [])
         # Pattern: number_word (17_in.png, 17_out_1.png)
-        # Exclude date-prefixed screenshots (20260130_screenshot)
+        # Exclude date-prefixed names (20260130_screenshot, 20260529_backyard):
+        # an 8-digit YYYYMMDD prefix marks a timestamped photo/screenshot rename,
+        # not a numbered sprite. The camera/screenshot origin is lost once the file
+        # is renamed (PXL_*/Screenshot * -> YYYYMMDD_word), so guard on the date.
         if (
             not is_camera_photo
             and "screenshot" not in stem
+            and not re.match(r"^\d{8}_", stem)
             and re.match(r"^\d+_[a-z]+(_\d+)?$", stem)
         ):
             print("  ✓ Filename pattern: Game asset (numbered)")
