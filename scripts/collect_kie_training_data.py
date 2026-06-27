@@ -24,6 +24,7 @@ Usage::
     python scripts/collect_kie_training_data.py --source ~/Documents/Financial
     python scripts/collect_kie_training_data.py --source ~/Documents/Financial --limit 50
 """
+
 from __future__ import annotations
 
 import argparse
@@ -34,7 +35,7 @@ from pathlib import Path
 # Ensure scripts/shared is importable.
 sys.path.insert(0, str(Path(__file__).parent))
 
-from shared.ocr_classifier import OCR_AVAILABLE, _get_predictor
+from shared.ocr_classifier import OCR_AVAILABLE, _get_predictor  # noqa: E402
 
 try:
     from doctr.io import DocumentFile
@@ -56,13 +57,17 @@ def _extract_word_boxes(doc) -> list[dict]:
         for block in page.blocks:
             for line in block.lines:
                 for word in line.words:
-                    geometry = [list(pt) for pt in word.geometry] if hasattr(word, "geometry") else []
-                    words.append({
-                        "value": word.value,
-                        "confidence": round(word.confidence, 4),
-                        "geometry": geometry,
-                        "class": "",  # to be labeled manually
-                    })
+                    geometry = (
+                        [list(pt) for pt in word.geometry] if hasattr(word, "geometry") else []
+                    )
+                    words.append(
+                        {
+                            "value": word.value,
+                            "confidence": round(word.confidence, 4),
+                            "geometry": geometry,
+                            "class": "",  # to be labeled manually
+                        }
+                    )
     return words
 
 
@@ -78,9 +83,9 @@ def collect(source: Path, output_dir: Path, limit: int) -> int:
     output_dir.mkdir(parents=True, exist_ok=True)
 
     files = sorted(
-        f for f in source.rglob("*")
-        if f.suffix.lower() in _IMAGE_EXTENSIONS | {_PDF_EXTENSION}
-        and not f.name.startswith(".")
+        f
+        for f in source.rglob("*")
+        if f.suffix.lower() in _IMAGE_EXTENSIONS | {_PDF_EXTENSION} and not f.name.startswith(".")
     )
 
     if limit:
@@ -123,14 +128,24 @@ def collect(source: Path, output_dir: Path, limit: int) -> int:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Collect KIE training data from organized documents.")
-    parser.add_argument("--source", type=Path, default=Path.home() / "Documents" / "Financial",
-                        help="Root folder to scan for documents (default: ~/Documents/Financial)")
-    parser.add_argument("--output-dir", type=Path,
-                        default=Path(__file__).resolve().parent.parent / "data" / "kie_annotations",
-                        help="Output directory for annotation JSON files")
-    parser.add_argument("--limit", type=int, default=0,
-                        help="Max number of files to process (0 = unlimited)")
+    parser = argparse.ArgumentParser(
+        description="Collect KIE training data from organized documents."
+    )
+    parser.add_argument(
+        "--source",
+        type=Path,
+        default=Path.home() / "Documents" / "Financial",
+        help="Root folder to scan for documents (default: ~/Documents/Financial)",
+    )
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=Path(__file__).resolve().parent.parent / "data" / "kie_annotations",
+        help="Output directory for annotation JSON files",
+    )
+    parser.add_argument(
+        "--limit", type=int, default=0, help="Max number of files to process (0 = unlimited)"
+    )
     args = parser.parse_args()
 
     if not args.source.exists():

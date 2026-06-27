@@ -3,20 +3,19 @@
 Analyze renamed image files to generate descriptions using OCR and CLIP.
 Identifies files that match the renaming pattern and provides content descriptions.
 """
+
 from __future__ import annotations
 
 import csv
 import json
-import os
 import re
-import sys
 from collections import defaultdict
-from datetime import datetime
 from pathlib import Path
+from typing import Dict
 
-from shared.clip_utils import CLIPClassifier, CLIP_AVAILABLE
-from shared.ocr_classifier import extract_ocr_text, is_ocr_available
+from shared.clip_utils import CLIP_AVAILABLE, CLIPClassifier
 from shared.constants import CLIP_CATEGORY_PROMPTS, IMAGE_EXTENSIONS
+from shared.ocr_classifier import extract_ocr_text, is_ocr_available
 
 
 class RenamedFileAnalyzer:
@@ -25,9 +24,9 @@ class RenamedFileAnalyzer:
     # Pattern for files renamed by image_renamer_metadata.py
     # Format: YYYYMMDD_HHMMSS[_N].ext or YYYYMMDD_Location_HHMMSS[_N].ext
     RENAMED_PATTERNS = [
-        r'^\d{8}_\d{6}(_\d+)?\.(jpg|jpeg|png|webp|gif|bmp|heic)$',  # 20190129_100453.png
-        r'^\d{8}_[A-Za-z_]+_\d{6}(_\d+)?\.(jpg|jpeg|png|webp|gif|bmp|heic)$',  # 20190129_NewYork_100453.png
-        r'^Screenshot_.*\.(jpg|jpeg|png|webp|gif|bmp|heic)$',  # Screenshot_*.png
+        r"^\d{8}_\d{6}(_\d+)?\.(jpg|jpeg|png|webp|gif|bmp|heic)$",  # 20190129_100453.png
+        r"^\d{8}_[A-Za-z_]+_\d{6}(_\d+)?\.(jpg|jpeg|png|webp|gif|bmp|heic)$",  # 20190129_NewYork_100453.png  # noqa: E501
+        r"^Screenshot_.*\.(jpg|jpeg|png|webp|gif|bmp|heic)$",  # Screenshot_*.png
     ]
 
     def __init__(self):
@@ -62,7 +61,9 @@ class RenamedFileAnalyzer:
             # Clean up category names for display
             results = {}
             for prompt, confidence in raw_results:
-                clean_name = prompt.replace("a photo of ", "").replace("a screenshot of ", "screenshot: ")
+                clean_name = prompt.replace("a photo of ", "").replace(
+                    "a screenshot of ", "screenshot: "
+                )
                 results[clean_name] = confidence
 
             return results
@@ -70,7 +71,9 @@ class RenamedFileAnalyzer:
         except Exception:
             return None
 
-    def get_top_classifications(self, classifications: dict[str, float], top_n: int = 3, threshold: float = 0.1) -> list[tuple[str, float]]:
+    def get_top_classifications(
+        self, classifications: dict[str, float], top_n: int = 3, threshold: float = 0.1
+    ) -> list[tuple[str, float]]:
         """Get top classifications above threshold."""
         if not classifications:
             return []
@@ -81,14 +84,14 @@ class RenamedFileAnalyzer:
     def analyze_file(self, file_path: Path) -> Dict:
         """Analyze a single file and return description."""
         result = {
-            'path': str(file_path),
-            'filename': file_path.name,
-            'size_kb': round(file_path.stat().st_size / 1024, 1),
-            'ocr_text': None,
-            'content_type': None,
-            'confidence': None,
-            'all_classifications': None,
-            'description': None
+            "path": str(file_path),
+            "filename": file_path.name,
+            "size_kb": round(file_path.stat().st_size / 1024, 1),
+            "ocr_text": None,
+            "content_type": None,
+            "confidence": None,
+            "all_classifications": None,
+            "description": None,
         }
 
         # Run CLIP classification
@@ -96,28 +99,36 @@ class RenamedFileAnalyzer:
         if classifications:
             top_classes = self.get_top_classifications(classifications)
             if top_classes:
-                result['content_type'] = top_classes[0][0]
-                result['confidence'] = round(top_classes[0][1], 3)
-                result['all_classifications'] = [(k, round(v, 3)) for k, v in top_classes]
-                self.stats['clip_analyzed'] += 1
+                result["content_type"] = top_classes[0][0]
+                result["confidence"] = round(top_classes[0][1], 3)
+                result["all_classifications"] = [(k, round(v, 3)) for k, v in top_classes]
+                self.stats["clip_analyzed"] += 1
 
         # Run OCR for text detection
         ocr_text = extract_ocr_text(file_path)
         if ocr_text:
-            result['ocr_text'] = ocr_text
-            self.stats['ocr_text_found'] += 1
+            result["ocr_text"] = ocr_text
+            self.stats["ocr_text_found"] += 1
 
         # Generate description
         description_parts = []
 
-        if result['content_type']:
-            description_parts.append(f"Content: {result['content_type']} ({result['confidence']:.0%} confident)")
+        if result["content_type"]:
+            description_parts.append(
+                f"Content: {result['content_type']} ({result['confidence']:.0%} confident)"
+            )
 
-        if result['ocr_text']:
-            preview = result['ocr_text'][:100] + "..." if len(result['ocr_text']) > 100 else result['ocr_text']
-            description_parts.append(f"Text detected: \"{preview}\"")
+        if result["ocr_text"]:
+            preview = (
+                result["ocr_text"][:100] + "..."
+                if len(result["ocr_text"]) > 100
+                else result["ocr_text"]
+            )
+            description_parts.append(f'Text detected: "{preview}"')
 
-        result['description'] = " | ".join(description_parts) if description_parts else "No description available"
+        result["description"] = (
+            " | ".join(description_parts) if description_parts else "No description available"
+        )
 
         return result
 
@@ -131,13 +142,13 @@ class RenamedFileAnalyzer:
         if recursive:
             all_files = []
             for ext in image_extensions:
-                all_files.extend(source_path.rglob(f'*{ext}'))
-                all_files.extend(source_path.rglob(f'*{ext.upper()}'))
+                all_files.extend(source_path.rglob(f"*{ext}"))
+                all_files.extend(source_path.rglob(f"*{ext.upper()}"))
         else:
             all_files = []
             for ext in image_extensions:
-                all_files.extend(source_path.glob(f'*{ext}'))
-                all_files.extend(source_path.glob(f'*{ext.upper()}'))
+                all_files.extend(source_path.glob(f"*{ext}"))
+                all_files.extend(source_path.glob(f"*{ext.upper()}"))
 
         for f in all_files:
             if self.is_renamed_file(f.name):
@@ -145,7 +156,9 @@ class RenamedFileAnalyzer:
 
         return renamed_files
 
-    def analyze_directory(self, source_dir: str, limit: int = None, output_file: str = None) -> Dict:
+    def analyze_directory(
+        self, source_dir: str, limit: int = None, output_file: str = None
+    ) -> Dict:
         """Analyze all renamed files in directory."""
         print(f"\n{'='*60}")
         print("Renamed File Content Analyzer")
@@ -170,47 +183,62 @@ class RenamedFileAnalyzer:
             try:
                 result = self.analyze_file(file_path)
                 results.append(result)
-                self.stats['analyzed'] += 1
+                self.stats["analyzed"] += 1
 
                 # Print progress for each file
-                if result['content_type']:
-                    print(f"  {file_path.name}: {result['content_type']} ({result['confidence']:.0%})")
+                if result["content_type"]:
+                    print(
+                        f"  {file_path.name}: {result['content_type']} ({result['confidence']:.0%})"
+                    )
 
             except Exception as e:
                 print(f"  Error analyzing {file_path.name}: {e}")
-                self.stats['errors'] += 1
+                self.stats["errors"] += 1
 
         # Generate summary
         summary = {
-            'total_found': len(renamed_files),
-            'analyzed': self.stats['analyzed'],
-            'clip_analyzed': self.stats['clip_analyzed'],
-            'ocr_text_found': self.stats['ocr_text_found'],
-            'errors': self.stats['errors'],
-            'results': results
+            "total_found": len(renamed_files),
+            "analyzed": self.stats["analyzed"],
+            "clip_analyzed": self.stats["clip_analyzed"],
+            "ocr_text_found": self.stats["ocr_text_found"],
+            "errors": self.stats["errors"],
+            "results": results,
         }
 
         # Save results
         if output_file:
             output_path = Path(output_file)
 
-            if output_path.suffix == '.json':
-                with open(output_path, 'w') as f:
+            if output_path.suffix == ".json":
+                with open(output_path, "w") as f:
                     json.dump(summary, f, indent=2)
-            elif output_path.suffix == '.csv':
-                with open(output_path, 'w', newline='') as f:
-                    writer = csv.DictWriter(f, fieldnames=['filename', 'path', 'size_kb', 'content_type', 'confidence', 'ocr_text', 'description'])
+            elif output_path.suffix == ".csv":
+                with open(output_path, "w", newline="") as f:
+                    writer = csv.DictWriter(
+                        f,
+                        fieldnames=[
+                            "filename",
+                            "path",
+                            "size_kb",
+                            "content_type",
+                            "confidence",
+                            "ocr_text",
+                            "description",
+                        ],
+                    )
                     writer.writeheader()
                     for r in results:
-                        writer.writerow({
-                            'filename': r['filename'],
-                            'path': r['path'],
-                            'size_kb': r['size_kb'],
-                            'content_type': r['content_type'],
-                            'confidence': r['confidence'],
-                            'ocr_text': r['ocr_text'],
-                            'description': r['description']
-                        })
+                        writer.writerow(
+                            {
+                                "filename": r["filename"],
+                                "path": r["path"],
+                                "size_kb": r["size_kb"],
+                                "content_type": r["content_type"],
+                                "confidence": r["confidence"],
+                                "ocr_text": r["ocr_text"],
+                                "description": r["description"],
+                            }
+                        )
 
             print(f"\nResults saved to: {output_path}")
 
@@ -229,15 +257,17 @@ class RenamedFileAnalyzer:
         print(f"Errors: {summary['errors']}")
 
         # Content type breakdown
-        if summary['results']:
+        if summary["results"]:
             content_types = defaultdict(int)
-            for r in summary['results']:
-                if r['content_type']:
-                    content_types[r['content_type']] += 1
+            for r in summary["results"]:
+                if r["content_type"]:
+                    content_types[r["content_type"]] += 1
 
             if content_types:
-                print(f"\nContent Type Breakdown:")
-                for ctype, count in sorted(content_types.items(), key=lambda x: x[1], reverse=True)[:10]:
+                print("\nContent Type Breakdown:")
+                for ctype, count in sorted(content_types.items(), key=lambda x: x[1], reverse=True)[
+                    :10
+                ]:
                     print(f"  {ctype}: {count}")
 
 
@@ -245,23 +275,15 @@ def main():
     """Main entry point."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description='Analyze renamed image files using OCR and CLIP'
-    )
+    parser = argparse.ArgumentParser(description="Analyze renamed image files using OCR and CLIP")
     parser.add_argument(
-        '--source',
-        default='~/Documents',
-        help='Source directory to scan (default: ~/Documents)'
+        "--source", default="~/Documents", help="Source directory to scan (default: ~/Documents)"
     )
+    parser.add_argument("--limit", type=int, help="Limit number of files to analyze")
     parser.add_argument(
-        '--limit',
-        type=int,
-        help='Limit number of files to analyze'
-    )
-    parser.add_argument(
-        '--output',
-        default=str(Path(__file__).parent.parent / 'results' / 'renamed_files_analysis.json'),
-        help='Output file (JSON or CSV)'
+        "--output",
+        default=str(Path(__file__).parent.parent / "results" / "renamed_files_analysis.json"),
+        help="Output file (JSON or CSV)",
     )
 
     args = parser.parse_args()
@@ -271,14 +293,12 @@ def main():
 
     # Analyze files
     summary = analyzer.analyze_directory(
-        source_dir=args.source,
-        limit=args.limit,
-        output_file=args.output
+        source_dir=args.source, limit=args.limit, output_file=args.output
     )
 
     # Print summary
     analyzer.print_summary(summary)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -10,6 +10,7 @@ Profiles:
   screenshot  — game-asset and software-UI vocabulary with folder routing.
                 Default mode: folder.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -20,16 +21,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from shared.clip_utils import CLIP_AVAILABLE
 from shared.clip_classification import (
     classify_with_ocr_fallback,
-    generate_filename as generate_clip_filename,
 )
+from shared.clip_classification import generate_filename as generate_clip_filename
 from shared.constants import (
-    IMAGE_EXTENSIONS_WIDE,
     CLIP_OCR_FALLBACK_THRESHOLD,
-    CLIP_REFINEMENT_MIN_CONFIDENCE,
     CLIP_REFINEMENT_ACCEPT_CONFIDENCE,
+    CLIP_REFINEMENT_MIN_CONFIDENCE,
+    IMAGE_EXTENSIONS_WIDE,
 )
 from shared.file_ops import resolve_collision
 from shared.file_organizer import FileOrganizer
@@ -37,15 +37,17 @@ from shared.filename_utils import is_generic_filename
 from shared.ocr_classifier import extract_ocr_text
 from shared.status import ProcessingStatus, create_result_dict
 
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
-from src.analyzers.image_metadata import ImageMetadataParser
-from src.classifiers.content_classifier import ContentClassifier
+sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+from src.analyzers.image_metadata import ImageMetadataParser  # noqa: E402
+from src.classifiers.content_classifier import ContentClassifier  # noqa: E402
 
 try:
     from error_tracking import init_sentry
+
     ERROR_TRACKING_AVAILABLE = True
 except ImportError:
     ERROR_TRACKING_AVAILABLE = False
+
     def init_sentry(*_args, **_kwargs):
         return False
 
@@ -53,15 +55,16 @@ except ImportError:
 # Backwards-compat alias
 RenameStatus = ProcessingStatus
 
-DEFAULT_IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg', '.webp', '.gif'}
+DEFAULT_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
 
 
 @dataclass
 class RenamerProfile:
     """Vocabulary and routing config for a renamer flavor."""
+
     name: str
     categories: List[str]
-    default_mode: str = 'in-place'
+    default_mode: str = "in-place"
     refinement_terms: Dict[str, List[str]] = field(default_factory=dict)
     category_folders: Dict[str, str] = field(default_factory=dict)
     short_names: Dict[str, str] = field(default_factory=dict)
@@ -71,46 +74,128 @@ class RenamerProfile:
 
 
 PHOTO_PROFILE = RenamerProfile(
-    name='photo',
-    default_mode='in-place',
+    name="photo",
+    default_mode="in-place",
     skip_descriptive_names=True,
     verbose=True,
     categories=[
         # Furniture & Home
-        "sofa", "couch", "sectional", "chair", "table", "desk", "bed", "lamp",
-        "bookshelf", "cabinet", "dresser", "nightstand", "ottoman", "bench",
+        "sofa",
+        "couch",
+        "sectional",
+        "chair",
+        "table",
+        "desk",
+        "bed",
+        "lamp",
+        "bookshelf",
+        "cabinet",
+        "dresser",
+        "nightstand",
+        "ottoman",
+        "bench",
         # Rooms
-        "living room", "bedroom", "kitchen", "bathroom", "office", "patio", "porch",
-        "dining room", "garage", "backyard", "garden",
+        "living room",
+        "bedroom",
+        "kitchen",
+        "bathroom",
+        "office",
+        "patio",
+        "porch",
+        "dining room",
+        "garage",
+        "backyard",
+        "garden",
         # People & Portraits
-        "portrait", "selfie", "group photo", "family photo", "headshot",
+        "portrait",
+        "selfie",
+        "group photo",
+        "family photo",
+        "headshot",
         # Pets
-        "dog", "cat", "pet", "puppy", "kitten",
+        "dog",
+        "cat",
+        "pet",
+        "puppy",
+        "kitten",
         # Food & Drinks
-        "food", "meal", "restaurant", "coffee", "dessert", "cooking",
+        "food",
+        "meal",
+        "restaurant",
+        "coffee",
+        "dessert",
+        "cooking",
         # Nature & Outdoors
-        "landscape", "mountain", "beach", "ocean", "forest", "sunset", "sunrise",
-        "flowers", "trees", "park", "lake", "river", "sky",
+        "landscape",
+        "mountain",
+        "beach",
+        "ocean",
+        "forest",
+        "sunset",
+        "sunrise",
+        "flowers",
+        "trees",
+        "park",
+        "lake",
+        "river",
+        "sky",
         # Travel & Architecture
-        "building", "architecture", "city", "street", "landmark", "monument",
-        "hotel", "airport", "bridge",
+        "building",
+        "architecture",
+        "city",
+        "street",
+        "landmark",
+        "monument",
+        "hotel",
+        "airport",
+        "bridge",
         # Events
-        "party", "wedding", "birthday", "concert", "celebration", "graduation",
+        "party",
+        "wedding",
+        "birthday",
+        "concert",
+        "celebration",
+        "graduation",
         # Documents & Screenshots
-        "document", "screenshot", "receipt", "menu", "sign", "text",
+        "document",
+        "screenshot",
+        "receipt",
+        "menu",
+        "sign",
+        "text",
         # Vehicles
-        "car", "motorcycle", "bicycle", "airplane", "boat",
+        "car",
+        "motorcycle",
+        "bicycle",
+        "airplane",
+        "boat",
         # Art & Creative
-        "art", "painting", "drawing", "illustration", "craft",
+        "art",
+        "painting",
+        "drawing",
+        "illustration",
+        "craft",
         # Technology
-        "computer", "phone", "electronics", "gadget",
+        "computer",
+        "phone",
+        "electronics",
+        "gadget",
         # Sports & Activities
-        "sports", "fitness", "hiking", "swimming", "yoga",
+        "sports",
+        "fitness",
+        "hiking",
+        "swimming",
+        "yoga",
     ],
     refinement_terms={
         "sofa": ["leather sofa", "fabric sofa", "sectional sofa", "outdoor sofa", "modern sofa"],
         "living room": ["cozy living room", "modern living room", "minimalist living room"],
-        "landscape": ["mountain landscape", "coastal landscape", "rural landscape", "urban landscape"],
+        "landscape": [
+            "mountain landscape",
+            "coastal landscape",
+            "rural landscape",
+            "urban landscape",
+        ],
         "food": ["breakfast", "lunch", "dinner", "snack", "appetizer"],
         "dog": ["golden retriever", "labrador", "german shepherd", "poodle", "bulldog"],
         "cat": ["tabby cat", "black cat", "white cat", "orange cat", "calico cat"],
@@ -119,8 +204,8 @@ PHOTO_PROFILE = RenamerProfile(
 
 
 SCREENSHOT_PROFILE = RenamerProfile(
-    name='screenshot',
-    default_mode='folder',
+    name="screenshot",
+    default_mode="folder",
     skip_descriptive_names=False,
     verbose=False,
     image_extensions=set(DEFAULT_IMAGE_EXTENSIONS),
@@ -224,18 +309,28 @@ SCREENSHOT_PROFILE = RenamerProfile(
             "a knight with a shield",
         ],
         "a dragon or monster sprite": [
-            "a red dragon", "a green dragon", "a blue dragon",
+            "a red dragon",
+            "a green dragon",
+            "a blue dragon",
             "a fire-breathing dragon",
         ],
         "a game UI button or icon": [
-            "a rounded button", "a square button",
-            "a circular icon", "a highlighted button",
+            "a rounded button",
+            "a square button",
+            "a circular icon",
+            "a highlighted button",
         ],
         "a weapon sprite (sword, bow, staff)": [
-            "a sword sprite", "a bow sprite", "a staff sprite", "a magic wand",
+            "a sword sprite",
+            "a bow sprite",
+            "a staff sprite",
+            "a magic wand",
         ],
         "a potion or magical item": [
-            "a red potion", "a blue potion", "a green potion", "a health potion",
+            "a red potion",
+            "a blue potion",
+            "a green potion",
+            "a health potion",
         ],
     },
     short_names={
@@ -280,8 +375,8 @@ SCREENSHOT_PROFILE = RenamerProfile(
 
 
 PROFILES = {
-    'photo': PHOTO_PROFILE,
-    'screenshot': SCREENSHOT_PROFILE,
+    "photo": PHOTO_PROFILE,
+    "screenshot": SCREENSHOT_PROFILE,
 }
 
 
@@ -294,21 +389,21 @@ class ImageAnalyzer:
         self._metadata_parser = ImageMetadataParser()
 
     def _detect_number(self, image_path: Path) -> Optional[str]:
-        text = extract_ocr_text(image_path, config='--psm 10 --oem 3') or ""
+        text = extract_ocr_text(image_path, config="--psm 10 --oem 3") or ""
         if text and text.isdigit():
             return text
-        match = re.match(r'^(\d+)_', image_path.stem)
+        match = re.match(r"^(\d+)_", image_path.stem)
         return match.group(1) if match else None
 
     def analyze_image(self, image_path: Path) -> dict:
         result = create_result_dict(image_path.name)
-        result['folder'] = 'Uncategorized'
-        result['detected_text'] = None
-        result['top_scores'] = {}
+        result["folder"] = "Uncategorized"
+        result["detected_text"] = None
+        result["top_scores"] = {}
 
         if self.profile.skip_descriptive_names and not is_generic_filename(image_path.name):
-            result['status'] = ProcessingStatus.SKIPPED
-            result['error'] = 'Already has descriptive name'
+            result["status"] = ProcessingStatus.SKIPPED
+            result["error"] = "Already has descriptive name"
             return result
 
         clip_result = classify_with_ocr_fallback(
@@ -323,29 +418,31 @@ class ImageAnalyzer:
         )
 
         if not clip_result:
-            result['status'] = ProcessingStatus.NO_CONTENT
-            result['error'] = 'Could not analyze content'
+            result["status"] = ProcessingStatus.NO_CONTENT
+            result["error"] = "Could not analyze content"
             return result
 
         category, confidence, all_scores = clip_result
-        result['category'] = category
-        result['confidence'] = confidence
-        result['all_scores'] = all_scores
-        result['top_scores'] = dict(sorted(all_scores.items(), key=lambda x: x[1], reverse=True)[:5])
-        result['status'] = ProcessingStatus.PENDING
+        result["category"] = category
+        result["confidence"] = confidence
+        result["all_scores"] = all_scores
+        result["top_scores"] = dict(
+            sorted(all_scores.items(), key=lambda x: x[1], reverse=True)[:5]
+        )
+        result["status"] = ProcessingStatus.PENDING
 
         if self.profile.category_folders:
-            result['folder'] = self.profile.category_folders.get(category, 'Uncategorized')
+            result["folder"] = self.profile.category_folders.get(category, "Uncategorized")
 
         content_label = category
-        if self.profile.name == 'screenshot':
+        if self.profile.name == "screenshot":
             detected_num = self._detect_number(image_path)
             if detected_num:
-                result['detected_text'] = detected_num
+                result["detected_text"] = detected_num
                 if category == "a number or digit icon":
                     content_label = f"{category}_{detected_num}"
 
-        result['new_name'] = generate_clip_filename(
+        result["new_name"] = generate_clip_filename(
             image_path, content_label, self._metadata_parser
         )
         return result
@@ -382,24 +479,24 @@ class ImageRenamer:
     def _find_images(self) -> List[Path]:
         files = []
         for ext in self.profile.image_extensions:
-            files.extend(self.source_dir.glob(f'*{ext}'))
-            files.extend(self.source_dir.glob(f'*{ext.upper()}'))
+            files.extend(self.source_dir.glob(f"*{ext}"))
+            files.extend(self.source_dir.glob(f"*{ext.upper()}"))
         files = [f for f in files if f.is_file()]
         if self.profile.skip_descriptive_names:
             files = [f for f in files if is_generic_filename(f.name)]
         return sorted(files)
 
     def organize(self, limit: Optional[int] = None):
-        if self.mode == 'folder' and self.profile.category_folders:
+        if self.mode == "folder" and self.profile.category_folders:
             original_analyze = self.analyzer.analyze_image
 
             def analyze_with_dest(image_path: Path) -> dict:
                 result = original_analyze(image_path)
-                if result.get('new_name'):
-                    dest_folder = self.output_dir / result.get('folder', 'Uncategorized')
-                    dest_path = resolve_collision(dest_folder / result['new_name'])
-                    result['dest_folder'] = str(dest_folder)
-                    result['dest_path'] = str(dest_path)
+                if result.get("new_name"):
+                    dest_folder = self.output_dir / result.get("folder", "Uncategorized")
+                    dest_path = resolve_collision(dest_folder / result["new_name"])
+                    result["dest_folder"] = str(dest_folder)
+                    result["dest_path"] = str(dest_path)
                 return result
 
             self.analyzer.analyze_image = analyze_with_dest
@@ -412,25 +509,38 @@ class ImageRenamer:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('source', nargs='?', default='~/Documents',
-                        help='Source directory (default: ~/Documents)')
-    parser.add_argument('--profile', choices=sorted(PROFILES),
-                        default='photo',
-                        help='Renamer profile (default: photo)')
-    parser.add_argument('--output', '-o', help='Output directory (folder mode)')
-    parser.add_argument('--limit', '-l', type=int, help='Limit number of files')
-    parser.add_argument('--dry-run', '-n', action='store_true', default=True,
-                        help='Simulate without renaming (default)')
-    parser.add_argument('--execute', '-x', action='store_true',
-                        help='Actually perform rename/move')
-    parser.add_argument('--mode', '-m', choices=['in-place', 'folder'],
-                        help='Organization mode (default: per-profile)')
-    parser.add_argument('--min-confidence', '-c', type=float, default=0.10,
-                        help='Minimum confidence threshold')
-    parser.add_argument('--sentry-dsn', help='Sentry DSN for error tracking')
+    parser.add_argument(
+        "source", nargs="?", default="~/Documents", help="Source directory (default: ~/Documents)"
+    )
+    parser.add_argument(
+        "--profile",
+        choices=sorted(PROFILES),
+        default="photo",
+        help="Renamer profile (default: photo)",
+    )
+    parser.add_argument("--output", "-o", help="Output directory (folder mode)")
+    parser.add_argument("--limit", "-l", type=int, help="Limit number of files")
+    parser.add_argument(
+        "--dry-run",
+        "-n",
+        action="store_true",
+        default=True,
+        help="Simulate without renaming (default)",
+    )
+    parser.add_argument("--execute", "-x", action="store_true", help="Actually perform rename/move")
+    parser.add_argument(
+        "--mode",
+        "-m",
+        choices=["in-place", "folder"],
+        help="Organization mode (default: per-profile)",
+    )
+    parser.add_argument(
+        "--min-confidence", "-c", type=float, default=0.10, help="Minimum confidence threshold"
+    )
+    parser.add_argument("--sentry-dsn", help="Sentry DSN for error tracking")
     args = parser.parse_args()
 
-    sentry_dsn = args.sentry_dsn or os.environ.get('FILE_SYSTEM_SENTRY_DSN')
+    sentry_dsn = args.sentry_dsn or os.environ.get("FILE_SYSTEM_SENTRY_DSN")
     if sentry_dsn and ERROR_TRACKING_AVAILABLE:
         init_sentry(sentry_dsn)
 
@@ -441,7 +551,7 @@ def main() -> None:
         sys.exit(1)
 
     output_dir = Path(args.output).expanduser() if args.output else source_dir
-    mode = args.mode or os.environ.get('FILE_ORGANIZE_MODE') or profile.default_mode
+    mode = args.mode or os.environ.get("FILE_ORGANIZE_MODE") or profile.default_mode
     dry_run = not args.execute
 
     renamer = ImageRenamer(
@@ -456,5 +566,5 @@ def main() -> None:
     renamer.save_results()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
