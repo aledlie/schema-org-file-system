@@ -1,5 +1,18 @@
 """Shared constants for file organization scripts."""
 
+# Suffixes browsers append to the asset folder created by "Save Page As".
+# A page saved as "foo.html" yields a sibling "foo_files/" (locale-dependent)
+# full of hashed-name JS/CSS/image cruft. Each asset is meaningless on its own,
+# so organizers skip the whole sidecar folder during scanning rather than
+# scatter it across categories. Compared against lowercased directory names.
+SIDECAR_DIR_SUFFIXES = (
+    "_files",       # en
+    "-dateien",     # de
+    "_archivos",    # es
+    "_fichiers",    # fr
+    "_bestanden",   # nl
+)
+
 # Image extensions -- used by 6+ scripts
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".heic", ".webp", ".gif", ".bmp"}
 IMAGE_EXTENSIONS_WIDE = IMAGE_EXTENSIONS | {".tiff", ".tif", ".svg", ".ico", ".raw"}
