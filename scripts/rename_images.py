@@ -410,35 +410,6 @@ class ImageRenamer:
         self.organizer.save_results(output_file)
 
 
-# Backwards-compatible shims for callers still importing the old class names.
-class ImageContentRenamer:
-    """Compat shim — prefer ImageRenamer(profile=PHOTO_PROFILE)."""
-
-    IMAGE_EXTENSIONS = IMAGE_EXTENSIONS_WIDE
-
-    def __init__(self, dry_run: bool = False, min_confidence: float = 0.30, mode: str = 'in-place'):
-        self.dry_run = dry_run
-        self.min_confidence = min_confidence
-        self.mode = mode
-        self._renamer: Optional[ImageRenamer] = None
-
-    def process_directory(self, source_dir: Path, recursive: bool = False):
-        if not CLIP_AVAILABLE:
-            print("Error: CLIP not available. Install torch and transformers.")
-            return
-        if recursive:
-            print("Warning: recursive mode not yet supported with FileOrganizer")
-            return
-        self._renamer = ImageRenamer(
-            profile=PHOTO_PROFILE,
-            source_dir=Path(source_dir),
-            dry_run=self.dry_run,
-            mode=self.mode,
-            min_confidence=self.min_confidence,
-        )
-        self._renamer.organize()
-
-
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('source', nargs='?', default='~/Documents',

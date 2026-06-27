@@ -2,7 +2,7 @@
 Shared filename utility functions.
 
 Provides a single source of truth for generic-filename detection patterns
-used across ImageContentRenamer and ImageRenamer.
+used across ImageAnalyzer and ImageRenamer.
 """
 from __future__ import annotations
 
