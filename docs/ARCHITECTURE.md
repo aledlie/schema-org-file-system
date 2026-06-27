@@ -48,7 +48,7 @@ schema-org-file-system/
 │   └── shared/                         # Shared utilities
 │       ├── clip_utils.py               #   251 LOC  CLIP model wrapper
 │       ├── clip_cache.py               # CLIP result cache
-│       ├── ocr_utils.py                # Tesseract OCR
+│       ├── ocr_classifier.py           # Tesseract OCR + OCR-driven classification
 │       ├── db_utils.py                 # DB helpers
 │       ├── file_ops.py                 # File operation helpers
 │       └── constants.py               # Shared constants
