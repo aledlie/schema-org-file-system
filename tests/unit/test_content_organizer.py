@@ -255,10 +255,19 @@ class TestClassifyByFilenamePatterns:
         assert result is not None
         assert result[0] == 'skip'
 
-    def test_screenshot_detected(self, organizer: ContentOrganizer) -> None:
-        result = organizer.classify_by_filename_patterns(Path("/photos/screenshot_2024.png"))
+    def test_software_screenshot_detected(self, organizer: ContentOrganizer) -> None:
+        # Structured software-screenshot pattern ("<kind>_<8 hex>") is classified
+        # at the filename stage.
+        result = organizer.classify_by_filename_patterns(Path("/photos/terminal_12ab34cd.png"))
         assert result is not None
         assert 'screenshot' in result[1]
+
+    def test_bare_screenshot_deferred(self, organizer: ContentOrganizer) -> None:
+        # A generic "screenshot_*" name is NOT matched here; screenshot routing
+        # for these happens later via OCR/SCREENSHOT_KEYWORDS, matching the
+        # production organizer's filename-pattern contract.
+        result = organizer.classify_by_filename_patterns(Path("/photos/screenshot_2024.png"))
+        assert result is None
 
     def test_resume_pdf_with_name(self, organizer: ContentOrganizer) -> None:
         result = organizer.classify_by_filename_patterns(
