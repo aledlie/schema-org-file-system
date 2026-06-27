@@ -25,8 +25,13 @@ Pass 5 (triage document): files in triage locations whose filename matches
 per the mapping below.
 
 Triage passes only overwrite labels currently in
-``_RELABEL_ELIGIBLE_CATEGORIES`` (``uncategorized``, ``media``) so that
-already-confident labels are preserved.
+``_RELABEL_ELIGIBLE_CATEGORIES`` (``uncategorized``) so that already-confident
+labels are preserved. ``media`` is intentionally excluded: the triage heuristics
+are not strong enough to safely overwrite an existing ``media`` label, and doing
+so was found to depress ``media`` precision/F1 on datasets with legitimate media
+(see docs/BACKLOG.md "Verify relabel_test_set.py does not regress true media").
+Files that are genuinely game assets but mislabeled ``media`` are still corrected
+by the location-grounded passes 1 (``parent_folder == 'Games'``) and 2.
 
 Usage::
 
@@ -93,7 +98,7 @@ _DOCUMENT_LABEL_MAP: dict[str, tuple[str, str]] = {
 
 _TRIAGE_PARENTS = frozenset({"Uncategorized", "Desktop", "Downloads"})
 _TRIAGE_PATH_FRAGMENTS = ("/Desktop/", "/Downloads/", "/Uncategorized/")
-_RELABEL_ELIGIBLE_CATEGORIES = frozenset({"uncategorized", "media"})
+_RELABEL_ELIGIBLE_CATEGORIES = frozenset({"uncategorized"})
 
 _TOKEN_RE = re.compile(r"[_\-]")
 _MAX_SHORT_TOKEN_LEN = 4
