@@ -51,7 +51,7 @@ Consider which approach aligns with project goals: broader coverage (option 1) o
 - The cited misclassification numbers were an **artifact of `scripts/evaluate_model.py`**, whose old logic mapped *every* image to `media/photos_other 0.6` and did not simulate production's conditional gating. Fixed under the "low-confidence → uncategorized rule in evaluator" item (commit `b5a9295`): the evaluator now gates `media` on photo evidence, lifting media precision 27.94% → 68.86%.
 - Evidence-gated check of the one residual spot (line 2430, `.jpg/.jpeg/.heic` → `media`): of 66 such files reaching it, 57 are ground-truth `media` and the 9 "non-media" are real photos **mislabeled** `game_assets` in the test set (healthcare stock photos, company OG images). Tightening line 2430 would push correctly-classified photos out of `media` and regress production. **No genuine over-assignment observed → no change made.**
 
-**Follow-up:** the 9 mislabeled `game_assets` jpgs are test-set label rot — belongs to the relabel/label-quality track, not a classifier fix.
+**Follow-up (resolved 2026-06-27):** the 8 misfiled `.jpg` photos labeled `game_assets` (healthcare/company/art images under `Media/Photos/Other`) were corrected to `media` in the relabel track — `relabel_test_set.py` gained pass 6 (non-`Games` JPEG/HEIC `game_assets` → `media`) and pass 2 no longer promotes photo-extension files. Eval accuracy held (93.28% → 93.26%); `media` support corrected 211 → 220. Commit `6fada91`.
 
 ### Migrate storage timestamps to timezone-aware datetimes
 
