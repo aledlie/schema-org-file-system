@@ -91,7 +91,7 @@ from base import PropertyType
 from enrichment import MetadataEnricher, cached_stat
 from validator import SchemaValidator
 from integration import SchemaRegistry
-from rename_images import ImageContentRenamer
+from rename_images import ImageAnalyzer, PHOTO_PROFILE, IMAGE_EXTENSIONS_WIDE
 
 # Graph storage imports
 try:
@@ -1359,7 +1359,7 @@ class ContentBasedFileOrganizer:
         self.validator = SchemaValidator()
         self.registry = SchemaRegistry()
         self.classifier = ContentClassifier()
-        self.image_renamer = ImageContentRenamer(dry_run=False)
+        self.rename_analyzer = ImageAnalyzer(PHOTO_PROFILE)
         self.image_analyzer = ImageContentAnalyzer(cost_calculator=self.cost_calculator)
         self.metadata_parser = ImageMetadataParser(cost_calculator=self.cost_calculator)
         self.stats = defaultdict(int)
@@ -3648,7 +3648,7 @@ class ContentBasedFileOrganizer:
         # Step 1: OCR-based sub-classification (dashboard, terminal, etc.)
         ocr_result = _shared_classify_by_ocr(
             file_path,
-            content_classifier=getattr(self.image_renamer.analyzer, 'content_classifier', None),
+            content_classifier=self.rename_analyzer.content_classifier,
         )
         if ocr_result:
             ocr_category, ocr_confidence, _ocr_scores, ocr_text = ocr_result
@@ -4124,10 +4124,10 @@ class ContentBasedFileOrganizer:
         if not is_generic_filename(file_path.name):
             return file_path
 
-        if file_path.suffix.lower() not in self.image_renamer.IMAGE_EXTENSIONS:
+        if file_path.suffix.lower() not in IMAGE_EXTENSIONS_WIDE:
             return file_path
 
-        result = self.image_renamer.analyzer.analyze_image(file_path)
+        result = self.rename_analyzer.analyze_image(file_path)
 
         new_name = result.get('new_name')
         if not new_name or result.get('status') != ProcessingStatus.PENDING:
