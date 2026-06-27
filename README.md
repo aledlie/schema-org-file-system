@@ -357,7 +357,7 @@ graph TB
 
     subgraph Scripts["Organizer Scripts"]
         foc[file_organizer_content_based.py]
-        icr[image_content_renamer.py]
+        icr[rename_images.py]
         ica[image_content_analyzer.py]
     end
 

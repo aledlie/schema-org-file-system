@@ -1,54 +1,61 @@
 # File Organizer Modes
 
-Both `image_content_renamer.py` and `screenshot_renamer.py` now use the `FileOrganizer` class with support for two organization modes.
+`scripts/rename_images.py` is the unified CLIP-based renamer. It selects a
+vocabulary via `--profile` and an organization style via `--mode`.
+
+## Profiles
+
+| Profile | Vocabulary | Default mode |
+|---------|-----------|--------------|
+| `photo` | General photo content (sofa, dog, food, landscape...) | `in-place` |
+| `screenshot` | Game-asset + software-UI categories with folder routing | `folder` |
 
 ## Modes
 
-### `in-place` mode
-Renames files in their original location without moving them to subdirectories.
+### `in-place`
+Renames files in their original location without moving them.
 
-- **Use case**: Simple filename cleanup while keeping files in original directories
-- **Default for**: `image_content_renamer.py`
-- **Behavior**: `IMAGE.jpg` → `landscape-sunset-2025-04-19.jpg` (same directory)
+- **Use case**: filename cleanup with no directory changes
+- **Behavior**: `IMG_1234.jpg` → `landscape-sunset-2025-04-19.jpg` (same directory)
 
-### `folder` mode
-Moves and renames files to subdirectories based on detected content category.
+### `folder`
+Moves and renames files into subdirectories based on detected category.
 
-- **Use case**: Organize files into category-based folder structure
-- **Default for**: `screenshot_renamer.py`
-- **Behavior**: `screenshot.png` → `Software/Dashboards/dashboard-2025-04-19.png`
+- **Use case**: organize files into category-based folder structure
+- **Behavior**: `Screenshot.png` → `Software/Dashboards/dashboard-2025-04-19.png`
 
 ## Configuration
 
-### Command-line argument
+### Command-line
 
 ```bash
-# image_content_renamer.py
-python scripts/image_content_renamer.py --source ~/Downloads --mode folder
+# Photo profile (default mode: in-place)
+python scripts/rename_images.py ~/Downloads --profile photo --execute
 
-# screenshot_renamer.py
-python scripts/screenshot_renamer.py ~/Documents/Screenshots --mode in-place -x
+# Screenshot profile (default mode: folder)
+python scripts/rename_images.py ~/Documents/Screenshots --profile screenshot --execute
+
+# Override mode explicitly
+python scripts/rename_images.py ~/Downloads --profile photo --mode folder --execute
 ```
 
 ### Environment variable
 
 ```bash
-# Set default mode globally
 export FILE_ORGANIZE_MODE=folder
-
-# Then scripts use it as fallback
-python scripts/image_content_renamer.py --source ~/Downloads
+python scripts/rename_images.py ~/Downloads --profile photo
 ```
 
-Priority: CLI argument > Environment variable > Script default
+Priority: `--mode` > `FILE_ORGANIZE_MODE` > profile default
 
-## Implementation Details
+## Implementation
 
-Both scripts now:
-1. Create an analyzer (ImageAnalyzer or ScreenshotAnalyzer)
-2. Pass it to FileOrganizer with the desired mode
-3. FileOrganizer handles the actual organization:
-   - **in-place mode**: Uses `Path.rename()` to rename in original location
-   - **folder mode**: Uses `shutil.copy2()` to move to subdirectories
+`rename_images.py` defines a `RenamerProfile` dataclass holding categories,
+folder mapping, refinement terms, and short names. `ImageAnalyzer` reads the
+profile and runs the shared `classify_with_ocr_fallback` pipeline; results are
+handed to `FileOrganizer`, which performs:
 
-The FileOrganizer class abstracts the organization logic, making it reusable for any image analysis task.
+- **`in-place`**: `Path.rename()` in the original directory
+- **`folder`**: `shutil.copy2()` into the resolved category subdirectory
+
+To add a new flavor, define a `RenamerProfile` and register it in `PROFILES`.

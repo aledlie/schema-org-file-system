@@ -72,8 +72,7 @@ mypy src/ scripts/            # type check
 │   │   ├── file_organizer.py            # FileOrganizer (mode=in-place|folder, drives both renamers)
 │   │   └── ...                          # file_ops, filename_utils, constants, status, confidence_gate
 │   ├── file_organizer_content_based.py  # Main AI organizer
-│   ├── image_content_renamer.py         # CLIP-based image renaming via FileOrganizer (mode=in-place default)
-│   ├── screenshot_renamer.py            # CLIP screenshot renamer via FileOrganizer (mode=folder default)
+│   ├── rename_images.py                 # Unified CLIP renamer; --profile {photo,screenshot} selects vocab/mode
 │   ├── image_content_analyzer.py        # Image content analysis
 │   └── relabel_test_set.py              # Re-label evaluation test set against current classifier
 ├── tests/
@@ -163,7 +162,7 @@ Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 | Large images silently skipped | Pillow rejects images >178M pixels (decompression-bomb guard); affects oversized PNGs like maps/renders |
 | CLIP embedding cache | Lives at `.cache/clip_embeddings_v2/` (fp32 `.npy` per image); safe to `rm -rf` to reset |
 | `scripts/shared/` import path | Scripts must run from project root so `from shared.x import y` resolves; `organize-files` CLI handles this automatically |
-| FileOrganizer modes | Both `image_content_renamer.py` and `screenshot_renamer.py` support `--mode in-place\|folder` and `FILE_ORGANIZE_MODE` env var; defaults differ by script |
+| FileOrganizer modes | `rename_images.py` takes `--profile {photo,screenshot}`; mode default comes from the profile (`photo`=in-place, `screenshot`=folder) but can be overridden with `--mode` or `FILE_ORGANIZE_MODE` |
 | Unified CLIP+OCR API | `classify_with_ocr_fallback()` in `scripts/shared/clip_classification.py` is the shared entry point; returns `CLIPResult(category, confidence, all_scores)`; both renamer tools call it |
 | Screenshot OCR keyword threshold | `_SCREENSHOT_OCR_KEYWORD_THRESHOLD = 0.10` in `scripts/shared/clip_utils.py`; was previously 0.30 which silently rejected valid scores — do not raise without verifying eval impact |
 | Oversized image guard | `CLIPClassifier` encode paths catch Pillow's `DecompressionBombError` and thumbnail down to `_CLIP_INPUT_SIZE` instead of skipping; large maps/renders now classify rather than silently drop |

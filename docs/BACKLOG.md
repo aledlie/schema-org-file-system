@@ -187,3 +187,101 @@ Consider which approach aligns with project goals: broader coverage (option 1) o
 **Affected:**
 - `scripts/data_preprocessing.py` (class rebalancing, if choosing option 1)
 - `scripts/evaluate_model.py` (metric filtering, if choosing option 2)
+
+### Verify relabel_test_set.py does not regress true `media` labels
+
+**Status:** Open
+**Priority:** P2 (potential silent regression in evaluation accuracy)
+**Source:** relabel-extension session, 2026-05-16
+**Context:** `scripts/relabel_test_set.py` was extended (passes 3–5) to relabel files in triage locations (`Uncategorized`, `Desktop`, `Downloads`). `_RELABEL_ELIGIBLE_CATEGORIES` now includes `'media'`, which means a sample currently labeled `media` can be overwritten to `game_assets`, `media/screenshot`, `financial`, `legal`, or `personal`. On the December dataset (`results/ml_data_dec/`) where many `media` labels are legitimate, this could degrade media-class recall.
+
+**Proposed fix:**
+1. Re-run `organize-files evaluate --test-data results/ml_data_dec/test_relabeled.json` with the extended script and diff against the pre-extension baseline (90.74% category accuracy, F1 42.9% for `media`).
+2. If `media` recall drops materially, narrow `_RELABEL_ELIGIBLE_CATEGORIES` to `{'uncategorized'}` only, or require an additional triage-location signal before overwriting a `media` label.
+
+**Affected:**
+- `scripts/relabel_test_set.py:97` (`_RELABEL_ELIGIBLE_CATEGORIES` definition)
+- `scripts/relabel_test_set.py:130-148` (triage pass guard logic)
+
+### `media` category acts as a catch-all in classifier output
+
+**Status:** Open (hypothesis — needs confirmation)
+**Priority:** P2 (drives most evaluation false positives)
+**Source:** model-evaluation session, 2026-05-16
+**Context:** On the December test set, the classifier routes `uncategorized → media` (265), `game_assets → media` (213), and `property_management → media` (20). `media` precision is 27.94% while recall is 92.42% — a precision/recall imbalance consistent with `media` being used as a fallback when no other category scores high enough. This is a hypothesis derived from the misclassification table, not a verified code claim.
+
+**Proposed fix:**
+1. Audit the priority chain in `src/classifiers/` and `scripts/file_organizer_content_based.py` to confirm whether `media` is the terminal fallback for image/audio/video extensions.
+2. If confirmed, require positive evidence (CLIP score above threshold, EXIF camera tags, or screenshot/photo filename pattern) before assigning `media` — otherwise route to `uncategorized` so the classifier under-claims rather than over-claims.
+
+**Affected:**
+- `src/classifiers/content_classifier.py`
+- `scripts/file_organizer_content_based.py` (priority chain)
+- `scripts/shared/constants.py` (`CLIP_ENHANCE_THRESHOLD` / `CLIP_ENHANCE_HIGH_THRESHOLD` may need tuning)
+
+### Collapse private `ImageContentAnalyzer` into the shared CLIP+OCR pipeline
+
+**Status:** Open
+**Priority:** P1 (removes a parallel CLIP entry point; ~180 LOC)
+**Source:** simplification audit, 2026-06-26
+**Depends on:** none (pairs with "Compute CLIP embedding once per image" below)
+
+**Context:** `scripts/file_organizer_content_based.py:1145-1320` defines a private `ImageContentAnalyzer` with its own CLIP zero-shot path (`classify_image_content`), its own 11-prompt category list (`_CLASSIFY_CATEGORIES`, lines 1208-1220), its own per-file result cache (`_clip_result_cache`, lines 1159/1236), and OpenCV face detection (`detect_people`, `is_home_interior_no_people`, `has_people_in_photo`). This duplicates `scripts/shared/clip_classification.py:classify_with_ocr_fallback`, which already wraps the `CLIPClassifier` singleton (`scripts/shared/clip_utils.py`) and the embedding cache. Only three methods are consumed — by `detect_file_category` tier 5 (photo composition, ~lines 3632/3647) and the interior check. Net result: two parallel CLIP code paths, two category lists, two per-file caches.
+
+**Proposed fix:**
+1. Move the 11 interior/people prompts (`_CLASSIFY_CATEGORIES`) into a single home — either a `CLIP_INTERIOR_CATEGORIES` constant in `scripts/shared/constants.py` or an `INTERIOR_DETECTION_PROFILE` in `scripts/rename_images.py`. (Subsumes audit item "unify category sets via profile".)
+2. Replace `classify_image_content` calls with `classify_with_ocr_fallback` (or a thin `_clip_scores(path, categories)` helper over the singleton) so all CLIP scoring goes through one path.
+3. Keep face detection (`detect_people`) — it is OpenCV, not CLIP. Extract it to `scripts/shared/vision_utils.py` shared with the duplicate cascade loader in `src/analyzers/image_analyzer.py:82`.
+4. Drop `_clip_result_cache` (line 1159) and `_clip_enhance_cache` (line 3379); rely on the embedding cache (`.cache/clip_embeddings_v2/`) + singleton. (Subsumes audit item "consolidate per-file CLIP caches".)
+5. Delete `ImageContentAnalyzer` once callers are migrated.
+
+**Affected:**
+- `scripts/file_organizer_content_based.py:1145-1320` (class), `1208-1220` (`_CLASSIFY_CATEGORIES`), `1159`/`3379` (caches), tiers 5/9 callers
+- `scripts/shared/clip_classification.py` (`classify_with_ocr_fallback`)
+- `scripts/shared/constants.py` or `scripts/rename_images.py` (new interior-category home)
+- new `scripts/shared/vision_utils.py` (shared face-cascade loader)
+
+**Validation (GATED):** the people thresholds differ by method — `0.15` in `has_people_in_photo` vs `0.2` in `is_home_interior_no_people`. Preserve each exactly during the move; do NOT harmonize without a dedicated eval run. After refactor run `pytest tests/unit/` and `organize-files evaluate --test-data results/ml_data_dec/test_relabeled.json`; confirm category accuracy holds at the 90.74% baseline before merging.
+
+### Compute CLIP embedding once per image, reuse across rename + classification tiers
+
+**Status:** Open
+**Priority:** P1 (1–2 redundant model passes per image)
+**Source:** simplification audit, 2026-06-26
+**Depends on:** pairs with "Collapse private `ImageContentAnalyzer`" (shared cache)
+
+**Context:** Each image is CLIP-scored up to three times with different prompt sets, re-encoding the same pixels each time:
+1. Rename pre-step — `_maybe_rename_image` → `ImageAnalyzer.analyze_image` → `classify_with_ocr_fallback` (`scripts/rename_images.py:313`) with `profile.categories`.
+2. `detect_file_category` tiers 4.5/6 — `enhance_weak_image_classification` → `_run_clip_signal` (`scripts/file_organizer_content_based.py:~3315-3344`) with `CLIP_CATEGORY_PROMPTS`.
+3. Tier 5 — `ImageContentAnalyzer.classify_image_content` with `_CLASSIFY_CATEGORIES`.
+The image embedding is identical across all three (only the text prompts differ), but the rename-phase result is discarded rather than threaded forward.
+
+**Proposed fix:**
+1. Ensure every call site routes through the embedding-level cache (`scripts/shared/clip_cache.py:get_cached_embedding`, per-image fp32 `.npy`) so the image is encoded once and only text-prompt similarity is recomputed per prompt set.
+2. Alternatively compute the image embedding once in `organize_file` and pass it down to `detect_file_category` and the rename step, scoring all prompt sets against the cached embedding.
+3. Land after / alongside the cache consolidation from the `ImageContentAnalyzer` collapse so there is a single cache to populate.
+
+**Affected:**
+- `scripts/file_organizer_content_based.py` (`_maybe_rename_image` ~4036, `_run_clip_signal` ~3315, `enhance_weak_image_classification` ~3344, tier 5 ~3632)
+- `scripts/rename_images.py:302-350` (`ImageAnalyzer.analyze_image`)
+- `scripts/shared/clip_cache.py`, `scripts/shared/clip_utils.py` (`classify_raw`)
+
+**Validation (GATED):** scores and routing must be byte-identical. Run `pytest tests/unit/` and the December eval; additionally confirm `.cache/clip_embeddings_v2/` hit-rate rises and per-image CLIP call count drops (temporary counter or cost-tracker output).
+
+### Image-rename pre-step is dead — `ImageContentRenamer` shim missing `.analyzer` (regression)
+
+**Status:** Open — BUG
+**Priority:** P1 (silently disables content-based image renaming)
+**Source:** simplification audit, 2026-06-26
+**Context:** The in-flight `rename_images.py` consolidation left `ImageContentRenamer` (`scripts/rename_images.py:413-438`) as a compat shim that exposes `IMAGE_EXTENSIONS` and `process_directory` but **not** `.analyzer` — only the real `ImageRenamer` class has `self.analyzer` (line 371). `file_organizer_content_based.py` constructs the shim (`self.image_renamer = ImageContentRenamer(dry_run=False)`, line 1362) then accesses `self.image_renamer.analyzer.analyze_image(...)` (line 4052) and `...analyzer.content_classifier` (line 3596). Accessing `.analyzer` raises `AttributeError`, swallowed by the `try/except` in `organize_file` (~line 4101). Net effect: **every generic-named image (`IMG_*`, `Screenshot*`, …) skips the rename pre-step**, so filename-pattern classification never sees the descriptive name. Confirmed at runtime: `ImageContentRenamer(dry_run=False).analyzer` → `AttributeError: 'ImageContentRenamer' object has no attribute 'analyzer'`.
+
+**Proposed fix (audit item "remove `ImageContentRenamer` shim", now revealed as a bug fix):**
+1. In `file_organizer_content_based.py`: import `ImageAnalyzer, PHOTO_PROFILE, IMAGE_EXTENSIONS_WIDE` from `rename_images`; replace `self.image_renamer = ImageContentRenamer(dry_run=False)` (line 1362) with `self.image_analyzer = ImageAnalyzer(PHOTO_PROFILE)`.
+2. Update line 4049 `self.image_renamer.IMAGE_EXTENSIONS` → `IMAGE_EXTENSIONS_WIDE`; line 4052 → `self.image_analyzer.analyze_image(file_path)`; line 3596 → `self.image_analyzer.content_classifier`.
+3. Delete the `ImageContentRenamer` shim (only callers are `file_organizer` + a docstring mention in `filename_utils.py:5`).
+
+**Affected:**
+- `scripts/rename_images.py:413-438` (shim to delete)
+- `scripts/file_organizer_content_based.py:94, 1362, 3596, 4049, 4052`
+
+**Validation (GATED — re-activates a behavior-changing stage):** restoring renaming feeds the filename-pattern tiers and can shift classifications. After the fix run `pytest tests/unit/` and `organize-files content --dry-run --limit 200` on a sample to confirm renames fire and routing is sane; run the December eval before merging.
