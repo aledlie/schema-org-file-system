@@ -370,59 +370,54 @@ class FileOrganizer:
         # Select appropriate generator and set basic info based on type
         if schema_type in ['ImageObject', 'Photograph']:
             generator = ImageGenerator(schema_type, entity_id=file_entity_id)
-            generator.set_basic_info(
-                name=file_path.name,
-                content_url=file_url,
-                encoding_format=mime_type or 'image/png',
-                description=f"{schema_type}: {file_path.name}"
-            )
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
+            generator.set_property("contentUrl", file_url, PropertyType.URL)
+            generator.set_property("encodingFormat", mime_type or 'image/png', PropertyType.TEXT)
+            generator.set_property("description", f"{schema_type}: {file_path.name}", PropertyType.TEXT)
 
         elif schema_type == 'VideoObject':
             generator = VideoGenerator(entity_id=file_entity_id)
-            generator.set_basic_info(
-                name=file_path.name,
-                content_url=file_url,
-                upload_date=datetime.fromtimestamp(stats.st_ctime),
-                description=f"{schema_type}: {file_path.name}"
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
+            generator.set_property("contentUrl", file_url, PropertyType.URL)
+            generator.set_property(
+                "uploadDate",
+                datetime.fromtimestamp(stats.st_ctime),
+                PropertyType.DATETIME,
             )
+            generator.set_property("description", f"{schema_type}: {file_path.name}", PropertyType.TEXT)
 
         elif schema_type in ['AudioObject', 'MusicRecording']:
             generator = AudioGenerator(schema_type, entity_id=file_entity_id)
-            generator.set_basic_info(
-                name=file_path.name,
-                content_url=file_url,
-                description=f"{schema_type}: {file_path.name}"
-            )
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
+            generator.set_property("contentUrl", file_url, PropertyType.URL)
+            generator.set_property("description", f"{schema_type}: {file_path.name}", PropertyType.TEXT)
 
         elif schema_type == 'SoftwareSourceCode':
             generator = CodeGenerator(entity_id=file_entity_id)
-            # CodeGenerator uses different method signature
-            generator.set_basic_info(
-                name=file_path.name,
-                programming_language=self.detect_programming_language(file_path),
-                description=f"{schema_type}: {file_path.name}"
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
+            generator.set_property(
+                "programmingLanguage",
+                self.detect_programming_language(file_path),
+                PropertyType.TEXT,
             )
+            generator.set_property("description", f"{schema_type}: {file_path.name}", PropertyType.TEXT)
             generator.set_property("url", file_url, PropertyType.URL)
 
         elif schema_type == 'Dataset':
             generator = DatasetGenerator(entity_id=file_entity_id)
-            generator.set_basic_info(
-                name=file_path.name,
-                description=f"{schema_type}: {file_path.name}",
-                url=file_url
-            )
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
+            generator.set_property("description", f"{schema_type}: {file_path.name}", PropertyType.TEXT)
+            generator.set_property("url", file_url, PropertyType.URL)
 
         elif schema_type in ['DigitalDocument', 'Article', 'ScholarlyArticle']:
             generator = DocumentGenerator(schema_type, entity_id=file_entity_id)
-            generator.set_basic_info(
-                name=file_path.name,
-                description=f"{schema_type}: {file_path.name}"
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
+            generator.set_property("description", f"{schema_type}: {file_path.name}", PropertyType.TEXT)
+            generator.set_property(
+                "encodingFormat", mime_type or 'application/octet-stream', PropertyType.TEXT
             )
-            generator.set_file_info(
-                encoding_format=mime_type or 'application/octet-stream',
-                url=file_url,
-                content_size=stats.st_size
-            )
+            generator.set_property("url", file_url, PropertyType.URL)
+            generator.set_property("contentSize", f"{stats.st_size}B", PropertyType.TEXT)
 
         elif schema_type == 'Organization':
             # Extract organization name from filename (remove extension and clean up)
@@ -430,11 +425,11 @@ class FileOrganizer:
             # Generate canonical ID based on organization name (deterministic)
             org_entity_id = generate_canonical_iri('company', org_name)
             generator = OrganizationGenerator(entity_id=org_entity_id)
-            generator.set_basic_info(
-                name=org_name,
-                description=f"Organization file: {file_path.name}",
-                url=file_url
+            generator.set_property("name", org_name, PropertyType.TEXT)
+            generator.set_property(
+                "description", f"Organization file: {file_path.name}", PropertyType.TEXT
             )
+            generator.set_property("url", file_url, PropertyType.URL)
             # Try to parse vCard or extract additional info
             self._enrich_organization_from_file(generator, file_path)
 
@@ -444,22 +439,20 @@ class FileOrganizer:
             # Generate canonical ID based on person name (deterministic)
             person_entity_id = generate_canonical_iri('person', person_name)
             generator = PersonGenerator(entity_id=person_entity_id)
-            generator.set_name(name=person_name)
-            generator.set_url(file_url)
+            generator.set_property("name", person_name, PropertyType.TEXT)
+            generator.set_property("url", file_url, PropertyType.URL)
             # Try to parse vCard for additional info
             self._enrich_person_from_vcard(generator, file_path)
 
         else:
             generator = DocumentGenerator(entity_id=file_entity_id)
-            generator.set_basic_info(
-                name=file_path.name,
-                description=f"File: {file_path.name}"
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
+            generator.set_property("description", f"File: {file_path.name}", PropertyType.TEXT)
+            generator.set_property(
+                "encodingFormat", mime_type or 'application/octet-stream', PropertyType.TEXT
             )
-            generator.set_file_info(
-                encoding_format=mime_type or 'application/octet-stream',
-                url=file_url,
-                content_size=stats.st_size
-            )
+            generator.set_property("url", file_url, PropertyType.URL)
+            generator.set_property("contentSize", f"{stats.st_size}B", PropertyType.TEXT)
 
         # Set dates for all types
         try:
@@ -476,7 +469,8 @@ class FileOrganizer:
                 # Try to get image dimensions if PIL is available
                 from PIL import Image
                 with Image.open(file_path) as img:
-                    generator.set_dimensions(img.width, img.height)
+                    generator.set_property("width", img.width, PropertyType.INTEGER)
+                    generator.set_property("height", img.height, PropertyType.INTEGER)
                     # Try to get EXIF data
                     exif = img.getexif()
                     if exif:
@@ -567,41 +561,64 @@ class FileOrganizer:
         key = key_part.split(';')[0].upper()  # Remove parameters
 
         if key == 'FN':
-            generator.set_name(name=value)
+            generator.set_property("name", value, PropertyType.TEXT)
         elif key == 'N':
             # N:Last;First;Middle;Prefix;Suffix
             parts = value.split(';')
             if len(parts) >= 2:
-                generator.set_name(
-                    family_name=parts[0] if parts[0] else None,
-                    given_name=parts[1] if len(parts) > 1 and parts[1] else None,
-                    additional_name=parts[2] if len(parts) > 2 and parts[2] else None,
-                    honorific_prefix=parts[3] if len(parts) > 3 and parts[3] else None,
-                    honorific_suffix=parts[4] if len(parts) > 4 and parts[4] else None,
+                name_fields = (
+                    ("familyName", parts[0] if parts[0] else None),
+                    ("givenName", parts[1] if len(parts) > 1 and parts[1] else None),
+                    ("additionalName", parts[2] if len(parts) > 2 and parts[2] else None),
+                    ("honorificPrefix", parts[3] if len(parts) > 3 and parts[3] else None),
+                    ("honorificSuffix", parts[4] if len(parts) > 4 and parts[4] else None),
                 )
+                for prop, val in name_fields:
+                    if val:
+                        generator.set_property(prop, val, PropertyType.TEXT)
         elif key == 'EMAIL':
-            generator.set_contact_info(email=value)
+            generator.set_property("email", value, PropertyType.TEXT)
         elif key == 'TEL':
-            generator.set_contact_info(telephone=value)
+            generator.set_property("telephone", value, PropertyType.TEXT)
         elif key == 'ORG':
-            generator.set_job_info(works_for=value.split(';')[0])
+            generator.data["worksFor"] = {
+                "@type": "Organization",
+                "name": value.split(';')[0],
+            }
         elif key == 'TITLE':
-            generator.set_job_info(job_title=value)
+            generator.set_property("jobTitle", value, PropertyType.TEXT)
         elif key == 'URL':
-            generator.set_url(value)
+            generator.set_property("url", value, PropertyType.URL)
         elif key == 'BDAY':
-            generator.set_birth_info(birth_date=value)
+            generator.set_property("birthDate", value, PropertyType.DATE)
         elif key == 'ADR':
             # ADR:;;Street;City;Region;PostalCode;Country
             parts = value.split(';')
             if len(parts) >= 7:
-                generator.set_address(
-                    street=parts[2] if parts[2] else None,
-                    city=parts[3] if len(parts) > 3 and parts[3] else None,
-                    region=parts[4] if len(parts) > 4 and parts[4] else None,
-                    postal_code=parts[5] if len(parts) > 5 and parts[5] else None,
-                    country=parts[6] if len(parts) > 6 and parts[6] else None,
-                )
+                address = self._build_postal_address(parts)
+                if len(address) > 1:  # more than just @type
+                    generator.data["address"] = address
+
+    @staticmethod
+    def _build_postal_address(parts: List[str]) -> Dict:
+        """Build a Schema.org PostalAddress dict from vCard ADR fields.
+
+        Mirrors the field mapping and skip-empty behavior of the former
+        generator set_address() builder. ``parts`` is a vCard ADR value split
+        on ';' (index 2=street, 3=city, 4=region, 5=postal code, 6=country).
+        """
+        address = {"@type": "PostalAddress"}
+        field_map = (
+            ("streetAddress", 2),
+            ("addressLocality", 3),
+            ("addressRegion", 4),
+            ("postalCode", 5),
+            ("addressCountry", 6),
+        )
+        for prop, idx in field_map:
+            if idx < len(parts) and parts[idx]:
+                address[prop] = parts[idx]
+        return address
 
     def _enrich_organization_from_file(self, generator: 'OrganizationGenerator', file_path: Path) -> None:
         """
