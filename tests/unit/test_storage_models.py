@@ -272,7 +272,7 @@ class TestMergeEvent:
 
     def test_generate_jsonld(self):
         """Test JSON-LD generation."""
-        from datetime import datetime
+        from src.storage._time import utcnow
 
         merge = MergeEvent(
             id="test-merge-id",
@@ -284,7 +284,7 @@ class TestMergeEvent:
             merge_reason="Duplicate companies",
             confidence=0.95,
             performed_by="system",
-            performed_at=datetime.utcnow()
+            performed_at=utcnow()
         )
 
         jsonld = merge.generate_jsonld()

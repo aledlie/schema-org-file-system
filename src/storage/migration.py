@@ -9,6 +9,7 @@ and key-value store.
 import json
 import hashlib
 from datetime import datetime
+from ._time import utcnow
 from pathlib import Path
 from typing import Dict, List, Any, Optional
 from collections import defaultdict
@@ -168,7 +169,7 @@ class JSONMigrator:
         try:
             session_timestamp = datetime.strptime(timestamp_str, '%Y%m%d_%H%M%S')
         except ValueError:
-            session_timestamp = datetime.utcnow()
+            session_timestamp = utcnow()
 
         # Create organization session
         session = self.graph_store.get_session()
