@@ -29,6 +29,37 @@ try:
 except ImportError:
     pass
 
+# Image preprocessing (dark-background inversion + CLAHE) needs PIL + numpy;
+# CLAHE additionally needs OpenCV. Each is optional and degrades gracefully.
+_PREPROCESS_AVAILABLE = False
+try:
+    import numpy as np
+    from PIL import Image, ImageOps
+
+    _PREPROCESS_AVAILABLE = True
+except ImportError:
+    pass
+
+_CV2_AVAILABLE = False
+try:
+    import cv2
+
+    _CV2_AVAILABLE = True
+except ImportError:
+    pass
+
+# Mean luminance (0–255) below which an image is treated as dark-background and
+# inverted before OCR (light-on-dark text → dark-on-light, which docTR reads far
+# better). Calibrated for terminal/IDE/dashboard screenshots.
+_DARK_BACKGROUND_LUMINANCE_THRESHOLD = 100.0
+# Luminance is sampled from a downscaled thumbnail for speed.
+_LUMINANCE_THUMBNAIL_SIZE = 64
+# When the first OCR pass renders fewer than this many characters, retry once
+# with CLAHE contrast enhancement (helps low-contrast dark UI screenshots).
+_CLAHE_RETRY_MIN_CHARS = 30
+_CLAHE_CLIP_LIMIT = 2.0
+_CLAHE_TILE_GRID_SIZE = 8
+
 
 # ---------------------------------------------------------------------------
 # Predictor configuration
@@ -147,6 +178,105 @@ def is_ocr_available() -> bool:
     return OCR_AVAILABLE
 
 
+# ---------------------------------------------------------------------------
+# Image preprocessing for OCR (dark-background inversion + CLAHE)
+# ---------------------------------------------------------------------------
+
+
+def _load_rgb(image_path: Path):
+    """Load an image as an EXIF-oriented RGB PIL image, or None on failure."""
+    try:
+        img = Image.open(image_path)
+        img = ImageOps.exif_transpose(img)
+        return img.convert("RGB")
+    except Exception:
+        return None
+
+
+def _mean_luminance(img) -> float:
+    """Mean perceptual luminance (0–255) sampled from a downscaled thumbnail."""
+    gray = img.convert("L")
+    gray.thumbnail((_LUMINANCE_THUMBNAIL_SIZE, _LUMINANCE_THUMBNAIL_SIZE))
+    return float(np.asarray(gray).mean())
+
+
+def is_dark_background(image_path: Path) -> bool:
+    """True when the image's mean luminance is below the dark-background threshold."""
+    if not _PREPROCESS_AVAILABLE:
+        return False
+    img = _load_rgb(image_path)
+    if img is None:
+        return False
+    return _mean_luminance(img) < _DARK_BACKGROUND_LUMINANCE_THRESHOLD
+
+
+def _apply_clahe(rgb):
+    """Apply CLAHE contrast enhancement on the L channel of an RGB uint8 array."""
+    lab = cv2.cvtColor(rgb, cv2.COLOR_RGB2LAB)
+    l_chan, a_chan, b_chan = cv2.split(lab)
+    clahe = cv2.createCLAHE(
+        clipLimit=_CLAHE_CLIP_LIMIT,
+        tileGridSize=(_CLAHE_TILE_GRID_SIZE, _CLAHE_TILE_GRID_SIZE),
+    )
+    l_chan = clahe.apply(l_chan)
+    merged = cv2.merge((l_chan, a_chan, b_chan))
+    return cv2.cvtColor(merged, cv2.COLOR_LAB2RGB)
+
+
+def preprocess_for_ocr(image_path: Path, *, enhance: bool = False):
+    """Return a preprocessed RGB numpy page for OCR, or None when no preprocessing
+    applies (or libraries are unavailable), in which case the caller should feed
+    docTR the original file path unchanged.
+
+    - Dark-background images (mean luminance below the threshold) are inverted so
+      light-on-dark text becomes dark-on-light.
+    - ``enhance=True`` additionally applies CLAHE contrast enhancement (used as a
+      retry when the first OCR pass yields little text).
+    """
+    if not _PREPROCESS_AVAILABLE:
+        return None
+    img = _load_rgb(image_path)
+    if img is None:
+        return None
+    is_dark = _mean_luminance(img) < _DARK_BACKGROUND_LUMINANCE_THRESHOLD
+    apply_clahe = enhance and _CV2_AVAILABLE
+    if not is_dark and not apply_clahe:
+        return None  # nothing to do; caller uses the original path
+    if is_dark:
+        img = ImageOps.invert(img)
+    rgb = np.asarray(img)
+    if apply_clahe:
+        rgb = _apply_clahe(rgb)
+    return rgb
+
+
+def _run_image_ocr(image_path: Path):
+    """Run docTR on an image with dark-background inversion and a CLAHE retry.
+
+    The retry fires only when the first pass barely reads anything AND the image
+    was dark (inverted) or partially read — so textless bright photos are not
+    charged a second model pass. Returns the docTR result object, or None.
+    """
+    if not OCR_AVAILABLE:
+        return None
+    try:
+        predictor = _get_predictor()
+        page = preprocess_for_ocr(image_path, enhance=False)
+        doc = [page] if page is not None else DocumentFile.from_images([str(image_path)])
+        result = predictor(doc)
+        chars = len(result.render().strip())
+        if chars < _CLAHE_RETRY_MIN_CHARS and (page is not None or chars > 0):
+            enhanced = preprocess_for_ocr(image_path, enhance=True)
+            if enhanced is not None:
+                alt = predictor([enhanced])
+                if len(alt.render().strip()) > chars:
+                    result = alt
+        return result
+    except Exception as e:
+        print(f"  OCR error: {type(e).__name__}: {e}")
+        return None
+
+
 def extract_ocr_text(
     image_path: Path,
     max_chars: int = 500,
@@ -157,19 +287,13 @@ def extract_ocr_text(
 
     Returns None if OCR unavailable or no text found.
     """
-    if not OCR_AVAILABLE:
+    result = _run_image_ocr(image_path)
+    if result is None:
         return None
-    try:
-        doc = DocumentFile.from_images([str(image_path)])
-        result = _get_predictor()(doc)
-        text = result.render()
-        text = " ".join(text.split())
-        if max_chars and len(text) > max_chars:
-            text = text[:max_chars] + "..."
-        return text if text.strip() else None
-    except Exception as e:
-        print(f"  OCR error: {type(e).__name__}: {e}")
-        return None
+    text = " ".join(result.render().split())
+    if max_chars and len(text) > max_chars:
+        text = text[:max_chars] + "..."
+    return text if text.strip() else None
 
 
 def extract_ocr_text_pdf(
@@ -206,26 +330,21 @@ def extract_ocr_with_confidence(
     Returns None if OCR unavailable or no text found.
     Use max_chars=0 for no truncation.
     """
-    if not OCR_AVAILABLE:
+    result = _run_image_ocr(image_path)
+    if result is None:
         return None
-    try:
-        doc = DocumentFile.from_images([str(image_path)])
-        result = _get_predictor()(doc)
-        text = result.render()
-        text = " ".join(text.split())
-        if not text.strip():
-            return None
-        if max_chars and len(text) > max_chars:
-            text = text[:max_chars] + "..."
-        return OCRResult(
-            text=text,
-            confidence=_compute_confidence(result),
-            language=_extract_language(result),
-            word_count=_count_words(result),
-            orientation=_extract_orientation(result),
-        )
-    except Exception:
+    text = " ".join(result.render().split())
+    if not text.strip():
         return None
+    if max_chars and len(text) > max_chars:
+        text = text[:max_chars] + "..."
+    return OCRResult(
+        text=text,
+        confidence=_compute_confidence(result),
+        language=_extract_language(result),
+        word_count=_count_words(result),
+        orientation=_extract_orientation(result),
+    )
 
 
 def extract_ocr_pdf_with_confidence(
@@ -320,6 +439,43 @@ SCREENSHOT_KEYWORDS: dict[str, list[str]] = {
         "status:",
         "content-type:",
         "application/json",
+    ],
+    # IDE / code editor screenshots — keyed "code" to match the
+    # Media/Photos/Screenshots/CodeEditors folder mapping. Tokens are language
+    # syntax (kept distinct from terminal shell commands above).
+    "code": [
+        "import ",
+        "function ",
+        "class ",
+        "def ",
+        "const ",
+        "return ",
+        "public ",
+        "private ",
+        "void ",
+        "#include",
+        "console.log",
+        "print(",
+        "var ",
+        "let ",
+        "async ",
+        "await ",
+        "=>",
+    ],
+    # Web browser screenshots — keyed "browser" to match the
+    # Media/Photos/Screenshots/Browser folder mapping.
+    "browser": [
+        "http://",
+        "https://",
+        "www.",
+        ".com",
+        ".org",
+        ".net",
+        "search",
+        "bookmarks",
+        "address bar",
+        "new tab",
+        "incognito",
     ],
 }
 
