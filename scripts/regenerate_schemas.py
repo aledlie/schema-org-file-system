@@ -100,23 +100,32 @@ def regenerate_schema(
             file_url = f"https://localhost/files/{quote(file_path.name)}"
 
             # Set basic info based on type
+            description = existing_schema.get('description', file_path.name)
             if schema_type == 'ImageObject':
-                generator.set_basic_info(
-                    name=file_path.name,
-                    content_url=file_url,
-                    encoding_format=mime_type or 'image/png',
-                    description=existing_schema.get('description', file_path.name)
+                generator.set_property('name', file_path.name, PropertyType.TEXT)
+                generator.set_property('contentUrl', file_url, PropertyType.URL)
+                generator.set_property(
+                    'encodingFormat', mime_type or 'image/png', PropertyType.TEXT
                 )
+                if description:
+                    generator.set_property('description', description, PropertyType.TEXT)
             else:
-                generator.set_basic_info(
-                    name=file_path.name,
-                    description=existing_schema.get('description', file_path.name)
-                )
-                if hasattr(generator, 'set_file_info'):
-                    generator.set_file_info(
-                        encoding_format=mime_type or 'application/octet-stream',
-                        url=file_url,
-                        content_size=stats.st_size
+                generator.set_property('name', file_path.name, PropertyType.TEXT)
+                if description:
+                    generator.set_property('description', description, PropertyType.TEXT)
+                # Document-family types carry file-level metadata. This was
+                # previously gated on the presence of the deprecated
+                # set_file_info builder; gate on the concrete type instead so
+                # it survives removal of the builder methods.
+                if isinstance(generator, DocumentGenerator):
+                    generator.set_property(
+                        'encodingFormat',
+                        mime_type or 'application/octet-stream',
+                        PropertyType.TEXT,
+                    )
+                    generator.set_property('url', file_url, PropertyType.URL)
+                    generator.set_property(
+                        'contentSize', f"{stats.st_size}B", PropertyType.TEXT
                     )
 
             # Set dates
