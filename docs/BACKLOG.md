@@ -268,9 +268,9 @@ The image embedding is identical across all three (only the text prompts differ)
 
 **Validation (GATED):** scores and routing must be byte-identical. Run `pytest tests/unit/` and the December eval; additionally confirm `.cache/clip_embeddings_v2/` hit-rate rises and per-image CLIP call count drops (temporary counter or cost-tracker output).
 
-### Image-rename pre-step is dead — `ImageContentRenamer` shim missing `.analyzer` (regression)
+### ~~Image-rename pre-step is dead — `ImageContentRenamer` shim missing `.analyzer` (regression)~~
 
-**Status:** Open — BUG
+**Status:** Done (2026-06-26) — replaced shim with direct `ImageAnalyzer(PHOTO_PROFILE)` (`self.rename_analyzer`), used `IMAGE_EXTENSIONS_WIDE` for the extension gate, deleted the shim. Verified: analyzer runs end-to-end (no `AttributeError`); 770 unit tests pass; December eval holds at 90.74% category accuracy.
 **Priority:** P1 (silently disables content-based image renaming)
 **Source:** simplification audit, 2026-06-26
 **Context:** The in-flight `rename_images.py` consolidation left `ImageContentRenamer` (`scripts/rename_images.py:413-438`) as a compat shim that exposes `IMAGE_EXTENSIONS` and `process_directory` but **not** `.analyzer` — only the real `ImageRenamer` class has `self.analyzer` (line 371). `file_organizer_content_based.py` constructs the shim (`self.image_renamer = ImageContentRenamer(dry_run=False)`, line 1362) then accesses `self.image_renamer.analyzer.analyze_image(...)` (line 4052) and `...analyzer.content_classifier` (line 3596). Accessing `.analyzer` raises `AttributeError`, swallowed by the `try/except` in `organize_file` (~line 4101). Net effect: **every generic-named image (`IMG_*`, `Screenshot*`, …) skips the rename pre-step**, so filename-pattern classification never sees the descriptive name. Confirmed at runtime: `ImageContentRenamer(dry_run=False).analyzer` → `AttributeError: 'ImageContentRenamer' object has no attribute 'analyzer'`.
