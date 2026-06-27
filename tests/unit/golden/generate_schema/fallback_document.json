@@ -1,0 +1,13 @@
+{
+  "@context": "https://schema.org",
+  "@id": "<normalized>",
+  "@type": "DigitalDocument",
+  "contentSize": "12B",
+  "dateCreated": "<normalized>",
+  "dateModified": "<normalized>",
+  "description": "File: sample_other.bin",
+  "encodingFormat": "application/octet-stream",
+  "filePath": "<normalized>",
+  "name": "sample_other.bin",
+  "url": "https://localhost/files/sample_other.bin"
+}
