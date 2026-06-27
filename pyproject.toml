@@ -61,6 +61,7 @@ ai = [
     "open-clip-torch>=2.29.0",
     "opencv-python>=4.10.0",
     "numpy>=2.0.0",
+    "easyocr>=1.7.0",
 ]
 
 # Document processing

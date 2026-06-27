@@ -10,6 +10,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from shared.ocr_easyocr import EASYOCR_AVAILABLE, extract_text_easyocr
+
 OCR_AVAILABLE = False
 _predictor = None
 
@@ -296,6 +298,22 @@ def extract_ocr_text(
     return text if text.strip() else None
 
 
+def extract_screenshot_text(image_path: Path, max_chars: int = 500) -> str | None:
+    """Extract OCR text from a screenshot or mobile capture.
+
+    Prefers easyocr (more accurate on screenshots and mobile UI text) when it is
+    installed, falling back to the docTR pipeline. Document and PDF OCR continue
+    to use docTR directly via extract_ocr_text / extract_ocr_text_pdf.
+
+    Returns None if no backend produces text.
+    """
+    if EASYOCR_AVAILABLE:
+        text = extract_text_easyocr(image_path, max_chars=max_chars)
+        if text:
+            return text
+    return extract_ocr_text(image_path, max_chars=max_chars)
+
+
 def extract_ocr_text_pdf(
     pdf_path: Path,
     max_pages: int = 5,
@@ -551,10 +569,10 @@ def classify_by_ocr(
       if OCR unavailable or no matches found.
       all_scores maps every matched category to its confidence.
     """
-    if not is_ocr_available():
+    if not is_ocr_available() and not EASYOCR_AVAILABLE:
         return None
 
-    text = extract_ocr_text(image_path, max_chars=max_chars)
+    text = extract_screenshot_text(image_path, max_chars=max_chars)
     if not text:
         return None
 

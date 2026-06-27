@@ -119,3 +119,24 @@ class TestScreenshotKeywordRouting:
         # One keyword hit is below SCREENSHOT_MIN_HITS; no screenshot label.
         res = self._classify(monkeypatch, "just one import here and nothing else relevant")
         assert res is None or res[0] not in {"code", "browser"}
+
+
+class TestScreenshotOCRBackendSelection:
+    """extract_screenshot_text prefers easyocr, falls back to docTR."""
+
+    def test_prefers_easyocr_when_available(self, monkeypatch) -> None:
+        monkeypatch.setattr(oc, "EASYOCR_AVAILABLE", True)
+        monkeypatch.setattr(oc, "extract_text_easyocr", lambda *a, **k: "from easyocr")
+        monkeypatch.setattr(oc, "extract_ocr_text", lambda *a, **k: "from doctr")
+        assert oc.extract_screenshot_text(Path("/x/shot.png")) == "from easyocr"
+
+    def test_falls_back_to_doctr_when_easyocr_returns_none(self, monkeypatch) -> None:
+        monkeypatch.setattr(oc, "EASYOCR_AVAILABLE", True)
+        monkeypatch.setattr(oc, "extract_text_easyocr", lambda *a, **k: None)
+        monkeypatch.setattr(oc, "extract_ocr_text", lambda *a, **k: "from doctr")
+        assert oc.extract_screenshot_text(Path("/x/shot.png")) == "from doctr"
+
+    def test_uses_doctr_when_easyocr_unavailable(self, monkeypatch) -> None:
+        monkeypatch.setattr(oc, "EASYOCR_AVAILABLE", False)
+        monkeypatch.setattr(oc, "extract_ocr_text", lambda *a, **k: "from doctr")
+        assert oc.extract_screenshot_text(Path("/x/shot.png")) == "from doctr"
