@@ -34,6 +34,7 @@ Usage::
         --input results/ml_data/test.json \\
         --output results/ml_data/test_relabeled.json
 """
+
 from __future__ import annotations
 
 import argparse
@@ -45,45 +46,62 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from shared.constants import (
-    DOCUMENT_PATTERNS,
-    GAME_SPRITE_KEYWORDS,
-    SCREENSHOT_PATTERNS,
+from shared.constants import GAME_SPRITE_KEYWORDS, SCREENSHOT_PATTERNS  # noqa: E402
+
+SPRITE_VOCAB = frozenset(
+    {
+        "level",
+        "lever",
+        "blob",
+        "spine",
+        "bubble",
+        "salamander",
+        "heart",
+        "beat",
+        "map",
+        "feet",
+        "hair",
+        "legs",
+        "pupils",
+        "mandible",
+        "stats",
+        "stat",
+        "water",
+        "pole",
+        "arm",
+        "glow",
+        "mee",
+        "gelf",
+    }
 )
 
-SPRITE_VOCAB = frozenset({
-    'level', 'lever', 'blob', 'spine', 'bubble', 'salamander', 'heart',
-    'beat', 'map', 'feet', 'hair', 'legs', 'pupils', 'mandible', 'stats',
-    'stat', 'water', 'pole', 'arm', 'glow', 'mee', 'gelf',
-})
-
-_SPRITE_KEYWORD_SET = frozenset(k.lstrip('_').lower() for k in GAME_SPRITE_KEYWORDS)
-_SCREENSHOT_RE = re.compile('|'.join(SCREENSHOT_PATTERNS), re.IGNORECASE)
+_SPRITE_KEYWORD_SET = frozenset(k.lstrip("_").lower() for k in GAME_SPRITE_KEYWORDS)
+_SCREENSHOT_RE = re.compile("|".join(SCREENSHOT_PATTERNS), re.IGNORECASE)
 
 # Map document-pattern hits to (category, subcategory). Patterns not listed
 # here are skipped (avoid clobbering a 'media' label with a vague 'report').
 _DOCUMENT_LABEL_MAP: dict[str, tuple[str, str]] = {
-    'invoice': ('financial', 'invoice'),
-    'receipt': ('financial', 'receipt'),
-    'statement': ('financial', 'statement'),
-    'tax': ('financial', 'tax'),
-    'contract': ('legal', 'contract'),
-    'resume': ('personal', 'resume'),
-    'cv': ('personal', 'resume'),
-    'letter': ('personal', 'letter'),
+    "invoice": ("financial", "invoice"),
+    "receipt": ("financial", "receipt"),
+    "statement": ("financial", "statement"),
+    "tax": ("financial", "tax"),
+    "contract": ("legal", "contract"),
+    "resume": ("personal", "resume"),
+    "cv": ("personal", "resume"),
+    "letter": ("personal", "letter"),
 }
 
-_TRIAGE_PARENTS = frozenset({'Uncategorized', 'Desktop', 'Downloads'})
-_TRIAGE_PATH_FRAGMENTS = ('/Desktop/', '/Downloads/', '/Uncategorized/')
-_RELABEL_ELIGIBLE_CATEGORIES = frozenset({'uncategorized', 'media'})
+_TRIAGE_PARENTS = frozenset({"Uncategorized", "Desktop", "Downloads"})
+_TRIAGE_PATH_FRAGMENTS = ("/Desktop/", "/Downloads/", "/Uncategorized/")
+_RELABEL_ELIGIBLE_CATEGORIES = frozenset({"uncategorized", "media"})
 
-_TOKEN_RE = re.compile(r'[_\-]')
+_TOKEN_RE = re.compile(r"[_\-]")
 _MAX_SHORT_TOKEN_LEN = 4
 _MIN_TOKENS = 2
 
 
 def _is_sprite_like(filename: str) -> bool:
-    name = filename.rsplit('.', 1)[0].lower()
+    name = filename.rsplit(".", 1)[0].lower()
     tokens = _TOKEN_RE.split(name)
     has_digit = any(t.isdigit() for t in tokens)
     if not has_digit:
@@ -94,92 +112,92 @@ def _is_sprite_like(filename: str) -> bool:
 
 
 def _filename_has_sprite_keyword(filename: str) -> bool:
-    name = filename.rsplit('.', 1)[0].lower()
+    name = filename.rsplit(".", 1)[0].lower()
     tokens = set(t for t in _TOKEN_RE.split(name) if t)
     return bool(tokens & _SPRITE_KEYWORD_SET)
 
 
 def _document_label(filename: str) -> tuple[str, str] | None:
-    name = filename.rsplit('.', 1)[0].lower()
+    name = filename.rsplit(".", 1)[0].lower()
     for pattern, label in _DOCUMENT_LABEL_MAP.items():
-        if re.search(rf'\b{re.escape(pattern)}\b', name):
+        if re.search(rf"\b{re.escape(pattern)}\b", name):
             return label
     return None
 
 
 def _is_triage_location(sample: dict) -> bool:
-    if sample.get('parent_folder', '') in _TRIAGE_PARENTS:
+    if sample.get("parent_folder", "") in _TRIAGE_PARENTS:
         return True
-    filepath = sample.get('filepath', '')
+    filepath = sample.get("filepath", "")
     return any(frag in filepath for frag in _TRIAGE_PATH_FRAGMENTS)
 
 
 def relabel(samples: list[dict]) -> tuple[list[dict], dict[str, Counter]]:
-    counters = {f'pass{i}': Counter() for i in range(1, 6)}
+    counters = {f"pass{i}": Counter() for i in range(1, 6)}
     out = []
     for s in samples:
         s = dict(s)
-        parent = s.get('parent_folder', '')
-        cat = s.get('category')
-        filename = s.get('filename', '')
-        ext_cat = s.get('extension_category')
+        parent = s.get("parent_folder", "")
+        cat = s.get("category")
+        filename = s.get("filename", "")
+        ext_cat = s.get("extension_category")
 
-        if parent == 'Games' and cat != 'game_assets':
-            counters['pass1'][cat] += 1
-            s['category'] = 'game_assets'
+        if parent == "Games" and cat != "game_assets":
+            counters["pass1"][cat] += 1
+            s["category"] = "game_assets"
         elif (
-            parent == 'Other'
-            and ext_cat == 'image'
-            and cat != 'game_assets'
+            parent == "Other"
+            and ext_cat == "image"
+            and cat != "game_assets"
             and _is_sprite_like(filename)
         ):
-            counters['pass2'][cat] += 1
-            s['category'] = 'game_assets'
+            counters["pass2"][cat] += 1
+            s["category"] = "game_assets"
         elif _is_triage_location(s) and cat in _RELABEL_ELIGIBLE_CATEGORIES:
-            if ext_cat == 'image' and _filename_has_sprite_keyword(filename):
-                counters['pass3'][cat] += 1
-                s['category'] = 'game_assets'
-            elif ext_cat == 'image' and _SCREENSHOT_RE.search(filename):
-                counters['pass4'][cat] += 1
-                s['category'] = 'media'
-                s['subcategory'] = 'screenshot'
+            if ext_cat == "image" and _filename_has_sprite_keyword(filename):
+                counters["pass3"][cat] += 1
+                s["category"] = "game_assets"
+            elif ext_cat == "image" and _SCREENSHOT_RE.search(filename):
+                counters["pass4"][cat] += 1
+                s["category"] = "media"
+                s["subcategory"] = "screenshot"
             else:
                 doc_label = _document_label(filename)
                 if doc_label is not None:
-                    counters['pass5'][cat] += 1
-                    s['category'], s['subcategory'] = doc_label
+                    counters["pass5"][cat] += 1
+                    s["category"], s["subcategory"] = doc_label
         out.append(s)
     return out, counters
 
 
 _PASS_DESCRIPTIONS = {
-    'pass1': "parent_folder=Games → game_assets",
-    'pass2': "Other/ sprite-like → game_assets",
-    'pass3': "triage/ sprite keyword → game_assets",
-    'pass4': "triage/ screenshot pattern → media",
-    'pass5': "triage/ document pattern → financial|legal|personal",
+    "pass1": "parent_folder=Games → game_assets",
+    "pass2": "Other/ sprite-like → game_assets",
+    "pass3": "triage/ sprite keyword → game_assets",
+    "pass4": "triage/ screenshot pattern → media",
+    "pass5": "triage/ document pattern → financial|legal|personal",
 }
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--input', '-i', default='results/ml_data/test.json')
-    parser.add_argument('--output', '-o', default='results/ml_data/test_relabeled.json')
+    parser.add_argument("--input", "-i", default="results/ml_data/test.json")
+    parser.add_argument("--output", "-o", default="results/ml_data/test_relabeled.json")
     args = parser.parse_args()
 
     samples = json.loads(Path(args.input).read_text())
     relabeled, counters = relabel(samples)
 
-    print(f'Loaded {len(samples)} samples from {args.input}')
+    print(f"Loaded {len(samples)} samples from {args.input}")
     for key, desc in _PASS_DESCRIPTIONS.items():
         counter = counters[key]
-        print(f'\n{key.title()} ({desc}): {sum(counter.values())} relabels')
+        print(f"\n{key.title()} ({desc}): {sum(counter.values())} relabels")
         for orig, n in counter.most_common():
-            print(f'  {str(orig):<25s} → relabeled  ({n})')
+            print(f"  {str(orig):<25s} → relabeled  ({n})")
 
     Path(args.output).write_text(json.dumps(relabeled, indent=2))
-    print(f'\nWrote {len(relabeled)} samples to {args.output}')
+    print(f"\nWrote {len(relabeled)} samples to {args.output}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

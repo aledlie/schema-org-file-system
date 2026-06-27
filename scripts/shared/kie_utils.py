@@ -7,12 +7,12 @@ Falls back gracefully when fine-tuned weights are not available — in that case
 Architecture mirrors ``ocr_classifier.py``: lazy singleton predictor, rich
 result dataclass, image and PDF entry points.
 """
+
 from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Optional
 
 from shared.ocr_classifier import _DET_ARCH, _RECO_ARCH
 
@@ -28,30 +28,36 @@ _kie_predictor = None
 try:
     from doctr.io import DocumentFile
     from doctr.models import kie_predictor as _make_kie_predictor
+
     _DOCTR_KIE_IMPORTABLE = True
 except ImportError:
     _DOCTR_KIE_IMPORTABLE = False
 
 # Default path for fine-tuned weights (relative to project root).
-_DEFAULT_WEIGHTS_PATH = Path(__file__).resolve().parent.parent.parent / "models" / "kie_invoice_v1.pt"
+_DEFAULT_WEIGHTS_PATH = (
+    Path(__file__).resolve().parent.parent.parent / "models" / "kie_invoice_v1.pt"
+)
 
 
 # ---------------------------------------------------------------------------
 # Result types
 # ---------------------------------------------------------------------------
 
+
 @dataclass
 class KIEField:
     """A single extracted field from KIE."""
-    class_name: str          # e.g. "vendor_name", "total_amount"
-    value: str               # extracted text content
-    confidence: float        # word-level confidence (0.0-1.0)
-    geometry: tuple = ()     # bounding box coordinates ((x1,y1),(x2,y2))
+
+    class_name: str  # e.g. "vendor_name", "total_amount"
+    value: str  # extracted text content
+    confidence: float  # word-level confidence (0.0-1.0)
+    geometry: tuple = ()  # bounding box coordinates ((x1,y1),(x2,y2))
 
 
 @dataclass
 class KIEResult:
     """Structured extraction result from KIE predictor."""
+
     fields: dict[str, list[KIEField]] = field(default_factory=dict)
     page_count: int = 0
     overall_confidence: float = 0.0
@@ -60,6 +66,7 @@ class KIEResult:
 # ---------------------------------------------------------------------------
 # Predictor lifecycle
 # ---------------------------------------------------------------------------
+
 
 def _get_kie_predictor(weights_path: Path | None = None):
     """Lazy-load the KIE predictor singleton.
@@ -111,6 +118,7 @@ def is_kie_available(weights_path: Path | None = None) -> bool:
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 def _build_kie_result(result, min_confidence: float) -> KIEResult | None:
     """Convert raw docTR KIE output to a ``KIEResult``.
 
@@ -148,6 +156,7 @@ def _build_kie_result(result, min_confidence: float) -> KIEResult | None:
 # ---------------------------------------------------------------------------
 # Public API
 # ---------------------------------------------------------------------------
+
 
 def extract_kie_fields(
     image_path: Path,

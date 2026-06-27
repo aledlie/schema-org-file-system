@@ -12,13 +12,13 @@ from typing import Any, Optional
 # OCR (docTR via shared.ocr_classifier) imports
 try:
     from shared.ocr_classifier import (
-        extract_ocr_text,
-        extract_ocr_with_confidence,
-        extract_ocr_text_pdf,
         extract_ocr_pdf_with_confidence,
+        extract_ocr_text,
+        extract_ocr_text_pdf,
+        extract_ocr_with_confidence,
         is_ocr_available,
-        OCRResult,
     )
+
     OCR_AVAILABLE = is_ocr_available()
 except ImportError:
     OCR_AVAILABLE = False
@@ -32,6 +32,7 @@ except ImportError:
 # Word document imports
 try:
     from docx import Document
+
     DOCX_AVAILABLE = True
 except ImportError:
     DOCX_AVAILABLE = False
@@ -39,6 +40,7 @@ except ImportError:
 # Excel imports
 try:
     from openpyxl import load_workbook
+
     EXCEL_AVAILABLE = True
 except ImportError:
     EXCEL_AVAILABLE = False
@@ -47,6 +49,7 @@ except ImportError:
 try:
     from cost_roi_calculator import CostTracker
 except ImportError:
+
     class CostTracker:  # type: ignore[no-redef]
         """Stub CostTracker when cost tracking is not available."""
 
@@ -73,10 +76,11 @@ _LOW_CONFIDENCE_THRESHOLD = 0.3
 @dataclass
 class ExtractionResult:
     """Text extraction result with optional OCR metadata."""
+
     text: str
-    confidence: Optional[float] = None     # OCR confidence (0.0–1.0), None for non-OCR
-    language: Optional[str] = None         # detected language code
-    source: str = "unknown"                # "ocr", "pypdf", "docx", "xlsx", "text"
+    confidence: Optional[float] = None  # OCR confidence (0.0–1.0), None for non-OCR
+    language: Optional[str] = None  # detected language code
+    source: str = "unknown"  # "ocr", "pypdf", "docx", "xlsx", "text"
 
 
 class TextExtractor:
@@ -91,7 +95,11 @@ class TextExtractor:
         if not self.ocr_available:
             return ""
 
-        with CostTracker(self.cost_calculator, 'doctr_ocr') if self.cost_calculator else nullcontext():
+        with (
+            CostTracker(self.cost_calculator, "doctr_ocr")
+            if self.cost_calculator
+            else nullcontext()
+        ):
             try:
                 result = extract_ocr_text(image_path, max_chars=0)
                 return result or ""
@@ -104,7 +112,11 @@ class TextExtractor:
         if not self.ocr_available:
             return ExtractionResult(text="", source="ocr")
 
-        with CostTracker(self.cost_calculator, 'doctr_ocr') if self.cost_calculator else nullcontext():
+        with (
+            CostTracker(self.cost_calculator, "doctr_ocr")
+            if self.cost_calculator
+            else nullcontext()
+        ):
             try:
                 ocr_result = extract_ocr_with_confidence(image_path, max_chars=0)
                 if ocr_result is None:
@@ -124,11 +136,15 @@ class TextExtractor:
         if not self.ocr_available:
             return ""
 
-        with CostTracker(self.cost_calculator, 'pdf_extraction') if self.cost_calculator else nullcontext():
+        with (
+            CostTracker(self.cost_calculator, "pdf_extraction")
+            if self.cost_calculator
+            else nullcontext()
+        ):
             text = ""
 
             try:
-                with open(pdf_path, 'rb') as f:
+                with open(pdf_path, "rb") as f:
                     reader = pypdf.PdfReader(f)
                     for page in reader.pages[:_MAX_PDF_PAGES]:
                         page_text = page.extract_text()
@@ -138,7 +154,7 @@ class TextExtractor:
                 if len(text.strip()) > _MIN_PDF_TEXT_LENGTH:
                     return text.strip()
 
-                print(f"  Using docTR OCR for scanned PDF...")
+                print("  Using docTR OCR for scanned PDF...")
                 ocr_text = extract_ocr_text_pdf(pdf_path, max_pages=_MAX_PDF_OCR_PAGES)
                 if ocr_text:
                     text += ocr_text
@@ -153,11 +169,15 @@ class TextExtractor:
         if not self.ocr_available:
             return ExtractionResult(text="", source="pypdf")
 
-        with CostTracker(self.cost_calculator, 'pdf_extraction') if self.cost_calculator else nullcontext():
+        with (
+            CostTracker(self.cost_calculator, "pdf_extraction")
+            if self.cost_calculator
+            else nullcontext()
+        ):
             text = ""
 
             try:
-                with open(pdf_path, 'rb') as f:
+                with open(pdf_path, "rb") as f:
                     reader = pypdf.PdfReader(f)
                     for page in reader.pages[:_MAX_PDF_PAGES]:
                         page_text = page.extract_text()
@@ -167,14 +187,12 @@ class TextExtractor:
                 if len(text.strip()) > _MIN_PDF_TEXT_LENGTH:
                     return ExtractionResult(
                         text=text.strip(),
-                        confidence=1.0,    # searchable PDF text is exact
+                        confidence=1.0,  # searchable PDF text is exact
                         source="pypdf",
                     )
 
-                print(f"  Using docTR OCR for scanned PDF...")
-                ocr_result = extract_ocr_pdf_with_confidence(
-                    pdf_path, max_pages=_MAX_PDF_OCR_PAGES
-                )
+                print("  Using docTR OCR for scanned PDF...")
+                ocr_result = extract_ocr_pdf_with_confidence(pdf_path, max_pages=_MAX_PDF_OCR_PAGES)
                 if ocr_result:
                     combined = (text + ocr_result.text).strip()
                     return ExtractionResult(
@@ -194,7 +212,11 @@ class TextExtractor:
         if not DOCX_AVAILABLE:
             return ""
 
-        with CostTracker(self.cost_calculator, 'docx_extraction') if self.cost_calculator else nullcontext():
+        with (
+            CostTracker(self.cost_calculator, "docx_extraction")
+            if self.cost_calculator
+            else nullcontext()
+        ):
             try:
                 doc = Document(docx_path)
                 text = []
@@ -218,7 +240,11 @@ class TextExtractor:
         if not EXCEL_AVAILABLE:
             return ""
 
-        with CostTracker(self.cost_calculator, 'xlsx_extraction') if self.cost_calculator else nullcontext():
+        with (
+            CostTracker(self.cost_calculator, "xlsx_extraction")
+            if self.cost_calculator
+            else nullcontext()
+        ):
             try:
                 workbook = load_workbook(xlsx_path, read_only=True, data_only=True)
                 text = []
@@ -226,7 +252,7 @@ class TextExtractor:
                 for sheet_name in workbook.sheetnames[:_MAX_XLSX_SHEETS]:
                     sheet = workbook[sheet_name]
                     for row in sheet.iter_rows(max_row=_MAX_XLSX_ROWS, values_only=True):
-                        row_text = ' '.join([str(cell) for cell in row if cell is not None])
+                        row_text = " ".join([str(cell) for cell in row if cell is not None])
                         if row_text.strip():
                             text.append(row_text)
 
@@ -247,17 +273,17 @@ class TextExtractor:
         """
         file_ext = file_path.suffix.lower()
 
-        if mime_type and mime_type.startswith('image/'):
+        if mime_type and mime_type.startswith("image/"):
             return self.extract_text_from_image(file_path)
-        elif mime_type == 'application/pdf' or file_ext == '.pdf':
+        elif mime_type == "application/pdf" or file_ext == ".pdf":
             return self.extract_text_from_pdf(file_path)
-        elif file_ext in ['.docx', '.doc']:
+        elif file_ext in [".docx", ".doc"]:
             return self.extract_text_from_docx(file_path)
-        elif file_ext in ['.xlsx', '.xls']:
+        elif file_ext in [".xlsx", ".xls"]:
             return self.extract_text_from_xlsx(file_path)
-        elif (mime_type and mime_type.startswith('text/')) or file_ext in ['.txt', '.md', '.csv']:
+        elif (mime_type and mime_type.startswith("text/")) or file_ext in [".txt", ".md", ".csv"]:
             try:
-                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     return f.read(_MAX_TEXT_BYTES)
             except Exception:
                 return ""
@@ -271,25 +297,25 @@ class TextExtractor:
         """
         file_ext = file_path.suffix.lower()
 
-        if mime_type and mime_type.startswith('image/'):
+        if mime_type and mime_type.startswith("image/"):
             return self.extract_from_image(file_path)
-        elif mime_type == 'application/pdf' or file_ext == '.pdf':
+        elif mime_type == "application/pdf" or file_ext == ".pdf":
             return self.extract_from_pdf(file_path)
-        elif file_ext in ['.docx', '.doc']:
+        elif file_ext in [".docx", ".doc"]:
             return ExtractionResult(
                 text=self.extract_text_from_docx(file_path),
                 confidence=1.0,
                 source="docx",
             )
-        elif file_ext in ['.xlsx', '.xls']:
+        elif file_ext in [".xlsx", ".xls"]:
             return ExtractionResult(
                 text=self.extract_text_from_xlsx(file_path),
                 confidence=1.0,
                 source="xlsx",
             )
-        elif (mime_type and mime_type.startswith('text/')) or file_ext in ['.txt', '.md', '.csv']:
+        elif (mime_type and mime_type.startswith("text/")) or file_ext in [".txt", ".md", ".csv"]:
             try:
-                with open(file_path, 'r', encoding='utf-8', errors='ignore') as f:
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     return ExtractionResult(
                         text=f.read(_MAX_TEXT_BYTES),
                         confidence=1.0,

@@ -1,4 +1,5 @@
 """Unit tests for scripts/shared/ utilities."""
+
 from __future__ import annotations
 
 import sqlite3
@@ -12,13 +13,13 @@ _SCRIPTS_DIR = Path(__file__).parent.parent.parent / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from shared.file_ops import resolve_collision
-from shared.db_utils import db_connection, get_db_connection
-
+from shared.db_utils import db_connection, get_db_connection  # noqa: E402
+from shared.file_ops import resolve_collision  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # resolve_collision
 # ---------------------------------------------------------------------------
+
 
 class TestResolveCollision:
     def test_no_collision_returns_path_unchanged(self, temp_dir: Path) -> None:
@@ -47,6 +48,7 @@ class TestResolveCollision:
 # ---------------------------------------------------------------------------
 # get_db_connection
 # ---------------------------------------------------------------------------
+
 
 class TestGetDbConnection:
     def test_returns_sqlite_connection(self, temp_db_path: str) -> None:
@@ -79,6 +81,7 @@ class TestGetDbConnection:
 # ---------------------------------------------------------------------------
 # db_connection
 # ---------------------------------------------------------------------------
+
 
 class TestDbConnection:
     def test_yields_connection(self, temp_db_path: str) -> None:
@@ -119,9 +122,11 @@ class TestDbConnection:
 # extract_ocr_text
 # ---------------------------------------------------------------------------
 
+
 class TestExtractOcrText:
     def test_returns_none_when_ocr_unavailable(self, sample_image_file: Path) -> None:
-        from shared.ocr_classifier import extract_ocr_text, OCR_AVAILABLE
+        from shared.ocr_classifier import OCR_AVAILABLE, extract_ocr_text
+
         if OCR_AVAILABLE:
             pytest.skip("doctr is installed; skipping unavailability test")
         result = extract_ocr_text(sample_image_file)
@@ -129,11 +134,13 @@ class TestExtractOcrText:
 
     def test_returns_none_or_str_for_valid_image(self, sample_image_file: Path) -> None:
         from shared.ocr_classifier import extract_ocr_text
+
         result = extract_ocr_text(sample_image_file)
         assert result is None or isinstance(result, str)
 
     def test_truncates_to_max_chars(self, sample_image_file: Path) -> None:
-        from shared.ocr_classifier import extract_ocr_text, OCR_AVAILABLE
+        from shared.ocr_classifier import OCR_AVAILABLE, extract_ocr_text
+
         if not OCR_AVAILABLE:
             pytest.skip("doctr not installed")
         result = extract_ocr_text(sample_image_file, max_chars=10)
@@ -145,21 +152,25 @@ class TestExtractOcrText:
 # extract_ocr_with_confidence
 # ---------------------------------------------------------------------------
 
+
 class TestExtractOcrWithConfidence:
     def test_returns_none_when_ocr_unavailable(self, sample_image_file: Path) -> None:
-        from shared.ocr_classifier import extract_ocr_with_confidence, OCR_AVAILABLE
+        from shared.ocr_classifier import OCR_AVAILABLE, extract_ocr_with_confidence
+
         if OCR_AVAILABLE:
             pytest.skip("doctr is installed; skipping unavailability test")
         result = extract_ocr_with_confidence(sample_image_file)
         assert result is None
 
     def test_returns_ocr_result_or_none(self, sample_image_file: Path) -> None:
-        from shared.ocr_classifier import extract_ocr_with_confidence, OCRResult
+        from shared.ocr_classifier import OCRResult, extract_ocr_with_confidence
+
         result = extract_ocr_with_confidence(sample_image_file)
         assert result is None or isinstance(result, OCRResult)
 
     def test_result_has_confidence_and_metadata(self, sample_image_file: Path) -> None:
-        from shared.ocr_classifier import extract_ocr_with_confidence, OCR_AVAILABLE
+        from shared.ocr_classifier import OCR_AVAILABLE, extract_ocr_with_confidence
+
         if not OCR_AVAILABLE:
             pytest.skip("doctr not installed")
         result = extract_ocr_with_confidence(sample_image_file)
