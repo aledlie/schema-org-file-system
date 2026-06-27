@@ -7,7 +7,6 @@ including OrganizationGenerator and PersonGenerator.
 
 import pytest
 from datetime import datetime
-from typing import Any, Dict
 
 from src.generators import (
     DocumentGenerator,
@@ -20,20 +19,14 @@ from src.generators import (
     OrganizationGenerator,
     PersonGenerator,
     DOCUMENT_REQUIRED_PROPERTIES,
-    DOCUMENT_RECOMMENDED_PROPERTIES,
     IMAGE_REQUIRED_PROPERTIES,
-    IMAGE_RECOMMENDED_PROPERTIES,
     VIDEO_REQUIRED_PROPERTIES,
-    AUDIO_REQUIRED_PROPERTIES,
-    CODE_REQUIRED_PROPERTIES,
-    DATASET_REQUIRED_PROPERTIES,
-    ARCHIVE_REQUIRED_PROPERTIES,
     ORGANIZATION_REQUIRED_PROPERTIES,
     ORGANIZATION_RECOMMENDED_PROPERTIES,
     PERSON_REQUIRED_PROPERTIES,
     PERSON_RECOMMENDED_PROPERTIES,
 )
-from src.base import SchemaOrgBase, PropertyType, SchemaContext
+from src.base import PropertyType, SchemaContext
 
 
 # =============================================================================
@@ -150,69 +143,6 @@ class TestDocumentGenerator:
         doc = DocumentGenerator(entity_id="urn:sha256:abc123")
         assert doc.data["@id"] == "urn:sha256:abc123"
 
-    def test_set_basic_info(self):
-        """Test setting basic information."""
-        doc = DocumentGenerator()
-        doc.set_basic_info("Test Doc", description="A test", abstract="Summary")
-
-        assert doc.data["name"] == "Test Doc"
-        assert doc.data["description"] == "A test"
-        assert doc.data["abstract"] == "Summary"
-
-    def test_set_file_info(self):
-        """Test setting file information."""
-        doc = DocumentGenerator()
-        doc.set_file_info(
-            encoding_format="application/pdf",
-            url="https://example.com/doc.pdf",
-            content_size=1024,
-            sha256="abc123def456"
-        )
-
-        assert doc.data["encodingFormat"] == "application/pdf"
-        assert doc.data["url"] == "https://example.com/doc.pdf"
-        assert doc.data["contentSize"] == "1024B"
-        assert "identifier" in doc.data
-
-    def test_set_language(self):
-        """Test setting language."""
-        doc = DocumentGenerator()
-        doc.set_language("en")
-        assert doc.data["inLanguage"] == "en"
-
-    def test_set_pagination(self):
-        """Test setting pagination."""
-        doc = DocumentGenerator()
-        doc.set_pagination(42)
-        assert doc.data["numberOfPages"] == 42
-
-    def test_add_citation_string(self):
-        """Test adding string citation."""
-        doc = DocumentGenerator()
-        doc.add_citation("Smith, J. (2024). Test Paper.")
-        assert "citation" in doc.data
-        assert len(doc.data["citation"]) == 1
-
-    def test_add_citation_multiple(self):
-        """Test adding multiple citations."""
-        doc = DocumentGenerator()
-        doc.add_citation("Citation 1")
-        doc.add_citation("Citation 2")
-        assert len(doc.data["citation"]) == 2
-
-    def test_set_scholarly_info(self):
-        """Test setting scholarly information."""
-        doc = DocumentGenerator("ScholarlyArticle")
-        doc.set_scholarly_info(
-            doi="10.1234/test",
-            issn="1234-5678",
-            publication="Nature"
-        )
-
-        assert doc.data["sameAs"] == "https://doi.org/10.1234/test"
-        assert doc.data["issn"] == "1234-5678"
-        assert doc.data["publication"] == "Nature"
-
     def test_get_required_properties(self):
         """Test getting required properties."""
         doc = DocumentGenerator()
@@ -226,17 +156,6 @@ class TestDocumentGenerator:
         recommended = doc.get_recommended_properties()
         assert "author" in recommended
         assert "dateCreated" in recommended
-
-    def test_method_chaining(self):
-        """Test method chaining works."""
-        doc = DocumentGenerator() \
-            .set_basic_info("Test") \
-            .set_file_info("application/pdf", "https://example.com/test.pdf") \
-            .set_language("en") \
-            .set_pagination(10)
-
-        assert doc.data["name"] == "Test"
-        assert doc.data["inLanguage"] == "en"
 
 
 # =============================================================================
@@ -256,54 +175,6 @@ class TestImageGenerator:
         photo = ImageGenerator("Photograph")
         assert photo.data["@type"] == "Photograph"
 
-    def test_set_basic_info(self):
-        """Test setting basic info."""
-        img = ImageGenerator()
-        img.set_basic_info(
-            name="Test Image",
-            content_url="https://example.com/image.jpg",
-            encoding_format="image/jpeg",
-            description="A test image",
-            caption="Test caption"
-        )
-
-        assert img.data["name"] == "Test Image"
-        assert img.data["contentUrl"] == "https://example.com/image.jpg"
-        assert img.data["caption"] == "Test caption"
-
-    def test_set_dimensions(self):
-        """Test setting dimensions."""
-        img = ImageGenerator()
-        img.set_dimensions(1920, 1080)
-        assert img.data["width"] == 1920
-        assert img.data["height"] == 1080
-
-    def test_set_exif_data(self):
-        """Test setting EXIF data."""
-        img = ImageGenerator()
-        exif = {
-            "Make": "Canon",
-            "Model": "EOS 5D",
-            "DateTime": "2024-01-15T10:30:00"
-        }
-        img.set_exif_data(exif)
-
-        assert "exifData" in img.data
-        assert img.data["exifData"]["camera"] == "Canon"
-        assert img.data["exifData"]["cameraModel"] == "EOS 5D"
-
-    def test_set_exif_with_gps(self):
-        """Test setting EXIF data with GPS coordinates."""
-        img = ImageGenerator()
-        exif = {
-            "GPSLatitude": 37.7749,
-            "GPSLongitude": -122.4194
-        }
-        img.set_exif_data(exif)
-
-        assert "contentLocation" in img.data
-        assert img.data["contentLocation"]["@type"] == "Place"
-
     def test_set_thumbnail(self):
         """Test setting thumbnail."""
         img = ImageGenerator()
@@ -312,15 +183,6 @@ class TestImageGenerator:
         assert "thumbnail" in img.data
         assert img.data["thumbnail"]["@type"] == "ImageObject"
         assert img.data["thumbnail"]["contentUrl"] == "https://example.com/thumb.jpg"
-
-    def test_add_depicted_item(self):
-        """Test adding depicted item."""
-        img = ImageGenerator()
-        img.add_depicted_item("Mountain")
-        img.add_depicted_item({"@type": "Place", "name": "Grand Canyon"})
-
-        assert "associatedMedia" in img.data
-        assert len(img.data["associatedMedia"]) == 2
 
 
 # =============================================================================
@@ -339,37 +201,6 @@ class TestVideoGenerator:
         """Test movie clip type."""
         clip = VideoGenerator("MovieClip")
         assert clip.data["@type"] == "MovieClip"
-
-    def test_set_basic_info(self):
-        """Test setting basic info."""
-        video = VideoGenerator()
-        upload_date = datetime(2024, 1, 15)
-        video.set_basic_info(
-            name="Test Video",
-            content_url="https://example.com/video.mp4",
-            upload_date=upload_date,
-            description="A test video",
-            thumbnail_url="https://example.com/thumb.jpg"
-        )
-
-        assert video.data["name"] == "Test Video"
-        assert video.data["contentUrl"] == "https://example.com/video.mp4"
-        assert video.data["thumbnailUrl"] == "https://example.com/thumb.jpg"
-
-    def test_set_media_details(self):
-        """Test setting media details."""
-        video = VideoGenerator()
-        video.set_media_details(
-            duration="PT5M30S",
-            width=1920,
-            height=1080,
-            encoding_format="video/mp4",
-            bitrate="5000kbps"
-        )
-
-        assert video.data["duration"] == "PT5M30S"
-        assert video.data["width"] == 1920
-        assert video.data["bitrate"] == "5000kbps"
 
     def test_set_interaction_stats(self):
         """Test setting interaction statistics."""
@@ -409,44 +240,6 @@ class TestAudioGenerator:
         podcast = AudioGenerator("PodcastEpisode")
         assert podcast.data["@type"] == "PodcastEpisode"
 
-    def test_set_basic_info(self):
-        """Test setting basic info."""
-        audio = AudioGenerator()
-        audio.set_basic_info(
-            name="Test Audio",
-            content_url="https://example.com/audio.mp3",
-            description="A test audio",
-            duration="PT3M45S"
-        )
-
-        assert audio.data["name"] == "Test Audio"
-        assert audio.data["duration"] == "PT3M45S"
-
-    def test_set_music_info(self):
-        """Test setting music info."""
-        audio = AudioGenerator("MusicRecording")
-        audio.set_music_info(
-            album="Test Album",
-            artist="Test Artist",
-            genre="Rock",
-            isrc="USRC12345678"
-        )
-
-        assert audio.data["inAlbum"]["@type"] == "MusicAlbum"
-        assert audio.data["inAlbum"]["name"] == "Test Album"
-        assert "byArtist" in audio.data
-        assert audio.data["genre"] == "Rock"
-        assert audio.data["isrcCode"] == "USRC12345678"
-
-    def test_set_podcast_info(self):
-        """Test setting podcast info."""
-        audio = AudioGenerator("PodcastEpisode")
-        audio.set_podcast_info(episode_number=42, series="Tech Talk")
-
-        assert audio.data["episodeNumber"] == 42
-        assert audio.data["partOfSeries"]["@type"] == "PodcastSeries"
-        assert audio.data["partOfSeries"]["name"] == "Tech Talk"
-
 
 # =============================================================================
 # Test CodeGenerator
@@ -459,60 +252,6 @@ class TestCodeGenerator:
         """Test creating a basic code schema."""
         code = CodeGenerator()
         assert code.data["@type"] == "SoftwareSourceCode"
-
-    def test_set_basic_info(self):
-        """Test setting basic info."""
-        code = CodeGenerator()
-        code.set_basic_info(
-            name="main.py",
-            programming_language="Python",
-            description="Main script",
-            code_sample="print('Hello')"
-        )
-
-        assert code.data["name"] == "main.py"
-        assert code.data["programmingLanguage"] == "Python"
-        assert code.data["codeSampleType"] == "code snippet"
-        assert code.data["text"] == "print('Hello')"
-
-    def test_set_repository_info(self):
-        """Test setting repository info."""
-        code = CodeGenerator()
-        code.set_repository_info(
-            repository_url="https://github.com/user/repo",
-            branch="main",
-            commit="abc123"
-        )
-
-        assert code.data["codeRepository"] == "https://github.com/user/repo"
-        assert code.data["branch"] == "main"
-        assert "identifier" in code.data
-
-    def test_set_runtime_info_string(self):
-        """Test setting runtime info with string."""
-        code = CodeGenerator()
-        code.set_runtime_info("Node.js 18", target_product="Express")
-
-        assert code.data["runtimePlatform"] == "Node.js 18"
-        assert code.data["targetProduct"] == "Express"
-
-    def test_set_runtime_info_list(self):
-        """Test setting runtime info with list."""
-        code = CodeGenerator()
-        code.set_runtime_info(["Node.js 18", "Python 3.11"])
-
-        assert code.data["runtimePlatform"] == "Node.js 18, Python 3.11"
-
-    def test_add_dependency(self):
-        """Test adding dependencies."""
-        code = CodeGenerator()
-        code.add_dependency("react", "18.2.0")
-        code.add_dependency("axios")
-
-        assert len(code.data["dependencies"]) == 2
-        assert code.data["dependencies"][0]["name"] == "react"
-        assert code.data["dependencies"][0]["softwareVersion"] == "18.2.0"
-        assert code.data["dependencies"][1]["name"] == "axios"
 
 
 # =============================================================================
@@ -527,61 +266,6 @@ class TestDatasetGenerator:
         dataset = DatasetGenerator()
         assert dataset.data["@type"] == "Dataset"
 
-    def test_set_basic_info(self):
-        """Test setting basic info."""
-        dataset = DatasetGenerator()
-        dataset.set_basic_info(
-            name="Test Dataset",
-            description="A test dataset",
-            url="https://example.com/data"
-        )
-
-        assert dataset.data["name"] == "Test Dataset"
-        assert dataset.data["description"] == "A test dataset"
-        assert dataset.data["url"] == "https://example.com/data"
-
-    def test_add_distribution(self):
-        """Test adding distribution."""
-        dataset = DatasetGenerator()
-        dataset.add_distribution(
-            content_url="https://example.com/data.csv",
-            encoding_format="text/csv",
-            content_size=1024
-        )
-
-        assert len(dataset.data["distribution"]) == 1
-        assert dataset.data["distribution"][0]["@type"] == "DataDownload"
-        assert dataset.data["distribution"][0]["contentSize"] == "1024B"
-
-    def test_add_multiple_distributions(self):
-        """Test adding multiple distributions."""
-        dataset = DatasetGenerator()
-        dataset.add_distribution("https://example.com/data.csv", "text/csv")
-        dataset.add_distribution("https://example.com/data.json", "application/json")
-
-        assert len(dataset.data["distribution"]) == 2
-
-    def test_set_coverage(self):
-        """Test setting coverage."""
-        dataset = DatasetGenerator()
-        dataset.set_coverage(
-            temporal="2020-01-01/2020-12-31",
-            spatial="San Francisco, CA"
-        )
-
-        assert dataset.data["temporalCoverage"] == "2020-01-01/2020-12-31"
-        assert dataset.data["spatialCoverage"] == "San Francisco, CA"
-
-    def test_add_variable_measured(self):
-        """Test adding measured variables."""
-        dataset = DatasetGenerator()
-        dataset.add_variable_measured("temperature", "Temperature in Celsius")
-        dataset.add_variable_measured("humidity")
-
-        assert len(dataset.data["variableMeasured"]) == 2
-        assert dataset.data["variableMeasured"][0]["@type"] == "PropertyValue"
-        assert dataset.data["variableMeasured"][0]["description"] == "Temperature in Celsius"
-
 
 # =============================================================================
 # Test ArchiveGenerator
@@ -595,52 +279,6 @@ class TestArchiveGenerator:
         archive = ArchiveGenerator()
         assert archive.data["@type"] == "DigitalDocument"
         assert archive.data["additionalType"] == "Archive"
-
-    def test_set_basic_info(self):
-        """Test setting basic info."""
-        archive = ArchiveGenerator()
-        archive.set_basic_info(
-            name="backup.zip",
-            encoding_format="application/zip",
-            description="System backup",
-            content_size=10485760
-        )
-
-        assert archive.data["name"] == "backup.zip"
-        assert archive.data["encodingFormat"] == "application/zip"
-        assert archive.data["contentSize"] == "10485760B"
-
-    def test_add_contained_file(self):
-        """Test adding contained files."""
-        archive = ArchiveGenerator()
-        doc = DocumentGenerator()
-        doc.set_basic_info("readme.txt")
-
-        archive.add_contained_file(doc)
-
-        assert "hasPart" in archive.data
-        assert len(archive.data["hasPart"]) == 1
-
-    def test_add_multiple_contained_files(self):
-        """Test adding multiple contained files."""
-        archive = ArchiveGenerator()
-        doc1 = DocumentGenerator()
-        doc1.set_basic_info("file1.txt")
-        doc2 = DocumentGenerator()
-        doc2.set_basic_info("file2.txt")
-
-        archive.add_contained_file(doc1)
-        archive.add_contained_file(doc2)
-
-        assert len(archive.data["hasPart"]) == 2
-
-    def test_set_compression_info(self):
-        """Test setting compression info."""
-        archive = ArchiveGenerator()
-        archive.set_compression_info("deflate", compression_ratio=0.75)
-
-        assert archive.data["compressionMethod"] == "deflate"
-        assert archive.data["compressionRatio"] == 0.75
 
 
 # =============================================================================
@@ -665,180 +303,6 @@ class TestOrganizationGenerator:
         """Test creating local business."""
         biz = OrganizationGenerator("LocalBusiness")
         assert biz.data["@type"] == "LocalBusiness"
-
-    def test_set_basic_info(self):
-        """Test setting basic info."""
-        org = OrganizationGenerator()
-        org.set_basic_info(
-            name="Test Corp",
-            description="A test company",
-            url="https://testcorp.com",
-            logo="https://testcorp.com/logo.png"
-        )
-
-        assert org.data["name"] == "Test Corp"
-        assert org.data["description"] == "A test company"
-        assert org.data["url"] == "https://testcorp.com"
-        assert org.data["logo"]["@type"] == "ImageObject"
-        assert org.data["logo"]["url"] == "https://testcorp.com/logo.png"
-
-    def test_set_legal_info(self):
-        """Test setting legal information."""
-        org = OrganizationGenerator()
-        org.set_legal_info(
-            legal_name="Test Corporation, Inc.",
-            tax_id="12-3456789",
-            vat_id="EU123456789",
-            lei_code="ABCD1234567890EFGH12",
-            duns="123456789"
-        )
-
-        assert org.data["legalName"] == "Test Corporation, Inc."
-        assert org.data["taxID"] == "12-3456789"
-        assert org.data["vatID"] == "EU123456789"
-        assert org.data["leiCode"] == "ABCD1234567890EFGH12"
-        assert org.data["duns"] == "123456789"
-
-    def test_set_contact_info(self):
-        """Test setting contact information."""
-        org = OrganizationGenerator()
-        org.set_contact_info(
-            email="info@testcorp.com",
-            telephone="+1-555-123-4567",
-            fax="+1-555-123-4568"
-        )
-
-        assert org.data["email"] == "info@testcorp.com"
-        assert org.data["telephone"] == "+1-555-123-4567"
-        assert org.data["faxNumber"] == "+1-555-123-4568"
-
-    def test_set_address(self):
-        """Test setting address."""
-        org = OrganizationGenerator()
-        org.set_address(
-            street="123 Main St",
-            city="San Francisco",
-            region="CA",
-            postal_code="94102",
-            country="USA"
-        )
-
-        assert "address" in org.data
-        assert org.data["address"]["@type"] == "PostalAddress"
-        assert org.data["address"]["streetAddress"] == "123 Main St"
-        assert org.data["address"]["addressLocality"] == "San Francisco"
-        assert org.data["address"]["addressRegion"] == "CA"
-        assert org.data["address"]["postalCode"] == "94102"
-        assert org.data["address"]["addressCountry"] == "USA"
-
-    def test_set_address_minimal(self):
-        """Test that empty address is not added."""
-        org = OrganizationGenerator()
-        org.set_address()  # No arguments
-
-        assert "address" not in org.data
-
-    def test_set_founding_info(self):
-        """Test setting founding information."""
-        org = OrganizationGenerator()
-        org.set_founding_info(
-            founding_date="2020-01-15",
-            dissolution_date="2024-12-31",
-            founding_location="San Francisco"
-        )
-
-        assert org.data["foundingDate"] == "2020-01-15"
-        assert org.data["dissolutionDate"] == "2024-12-31"
-        assert org.data["foundingLocation"]["@type"] == "Place"
-        assert org.data["foundingLocation"]["name"] == "San Francisco"
-
-    def test_add_founder(self):
-        """Test adding founders."""
-        org = OrganizationGenerator()
-        org.add_founder("John Doe")
-        org.add_founder("Jane Smith", person_id="urn:uuid:test-id")
-
-        assert len(org.data["founder"]) == 2
-        assert org.data["founder"][0]["@type"] == "Person"
-        assert org.data["founder"][0]["name"] == "John Doe"
-        assert org.data["founder"][1]["@id"] == "urn:uuid:test-id"
-
-    def test_set_employee_count(self):
-        """Test setting employee count."""
-        org = OrganizationGenerator()
-        org.set_employee_count(500)
-
-        assert org.data["numberOfEmployees"]["@type"] == "QuantitativeValue"
-        assert org.data["numberOfEmployees"]["value"] == 500
-
-    def test_set_area_served_string(self):
-        """Test setting area served with string."""
-        org = OrganizationGenerator()
-        org.set_area_served("North America")
-
-        assert org.data["areaServed"] == "North America"
-
-    def test_set_area_served_list(self):
-        """Test setting area served with list."""
-        org = OrganizationGenerator()
-        org.set_area_served(["USA", "Canada", "Mexico"])
-
-        assert len(org.data["areaServed"]) == 3
-        assert org.data["areaServed"][0]["@type"] == "Place"
-
-    def test_add_contact_point(self):
-        """Test adding contact points."""
-        org = OrganizationGenerator()
-        org.add_contact_point(
-            contact_type="customer service",
-            telephone="+1-555-123-4567",
-            email="support@test.com",
-            available_language=["en", "es"]
-        )
-
-        assert len(org.data["contactPoint"]) == 1
-        contact = org.data["contactPoint"][0]
-        assert contact["@type"] == "ContactPoint"
-        assert contact["contactType"] == "customer service"
-        assert contact["telephone"] == "+1-555-123-4567"
-        assert contact["email"] == "support@test.com"
-        assert contact["availableLanguage"] == ["en", "es"]
-
-    def test_add_same_as_string(self):
-        """Test adding sameAs with string."""
-        org = OrganizationGenerator()
-        org.add_same_as("https://www.linkedin.com/company/testcorp")
-
-        assert "https://www.linkedin.com/company/testcorp" in org.data["sameAs"]
-
-    def test_add_same_as_list(self):
-        """Test adding sameAs with list."""
-        org = OrganizationGenerator()
-        org.add_same_as([
-            "https://www.linkedin.com/company/testcorp",
-            "https://twitter.com/testcorp"
-        ])
-
-        assert len(org.data["sameAs"]) == 2
-
-    def test_set_parent_organization(self):
-        """Test setting parent organization."""
-        org = OrganizationGenerator()
-        org.set_parent_organization("Parent Corp", org_id="urn:uuid:parent-id")
-
-        assert org.data["parentOrganization"]["@type"] == "Organization"
-        assert org.data["parentOrganization"]["name"] == "Parent Corp"
-        assert org.data["parentOrganization"]["@id"] == "urn:uuid:parent-id"
-
-    def test_add_department(self):
-        """Test adding departments."""
-        org = OrganizationGenerator()
-        org.add_department("Engineering")
-        org.add_department("Marketing", dept_id="urn:uuid:marketing")
-
-        assert len(org.data["department"]) == 2
-        assert org.data["department"][0]["name"] == "Engineering"
-        assert org.data["department"][1]["@id"] == "urn:uuid:marketing"
 
     def test_get_required_properties(self):
         """Test getting required properties."""
@@ -866,197 +330,6 @@ class TestPersonGenerator:
         person = PersonGenerator()
         assert person.data["@type"] == "Person"
         assert "@id" in person.data
-
-    def test_set_name_full(self):
-        """Test setting full name."""
-        person = PersonGenerator()
-        person.set_name(name="John Doe")
-        assert person.data["name"] == "John Doe"
-
-    def test_set_name_parts(self):
-        """Test setting name parts."""
-        person = PersonGenerator()
-        person.set_name(
-            given_name="John",
-            family_name="Doe",
-            additional_name="Michael",
-            honorific_prefix="Dr.",
-            honorific_suffix="PhD"
-        )
-
-        assert person.data["givenName"] == "John"
-        assert person.data["familyName"] == "Doe"
-        assert person.data["additionalName"] == "Michael"
-        assert person.data["honorificPrefix"] == "Dr."
-        assert person.data["honorificSuffix"] == "PhD"
-
-    def test_set_contact_info(self):
-        """Test setting contact information."""
-        person = PersonGenerator()
-        person.set_contact_info(
-            email="john@example.com",
-            telephone="+1-555-123-4567",
-            fax="+1-555-123-4568"
-        )
-
-        assert person.data["email"] == "john@example.com"
-        assert person.data["telephone"] == "+1-555-123-4567"
-        assert person.data["faxNumber"] == "+1-555-123-4568"
-
-    def test_set_address(self):
-        """Test setting address."""
-        person = PersonGenerator()
-        person.set_address(
-            street="123 Main St",
-            city="San Francisco",
-            region="CA",
-            postal_code="94102",
-            country="USA"
-        )
-
-        assert "address" in person.data
-        assert person.data["address"]["@type"] == "PostalAddress"
-
-    def test_set_address_minimal(self):
-        """Test that empty address is not added."""
-        person = PersonGenerator()
-        person.set_address()
-
-        assert "address" not in person.data
-
-    def test_set_birth_info(self):
-        """Test setting birth information."""
-        person = PersonGenerator()
-        person.set_birth_info(birth_date="1990-01-15", birth_place="New York")
-
-        assert person.data["birthDate"] == "1990-01-15"
-        assert person.data["birthPlace"]["@type"] == "Place"
-        assert person.data["birthPlace"]["name"] == "New York"
-
-    def test_set_death_info(self):
-        """Test setting death information."""
-        person = PersonGenerator()
-        person.set_death_info(death_date="2024-12-31", death_place="Los Angeles")
-
-        assert person.data["deathDate"] == "2024-12-31"
-        assert person.data["deathPlace"]["@type"] == "Place"
-
-    def test_set_job_info(self):
-        """Test setting job information."""
-        person = PersonGenerator()
-        person.set_job_info(
-            job_title="Software Engineer",
-            works_for="Tech Corp",
-            works_for_id="urn:uuid:techcorp"
-        )
-
-        assert person.data["jobTitle"] == "Software Engineer"
-        assert person.data["worksFor"]["@type"] == "Organization"
-        assert person.data["worksFor"]["name"] == "Tech Corp"
-        assert person.data["worksFor"]["@id"] == "urn:uuid:techcorp"
-
-    def test_add_affiliation(self):
-        """Test adding affiliations."""
-        person = PersonGenerator()
-        person.add_affiliation("IEEE")
-        person.add_affiliation("ACM", org_id="urn:uuid:acm")
-
-        assert len(person.data["affiliation"]) == 2
-        assert person.data["affiliation"][1]["@id"] == "urn:uuid:acm"
-
-    def test_add_alumni_of(self):
-        """Test adding alumni information."""
-        person = PersonGenerator()
-        person.add_alumni_of("MIT")
-        person.add_alumni_of("Stanford", org_id="urn:uuid:stanford")
-
-        assert len(person.data["alumniOf"]) == 2
-        assert person.data["alumniOf"][0]["@type"] == "EducationalOrganization"
-
-    def test_set_nationality(self):
-        """Test setting nationality."""
-        person = PersonGenerator()
-        person.set_nationality("USA")
-
-        assert person.data["nationality"]["@type"] == "Country"
-        assert person.data["nationality"]["name"] == "USA"
-
-    def test_set_gender(self):
-        """Test setting gender."""
-        person = PersonGenerator()
-        person.set_gender("Male")
-        assert person.data["gender"] == "Male"
-
-    def test_set_image(self):
-        """Test setting profile image."""
-        person = PersonGenerator()
-        person.set_image("https://example.com/photo.jpg")
-
-        assert person.data["image"]["@type"] == "ImageObject"
-        assert person.data["image"]["url"] == "https://example.com/photo.jpg"
-
-    def test_set_url(self):
-        """Test setting personal URL."""
-        person = PersonGenerator()
-        person.set_url("https://johndoe.com")
-        assert person.data["url"] == "https://johndoe.com"
-
-    def test_add_same_as(self):
-        """Test adding sameAs links."""
-        person = PersonGenerator()
-        person.add_same_as("https://twitter.com/johndoe")
-        person.add_same_as(["https://linkedin.com/in/johndoe"])
-
-        assert len(person.data["sameAs"]) == 2
-
-    def test_add_knows(self):
-        """Test adding known people."""
-        person = PersonGenerator()
-        person.add_knows("Jane Smith")
-        person.add_knows("Bob Johnson", person_id="urn:uuid:bob")
-
-        assert len(person.data["knows"]) == 2
-        assert person.data["knows"][1]["@id"] == "urn:uuid:bob"
-
-    def test_add_colleague(self):
-        """Test adding colleagues."""
-        person = PersonGenerator()
-        person.add_colleague("Alice Williams")
-
-        assert len(person.data["colleague"]) == 1
-        assert person.data["colleague"][0]["@type"] == "Person"
-
-    def test_set_spouse(self):
-        """Test setting spouse."""
-        person = PersonGenerator()
-        person.set_spouse("Jane Doe", person_id="urn:uuid:jane")
-
-        assert person.data["spouse"]["@type"] == "Person"
-        assert person.data["spouse"]["name"] == "Jane Doe"
-        assert person.data["spouse"]["@id"] == "urn:uuid:jane"
-
-    def test_add_parent(self):
-        """Test adding parents."""
-        person = PersonGenerator()
-        person.add_parent("John Doe Sr.")
-        person.add_parent("Mary Doe")
-
-        assert len(person.data["parent"]) == 2
-
-    def test_add_child(self):
-        """Test adding children."""
-        person = PersonGenerator()
-        person.add_child("John Doe Jr.", person_id="urn:uuid:jr")
-
-        assert len(person.data["children"]) == 1
-        assert person.data["children"][0]["@id"] == "urn:uuid:jr"
-
-    def test_add_sibling(self):
-        """Test adding siblings."""
-        person = PersonGenerator()
-        person.add_sibling("James Doe")
-
-        assert len(person.data["sibling"]) == 1
 
     def test_get_required_properties(self):
         """Test getting required properties."""
@@ -1124,7 +397,7 @@ class TestSchemaOrgBaseMethods:
         """Test adding nested schema."""
         doc = DocumentGenerator()
         person = PersonGenerator()
-        person.set_name(name="John Doe")
+        person.set_property("name", "John Doe", PropertyType.TEXT)
 
         doc.add_nested_schema("author", person)
 
@@ -1219,7 +492,7 @@ class TestSchemaOrgBaseMethods:
         """Test adding relationship with schema."""
         doc = DocumentGenerator()
         parent = DocumentGenerator()
-        parent.set_basic_info("Parent Doc")
+        parent.set_property("name", "Parent Doc", PropertyType.TEXT)
 
         doc.add_relationship("isPartOf", parent)
 
@@ -1228,7 +501,7 @@ class TestSchemaOrgBaseMethods:
     def test_to_dict(self):
         """Test converting to dictionary."""
         doc = DocumentGenerator()
-        doc.set_basic_info("Test")
+        doc.set_property("name", "Test", PropertyType.TEXT)
 
         data = doc.to_dict()
 
@@ -1241,7 +514,7 @@ class TestSchemaOrgBaseMethods:
     def test_to_json_ld(self):
         """Test converting to JSON-LD string."""
         doc = DocumentGenerator()
-        doc.set_basic_info("Test")
+        doc.set_property("name", "Test", PropertyType.TEXT)
 
         json_ld = doc.to_json_ld()
 
@@ -1252,7 +525,7 @@ class TestSchemaOrgBaseMethods:
     def test_to_json_ld_script(self):
         """Test converting to JSON-LD script tag."""
         doc = DocumentGenerator()
-        doc.set_basic_info("Test")
+        doc.set_property("name", "Test", PropertyType.TEXT)
 
         script = doc.to_json_ld_script()
 
@@ -1270,8 +543,9 @@ class TestSchemaOrgBaseMethods:
     def test_validate_required_properties_complete(self):
         """Test validating with all required properties."""
         doc = DocumentGenerator()
-        doc.set_basic_info("Test")
-        doc.set_file_info("application/pdf", "https://example.com/test.pdf")
+        doc.set_property("name", "Test", PropertyType.TEXT)
+        doc.set_property("encodingFormat", "application/pdf", PropertyType.TEXT)
+        doc.set_property("url", "https://example.com/test.pdf", PropertyType.URL)
 
         missing = doc.validate_required_properties()
 
@@ -1287,7 +561,7 @@ class TestSchemaOrgBaseMethods:
     def test_get_completion_score_partial(self):
         """Test completion score for partial schema."""
         doc = DocumentGenerator()
-        doc.set_basic_info("Test")
+        doc.set_property("name", "Test", PropertyType.TEXT)
 
         score = doc.get_completion_score()
 
@@ -1296,8 +570,9 @@ class TestSchemaOrgBaseMethods:
     def test_get_completion_score_full(self):
         """Test completion score for full schema."""
         doc = DocumentGenerator()
-        doc.set_basic_info("Test")
-        doc.set_file_info("application/pdf", "https://example.com/test.pdf")
+        doc.set_property("name", "Test", PropertyType.TEXT)
+        doc.set_property("encodingFormat", "application/pdf", PropertyType.TEXT)
+        doc.set_property("url", "https://example.com/test.pdf", PropertyType.URL)
 
         score = doc.get_completion_score()
 
@@ -1306,7 +581,7 @@ class TestSchemaOrgBaseMethods:
     def test_str_representation(self):
         """Test string representation."""
         doc = DocumentGenerator()
-        doc.set_basic_info("Test")
+        doc.set_property("name", "Test", PropertyType.TEXT)
 
         result = str(doc)
 
