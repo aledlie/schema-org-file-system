@@ -524,3 +524,49 @@ All five bulk endpoints (`/bulk`) now return `{"@context": ..., "@graph": [...]}
 **Files:** `tests/performance/test_export_benchmark.py`
 
 Added `test_bench_file_to_schema_org` and `test_bench_category_to_schema_org` (per-entity serialization cost, uses `seeded` fixture). Added `_seed_session_with_relations`, `seeded_with_relations` fixture, and `test_bench_get_graph_document_with_relations` (relationship-building overhead). All run at 100/1k (10k gated as slow). 14 tests total, all pass.
+
+---
+
+### Backlog Completions (2026-06-26 to 2026-06-27)
+
+#### Improve OCR preprocessing for dark-background screenshots
+
+**Status:** Done (2026-06-27)
+
+Fixed OCR failures on dark-background terminal, IDE, and dashboard screenshots via:
+- **Dark-background inversion:** `preprocess_for_ocr()` detects mean luminance and inverts when below threshold (100) to convert light-on-dark text to dark-on-light.
+- **CLAHE retry:** When first OCR pass yields < 30 chars, retries with CLAHE contrast enhancement (LAB L-channel, clip 2.0, 8×8 tiles); keeps whichever returns more characters.
+- **Unified OCR runner:** Both `extract_ocr_text()` and `extract_ocr_with_confidence()` funnel through `_run_image_ocr()` (deduplicates two docTR call paths).
+- **New SCREENSHOT_KEYWORDS:** Added `code` (IDE syntax: `import`, `def`, `class`, etc.) and `browser` (`http://`, `www.`, `.com`, `search`) categories routing to `photos_screenshots_code` / `photos_screenshots_browser`.
+- **No threshold change:** Left `CLIP_ENHANCE_THRESHOLD` at 0.15 — OCR fallback already fires for screenshots (they score ~0.05, below the 0.10 gate), so the root cause fix (inversion + CLAHE) was more effective than lowering the global threshold.
+- **Validation:** 13 unit tests in `tests/unit/test_ocr_preprocessing.py` covering luminance/inversion/CLAHE math and new keyword routing. Full unit suite: 793 passed / 2 skipped.
+
+**Files:** `scripts/shared/ocr_classifier.py`, `tests/unit/test_ocr_preprocessing.py`
+
+---
+
+#### Filename-pattern classification duplicated across two organizers
+
+**Status:** Done (2026-06-27)
+
+Consolidated duplicate filename pattern matching logic from two divergent implementations:
+- **Root cause:** `content_organizer.py` had a stale ~779-line copy while `file_organizer_content_based.py` maintained a canonical ~1530-line superset with research-paper detection and advanced patterns.
+- **Fix:** Extracted canonical rules into `scripts/shared/filename_classifier.py` as `classify_by_filename_patterns(file_path, *, game_sprite_keywords, last_file_state=None)`. Moved research helpers (`RESEARCH_CATEGORY`, `SCHOLARLY_ARTICLE_SCHEMA_TYPE`, `_detect_research_publisher`, `_RESEARCH_PREFIX_PATTERNS`) into shared module.
+- **Validation:** Live path proven **byte-identical** over 6027 December filenames (including research side-channel state) → 0 mismatches. Updated `content_organizer` unit test (`test_screenshot_detected` split into `test_software_screenshot_detected` + `test_bare_screenshot_deferred`) to match production contract.
+- **Unit tests:** 771 passed, 2 skipped. Removed dead `_EXTRA_GAME_AUDIO_FP_KEYWORDS` from `content_organizer`.
+
+**Files:** `scripts/shared/filename_classifier.py` (new), `scripts/file_organizer_content_based.py` (delegates), `src/organizers/content_organizer.py` (delegates), `tests/unit/test_content_organizer.py` (test updated)
+
+---
+
+#### Verify relabel_test_set.py does not regress true `media` labels
+
+**Status:** Done (2026-06-26)
+
+Confirmed triage pass extension does not silently degrade media classification:
+- **Finding:** The three flagged triage passes (3–5) fire **0** times on December dataset (6027 samples), so the eligible-set extension overwrites **0** media labels.
+- **Measured media movement** (support 314→211, F1 0.50→0.43, precision 0.36→0.28) comes entirely from pre-existing passes 1 (`parent_folder == 'Games'`, 20 media→game_assets) and 2 (`Other/` sprite-like, 83) — both intentional label-rot corrections and out of scope.
+- **Controlled comparison:** Preserving all original media labels yields overall accuracy 0.9096 vs 0.9074 with relabel — i.e., corrective passes trade minimal overall accuracy for cleaner game_assets labels.
+- **Fix applied:** Narrowed `_RELABEL_ELIGIBLE_CATEGORIES` to `{'uncategorized'}` so triage passes can never overwrite a media label on future datasets. Verified 0-row no-op on December; eval confirms 90.74% category accuracy, media F1 42.90% (baseline held exactly).
+
+**Files:** `scripts/relabel_test_set.py` (`_RELABEL_ELIGIBLE_CATEGORIES` + docstring), `results/ml_data_dec/test_relabeled.json` (regenerated)
