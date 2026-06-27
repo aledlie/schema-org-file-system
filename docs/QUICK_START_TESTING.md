@@ -162,25 +162,21 @@ class TestGraphStoreCategories:
 class TestGraphStoreEntities:
     """Test entity management (companies, people)."""
 
-    def test_add_company(self, graph_store):
+    def test_get_or_create_company(self, graph_store):
         """Test adding a company entity."""
-        company = graph_store.add_company(
-            name="Acme Corp",
-            canonical_id="org:acme-corp"
-        )
+        company = graph_store.get_or_create_company(name="Acme Corp")
 
         assert company is not None
         assert company.name == "Acme Corp"
+        assert company.canonical_id is not None  # auto-generated
 
-    def test_add_person(self, graph_store):
+    def test_get_or_create_person(self, graph_store):
         """Test adding a person entity."""
-        person = graph_store.add_person(
-            name="John Doe",
-            canonical_id="person:john-doe"
-        )
+        person = graph_store.get_or_create_person(name="John Doe")
 
         assert person is not None
         assert person.name == "John Doe"
+        assert person.canonical_id is not None  # auto-generated
 
 
 class TestGraphStoreQueries:

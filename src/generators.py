@@ -219,22 +219,6 @@ class ImageGenerator(SchemaOrgBase):
         """Recommended properties for images."""
         return list(IMAGE_RECOMMENDED_PROPERTIES)
 
-    def set_thumbnail(self, thumbnail_url: str) -> 'ImageGenerator':
-        """
-        Set thumbnail image.
-
-        Args:
-            thumbnail_url: Thumbnail URL
-
-        Returns:
-            Self for method chaining
-        """
-        self.data["thumbnail"] = {
-            "@type": "ImageObject",
-            "contentUrl": thumbnail_url
-        }
-        return self
-
 
 class VideoGenerator(SchemaOrgBase):
     """
@@ -260,35 +244,6 @@ class VideoGenerator(SchemaOrgBase):
     def get_recommended_properties(self) -> List[str]:
         """Recommended properties for videos."""
         return list(VIDEO_RECOMMENDED_PROPERTIES)
-
-    def set_interaction_stats(self, view_count: Optional[int] = None,
-                              comment_count: Optional[int] = None) -> 'VideoGenerator':
-        """
-        Set interaction statistics.
-
-        Args:
-            view_count: Number of views
-            comment_count: Number of comments
-
-        Returns:
-            Self for method chaining
-        """
-        interaction_statistic = []
-        if view_count is not None:
-            interaction_statistic.append({
-                "@type": "InteractionCounter",
-                "interactionType": "https://schema.org/WatchAction",
-                "userInteractionCount": view_count
-            })
-        if comment_count is not None:
-            interaction_statistic.append({
-                "@type": "InteractionCounter",
-                "interactionType": "https://schema.org/CommentAction",
-                "userInteractionCount": comment_count
-            })
-        if interaction_statistic:
-            self.data["interactionStatistic"] = interaction_statistic
-        return self
 
 
 class AudioGenerator(SchemaOrgBase):

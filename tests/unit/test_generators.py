@@ -175,15 +175,6 @@ class TestImageGenerator:
         photo = ImageGenerator("Photograph")
         assert photo.data["@type"] == "Photograph"
 
-    def test_set_thumbnail(self):
-        """Test setting thumbnail."""
-        img = ImageGenerator()
-        img.set_thumbnail("https://example.com/thumb.jpg")
-
-        assert "thumbnail" in img.data
-        assert img.data["thumbnail"]["@type"] == "ImageObject"
-        assert img.data["thumbnail"]["contentUrl"] == "https://example.com/thumb.jpg"
-
 
 # =============================================================================
 # Test VideoGenerator
@@ -201,21 +192,6 @@ class TestVideoGenerator:
         """Test movie clip type."""
         clip = VideoGenerator("MovieClip")
         assert clip.data["@type"] == "MovieClip"
-
-    def test_set_interaction_stats(self):
-        """Test setting interaction statistics."""
-        video = VideoGenerator()
-        video.set_interaction_stats(view_count=10000, comment_count=500)
-
-        assert "interactionStatistic" in video.data
-        assert len(video.data["interactionStatistic"]) == 2
-
-    def test_set_interaction_stats_partial(self):
-        """Test setting partial interaction statistics."""
-        video = VideoGenerator()
-        video.set_interaction_stats(view_count=10000)
-
-        assert len(video.data["interactionStatistic"]) == 1
 
 
 # =============================================================================
@@ -352,18 +328,6 @@ class TestPersonGenerator:
 class TestSchemaOrgBaseMethods:
     """Test SchemaOrgBase methods via concrete implementations."""
 
-    def test_set_id(self):
-        """Test setting ID after creation."""
-        doc = DocumentGenerator()
-        doc.set_id("urn:sha256:abc123")
-        assert doc.data["@id"] == "urn:sha256:abc123"
-
-    def test_set_id_uuid_string(self):
-        """Test setting ID with UUID string (auto-wraps in URN)."""
-        doc = DocumentGenerator()
-        doc.set_id("550e8400-e29b-41d4-a716-446655440000")
-        assert doc.data["@id"] == "urn:uuid:550e8400-e29b-41d4-a716-446655440000"
-
     def test_get_id(self):
         """Test getting ID."""
         doc = DocumentGenerator(entity_id="urn:sha256:test123")
@@ -393,84 +357,6 @@ class TestSchemaOrgBaseMethods:
         result = doc._validate_and_convert("single", PropertyType.ARRAY)
         assert result == ["single"]
 
-    def test_add_nested_schema(self):
-        """Test adding nested schema."""
-        doc = DocumentGenerator()
-        person = PersonGenerator()
-        person.set_property("name", "John Doe", PropertyType.TEXT)
-
-        doc.add_nested_schema("author", person)
-
-        assert doc.data["author"]["@type"] == "Person"
-        assert doc.data["author"]["name"] == "John Doe"
-
-    def test_add_person_auto_id(self):
-        """Test adding person with auto-generated ID."""
-        doc = DocumentGenerator()
-        doc.add_person("author", "John Doe")
-
-        assert doc.data["author"]["@id"].startswith("urn:uuid:")
-
-    def test_add_person_custom_id(self):
-        """Test adding person with custom ID."""
-        doc = DocumentGenerator()
-        doc.add_person("author", "John Doe", person_id="urn:sha256:custom")
-
-        assert doc.data["author"]["@id"] == "urn:sha256:custom"
-
-    def test_add_organization_with_logo(self):
-        """Test adding organization with logo."""
-        doc = DocumentGenerator()
-        doc.add_organization(
-            "publisher",
-            "Test Org",
-            logo="https://example.com/logo.png"
-        )
-
-        assert "logo" in doc.data["publisher"]
-        assert doc.data["publisher"]["logo"]["@type"] == "ImageObject"
-
-    def test_add_place_with_geo(self):
-        """Test adding place with geo coordinates."""
-        doc = DocumentGenerator()
-        doc.add_place(
-            "contentLocation",
-            "Test Location",
-            geo={"latitude": 37.7749, "longitude": -122.4194}
-        )
-
-        assert doc.data["contentLocation"]["geo"]["@type"] == "GeoCoordinates"
-        assert doc.data["contentLocation"]["geo"]["latitude"] == 37.7749
-
-    def test_set_identifier_with_property_id(self):
-        """Test setting identifier with property ID."""
-        doc = DocumentGenerator()
-        doc.set_identifier("abc123", property_id="sha256")
-
-        assert doc.data["identifier"]["@type"] == "PropertyValue"
-        assert doc.data["identifier"]["propertyID"] == "sha256"
-
-    def test_set_identifier_simple(self):
-        """Test setting simple identifier."""
-        doc = DocumentGenerator()
-        doc.set_identifier("abc123")
-
-        assert doc.data["identifier"] == "abc123"
-
-    def test_add_keywords_string(self):
-        """Test adding keywords as string."""
-        doc = DocumentGenerator()
-        doc.add_keywords("test, keywords")
-
-        assert doc.data["keywords"] == "test, keywords"
-
-    def test_add_keywords_list(self):
-        """Test adding keywords as list."""
-        doc = DocumentGenerator()
-        doc.add_keywords(["test", "keywords"])
-
-        assert doc.data["keywords"] == "test, keywords"
-
     def test_set_dates(self):
         """Test setting dates."""
         doc = DocumentGenerator()
@@ -480,23 +366,6 @@ class TestSchemaOrgBaseMethods:
         assert "dateCreated" in doc.data
         assert "dateModified" in doc.data
         assert "datePublished" in doc.data
-
-    def test_add_relationship_string(self):
-        """Test adding relationship with string."""
-        doc = DocumentGenerator()
-        doc.add_relationship("isPartOf", "https://example.com/collection")
-
-        assert doc.data["isPartOf"] == "https://example.com/collection"
-
-    def test_add_relationship_schema(self):
-        """Test adding relationship with schema."""
-        doc = DocumentGenerator()
-        parent = DocumentGenerator()
-        parent.set_property("name", "Parent Doc", PropertyType.TEXT)
-
-        doc.add_relationship("isPartOf", parent)
-
-        assert doc.data["isPartOf"]["name"] == "Parent Doc"
 
     def test_to_dict(self):
         """Test converting to dictionary."""

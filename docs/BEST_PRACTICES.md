@@ -71,6 +71,16 @@ Thing
 
 ## Property Guidelines
 
+> **API status (v2.0.0):** The fluent entity-builder helpers (`add_person`,
+> `add_organization`, `add_place`, `add_keywords`, `set_identifier`,
+> `add_relationship`, `add_nested_schema`, `set_id`, plus `ImageGenerator.set_thumbnail`
+> and `VideoGenerator.set_interaction_stats`) have been **removed**. Set every property
+> through `set_property(name, value)` — pass a plain dict for nested entities. The
+> retained `SchemaOrgBase` helpers are `set_property`, `set_dates`, and `get_id`.
+> For entities with canonical IDs and cross-file relationships, use the `GraphStore`
+> API (`get_or_create_person`, `get_or_create_company`, `add_relationship`), which is
+> the canonical path the organizer pipeline uses.
+
 ### Required vs Recommended
 
 Always include required properties, aim for recommended properties:
@@ -81,9 +91,9 @@ doc.set_property("name", "Document Title")
 doc.set_property("encodingFormat", "application/pdf")
 
 # Recommended properties (improves quality)
-doc.add_person("author", "Jane Smith")
+doc.set_property("author", {"@type": "Person", "name": "Jane Smith"})
 doc.set_dates(created=datetime.now())
-doc.add_keywords(["topic1", "topic2"])
+doc.set_property("keywords", "topic1, topic2")
 ```
 
 ### URL Best Practices
@@ -138,19 +148,12 @@ def seconds_to_iso_duration(seconds: int) -> str:
 Be specific and use consistent terminology:
 
 ```python
-# Good - Specific, consistent keywords
-doc.add_keywords([
-    "machine learning",
-    "neural networks",
-    "artificial intelligence"
-])
+# Good - Specific, consistent keywords (comma-separated string)
+doc.set_property("keywords", "machine learning, neural networks, artificial intelligence")
 
 # Bad - Too generic, inconsistent
-doc.add_keywords([
-    "ML",  # Use full term
-    "AI stuff",  # Too vague
-    "Neural Networks",  # Inconsistent capitalization
-])
+doc.set_property("keywords", "ML, AI stuff, Neural Networks")
+#                             ^abbrev  ^vague   ^inconsistent capitalization
 ```
 
 ---
@@ -573,15 +576,21 @@ doc.set_property("contentSize", f"{file_size}B")
 **Problem:**
 ```python
 # Too many nested levels
-doc.add_person("author", ...)
-doc.author.add_person("mentor", ...)
-doc.author.mentor.add_organization("employer", ...)  # Too deep!
+doc.set_property("author", {
+    "@type": "Person",
+    "name": "Jane Smith",
+    "mentor": {"@type": "Person", "name": "...", "employer": {...}},  # Too deep!
+})
 ```
 
 **Solution:**
 ```python
 # Keep it simple - 1-2 levels max
-doc.add_person("author", "Jane Smith", affiliation="University")
+doc.set_property("author", {
+    "@type": "Person",
+    "name": "Jane Smith",
+    "affiliation": {"@type": "Organization", "name": "University"},
+})
 ```
 
 ### Pitfall 5: Not Validating Before Storage
@@ -623,9 +632,9 @@ doc.set_property("encodingFormat", "application/pdf")
 doc = DocumentGenerator()
 doc.set_property("name", "Document")
 doc.set_property("encodingFormat", "application/pdf")
-doc.add_person("author", "Author Name")  # Recommended
+doc.set_property("author", {"@type": "Person", "name": "Author Name"})  # Recommended
 doc.set_dates(created=datetime.now())  # Recommended
-doc.add_keywords(["topic1", "topic2"])  # Recommended
+doc.set_property("keywords", "topic1, topic2")  # Recommended
 doc.set_property("description", "Clear description")  # Recommended
 ```
 
