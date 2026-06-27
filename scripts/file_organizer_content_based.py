@@ -18,9 +18,9 @@ from collections import defaultdict
 from urllib.parse import quote
 from contextlib import nullcontext
 
-# OCR (docTR via shared.ocr_utils) and PDF imports
+# OCR (docTR via shared.ocr_classifier) and PDF imports
 try:
-    from shared.ocr_utils import (
+    from shared.ocr_classifier import (
         extract_ocr_text,
         extract_ocr_text_pdf,
         extract_ocr_with_confidence,
@@ -91,7 +91,7 @@ from base import PropertyType
 from enrichment import MetadataEnricher, cached_stat
 from validator import SchemaValidator
 from integration import SchemaRegistry
-from image_content_renamer import ImageContentRenamer
+from rename_images import ImageContentRenamer
 
 # Graph storage imports
 try:
@@ -3382,14 +3382,17 @@ class ContentBasedFileOrganizer:
                 a rename in dry-run mode, display_path carries the descriptive
                 name while file_path still points to the original file.
 
-        Priority order:
-        0. Filename pattern detection (fastest - no content extraction needed)
-        1. Organization entity detection (for documents with content)
-        2. Person entity detection
-        3. Game asset detection (audio, sprites, textures)
-        4. Filepath-based classification (file extensions, filenames)
-        5. Image content analysis (for home interiors)
-        6. OCR and text-based classification
+        Priority order (executed in this exact sequence; first match wins):
+        0a. Renamed-screenshot content routing (display_path vs file_path)
+        0b. Filename pattern detection (fastest - no content extraction needed)
+        1.  Organization / Person entity detection (document-type files)
+        3.  Game asset detection (audio, sprites, textures)
+        3.  Filepath-based classification (file extensions, filenames)
+        3.5 Identification-document detection via OCR (passport, ID, license)
+        4.  Media file classification (photos, videos, audio)
+        4.5 Screenshot sub-classification via OCR + CLIP
+        5.  Photo composition analysis (people / home interior)
+        6.  Regular text extraction and content/KIE classification
 
         Returns:
             Tuple of (main_category, subcategory, schema_type, extracted_text, company_name, people_names, image_metadata)
@@ -3508,58 +3511,11 @@ class ContentBasedFileOrganizer:
 
         # PRIORITY 3.5: Check for identification documents in images (passport, ID, license)
         # These should go to Person/ folder, not Media/
-        if schema_type == 'ImageObject' and self.ocr_available:
-            # Extract text from image via OCR with confidence metadata.
-            # Low-confidence results (e.g. blurry photos) must not trigger ID detection.
-            _ocr_result = extract_ocr_with_confidence(file_path, max_chars=0) if self.ocr_available else None
-            ocr_text = _ocr_result.text if _ocr_result else ""
-            _ocr_conf = _ocr_result.confidence if _ocr_result else None
-            _ocr_lang = _ocr_result.language if _ocr_result else None
-            # Store for later persistence (consumed by _persist_to_graph_store).
-            self._last_file_ocr_confidence = _ocr_conf
-            self._last_file_detected_language = _ocr_lang
-            # Cache OCR text so extract_text_from_image can reuse it.
-            if ocr_text:
-                self._last_file_ocr_text = ocr_text
-            # Attempt KIE structured field extraction when OCR is reliable.
-            if KIE_AVAILABLE and _ocr_conf is not None and _ocr_conf >= _OCR_CONFIDENCE_THRESHOLD:
-                self._last_file_state['kie_result'] = extract_kie_fields(file_path)
-            _id_conf_ok = _ocr_conf is None or _ocr_conf >= _OCR_CONFIDENCE_THRESHOLD
-            if ocr_text and len(ocr_text) >= 30 and _id_conf_ok:
-                ocr_lower = ocr_text.lower()
-                # Check for identification document keywords
-                id_keywords = ['passport', 'driver license', "driver's license", 'identification',
-                              'united states of america', 'department of state', 'nationality',
-                              'date of birth', 'place of birth', 'surname', 'given names',
-                              'social security', 'state id', 'national id']
-                if any(kw in ocr_lower for kw in id_keywords):
-                    print(f"  ✓ Identification document detected via OCR")
-                    people_names = []
-
-                    # Method 1: Parse passport MRZ (Machine Readable Zone)
-                    # Format: P<COUNTRY{SURNAME}<<{GIVEN_NAME}<...
-                    mrz_match = re.search(r'P<[A-Z]{3}([A-Z]+)<<([A-Z]+)<', ocr_text)
-                    if mrz_match:
-                        surname = mrz_match.group(1).title()
-                        given = mrz_match.group(2).title()
-                        people_names = [f"{given} {surname}"]
-
-                    # Method 2: Look for name fields with values on next line or after colon
-                    # Passport format: "Surname\nLEDLIE" or "Surname/Nom\nLEDLIE"
-                    if not people_names:
-                        # Find surname (all caps, standalone on line)
-                        surname_match = re.search(r'(?:surname|nom|apellidos)[/\w\s]*\n\s*([A-Z]{2,})\b', ocr_text, re.IGNORECASE)
-                        given_match = re.search(r'(?:given\s*names?|pr[ée]noms?|nombres)[/\w\s]*\n\s*([A-Z]{2,})\b', ocr_text, re.IGNORECASE)
-                        if surname_match and given_match:
-                            people_names = [f"{given_match.group(1).title()} {surname_match.group(1).title()}"]
-
-                    # Method 3: General name extraction patterns
-                    if not people_names:
-                        people_names = self.classifier.extract_people_names(ocr_text)
-
-                    if people_names:
-                        print(f"  ✓ Person identified: {people_names[0]}")
-                    return ('person', 'contacts', schema_type, ocr_text, None, people_names, image_metadata)
+        id_result = self._classify_identification_document(
+            file_path, schema_type, image_metadata,
+        )
+        if id_result is not None:
+            return id_result
 
         # PRIORITY 4: Check for media files (photos, videos, audio)
         # This runs after metadata extraction so we can use GPS/datetime for classification
@@ -3576,84 +3532,206 @@ class ContentBasedFileOrganizer:
             return (category, f"{media_type}_{subcategory}", schema_type, '', None, [], image_metadata)
 
         # PRIORITY 4.5: Screenshot sub-classification via OCR + CLIP
-        # Raw screenshots (e.g. "Screenshot 2025-*") that bypassed Priority 4
-        # because classify_media_file returned None.  Try OCR first (reliable
-        # for screenshots with text), then CLIP for non-text images.
+        screenshot_result = self._classify_screenshot_ocr(
+            file_path, schema_type, image_metadata,
+        )
+        if screenshot_result is not None:
+            return screenshot_result
+
+        # PRIORITY 5: Check for photos with people (social) / home interior
+        photo_result = self._classify_photo_composition(
+            file_path, schema_type, image_metadata,
+        )
+        if photo_result is not None:
+            return photo_result
+
+        # PRIORITY 6: Regular text extraction and classification
+        return self._classify_by_content_and_kie(
+            file_path, schema_type, image_metadata,
+        )
+
+    def _classify_identification_document(
+        self,
+        file_path: Path,
+        schema_type: str,
+        image_metadata: Dict[str, Any],
+    ) -> Optional[Tuple[str, str, str, str, Optional[str], List[str], Dict[str, Any]]]:
+        """PRIORITY 3.5: Detect identification documents in images (passport, ID, license).
+
+        These should go to Person/ folder, not Media/.  Always runs OCR + KIE side
+        effects (storing OCR confidence/language/text and any KIE result on self) so
+        that downstream tiers can reuse them; returns the person tuple on a match or
+        None to fall through.
+        """
+        if not (schema_type == 'ImageObject' and self.ocr_available):
+            return None
+        # Extract text from image via OCR with confidence metadata.
+        # Low-confidence results (e.g. blurry photos) must not trigger ID detection.
+        _ocr_result = extract_ocr_with_confidence(file_path, max_chars=0) if self.ocr_available else None
+        ocr_text = _ocr_result.text if _ocr_result else ""
+        _ocr_conf = _ocr_result.confidence if _ocr_result else None
+        _ocr_lang = _ocr_result.language if _ocr_result else None
+        # Store for later persistence (consumed by _persist_to_graph_store).
+        self._last_file_ocr_confidence = _ocr_conf
+        self._last_file_detected_language = _ocr_lang
+        # Cache OCR text so extract_text_from_image can reuse it.
+        if ocr_text:
+            self._last_file_ocr_text = ocr_text
+        # Attempt KIE structured field extraction when OCR is reliable.
+        if KIE_AVAILABLE and _ocr_conf is not None and _ocr_conf >= _OCR_CONFIDENCE_THRESHOLD:
+            self._last_file_state['kie_result'] = extract_kie_fields(file_path)
+        _id_conf_ok = _ocr_conf is None or _ocr_conf >= _OCR_CONFIDENCE_THRESHOLD
+        if ocr_text and len(ocr_text) >= 30 and _id_conf_ok:
+            ocr_lower = ocr_text.lower()
+            # Check for identification document keywords
+            id_keywords = ['passport', 'driver license', "driver's license", 'identification',
+                          'united states of america', 'department of state', 'nationality',
+                          'date of birth', 'place of birth', 'surname', 'given names',
+                          'social security', 'state id', 'national id']
+            if any(kw in ocr_lower for kw in id_keywords):
+                print(f"  ✓ Identification document detected via OCR")
+                people_names = []
+
+                # Method 1: Parse passport MRZ (Machine Readable Zone)
+                # Format: P<COUNTRY{SURNAME}<<{GIVEN_NAME}<...
+                mrz_match = re.search(r'P<[A-Z]{3}([A-Z]+)<<([A-Z]+)<', ocr_text)
+                if mrz_match:
+                    surname = mrz_match.group(1).title()
+                    given = mrz_match.group(2).title()
+                    people_names = [f"{given} {surname}"]
+
+                # Method 2: Look for name fields with values on next line or after colon
+                # Passport format: "Surname\nLEDLIE" or "Surname/Nom\nLEDLIE"
+                if not people_names:
+                    # Find surname (all caps, standalone on line)
+                    surname_match = re.search(r'(?:surname|nom|apellidos)[/\w\s]*\n\s*([A-Z]{2,})\b', ocr_text, re.IGNORECASE)
+                    given_match = re.search(r'(?:given\s*names?|pr[ée]noms?|nombres)[/\w\s]*\n\s*([A-Z]{2,})\b', ocr_text, re.IGNORECASE)
+                    if surname_match and given_match:
+                        people_names = [f"{given_match.group(1).title()} {surname_match.group(1).title()}"]
+
+                # Method 3: General name extraction patterns
+                if not people_names:
+                    people_names = self.classifier.extract_people_names(ocr_text)
+
+                if people_names:
+                    print(f"  ✓ Person identified: {people_names[0]}")
+                return ('person', 'contacts', schema_type, ocr_text, None, people_names, image_metadata)
+
+        return None
+
+    def _classify_screenshot_ocr(
+        self,
+        file_path: Path,
+        schema_type: str,
+        image_metadata: Dict[str, Any],
+    ) -> Optional[Tuple[str, str, str, str, Optional[str], List[str], Dict[str, Any]]]:
+        """PRIORITY 4.5: Screenshot sub-classification via OCR + CLIP.
+
+        Raw screenshots (e.g. "Screenshot 2025-*") that bypassed Priority 4 because
+        classify_media_file returned None.  Try OCR first (reliable for screenshots
+        with text), then CLIP for non-text images.  Returns a classification tuple
+        for any screenshot-named image, or None for non-screenshots.
+        """
         _stem_lower = file_path.stem.lower()
-        if schema_type == 'ImageObject' and (
+        if not (schema_type == 'ImageObject' and (
             _stem_lower.startswith('screenshot')
             or 'screen shot' in _stem_lower
             or (
                 'screenshot' in _stem_lower
                 and not re.match(r'^(browser|terminal|code|docs|settings|product|chat|dashboard)_', _stem_lower)
             )
-        ):
-            screenshots_dict = self.category_paths['media']['photos']['screenshots']
+        )):
+            return None
 
-            # Step 1: OCR-based sub-classification (dashboard, terminal, etc.)
-            ocr_result = _shared_classify_by_ocr(
-                file_path,
-                content_classifier=getattr(self.image_renamer.analyzer, 'content_classifier', None),
-            )
-            if ocr_result:
-                ocr_category, ocr_confidence, _ocr_scores, ocr_text = ocr_result
-                if ocr_text:
-                    self._last_file_ocr_text = ocr_text
-                if ocr_confidence < _SCREENSHOT_OCR_KEYWORD_THRESHOLD:
-                    print(
-                        f"  ↪ Screenshot OCR low confidence ({ocr_confidence:.0%} < "
-                        f"{_SCREENSHOT_OCR_KEYWORD_THRESHOLD:.0%}) — falling back to CLIP"
-                    )
-                elif ocr_category in screenshots_dict:
-                    print(f"  ✓ Screenshot OCR sub-class: {ocr_category} ({ocr_confidence:.0%})")
-                    return ('media', f'photos_screenshots_{ocr_category}', schema_type, '', None, [], image_metadata)
-                # OCR matched a non-screenshot Schema.org category — use it
-                elif '_' in ocr_category:
-                    print(f"  ✓ Screenshot OCR reclassified: {ocr_category} ({ocr_confidence:.0%})")
-                    return (ocr_category.split('_')[0], ocr_category, schema_type, '', None, [], image_metadata)
+        screenshots_dict = self.category_paths['media']['photos']['screenshots']
 
-            # Step 2: CLIP enhancement for images OCR couldn't classify
-            enhanced = self.enhance_weak_image_classification(file_path, image_metadata)
-            if enhanced:
-                ecat, esubcat = enhanced
-                # CLIP identified non-media content (e.g. game_assets) — use that
-                if ecat not in ('media',):
-                    print(f"  ✓ Screenshot reclassified: {ecat}/{esubcat}")
-                    return (ecat, esubcat, schema_type, '', None, [], image_metadata)
-                # CLIP identified a specific screenshot subcategory
-                if 'screenshots' in esubcat and esubcat != 'photos_screenshots_other':
-                    print(f"  ✓ Screenshot CLIP sub-class: {esubcat}")
-                    return ('media', esubcat, schema_type, '', None, [], image_metadata)
+        # Step 1: OCR-based sub-classification (dashboard, terminal, etc.)
+        ocr_result = _shared_classify_by_ocr(
+            file_path,
+            content_classifier=getattr(self.image_renamer.analyzer, 'content_classifier', None),
+        )
+        if ocr_result:
+            ocr_category, ocr_confidence, _ocr_scores, ocr_text = ocr_result
+            if ocr_text:
+                self._last_file_ocr_text = ocr_text
+            if ocr_confidence < _SCREENSHOT_OCR_KEYWORD_THRESHOLD:
+                print(
+                    f"  ↪ Screenshot OCR low confidence ({ocr_confidence:.0%} < "
+                    f"{_SCREENSHOT_OCR_KEYWORD_THRESHOLD:.0%}) — falling back to CLIP"
+                )
+            elif ocr_category in screenshots_dict:
+                print(f"  ✓ Screenshot OCR sub-class: {ocr_category} ({ocr_confidence:.0%})")
+                return ('media', f'photos_screenshots_{ocr_category}', schema_type, '', None, [], image_metadata)
+            # OCR matched a non-screenshot Schema.org category — use it
+            elif '_' in ocr_category:
+                print(f"  ✓ Screenshot OCR reclassified: {ocr_category} ({ocr_confidence:.0%})")
+                return (ocr_category.split('_')[0], ocr_category, schema_type, '', None, [], image_metadata)
 
-            # Fallback: generic screenshot folder
-            print(f"  ✓ Screenshot (unclassified)")
-            return ('media', 'photos_screenshots_other', schema_type, '', None, [], image_metadata)
+        # Step 2: CLIP enhancement for images OCR couldn't classify
+        enhanced = self.enhance_weak_image_classification(file_path, image_metadata)
+        if enhanced:
+            ecat, esubcat = enhanced
+            # CLIP identified non-media content (e.g. game_assets) — use that
+            if ecat not in ('media',):
+                print(f"  ✓ Screenshot reclassified: {ecat}/{esubcat}")
+                return (ecat, esubcat, schema_type, '', None, [], image_metadata)
+            # CLIP identified a specific screenshot subcategory
+            if 'screenshots' in esubcat and esubcat != 'photos_screenshots_other':
+                print(f"  ✓ Screenshot CLIP sub-class: {esubcat}")
+                return ('media', esubcat, schema_type, '', None, [], image_metadata)
 
-        # PRIORITY 5: Check for photos with people (social)
-        if schema_type == 'ImageObject' and self.image_analyzer.vision_available:
-            print(f"  Analyzing image content...")
+        # Fallback: generic screenshot folder
+        print(f"  ✓ Screenshot (unclassified)")
+        return ('media', 'photos_screenshots_other', schema_type, '', None, [], image_metadata)
 
-            # First check if photo has people
-            has_people, people_scores = self.image_analyzer.has_people_in_photo(file_path)
+    def _classify_photo_composition(
+        self,
+        file_path: Path,
+        schema_type: str,
+        image_metadata: Dict[str, Any],
+    ) -> Optional[Tuple[str, str, str, str, Optional[str], List[str], Dict[str, Any]]]:
+        """PRIORITY 5: Photo composition analysis (people / home interior).
 
-            if has_people:
-                print(f"  ✓ Detected: Photo with people")
-                if people_scores:
-                    top_categories = sorted(people_scores.items(), key=lambda x: x[1], reverse=True)[:3]
-                    print(f"  Top matches: {', '.join([f'{cat}: {score:.2%}' for cat, score in top_categories])}")
-                return ('media', 'photos_social', schema_type, '', None, [], image_metadata)
+        Returns a media/property_management tuple on a vision match, or None when
+        vision is unavailable or no composition matched.
+        """
+        if not (schema_type == 'ImageObject' and self.image_analyzer.vision_available):
+            return None
+        print(f"  Analyzing image content...")
 
-            # Then check for home interior without people
-            is_property_mgmt, vision_scores = self.image_analyzer.is_home_interior_no_people(file_path)
+        # First check if photo has people
+        has_people, people_scores = self.image_analyzer.has_people_in_photo(file_path)
 
-            if is_property_mgmt:
-                print(f"  ✓ Detected: Home interior without people")
-                if vision_scores:
-                    top_categories = sorted(vision_scores.items(), key=lambda x: x[1], reverse=True)[:3]
-                    print(f"  Top matches: {', '.join([f'{cat}: {score:.2%}' for cat, score in top_categories])}")
-                return ('property_management', 'other', schema_type, '', None, [], image_metadata)
+        if has_people:
+            print(f"  ✓ Detected: Photo with people")
+            if people_scores:
+                top_categories = sorted(people_scores.items(), key=lambda x: x[1], reverse=True)[:3]
+                print(f"  Top matches: {', '.join([f'{cat}: {score:.2%}' for cat, score in top_categories])}")
+            return ('media', 'photos_social', schema_type, '', None, [], image_metadata)
 
-        # PRIORITY 6: Regular text extraction and classification
+        # Then check for home interior without people
+        is_property_mgmt, vision_scores = self.image_analyzer.is_home_interior_no_people(file_path)
+
+        if is_property_mgmt:
+            print(f"  ✓ Detected: Home interior without people")
+            if vision_scores:
+                top_categories = sorted(vision_scores.items(), key=lambda x: x[1], reverse=True)[:3]
+                print(f"  Top matches: {', '.join([f'{cat}: {score:.2%}' for cat, score in top_categories])}")
+            return ('property_management', 'other', schema_type, '', None, [], image_metadata)
+
+        return None
+
+    def _classify_by_content_and_kie(
+        self,
+        file_path: Path,
+        schema_type: str,
+        image_metadata: Dict[str, Any],
+    ) -> Tuple[str, str, str, str, Optional[str], List[str], Dict[str, Any]]:
+        """PRIORITY 6: Regular text extraction and content/KIE classification.
+
+        Terminal tier — always returns a result tuple (the fall-through default for
+        detect_file_category).
+        """
         print(f"  Extracting content...")
         extracted_text = self.extract_text(file_path)
 

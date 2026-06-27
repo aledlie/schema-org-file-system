@@ -1,12 +1,17 @@
-"""Unified CLIP image classification with optional refinement."""
+"""Unified CLIP image classification with refinement and naming."""
 from __future__ import annotations
 
+import re
+from datetime import datetime
 from pathlib import Path
 from typing import NamedTuple
 
 from shared.clip_utils import get_clip_classifier, CLIP_AVAILABLE
-from shared.clip_refinement import refine_classification
 from shared.ocr_classifier import apply_ocr_fallback as apply_ocr_fallback_logic
+from shared.constants import (
+    CLIP_REFINEMENT_MIN_CONFIDENCE,
+    CLIP_REFINEMENT_ACCEPT_CONFIDENCE,
+)
 
 
 class CLIPResult(NamedTuple):
@@ -16,12 +21,88 @@ class CLIPResult(NamedTuple):
   all_scores: dict[str, float]
 
 
+def refine_classification(
+    classifier,
+    image_path: Path,
+    best_category: str,
+    confidence: float,
+    refinement_terms: dict[str, list[str]] | None = None,
+    refinement_min_confidence: float = CLIP_REFINEMENT_MIN_CONFIDENCE,
+    refinement_accept_confidence: float = CLIP_REFINEMENT_ACCEPT_CONFIDENCE,
+) -> tuple[str, float]:
+  """Refine CLIP classification using more specific terms.
+
+  Args:
+    classifier: CLIPClassifier instance
+    image_path: Path to image file
+    best_category: Initial CLIP classification result
+    confidence: Initial CLIP confidence
+    refinement_terms: Dict mapping categories to refinement term lists
+    refinement_min_confidence: Min confidence to attempt refinement
+    refinement_accept_confidence: Min confidence to accept refinement result
+
+  Returns:
+    Tuple of (refined_category, refined_confidence)
+  """
+  if not refinement_terms or best_category not in refinement_terms:
+    return best_category, confidence
+
+  if confidence <= refinement_min_confidence:
+    return best_category, confidence
+
+  refinements = refinement_terms[best_category]
+  refined_term, refined_confidence = classifier.top_match(image_path, refinements)
+
+  if refined_confidence > refinement_accept_confidence:
+    return refined_term, refined_confidence
+
+  return best_category, confidence
+
+
+def generate_filename(
+    image_path: Path,
+    content: str,
+    metadata_parser=None,
+) -> str:
+  """Generate descriptive filename from content classification.
+
+  Creates names like: YYYYMMDD_descriptive_content.ext or descriptive_content.ext
+
+  Args:
+    image_path: Path to image file
+    content: CLIP classification result (category/description)
+    metadata_parser: Optional ImageMetadataParser for datetime extraction
+
+  Returns:
+    New filename with extension
+  """
+  clean_content = re.sub(r'[^a-z0-9_]', '', content.lower().replace(" ", "_"))
+
+  # Try to extract datetime from metadata or file mtime
+  dt = None
+  if metadata_parser:
+    dt = metadata_parser.extract_datetime(image_path)
+
+  if dt is None:
+    try:
+      dt = datetime.fromtimestamp(image_path.stat().st_mtime)
+    except Exception:
+      dt = None
+
+  date_str = dt.strftime("%Y%m%d") if dt else None
+  ext = image_path.suffix.lower()
+
+  if date_str:
+    return f"{date_str}_{clean_content}{ext}"
+  return f"{clean_content}{ext}"
+
+
 def classify_image(
     image_path: Path,
     labels: list[str],
     refinement_terms: dict[str, list[str]] | None = None,
-    refinement_min_confidence: float = 0.15,
-    refinement_accept_confidence: float = 0.30,
+    refinement_min_confidence: float = CLIP_REFINEMENT_MIN_CONFIDENCE,
+    refinement_accept_confidence: float = CLIP_REFINEMENT_ACCEPT_CONFIDENCE,
 ) -> CLIPResult | None:
   """Classify image with optional refinement.
 

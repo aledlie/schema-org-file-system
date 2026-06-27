@@ -121,19 +121,19 @@ class TestDbConnection:
 
 class TestExtractOcrText:
     def test_returns_none_when_ocr_unavailable(self, sample_image_file: Path) -> None:
-        from shared.ocr_utils import extract_ocr_text, OCR_AVAILABLE
+        from shared.ocr_classifier import extract_ocr_text, OCR_AVAILABLE
         if OCR_AVAILABLE:
             pytest.skip("doctr is installed; skipping unavailability test")
         result = extract_ocr_text(sample_image_file)
         assert result is None
 
     def test_returns_none_or_str_for_valid_image(self, sample_image_file: Path) -> None:
-        from shared.ocr_utils import extract_ocr_text
+        from shared.ocr_classifier import extract_ocr_text
         result = extract_ocr_text(sample_image_file)
         assert result is None or isinstance(result, str)
 
     def test_truncates_to_max_chars(self, sample_image_file: Path) -> None:
-        from shared.ocr_utils import extract_ocr_text, OCR_AVAILABLE
+        from shared.ocr_classifier import extract_ocr_text, OCR_AVAILABLE
         if not OCR_AVAILABLE:
             pytest.skip("doctr not installed")
         result = extract_ocr_text(sample_image_file, max_chars=10)
@@ -147,19 +147,19 @@ class TestExtractOcrText:
 
 class TestExtractOcrWithConfidence:
     def test_returns_none_when_ocr_unavailable(self, sample_image_file: Path) -> None:
-        from shared.ocr_utils import extract_ocr_with_confidence, OCR_AVAILABLE
+        from shared.ocr_classifier import extract_ocr_with_confidence, OCR_AVAILABLE
         if OCR_AVAILABLE:
             pytest.skip("doctr is installed; skipping unavailability test")
         result = extract_ocr_with_confidence(sample_image_file)
         assert result is None
 
     def test_returns_ocr_result_or_none(self, sample_image_file: Path) -> None:
-        from shared.ocr_utils import extract_ocr_with_confidence, OCRResult
+        from shared.ocr_classifier import extract_ocr_with_confidence, OCRResult
         result = extract_ocr_with_confidence(sample_image_file)
         assert result is None or isinstance(result, OCRResult)
 
     def test_result_has_confidence_and_metadata(self, sample_image_file: Path) -> None:
-        from shared.ocr_utils import extract_ocr_with_confidence, OCR_AVAILABLE
+        from shared.ocr_classifier import extract_ocr_with_confidence, OCR_AVAILABLE
         if not OCR_AVAILABLE:
             pytest.skip("doctr not installed")
         result = extract_ocr_with_confidence(sample_image_file)
