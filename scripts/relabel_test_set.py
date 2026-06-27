@@ -24,6 +24,12 @@ Pass 5 (triage document): files in triage locations whose filename matches
 ``DOCUMENT_PATTERNS`` are routed to ``financial`` / ``legal`` / ``personal``
 per the mapping below.
 
+Pass 6 (misfiled-photo correction): sprites/textures are PNG/SVG, so a
+``.jpg`` / ``.jpeg`` / ``.heic`` file labeled ``game_assets`` outside a
+``Games/`` folder is a misfiled photo and is corrected to ``media`` /
+``photos_other``. Pass 2 likewise never promotes a photo-extension file to
+``game_assets``. (Games/ JPEGs are left untouched — pass 1 owns that folder.)
+
 Triage passes only overwrite labels currently in
 ``_RELABEL_ELIGIBLE_CATEGORIES`` (``uncategorized``) so that already-confident
 labels are preserved. ``media`` is intentionally excluded: the triage heuristics
@@ -104,6 +110,11 @@ _TOKEN_RE = re.compile(r"[_\-]")
 _MAX_SHORT_TOKEN_LEN = 4
 _MIN_TOKENS = 2
 
+# Sprites/textures are PNG/SVG. A JPEG/HEIC labeled game_assets outside a
+# Games/ folder is a misfiled photo, not an asset (pass 6 corrects these, and
+# pass 2 never promotes them).
+_PHOTO_EXTENSIONS = frozenset({".jpg", ".jpeg", ".heic"})
+
 
 def _is_sprite_like(filename: str) -> bool:
     name = filename.rsplit(".", 1)[0].lower()
@@ -138,7 +149,7 @@ def _is_triage_location(sample: dict) -> bool:
 
 
 def relabel(samples: list[dict]) -> tuple[list[dict], dict[str, Counter]]:
-    counters = {f"pass{i}": Counter() for i in range(1, 6)}
+    counters = {f"pass{i}": Counter() for i in range(1, 7)}
     out = []
     for s in samples:
         s = dict(s)
@@ -146,6 +157,7 @@ def relabel(samples: list[dict]) -> tuple[list[dict], dict[str, Counter]]:
         cat = s.get("category")
         filename = s.get("filename", "")
         ext_cat = s.get("extension_category")
+        ext = s.get("extension", "").lower()
 
         if parent == "Games" and cat != "game_assets":
             counters["pass1"][cat] += 1
@@ -154,10 +166,21 @@ def relabel(samples: list[dict]) -> tuple[list[dict], dict[str, Counter]]:
             parent == "Other"
             and ext_cat == "image"
             and cat != "game_assets"
+            and ext not in _PHOTO_EXTENSIONS
             and _is_sprite_like(filename)
         ):
             counters["pass2"][cat] += 1
             s["category"] = "game_assets"
+        elif (
+            cat == "game_assets"
+            and parent != "Games"
+            and ext in _PHOTO_EXTENSIONS
+        ):
+            # Misfiled photos: a JPEG/HEIC labeled game_assets outside Games/
+            # is a photo, not a sprite/texture. Correct it to media.
+            counters["pass6"][cat] += 1
+            s["category"] = "media"
+            s["subcategory"] = "photos_other"
         elif _is_triage_location(s) and cat in _RELABEL_ELIGIBLE_CATEGORIES:
             if ext_cat == "image" and _filename_has_sprite_keyword(filename):
                 counters["pass3"][cat] += 1
@@ -181,6 +204,7 @@ _PASS_DESCRIPTIONS = {
     "pass3": "triage/ sprite keyword → game_assets",
     "pass4": "triage/ screenshot pattern → media",
     "pass5": "triage/ document pattern → financial|legal|personal",
+    "pass6": "non-Games JPEG/HEIC game_assets → media (misfiled photos)",
 }
 
 
