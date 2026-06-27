@@ -3279,20 +3279,19 @@ class ContentBasedFileOrganizer:
         # Create generator based on type
         if schema_type == "ImageObject":
             generator = ImageGenerator(schema_type)
-            generator.set_basic_info(
-                name=file_path.name,
-                content_url=file_url,
-                encoding_format=mime_type or "image/png",
-                description=f"{file_path.name}",
-            )
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
+            generator.set_property("contentUrl", file_url, PropertyType.URL)
+            generator.set_property("encodingFormat", mime_type or "image/png", PropertyType.TEXT)
+            generator.set_property("description", f"{file_path.name}", PropertyType.TEXT)
         elif schema_type in ["DigitalDocument", "Article", SCHOLARLY_ARTICLE_SCHEMA_TYPE, "Report"]:
             generator = DocumentGenerator(schema_type)
-            generator.set_basic_info(name=file_path.name, description=f"{file_path.name}")
-            generator.set_file_info(
-                encoding_format=mime_type or "application/octet-stream",
-                url=file_url,
-                content_size=stats.st_size,
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
+            generator.set_property("description", f"{file_path.name}", PropertyType.TEXT)
+            generator.set_property(
+                "encodingFormat", mime_type or "application/octet-stream", PropertyType.TEXT
             )
+            generator.set_property("url", file_url, PropertyType.URL)
+            generator.set_property("contentSize", f"{stats.st_size}B", PropertyType.TEXT)
             research = self._last_file_state.get("research")
             if schema_type == SCHOLARLY_ARTICLE_SCHEMA_TYPE and research:
                 _publisher_key, identifier, publisher_name, canonical_url = research
@@ -3308,7 +3307,8 @@ class ContentBasedFileOrganizer:
                     print(f"  Warning: could not attach scholarly metadata: {e}")
         else:
             generator = DocumentGenerator()
-            generator.set_basic_info(name=file_path.name, description=f"{file_path.name}")
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
+            generator.set_property("description", f"{file_path.name}", PropertyType.TEXT)
 
         # Set dates
         try:
