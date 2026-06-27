@@ -1,0 +1,13 @@
+{
+  "@context": "https://schema.org",
+  "@id": "<normalized>",
+  "@type": "DigitalDocument",
+  "contentSize": "14B",
+  "dateCreated": "<normalized>",
+  "dateModified": "<normalized>",
+  "description": "DigitalDocument: sample_doc.txt",
+  "encodingFormat": "text/plain",
+  "filePath": "<normalized>",
+  "name": "sample_doc.txt",
+  "url": "https://localhost/files/sample_doc.txt"
+}

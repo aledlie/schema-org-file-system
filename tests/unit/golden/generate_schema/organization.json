@@ -1,0 +1,13 @@
+{
+  "@context": "https://schema.org",
+  "@id": "<normalized>",
+  "@type": "Organization",
+  "dateCreated": "<normalized>",
+  "dateModified": "<normalized>",
+  "description": "Organization file: acme_corp.vcf",
+  "email": "info@acme.com",
+  "filePath": "<normalized>",
+  "name": "Acme Corporation",
+  "telephone": "+1-555-999-0000",
+  "url": "https://localhost/files/acme_corp.vcf"
+}
