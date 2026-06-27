@@ -61,7 +61,6 @@ mypy src/ scripts/            # type check
 │       ├── models.py            # ORM models with to_schema_org()
 │       ├── schema_org_exporter.py   # Bulk export (JSON, NDJSON, @graph)
 │       ├── schema_org_context.py    # JSON-LD @context document generation
-│       ├── schema_org_variants.py   # CategoryVariants, PersonVariants, FileVariants
 │       └── schema_org_base.py       # Shared base types
 ├── scripts/
 │   ├── shared/                          # Shared utilities
@@ -166,11 +165,14 @@ Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 | Unified CLIP+OCR API | `classify_with_ocr_fallback()` in `scripts/shared/clip_classification.py` is the shared entry point; returns `CLIPResult(category, confidence, all_scores)`; both renamer tools call it |
 | Screenshot OCR keyword threshold | `_SCREENSHOT_OCR_KEYWORD_THRESHOLD = 0.10` in `scripts/shared/clip_utils.py`; was previously 0.30 which silently rejected valid scores — do not raise without verifying eval impact |
 | Oversized image guard | `CLIPClassifier` encode paths catch Pillow's `DecompressionBombError` and thumbnail down to `_CLIP_INPUT_SIZE` instead of skipping; large maps/renders now classify rather than silently drop |
+| Generator builder API removed | `generators.py` no longer has fluent builders (`set_basic_info`, `set_file_info`, etc.) — build schemas via `set_property(name, value, PropertyType)` directly or the `add_person`/`add_organization`/`set_dates` helpers |
+| Golden snapshot tests | `tests/unit/golden/generate_schema/*.json` are recorded baselines for `generate_schema()` output — do not hand-edit; re-record with `UPDATE_GOLDEN=1 pytest tests/unit/test_generate_schema_golden.py` |
+| Storage timestamps | Use `from ._time import utcnow` (naive UTC) instead of deprecated `datetime.utcnow()`; DateTime columns are timezone-naive, so do not introduce tz-aware datetimes without a column migration |
 
 ## Testing
 
 ```bash
-pytest tests/unit/           # 772 unit tests
+pytest tests/unit/           # ~735 unit tests
 pytest tests/integration/    # schema.org export pipeline
 pytest tests/performance/ --benchmark-only -m "not slow"   # benchmarks (skip 10k)
 pytest tests/e2e/            # Playwright E2E
