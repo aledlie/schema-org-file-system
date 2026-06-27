@@ -9,9 +9,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
-# OCR (docTR via shared.ocr_utils) imports
+# OCR (docTR via shared.ocr_classifier) imports
 try:
-    from shared.ocr_utils import (
+    from shared.ocr_classifier import (
         extract_ocr_text,
         extract_ocr_with_confidence,
         extract_ocr_text_pdf,

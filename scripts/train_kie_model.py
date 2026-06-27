@@ -26,7 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from shared.ocr_utils import _DET_ARCH, _RECO_ARCH
+from shared.ocr_classifier import _DET_ARCH, _RECO_ARCH
 from shared.kie_schema_mapping import KIE_FIELD_CLASSES
 
 _DEFAULT_ANNOTATIONS_DIR = Path(__file__).resolve().parent.parent / "data" / "kie_annotations"

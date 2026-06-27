@@ -34,7 +34,7 @@ from pathlib import Path
 # Ensure scripts/shared is importable.
 sys.path.insert(0, str(Path(__file__).parent))
 
-from shared.ocr_utils import OCR_AVAILABLE, _get_predictor
+from shared.ocr_classifier import OCR_AVAILABLE, _get_predictor
 
 try:
     from doctr.io import DocumentFile

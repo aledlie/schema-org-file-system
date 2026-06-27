@@ -15,7 +15,7 @@ from datetime import datetime
 from pathlib import Path
 
 from shared.clip_utils import CLIPClassifier, CLIP_AVAILABLE
-from shared.ocr_utils import extract_ocr_text, is_ocr_available
+from shared.ocr_classifier import extract_ocr_text, is_ocr_available
 from shared.constants import CLIP_CATEGORY_PROMPTS, IMAGE_EXTENSIONS
 
 

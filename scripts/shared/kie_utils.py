@@ -4,8 +4,8 @@ Provides structured field extraction for invoices, receipts, and contracts.
 Falls back gracefully when fine-tuned weights are not available — in that case
 ``KIE_AVAILABLE`` is ``False`` and all public functions return ``None``.
 
-Architecture mirrors ``ocr_utils.py``: lazy singleton predictor, rich result
-dataclass, image and PDF entry points.
+Architecture mirrors ``ocr_classifier.py``: lazy singleton predictor, rich
+result dataclass, image and PDF entry points.
 """
 from __future__ import annotations
 
@@ -14,7 +14,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
-from shared.ocr_utils import _DET_ARCH, _RECO_ARCH
+from shared.ocr_classifier import _DET_ARCH, _RECO_ARCH
 
 logger = logging.getLogger(__name__)
 
