@@ -8,7 +8,8 @@ Supports namespacing, TTL, and JSON values.
 Design allows easy migration to Redis/Memcached in the future.
 """
 
-from datetime import datetime, timedelta
+from datetime import timedelta
+from ._time import utcnow
 from typing import Any, Dict, List, Optional, Generator
 from contextlib import contextmanager
 
@@ -113,7 +114,7 @@ class KeyValueStorage:
                 return default
 
             # Check TTL
-            if record.expires_at and record.expires_at < datetime.utcnow():
+            if record.expires_at and record.expires_at < utcnow():
                 session.delete(record)
                 return default
 
@@ -144,7 +145,7 @@ class KeyValueStorage:
             # Calculate expiration
             expires_at = None
             if ttl_seconds:
-                expires_at = datetime.utcnow() + timedelta(seconds=ttl_seconds)
+                expires_at = utcnow() + timedelta(seconds=ttl_seconds)
 
             # Determine value type
             value_type = self._get_value_type(value)
@@ -162,7 +163,7 @@ class KeyValueStorage:
                 record.value_type = value_type
                 record.expires_at = expires_at
                 record.file_id = file_id
-                record.updated_at = datetime.utcnow()
+                record.updated_at = utcnow()
             else:
                 record = KeyValueStore(
                     namespace=namespace,
@@ -219,7 +220,7 @@ class KeyValueStorage:
                 return False
 
             # Check TTL
-            if record.expires_at and record.expires_at < datetime.utcnow():
+            if record.expires_at and record.expires_at < utcnow():
                 session.delete(record)
                 return False
 
@@ -252,7 +253,7 @@ class KeyValueStorage:
                 )
             ).all()
 
-            now = datetime.utcnow()
+            now = utcnow()
             result = {}
 
             for record in records:
@@ -316,7 +317,7 @@ class KeyValueStorage:
             if record:
                 current = record.value or 0
                 record.value = current + amount
-                record.updated_at = datetime.utcnow()
+                record.updated_at = utcnow()
                 return record.value
             else:
                 record = KeyValueStore(
@@ -376,7 +377,7 @@ class KeyValueStorage:
                 current = float(record.value or 0)
                 record.value = current + amount
                 record.value_type = 'float'
-                record.updated_at = datetime.utcnow()
+                record.updated_at = utcnow()
                 return record.value
             else:
                 record = KeyValueStore(
@@ -596,7 +597,7 @@ class KeyValueStorage:
             if not record.expires_at:
                 return -1
 
-            remaining = (record.expires_at - datetime.utcnow()).total_seconds()
+            remaining = (record.expires_at - utcnow()).total_seconds()
             return max(0, int(remaining))
 
     def expire(
@@ -627,7 +628,7 @@ class KeyValueStorage:
             if not record:
                 return False
 
-            record.expires_at = datetime.utcnow() + timedelta(seconds=seconds)
+            record.expires_at = utcnow() + timedelta(seconds=seconds)
             return True
 
     def persist(self, key: str, namespace: str = NAMESPACE_CACHE) -> bool:
@@ -670,7 +671,7 @@ class KeyValueStorage:
             result = session.query(KeyValueStore).filter(
                 and_(
                     KeyValueStore.expires_at.isnot(None),
-                    KeyValueStore.expires_at < datetime.utcnow()
+                    KeyValueStore.expires_at < utcnow()
                 )
             ).delete()
             return result
@@ -739,7 +740,7 @@ class KeyValueStorage:
             expired = session.query(func.count(KeyValueStore.id)).filter(
                 and_(
                     KeyValueStore.expires_at.isnot(None),
-                    KeyValueStore.expires_at < datetime.utcnow()
+                    KeyValueStore.expires_at < utcnow()
                 )
             ).scalar()
 

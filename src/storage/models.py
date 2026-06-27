@@ -16,7 +16,7 @@ Key-Value Storage:
     Flexible schema-less storage for arbitrary metadata
 """
 
-from datetime import datetime
+from ._time import utcnow
 from typing import Optional, List, Dict, Any
 from sqlalchemy import (
     Column, Integer, String, Float, Boolean, DateTime, Text, JSON,
@@ -99,7 +99,7 @@ file_categories = Table(
     Column('file_id', String(SHA256_HEX_LENGTH), ForeignKey('files.id'), primary_key=True),
     Column('category_id', Integer, ForeignKey('categories.id'), primary_key=True),
     Column('confidence', Float, default=1.0),
-    Column('created_at', DateTime, default=datetime.utcnow)
+    Column('created_at', DateTime, default=utcnow)
 )
 
 file_companies = Table(
@@ -109,7 +109,7 @@ file_companies = Table(
     Column('company_id', Integer, ForeignKey('companies.id'), primary_key=True),
     Column('confidence', Float, default=1.0),
     Column('context', String(MAX_STRING_LENGTH)),  # How the company was detected
-    Column('created_at', DateTime, default=datetime.utcnow)
+    Column('created_at', DateTime, default=utcnow)
 )
 
 file_people = Table(
@@ -119,7 +119,7 @@ file_people = Table(
     Column('person_id', Integer, ForeignKey('people.id'), primary_key=True),
     Column('role', String(SHORT_STRING_LENGTH)),  # author, subject, mentioned, etc.
     Column('confidence', Float, default=1.0),
-    Column('created_at', DateTime, default=datetime.utcnow)
+    Column('created_at', DateTime, default=utcnow)
 )
 
 file_locations = Table(
@@ -129,7 +129,7 @@ file_locations = Table(
     Column('location_id', Integer, ForeignKey('locations.id'), primary_key=True),
     Column('location_type', String(SHORT_STRING_LENGTH)),  # captured_at, mentioned, subject
     Column('confidence', Float, default=1.0),
-    Column('created_at', DateTime, default=datetime.utcnow)
+    Column('created_at', DateTime, default=utcnow)
 )
 
 
@@ -201,8 +201,8 @@ class File(Base, SchemaOrgSerializable):
     session_id = Column(String(SHA256_HEX_LENGTH), ForeignKey('organization_sessions.id'))
 
     # Timestamps
-    db_created_at = Column(DateTime, default=datetime.utcnow)
-    db_updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    db_created_at = Column(DateTime, default=utcnow)
+    db_updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     # Relationships
     categories = relationship('Category', secondary=file_categories, back_populates='files')
@@ -506,8 +506,8 @@ class Category(Base, SchemaOrgSerializable):
     file_count = Column(Integer, default=0)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     # Relationships
     files = relationship('File', secondary=file_categories, back_populates='categories')
@@ -641,8 +641,8 @@ class Company(Base, SchemaOrgSerializable):
 
     # Statistics
     file_count = Column(Integer, default=0)
-    first_seen = Column(DateTime, default=datetime.utcnow)
-    last_seen = Column(DateTime, default=datetime.utcnow)
+    first_seen = Column(DateTime, default=utcnow)
+    last_seen = Column(DateTime, default=utcnow)
 
     # Relationships
     files = relationship('File', secondary=file_companies, back_populates='companies')
@@ -774,8 +774,8 @@ class Person(Base, SchemaOrgSerializable):
 
     # Statistics
     file_count = Column(Integer, default=0)
-    first_seen = Column(DateTime, default=datetime.utcnow)
-    last_seen = Column(DateTime, default=datetime.utcnow)
+    first_seen = Column(DateTime, default=utcnow)
+    last_seen = Column(DateTime, default=utcnow)
 
     # Relationships
     files = relationship('File', secondary=file_people, back_populates='people')
@@ -910,7 +910,7 @@ class Location(Base, SchemaOrgSerializable):
     file_count = Column(Integer, default=0)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     # Relationships
     files = relationship('File', secondary=file_locations, back_populates='locations')
@@ -1035,7 +1035,7 @@ class FileRelationship(Base):
     extra_data = Column(JSON)  # Additional relationship-specific data
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
 
     # Relationships
     source_file = relationship('File', foreign_keys=[source_file_id], back_populates='related_to')
@@ -1057,7 +1057,7 @@ class OrganizationSession(Base):
     __tablename__ = 'organization_sessions'
 
     id = Column(String(SHA256_HEX_LENGTH), primary_key=True)  # UUID
-    started_at = Column(DateTime, default=datetime.utcnow, index=True)
+    started_at = Column(DateTime, default=utcnow, index=True)
     completed_at = Column(DateTime)
     dry_run = Column(Boolean, default=False)
 
@@ -1111,7 +1111,7 @@ class CostRecord(Base):
     error_message = Column(Text)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=utcnow, index=True)
 
     # Relationships
     session = relationship('OrganizationSession', back_populates='cost_records')
@@ -1143,8 +1143,8 @@ class SchemaMetadata(Base):
     validation_errors = Column(JSON)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     # Relationships
     file = relationship('File', back_populates='schema_metadata')
@@ -1172,8 +1172,8 @@ class KeyValueStore(Base):
     expires_at = Column(DateTime)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=utcnow)
+    updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     __table_args__ = (
         UniqueConstraint('namespace', 'key', name='uq_namespace_key'),
@@ -1226,7 +1226,7 @@ class MergeEvent(Base):
     merge_reason = Column(Text)  # Why these were merged
     confidence = Column(Float, default=1.0)  # 0.0-1.0
     performed_by = Column(String(100))  # user_id or 'system'
-    performed_at = Column(DateTime, default=datetime.utcnow, index=True)
+    performed_at = Column(DateTime, default=utcnow, index=True)
 
     # JSON-LD representation (for export/API)
     jsonld = Column(JSON)

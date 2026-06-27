@@ -8,6 +8,7 @@ relationships using a graph-like structure built on SQLAlchemy.
 
 import uuid
 from datetime import datetime
+from ._time import utcnow
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple
 from collections import defaultdict
@@ -245,7 +246,7 @@ class GraphStore:
             file.current_path = destination
             file.organization_reason = reason
             if status == FileStatus.ORGANIZED:
-                file.organized_at = datetime.utcnow()
+                file.organized_at = utcnow()
 
             session.commit()
             return True
@@ -477,7 +478,7 @@ class GraphStore:
             if company not in file.companies:
                 file.companies.append(company)
                 company.file_count += 1
-                company.last_seen = datetime.utcnow()
+                company.last_seen = utcnow()
                 # Only commit if we own the session
                 if close_session:
                     session.commit()
@@ -558,7 +559,7 @@ class GraphStore:
             if person not in file.people:
                 file.people.append(person)
                 person.file_count += 1
-                person.last_seen = datetime.utcnow()
+                person.last_seen = utcnow()
                 if close_session:
                     session.commit()
 
@@ -935,7 +936,7 @@ class GraphStore:
             if not org_session:
                 return False
 
-            org_session.completed_at = datetime.utcnow()
+            org_session.completed_at = utcnow()
             org_session.total_files = stats.get('total_files', 0)
             org_session.organized_count = stats.get('organized', 0)
             org_session.skipped_count = stats.get('skipped', 0)
