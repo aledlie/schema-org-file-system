@@ -92,6 +92,7 @@ from enrichment import MetadataEnricher, cached_stat
 from validator import SchemaValidator
 from integration import SchemaRegistry
 from rename_images import ImageAnalyzer, PHOTO_PROFILE, IMAGE_EXTENSIONS_WIDE
+from analyzers.image_analyzer import ImageContentAnalyzer
 
 # Graph storage imports
 try:
@@ -102,14 +103,12 @@ except ImportError:
     GRAPH_STORE_AVAILABLE = False
     print("Warning: GraphStore not available. Database persistence disabled.")
 
-# Image content analysis imports
+# CLIP classifier — used by the weak-image enhancement signal (_run_clip_signal).
+# Image composition/face detection lives in analyzers.ImageContentAnalyzer.
 try:
-    from shared.clip_utils import get_clip_classifier, CLIP_AVAILABLE as _CLIP_OK
-    import torch
-    import cv2
-    VISION_AVAILABLE = _CLIP_OK and True
+    from shared.clip_utils import get_clip_classifier
 except ImportError:
-    VISION_AVAILABLE = False
+    get_clip_classifier = None
     print("Warning: Vision libraries not available. Install open-clip-torch, torch, opencv-python")
 
 # Image metadata imports
@@ -1140,184 +1139,6 @@ class ImageMetadataParser:
                 summary['location_name'] = location
 
         return summary
-
-
-class ImageContentAnalyzer:
-    """Analyzes image content using computer vision."""
-
-    def __init__(self, cost_calculator: 'CostROICalculator' = None):
-        """
-        Initialize the image content analyzer.
-
-        Args:
-            cost_calculator: Optional cost calculator for tracking usage costs
-        """
-        self.vision_available = VISION_AVAILABLE
-        self.face_cascade = None
-        self.cost_calculator = cost_calculator
-        # Per-file CLIP result cache: (image_path, tuple(labels)) -> Dict[str, float]
-        self._clip_result_cache: Dict[tuple, Dict[str, float]] = {}
-
-        if self.vision_available:
-            try:
-                if not CLIP_CACHE_AVAILABLE:
-                    # Eagerly warm the CLIPClassifier singleton so load errors surface here.
-                    get_clip_classifier()
-
-                # Load OpenCV face detection
-                cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
-                self.face_cascade = cv2.CascadeClassifier(cascade_path)
-            except Exception as e:
-                print(f"Warning: Could not load CLIP model: {e}")
-                self.vision_available = False
-
-    def detect_people(self, image_path: Path) -> bool:
-        """
-        Detect if there are people in the image using face detection.
-
-        Returns:
-            True if people detected, False otherwise
-        """
-        if not self.vision_available or self.face_cascade is None:
-            return False
-
-        with CostTracker(self.cost_calculator, 'face_detection') if self.cost_calculator else nullcontext():
-            try:
-                # Read image
-                img = cv2.imread(str(image_path))
-                if img is None:
-                    return False
-
-                # Convert to grayscale for face detection
-                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-
-                # Detect faces
-                faces = self.face_cascade.detectMultiScale(
-                    gray,
-                    scaleFactor=1.1,
-                    minNeighbors=5,
-                    minSize=(30, 30)
-                )
-
-                return len(faces) > 0
-
-            except Exception as e:
-                print(f"  Face detection error: {e}")
-                return False
-
-    _CLASSIFY_CATEGORIES = [
-        "a photo of a home interior room",
-        "a photo of a living room",
-        "a photo of a bedroom",
-        "a photo of a kitchen",
-        "a photo of a bathroom",
-        "a photo of furniture",
-        "a photo of a house exterior",
-        "a photo of people",
-        "a screenshot",
-        "a photo of outdoors",
-        "a photo of nature",
-    ]
-
-    def clear_clip_cache(self) -> None:
-        """Clear the per-file CLIP result cache. Call at the start of each new file."""
-        self._clip_result_cache.clear()
-
-    def classify_image_content(self, image_path: Path) -> Dict[str, float]:
-        """
-        Classify image content using CLIP zero-shot classification.
-
-        Returns:
-            Dictionary of category -> confidence score
-        """
-        if not self.vision_available:
-            return {}
-
-        cache_key = (str(image_path), tuple(self._CLASSIFY_CATEGORIES))
-        if cache_key in self._clip_result_cache:
-            return self._clip_result_cache[cache_key]
-
-        with CostTracker(self.cost_calculator, 'clip_vision') if self.cost_calculator else nullcontext():
-            try:
-                if CLIP_CACHE_AVAILABLE:
-                    results = get_cached_embedding(image_path, self._CLASSIFY_CATEGORIES, prompt_prefix="")
-                    result_dict = {label: conf for label, conf in results}
-                    self._clip_result_cache[cache_key] = result_dict
-                    return result_dict
-
-                results = get_clip_classifier().classify_raw(image_path, self._CLASSIFY_CATEGORIES)
-                result_dict = {label: conf for label, conf in results}
-                self._clip_result_cache[cache_key] = result_dict
-                return result_dict
-
-            except Exception as e:
-                print(f"  Image classification error: {e}")
-            return {}
-
-    def is_home_interior_no_people(self, image_path: Path) -> Tuple[bool, Dict[str, float]]:
-        """
-        Check if image is a home interior without people.
-
-        Returns:
-            Tuple of (is_interior_no_people, classification_scores)
-        """
-        if not self.vision_available:
-            return (False, {})
-
-        # Classify image content
-        scores = self.classify_image_content(image_path)
-
-        if not scores:
-            return (False, {})
-
-        # Check for home interior indicators
-        interior_score = max(
-            scores.get("a photo of a home interior room", 0),
-            scores.get("a photo of a living room", 0),
-            scores.get("a photo of a bedroom", 0),
-            scores.get("a photo of a kitchen", 0),
-            scores.get("a photo of a bathroom", 0),
-            scores.get("a photo of furniture", 0)
-        )
-
-        # Check for people
-        people_score = scores.get("a photo of people", 0)
-        has_faces = self.detect_people(image_path)
-
-        # Determine if it's an interior without people
-        is_interior = interior_score > 0.3  # 30% confidence threshold
-        has_people = people_score > 0.2 or has_faces  # 20% confidence or face detection
-
-        return (is_interior and not has_people, scores)
-
-    def has_people_in_photo(self, image_path: Path) -> Tuple[bool, Dict[str, float]]:
-        """
-        Check if image contains people (for social photos).
-
-        Returns:
-            Tuple of (has_people, classification_scores)
-        """
-        if not self.vision_available:
-            return (False, {})
-
-        # Classify image content
-        scores = self.classify_image_content(image_path)
-
-        if not scores:
-            return (False, {})
-
-        # Check for people indicators
-        people_score = scores.get("a photo of people", 0)
-        has_faces = self.detect_people(image_path)
-
-        # Check that it's NOT a screenshot
-        screenshot_score = scores.get("a screenshot", 0)
-        is_screenshot = screenshot_score > 0.4  # High threshold for screenshots
-
-        # Determine if photo has people (and is not a screenshot)
-        has_people = (people_score > 0.15 or has_faces) and not is_screenshot
-
-        return (has_people, scores)
 
 
 class ContentBasedFileOrganizer:
@@ -3401,7 +3222,6 @@ class ContentBasedFileOrganizer:
         self._last_file_detected_language = None
         self._last_file_ocr_text = None
         self._last_file_state.clear()
-        self.image_analyzer.clear_clip_cache()
         self._clip_enhance_cache.clear()
 
         pattern_path = display_path or file_path
@@ -3699,23 +3519,20 @@ class ContentBasedFileOrganizer:
             return None
         print(f"  Analyzing image content...")
 
-        # First check if photo has people
-        has_people, people_scores = self.image_analyzer.has_people_in_photo(file_path)
+        # Single CLIP pass yields both composition flags (people / home interior).
+        has_people, is_property_mgmt, scores = self.image_analyzer.analyze_for_organization(file_path)
 
         if has_people:
             print(f"  ✓ Detected: Photo with people")
-            if people_scores:
-                top_categories = sorted(people_scores.items(), key=lambda x: x[1], reverse=True)[:3]
+            if scores:
+                top_categories = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:3]
                 print(f"  Top matches: {', '.join([f'{cat}: {score:.2%}' for cat, score in top_categories])}")
             return ('media', 'photos_social', schema_type, '', None, [], image_metadata)
 
-        # Then check for home interior without people
-        is_property_mgmt, vision_scores = self.image_analyzer.is_home_interior_no_people(file_path)
-
         if is_property_mgmt:
             print(f"  ✓ Detected: Home interior without people")
-            if vision_scores:
-                top_categories = sorted(vision_scores.items(), key=lambda x: x[1], reverse=True)[:3]
+            if scores:
+                top_categories = sorted(scores.items(), key=lambda x: x[1], reverse=True)[:3]
                 print(f"  Top matches: {', '.join([f'{cat}: {score:.2%}' for cat, score in top_categories])}")
             return ('property_management', 'other', schema_type, '', None, [], image_metadata)
 

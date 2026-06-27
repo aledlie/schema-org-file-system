@@ -54,6 +54,23 @@ def _save_embedding(path: Path, emb) -> None:
   np.save(path, emb)
 
 
+def store_embedding(image_path: Path, image_emb) -> None:
+  """Persist a precomputed [D] embedding to the disk cache if not already present.
+
+  Lets a call site that has already encoded an image (e.g. the rename pre-step)
+  seed the cache so later label-set scorings reuse the embedding instead of
+  re-encoding. The array must be the same fp32 representation produced by
+  CLIPClassifier.encode_image_to_numpy so cached and freshly-encoded results
+  are byte-identical.
+  """
+  if not CLIP_CACHE_AVAILABLE:
+    return
+  cpath = _cache_path(_file_identity(image_path))
+  if cpath.exists():
+    return
+  _save_embedding(cpath, np.asarray(image_emb))
+
+
 def get_cached_embedding(
   image_path: Path,
   labels: list[str],

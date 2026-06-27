@@ -154,12 +154,27 @@ class CLIPClassifier:
     emb = self.model.encode_image(pixel_values)  # [1, D]
     return F.normalize(emb, dim=-1).squeeze(0)
 
-  def encode_image_to_numpy(self, image_path: Path):
-    """Return a normalised [D] image embedding as a CPU float32 numpy array.
+  def encode_image(self, image_path: Path) -> "torch.Tensor":
+    """Return a normalised [D] image embedding (on-device tensor).
+
+    Public entry point for callers that want to encode an image once and
+    score it against several label sets via score_embedding(), avoiding a
+    re-encode per prompt set.
+    """
+    return self._encode_image(image_path)
+
+  @staticmethod
+  def embedding_to_numpy(image_emb: "torch.Tensor"):
+    """Cast an on-device [D] embedding to a CPU float32 numpy array.
 
     Portable representation suitable for disk caching — device/dtype-agnostic.
+    Produces the same bytes as encode_image_to_numpy() for the same embedding.
     """
-    return self._encode_image(image_path).to(dtype=torch.float32, device="cpu").numpy()
+    return image_emb.to(dtype=torch.float32, device="cpu").numpy()
+
+  def encode_image_to_numpy(self, image_path: Path):
+    """Return a normalised [D] image embedding as a CPU float32 numpy array."""
+    return self.embedding_to_numpy(self._encode_image(image_path))
 
   @torch.inference_mode()
   def encode_images_to_numpy(self, image_paths: List[Path], batch_size: int = CLIP_BATCH_SIZE):
