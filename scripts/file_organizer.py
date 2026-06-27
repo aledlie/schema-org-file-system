@@ -639,7 +639,7 @@ class FileOrganizer:
             parts = file_path.stem.replace('_', ' ').replace('-', ' ').split()
             for part in parts:
                 if part.lower() not in ['invoice', 'receipt', 'bill', 'payment']:
-                    generator.set_basic_info(name=part.title())
+                    generator.set_property("name", part.title(), PropertyType.TEXT)
                     break
 
         elif 'contract' in file_name or 'agreement' in file_name:
@@ -656,23 +656,25 @@ class FileOrganizer:
                     line = line.strip()
                     if line.upper().startswith('ORG:'):
                         org_name = line.split(':', 1)[1].split(';')[0]
-                        generator.set_basic_info(name=org_name)
+                        generator.set_property("name", org_name, PropertyType.TEXT)
                     elif line.upper().startswith('TEL:'):
-                        generator.set_contact_info(telephone=line.split(':', 1)[1])
+                        generator.set_property(
+                            "telephone", line.split(':', 1)[1], PropertyType.TEXT
+                        )
                     elif line.upper().startswith('EMAIL:'):
-                        generator.set_contact_info(email=line.split(':', 1)[1])
+                        generator.set_property(
+                            "email", line.split(':', 1)[1], PropertyType.TEXT
+                        )
                     elif line.upper().startswith('URL:'):
-                        generator.set_basic_info(url=line.split(':', 1)[1])
+                        generator.set_property(
+                            "url", line.split(':', 1)[1], PropertyType.URL
+                        )
                     elif line.upper().startswith('ADR:'):
                         parts = line.split(':', 1)[1].split(';')
                         if len(parts) >= 7:
-                            generator.set_address(
-                                street=parts[2] if parts[2] else None,
-                                city=parts[3] if len(parts) > 3 and parts[3] else None,
-                                region=parts[4] if len(parts) > 4 and parts[4] else None,
-                                postal_code=parts[5] if len(parts) > 5 and parts[5] else None,
-                                country=parts[6] if len(parts) > 6 and parts[6] else None,
-                            )
+                            address = self._build_postal_address(parts)
+                            if len(address) > 1:  # more than just @type
+                                generator.data["address"] = address
             except Exception:
                 pass
 
