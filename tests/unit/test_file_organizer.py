@@ -441,17 +441,17 @@ class TestClassifyGameAsset:
         # 'button' contains 'btn' keyword which classifies as texture
         assert result == ('game_assets', 'textures', 'ImageObject')
 
-    def test_classify_ui_icon_as_texture(self, organizer, temp_dir):
-        """Test UI icon classifies as texture.
+    def test_classify_ui_icon_not_game_asset(self, organizer, temp_dir):
+        """A generic 'icon' image is not a game asset.
 
-        'icon' is in game_sprite_keywords but not in the internal
-        sprite_keywords list used for sprite vs texture distinction.
+        'icon' was removed from game_sprite_keywords as pollution: it is a
+        generic UI/web term that misfiled ordinary icons (e.g. stock-vector
+        icon sets) as game textures. It now defers to content analysis.
         """
         icon_file = temp_dir / "icon_settings.png"
         icon_file.write_bytes(b"\x89PNG")
         result = organizer._classify_game_asset(icon_file, "icon_settings.png", ".png")
-        # Icon matches 'icon' keyword but doesn't match sprite-specific keywords
-        assert result == ('game_assets', 'textures', 'ImageObject')
+        assert result is None
 
     def test_classify_frame_as_sprite(self, organizer, temp_dir):
         """Test frame files (animation) classify as sprite."""
