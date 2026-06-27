@@ -5,16 +5,25 @@ Last updated: 2026-06-26.
 
 ## Open Items
 
-### Improve OCR preprocessing for dark-background screenshots
+### ~~Improve OCR preprocessing for dark-background screenshots~~
 
-**Status:** Open
+**Status:** Done (2026-06-27)
 **Depends on:** docTR migration (done)
-**Context:** Priority 4.5 screenshot sub-classification (added 2026-03-31) correctly routes screenshots to OCR/CLIP, but ~87 raw `Screenshot*` files in `~/Documents/Media/Photos/Screenshots/` remain unclassified because docTR produces no usable text on dark-background terminal/IDE/dashboard screenshots and CLIP scores are uniformly ~5% (below the 15% threshold).
+**Context:** Priority 4.5 screenshot sub-classification correctly routes screenshots to OCR/CLIP, but raw `Screenshot*` files remained unclassified because docTR produces no usable text on dark-background terminal/IDE/dashboard screenshots and CLIP scores ~5%. (Note: the OCR module is `scripts/shared/ocr_classifier.py`, not the `ocr_utils.py` named in the original item; keywords live in `SCREENSHOT_KEYWORDS`.)
 
-- Add image inversion preprocessing in `scripts/shared/ocr_utils.py` for dark-background images (detect mean luminance < threshold, invert before OCR)
-- Consider adaptive contrast enhancement (CLAHE) as a second pass when initial OCR yields < 30 chars
-- Evaluate lowering `CLIP_ENHANCE_THRESHOLD` for screenshot-specific classification (currently 0.15, screenshots score ~0.05)
-- Add `_SCREENSHOT_KEYWORDS` entries for IDE/code patterns (`import`, `function`, `class`, `def`, `const`) and browser patterns (`http`, `www`, `.com`, `search`)
+**Fix (in `scripts/shared/ocr_classifier.py`):**
+- **Dark-background inversion:** `preprocess_for_ocr()` loads the image (EXIF-oriented RGB), measures mean luminance from a 64px thumbnail, and inverts when below `_DARK_BACKGROUND_LUMINANCE_THRESHOLD` (100) so light-on-dark text becomes dark-on-light.
+- **CLAHE retry:** when the first OCR pass renders `< _CLAHE_RETRY_MIN_CHARS` (30) chars, retries once with CLAHE contrast enhancement (LAB L-channel, clip 2.0, 8×8 tiles) and keeps whichever pass reads more. Retry is gated on `dark or partial-read` so textless bright photos are **not** charged a second model pass.
+- Both image extractors (`extract_ocr_text`, `extract_ocr_with_confidence`) now funnel through one `_run_image_ocr()` runner (dedups the two docTR call paths). Bright images with enough text take the **original** `DocumentFile.from_images([path])` path unchanged → zero regression for the common document case.
+- **New `SCREENSHOT_KEYWORDS` categories** `code` (IDE syntax: `import`, `def`, `class`, `const`, `=>`, …) and `browser` (`http://`, `www.`, `.com`, `search`, …), deliberately keyed to match the `screenshots_dict` folder keys so they route cleanly to `photos_screenshots_code` / `photos_screenshots_browser`.
+
+**Decision — `CLIP_ENHANCE_THRESHOLD` left at 0.15:** the OCR fallback already triggers for screenshots (they score ~0.05, below the 0.10 `CLIP_OCR_FALLBACK_THRESHOLD` gate), so the threshold was never the blocker — OCR returning *nothing* was. Lowering the global enhance threshold would let near-random CLIP scores win across **all** images and hurt precision; fixing OCR (inversion + CLAHE) addresses the root cause instead.
+
+**Validation:** preprocessing math (luminance/inversion/CLAHE) and the new keyword routing are unit-tested in `tests/unit/test_ocr_preprocessing.py` (13 tests). Full unit suite 793 passed / 2 skipped; new module + tests lint clean. **Caveat:** docTR was not installed in this dev env (Python 3.12, no `doctr`), so the `_run_image_ocr` → predictor integration (feeding a `[numpy_array]` page, the standard docTR pattern) should be smoke-confirmed once in the 3.13 venv on a real dark screenshot.
+
+**Affected:**
+- `scripts/shared/ocr_classifier.py` (preprocessing helpers, `_run_image_ocr`, new keyword categories)
+- `tests/unit/test_ocr_preprocessing.py` (new)
 
 ### ~~Filename-pattern classification duplicated across two organizers~~
 
