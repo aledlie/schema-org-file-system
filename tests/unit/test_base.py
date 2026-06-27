@@ -259,58 +259,8 @@ class TestSchemaOrgBaseSetProperty:
         assert schema.data['keywords'] == ['single']
 
 
-class TestSchemaOrgBaseNestedSchema:
-    """Test add_nested_schema method."""
-
-    def test_add_nested_schema(self):
-        """Should add nested schema as dict."""
-        parent = ConcreteSchema('Thing')
-        child = ConcreteSchema('Person')
-        child.set_property('name', 'John Doe')
-
-        parent.add_nested_schema('author', child)
-
-        assert 'author' in parent.data
-        assert parent.data['author']['@type'] == 'Person'
-        assert parent.data['author']['name'] == 'John Doe'
-
-    def test_add_nested_schema_returns_self(self):
-        """Should return self for method chaining."""
-        parent = ConcreteSchema('Thing')
-        child = ConcreteSchema('Person')
-        result = parent.add_nested_schema('author', child)
-        assert result is parent
-
-
-class TestSchemaOrgBaseSetID:
-    """Test set_id and get_id methods."""
-
-    def test_set_id_with_urn_uuid(self):
-        """Should set urn:uuid: IRI directly."""
-        schema = ConcreteSchema('Thing')
-        iri = 'urn:uuid:550e8400-e29b-41d4-a716-446655440000'
-        schema.set_id(iri)
-        assert schema.data['@id'] == iri
-
-    def test_set_id_with_https_url(self):
-        """Should set HTTPS URL directly."""
-        schema = ConcreteSchema('Thing')
-        url = 'https://example.com/entity/123'
-        schema.set_id(url)
-        assert schema.data['@id'] == url
-
-    def test_set_id_with_plain_uuid(self):
-        """Should wrap plain UUID in urn:uuid:."""
-        schema = ConcreteSchema('Thing')
-        uuid_str = '550e8400-e29b-41d4-a716-446655440000'
-        schema.set_id(uuid_str)
-        assert schema.data['@id'] == f'urn:uuid:{uuid_str}'
-
-    def test_set_id_returns_self(self):
-        """Should return self for method chaining."""
-        schema = ConcreteSchema('Thing')
-        result = schema.set_id('urn:uuid:test')
-        assert result is schema
+class TestSchemaOrgBaseGetID:
+    """Test get_id method."""
 
     def test_get_id(self):
         """Should return current @id."""
@@ -323,205 +273,6 @@ class TestSchemaOrgBaseSetID:
         schema = ConcreteSchema('Thing')
         del schema.data['@id']  # Remove the auto-generated ID
         assert schema.get_id() == ''
-
-
-class TestSchemaOrgBaseAddPerson:
-    """Test add_person method."""
-
-    def test_add_person_basic(self):
-        """Should add Person with name and @id."""
-        schema = ConcreteSchema('Thing')
-        schema.add_person('author', 'John Doe')
-
-        person = schema.data['author']
-        assert person['@type'] == 'Person'
-        assert person['name'] == 'John Doe'
-        assert '@id' in person
-        assert person['@id'].startswith('urn:uuid:')
-
-    def test_add_person_with_email(self):
-        """Should add email when provided."""
-        schema = ConcreteSchema('Thing')
-        schema.add_person('author', 'John Doe', email='john@example.com')
-        assert schema.data['author']['email'] == 'john@example.com'
-
-    def test_add_person_with_url(self):
-        """Should add URL when provided."""
-        schema = ConcreteSchema('Thing')
-        schema.add_person('author', 'John Doe', url='https://johndoe.com')
-        assert schema.data['author']['url'] == 'https://johndoe.com'
-
-    def test_add_person_with_affiliation(self):
-        """Should add Organization affiliation with @id."""
-        schema = ConcreteSchema('Thing')
-        schema.add_person('author', 'John Doe', affiliation='Acme Corp')
-
-        person = schema.data['author']
-        assert 'affiliation' in person
-        assert person['affiliation']['@type'] == 'Organization'
-        assert person['affiliation']['name'] == 'Acme Corp'
-        assert '@id' in person['affiliation']
-
-    def test_add_person_with_custom_id(self):
-        """Should use custom person_id when provided."""
-        schema = ConcreteSchema('Thing')
-        custom_id = 'urn:uuid:custom-person-id'
-        schema.add_person('author', 'John Doe', person_id=custom_id)
-        assert schema.data['author']['@id'] == custom_id
-
-    def test_add_person_wraps_plain_uuid(self):
-        """Should wrap plain UUID in urn:uuid:."""
-        schema = ConcreteSchema('Thing')
-        schema.add_person('author', 'John Doe', person_id='custom-id')
-        assert schema.data['author']['@id'] == 'urn:uuid:custom-id'
-
-    def test_add_person_id_is_deterministic(self):
-        """Same name should generate same @id."""
-        schema1 = ConcreteSchema('Thing')
-        schema2 = ConcreteSchema('Thing')
-        schema1.add_person('author', 'Jane Smith')
-        schema2.add_person('author', 'Jane Smith')
-        assert schema1.data['author']['@id'] == schema2.data['author']['@id']
-
-    def test_add_person_returns_self(self):
-        """Should return self for method chaining."""
-        schema = ConcreteSchema('Thing')
-        result = schema.add_person('author', 'John Doe')
-        assert result is schema
-
-
-class TestSchemaOrgBaseAddOrganization:
-    """Test add_organization method."""
-
-    def test_add_organization_basic(self):
-        """Should add Organization with name and @id."""
-        schema = ConcreteSchema('Thing')
-        schema.add_organization('publisher', 'Acme Corp')
-
-        org = schema.data['publisher']
-        assert org['@type'] == 'Organization'
-        assert org['name'] == 'Acme Corp'
-        assert '@id' in org
-        assert org['@id'].startswith('urn:uuid:')
-
-    def test_add_organization_with_url(self):
-        """Should add URL when provided."""
-        schema = ConcreteSchema('Thing')
-        schema.add_organization('publisher', 'Acme Corp', url='https://acme.com')
-        assert schema.data['publisher']['url'] == 'https://acme.com'
-
-    def test_add_organization_with_logo(self):
-        """Should add logo as ImageObject with @id."""
-        schema = ConcreteSchema('Thing')
-        schema.add_organization('publisher', 'Acme Corp', logo='https://acme.com/logo.png')
-
-        org = schema.data['publisher']
-        assert 'logo' in org
-        assert org['logo']['@type'] == 'ImageObject'
-        assert org['logo']['url'] == 'https://acme.com/logo.png'
-        assert '@id' in org['logo']
-
-    def test_add_organization_with_custom_id(self):
-        """Should use custom org_id when provided."""
-        schema = ConcreteSchema('Thing')
-        custom_id = 'urn:uuid:custom-org-id'
-        schema.add_organization('publisher', 'Acme Corp', org_id=custom_id)
-        assert schema.data['publisher']['@id'] == custom_id
-
-    def test_add_organization_id_is_deterministic(self):
-        """Same name should generate same @id."""
-        schema1 = ConcreteSchema('Thing')
-        schema2 = ConcreteSchema('Thing')
-        schema1.add_organization('publisher', 'Test Corp')
-        schema2.add_organization('publisher', 'Test Corp')
-        assert schema1.data['publisher']['@id'] == schema2.data['publisher']['@id']
-
-
-class TestSchemaOrgBaseAddPlace:
-    """Test add_place method."""
-
-    def test_add_place_basic(self):
-        """Should add Place with name and @id."""
-        schema = ConcreteSchema('Thing')
-        schema.add_place('contentLocation', 'New York City')
-
-        place = schema.data['contentLocation']
-        assert place['@type'] == 'Place'
-        assert place['name'] == 'New York City'
-        assert '@id' in place
-
-    def test_add_place_with_address(self):
-        """Should add address when provided."""
-        schema = ConcreteSchema('Thing')
-        schema.add_place('contentLocation', 'NYC', address='123 Main St, New York, NY')
-        assert schema.data['contentLocation']['address'] == '123 Main St, New York, NY'
-
-    def test_add_place_with_geo_coordinates(self):
-        """Should add GeoCoordinates when geo provided."""
-        schema = ConcreteSchema('Thing')
-        geo = {'latitude': 40.7128, 'longitude': -74.0060}
-        schema.add_place('contentLocation', 'NYC', geo=geo)
-
-        place = schema.data['contentLocation']
-        assert 'geo' in place
-        assert place['geo']['@type'] == 'GeoCoordinates'
-        assert place['geo']['latitude'] == 40.7128
-        assert place['geo']['longitude'] == -74.0060
-
-    def test_add_place_with_custom_id(self):
-        """Should use custom place_id when provided."""
-        schema = ConcreteSchema('Thing')
-        custom_id = 'urn:uuid:custom-place-id'
-        schema.add_place('contentLocation', 'NYC', place_id=custom_id)
-        assert schema.data['contentLocation']['@id'] == custom_id
-
-
-class TestSchemaOrgBaseIdentifier:
-    """Test set_identifier method."""
-
-    def test_set_identifier_simple(self):
-        """Should set simple identifier string."""
-        schema = ConcreteSchema('Thing')
-        schema.set_identifier('ABC123')
-        assert schema.data['identifier'] == 'ABC123'
-
-    def test_set_identifier_with_property_id(self):
-        """Should set PropertyValue identifier with propertyID."""
-        schema = ConcreteSchema('Thing')
-        schema.set_identifier('ISBN-123', property_id='ISBN')
-
-        identifier = schema.data['identifier']
-        assert identifier['@type'] == 'PropertyValue'
-        assert identifier['propertyID'] == 'ISBN'
-        assert identifier['value'] == 'ISBN-123'
-
-    def test_set_identifier_returns_self(self):
-        """Should return self for method chaining."""
-        schema = ConcreteSchema('Thing')
-        result = schema.set_identifier('test')
-        assert result is schema
-
-
-class TestSchemaOrgBaseKeywords:
-    """Test add_keywords method."""
-
-    def test_add_keywords_string(self):
-        """Should set string keywords directly."""
-        schema = ConcreteSchema('Thing')
-        schema.add_keywords('python, programming, tutorial')
-        assert schema.data['keywords'] == 'python, programming, tutorial'
-
-    def test_add_keywords_list(self):
-        """Should join list keywords with comma."""
-        schema = ConcreteSchema('Thing')
-        schema.add_keywords(['python', 'programming', 'tutorial'])
-        assert schema.data['keywords'] == 'python, programming, tutorial'
-
-    def test_add_keywords_returns_self(self):
-        """Should return self for method chaining."""
-        schema = ConcreteSchema('Thing')
-        result = schema.add_keywords('test')
-        assert result is schema
 
 
 class TestSchemaOrgBaseDates:
@@ -565,33 +316,6 @@ class TestSchemaOrgBaseDates:
         """Should return self for method chaining."""
         schema = ConcreteSchema('Thing')
         result = schema.set_dates(created=datetime.now())
-        assert result is schema
-
-
-class TestSchemaOrgBaseRelationship:
-    """Test add_relationship method."""
-
-    def test_add_relationship_string_url(self):
-        """Should add URL string relationship."""
-        schema = ConcreteSchema('Thing')
-        schema.add_relationship('isPartOf', 'https://example.com/collection')
-        assert schema.data['isPartOf'] == 'https://example.com/collection'
-
-    def test_add_relationship_schema_object(self):
-        """Should add SchemaOrgBase object as dict."""
-        parent = ConcreteSchema('Thing')
-        related = ConcreteSchema('Collection')
-        related.set_property('name', 'My Collection')
-
-        parent.add_relationship('isPartOf', related)
-
-        assert parent.data['isPartOf']['@type'] == 'Collection'
-        assert parent.data['isPartOf']['name'] == 'My Collection'
-
-    def test_add_relationship_returns_self(self):
-        """Should return self for method chaining."""
-        schema = ConcreteSchema('Thing')
-        result = schema.add_relationship('isPartOf', 'https://example.com')
         assert result is schema
 
 
@@ -718,18 +442,16 @@ class TestMethodChaining:
 
     def test_full_method_chain(self):
         """Should support full method chaining."""
+        created = datetime.now()
         schema = ConcreteSchema('Article')
 
         result = (schema
             .set_property('name', 'Test Article')
-            .add_person('author', 'John Doe')
-            .add_organization('publisher', 'News Corp')
-            .add_keywords(['news', 'article'])
-            .set_dates(created=datetime.now())
-            .set_identifier('ART-001')
+            .set_property('description', 'A test article')
+            .set_dates(created=created)
         )
 
         assert result is schema
         assert schema.data['name'] == 'Test Article'
-        assert schema.data['author']['name'] == 'John Doe'
-        assert schema.data['publisher']['name'] == 'News Corp'
+        assert schema.data['description'] == 'A test article'
+        assert 'dateCreated' in schema.data

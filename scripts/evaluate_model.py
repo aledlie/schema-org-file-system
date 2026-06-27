@@ -19,6 +19,13 @@ from shared.constants import (
     SCREENSHOT_PATTERNS, DOCUMENT_PATTERNS,
 )
 
+# An image is only assigned the 'media' catch-all when it has positive photo
+# evidence; otherwise the prediction is low-confidence and routes to
+# 'uncategorized' (see backlog: low-confidence -> uncategorized rule).
+# parent_folder values that count as positive evidence an image is a real photo:
+PHOTO_PARENT_FOLDERS = {"Camera", "Photos", "Photos (2)", "Photos 3",
+                        "Screenshots", "Social_Media", "WhatsApp"}
+
 
 class FileCategorizationModel:
     """Simulates the categorization logic from file_organizer_content_based.py"""
@@ -40,6 +47,7 @@ class FileCategorizationModel:
         filename_tokens = feature.get('filename_tokens', [])
         extension = feature.get('extension', '').lower()
         extension_category = feature.get('extension_category', '')
+        parent_folder = feature.get('parent_folder', '')
 
         # Check for screenshots first
         if self._matches_patterns(filename, SCREENSHOT_PATTERNS):
@@ -58,7 +66,18 @@ class FileCategorizationModel:
 
         # Media files
         if extension_category == 'image':
-            return ('media', 'photos_other', 0.6)
+            # Filepath fallback: if no stronger signal fired and the file lives in
+            # a Games/ folder, prefer game_assets (matches production's filepath
+            # priority stage in detect_file_category).
+            if parent_folder == 'Games':
+                subcategory = self._determine_game_subcategory(filename_tokens, extension)
+                return ('game_assets', subcategory, 0.7)
+            # Only assign the 'media' catch-all when there is positive photo
+            # evidence; otherwise the prediction is low-confidence and routes to
+            # 'uncategorized' rather than over-claiming media.
+            if self._has_photo_evidence(feature):
+                return ('media', 'photos_other', 0.6)
+            return ('uncategorized', 'other', 0.3)
         elif extension_category == 'video':
             return ('media', 'videos_recordings', 0.6)
         elif extension_category == 'audio':
@@ -73,6 +92,20 @@ class FileCategorizationModel:
 
         # Default to uncategorized
         return ('uncategorized', 'other', 0.3)
+
+    def _has_photo_evidence(self, feature: Dict) -> bool:
+        """Positive evidence that an image is a real photo (vs an unknown asset).
+
+        Used to gate the 'media' catch-all: camera/EXIF/date-stamped images and
+        those living in photo folders are real media; generic images in 'Other'
+        with no such signal are low-confidence and route to 'uncategorized'.
+        """
+        return bool(
+            feature.get('has_datetime')
+            or feature.get('has_gps')
+            or feature.get('starts_with_date')
+            or feature.get('parent_folder') in PHOTO_PARENT_FOLDERS
+        )
 
     def _matches_patterns(self, text: str, patterns: List[str]) -> bool:
         """Check if text matches any patterns."""

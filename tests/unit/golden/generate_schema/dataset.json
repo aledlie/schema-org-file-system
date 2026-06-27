@@ -1,0 +1,11 @@
+{
+  "@context": "https://schema.org",
+  "@id": "<normalized>",
+  "@type": "Dataset",
+  "dateCreated": "<normalized>",
+  "dateModified": "<normalized>",
+  "description": "Dataset: sample_data.csv",
+  "filePath": "<normalized>",
+  "name": "sample_data.csv",
+  "url": "https://localhost/files/sample_data.csv"
+}

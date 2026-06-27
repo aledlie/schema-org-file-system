@@ -15,8 +15,10 @@ Usage::
 
     python scripts/train_kie_model.py
     python scripts/train_kie_model.py --epochs 30 --lr 1e-4
-    python scripts/train_kie_model.py --annotations data/kie_annotations --output models/kie_invoice_v1.pt
+    python scripts/train_kie_model.py --annotations data/kie_annotations \
+        --output models/kie_invoice_v1.pt
 """
+
 from __future__ import annotations
 
 import argparse
@@ -26,8 +28,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from shared.ocr_utils import _DET_ARCH, _RECO_ARCH
-from shared.kie_schema_mapping import KIE_FIELD_CLASSES
+from shared.kie_schema_mapping import KIE_FIELD_CLASSES  # noqa: E402
+from shared.ocr_classifier import _DET_ARCH, _RECO_ARCH  # noqa: E402
 
 _DEFAULT_ANNOTATIONS_DIR = Path(__file__).resolve().parent.parent / "data" / "kie_annotations"
 _DEFAULT_OUTPUT_PATH = Path(__file__).resolve().parent.parent / "models" / "kie_invoice_v1.pt"
@@ -122,17 +124,36 @@ def train(
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Fine-tune docTR KIE predictor on labeled annotations.")
-    parser.add_argument("--annotations", type=Path, default=_DEFAULT_ANNOTATIONS_DIR,
-                        help=f"Directory with labeled annotation JSONs (default: {_DEFAULT_ANNOTATIONS_DIR})")
-    parser.add_argument("--output", type=Path, default=_DEFAULT_OUTPUT_PATH,
-                        help=f"Output path for trained weights (default: {_DEFAULT_OUTPUT_PATH})")
-    parser.add_argument("--epochs", type=int, default=_DEFAULT_EPOCHS,
-                        help=f"Training epochs (default: {_DEFAULT_EPOCHS})")
-    parser.add_argument("--lr", type=float, default=_DEFAULT_LR,
-                        help=f"Learning rate (default: {_DEFAULT_LR})")
-    parser.add_argument("--batch-size", type=int, default=_DEFAULT_BATCH_SIZE,
-                        help=f"Batch size (default: {_DEFAULT_BATCH_SIZE})")
+    parser = argparse.ArgumentParser(
+        description="Fine-tune docTR KIE predictor on labeled annotations."
+    )
+    parser.add_argument(
+        "--annotations",
+        type=Path,
+        default=_DEFAULT_ANNOTATIONS_DIR,
+        help=f"Directory with labeled annotation JSONs (default: {_DEFAULT_ANNOTATIONS_DIR})",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        default=_DEFAULT_OUTPUT_PATH,
+        help=f"Output path for trained weights (default: {_DEFAULT_OUTPUT_PATH})",
+    )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=_DEFAULT_EPOCHS,
+        help=f"Training epochs (default: {_DEFAULT_EPOCHS})",
+    )
+    parser.add_argument(
+        "--lr", type=float, default=_DEFAULT_LR, help=f"Learning rate (default: {_DEFAULT_LR})"
+    )
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=_DEFAULT_BATCH_SIZE,
+        help=f"Batch size (default: {_DEFAULT_BATCH_SIZE})",
+    )
     args = parser.parse_args()
 
     train(args.annotations, args.output, args.epochs, args.lr, args.batch_size)

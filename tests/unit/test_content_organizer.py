@@ -149,6 +149,23 @@ class TestShouldSkipFile:
     def test_node_modules(self, organizer: ContentOrganizer) -> None:
         assert organizer.should_skip_file(Path("/project/node_modules/lib/index.js")) is True
 
+    def test_savepage_sidecar_files(self, organizer: ContentOrganizer) -> None:
+        # Browser "Save Page As" asset folder (English suffix).
+        assert organizer.should_skip_file(
+            Path("/Desktop/love_drawing.jpg_files/CVg8QFElfQG.js")
+        ) is True
+
+    def test_savepage_sidecar_locale_suffix(self, organizer: ContentOrganizer) -> None:
+        # Non-English browser locale suffix (German).
+        assert organizer.should_skip_file(
+            Path("/Desktop/seite-Dateien/asset.css")
+        ) is True
+
+    def test_sidecar_suffix_in_filename_not_skipped(self, organizer: ContentOrganizer) -> None:
+        # A regular file whose own name ends in a sidecar suffix must not match;
+        # only ancestor directories count.
+        assert organizer.should_skip_file(Path("/Desktop/report_files")) is False
+
     def test_regular_file_not_skipped(self, organizer: ContentOrganizer) -> None:
         assert organizer.should_skip_file(Path("/project/report.pdf")) is False
 
@@ -255,10 +272,19 @@ class TestClassifyByFilenamePatterns:
         assert result is not None
         assert result[0] == 'skip'
 
-    def test_screenshot_detected(self, organizer: ContentOrganizer) -> None:
-        result = organizer.classify_by_filename_patterns(Path("/photos/screenshot_2024.png"))
+    def test_software_screenshot_detected(self, organizer: ContentOrganizer) -> None:
+        # Structured software-screenshot pattern ("<kind>_<8 hex>") is classified
+        # at the filename stage.
+        result = organizer.classify_by_filename_patterns(Path("/photos/terminal_12ab34cd.png"))
         assert result is not None
         assert 'screenshot' in result[1]
+
+    def test_bare_screenshot_deferred(self, organizer: ContentOrganizer) -> None:
+        # A generic "screenshot_*" name is NOT matched here; screenshot routing
+        # for these happens later via OCR/SCREENSHOT_KEYWORDS, matching the
+        # production organizer's filename-pattern contract.
+        result = organizer.classify_by_filename_patterns(Path("/photos/screenshot_2024.png"))
+        assert result is None
 
     def test_resume_pdf_with_name(self, organizer: ContentOrganizer) -> None:
         result = organizer.classify_by_filename_patterns(

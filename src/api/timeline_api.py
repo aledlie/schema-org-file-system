@@ -8,7 +8,7 @@ as JSON for the timeline interface.
 
 import json
 import sqlite3
-from datetime import datetime
+from storage._time import utcnow
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 from collections import defaultdict
@@ -305,7 +305,7 @@ class TimelineAPI:
         data = {
             'sessions': self.get_all_sessions(),
             'aggregate_stats': self.get_aggregate_stats(),
-            'generated_at': datetime.utcnow().isoformat(),
+            'generated_at': utcnow().isoformat(),
         }
 
         output_file = Path(output_path)

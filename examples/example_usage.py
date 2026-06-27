@@ -2,14 +2,19 @@
 Comprehensive examples for Schema.org file organization system.
 
 Demonstrates all major features and use cases.
+
+Schemas are built with the generators' typed-container API: the inherited
+``set_property(name, value, PropertyType)`` for scalar fields and direct
+``generator.data[...]`` assignment for nested objects/lists, plus the
+``add_person``/``add_organization``/``add_keywords``/``set_dates`` helpers.
 """
 
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
-from datetime import datetime
-from generators import (
+from datetime import datetime  # noqa: E402
+from generators import (  # noqa: E402
     DocumentGenerator,
     ImageGenerator,
     VideoGenerator,
@@ -18,9 +23,10 @@ from generators import (
     DatasetGenerator,
     ArchiveGenerator
 )
-from validator import SchemaValidator
-from integration import SchemaIntegration, OutputFormat, SchemaRegistry
-from enrichment import MetadataEnricher
+from base import PropertyType  # noqa: E402
+from validator import SchemaValidator, ValidationLevel  # noqa: E402
+from integration import SchemaIntegration, OutputFormat, SchemaRegistry  # noqa: E402
+from enrichment import MetadataEnricher  # noqa: E402
 
 
 def example_1_basic_document():
@@ -33,19 +39,23 @@ def example_1_basic_document():
     doc = DocumentGenerator()
 
     # Set basic information
-    doc.set_basic_info(
-        name="User Guide",
-        description="Comprehensive user guide for the application",
-        abstract="This guide covers installation, configuration, and usage"
+    doc.set_property("name", "User Guide", PropertyType.TEXT)
+    doc.set_property(
+        "description",
+        "Comprehensive user guide for the application",
+        PropertyType.TEXT,
+    )
+    doc.set_property(
+        "abstract",
+        "This guide covers installation, configuration, and usage",
+        PropertyType.TEXT,
     )
 
     # Set file information
-    doc.set_file_info(
-        encoding_format="application/pdf",
-        url="https://example.com/docs/user-guide.pdf",
-        content_size=2048000,
-        sha256="abc123def456"
-    )
+    doc.set_property("encodingFormat", "application/pdf", PropertyType.TEXT)
+    doc.set_property("url", "https://example.com/docs/user-guide.pdf", PropertyType.URL)
+    doc.set_property("contentSize", "2048000B", PropertyType.TEXT)
+    doc.set_identifier("abc123def456", property_id="sha256")
 
     # Add author
     doc.add_person(
@@ -66,7 +76,8 @@ def example_1_basic_document():
     doc.add_keywords(["documentation", "user guide", "tutorial"])
 
     # Set language and pagination
-    doc.set_language("en").set_pagination(45)
+    doc.set_property("inLanguage", "en", PropertyType.TEXT)
+    doc.set_property("numberOfPages", 45, PropertyType.INTEGER)
 
     # Output JSON-LD
     print("\nJSON-LD Output:")
@@ -89,31 +100,33 @@ def example_2_image_with_exif():
     img = ImageGenerator("Photograph")
 
     # Set basic info
-    img.set_basic_info(
-        name="Sunset Beach",
-        content_url="https://example.com/photos/sunset.jpg",
-        encoding_format="image/jpeg",
-        description="Beautiful sunset at the beach",
-        caption="Golden hour at Pacific Coast"
-    )
+    img.set_property("name", "Sunset Beach", PropertyType.TEXT)
+    img.set_property("contentUrl", "https://example.com/photos/sunset.jpg", PropertyType.URL)
+    img.set_property("encodingFormat", "image/jpeg", PropertyType.TEXT)
+    img.set_property("description", "Beautiful sunset at the beach", PropertyType.TEXT)
+    img.set_property("caption", "Golden hour at Pacific Coast", PropertyType.TEXT)
 
     # Set dimensions
-    img.set_dimensions(4032, 3024)
+    img.set_property("width", 4032, PropertyType.INTEGER)
+    img.set_property("height", 3024, PropertyType.INTEGER)
 
-    # Add EXIF data
-    exif = {
+    # Attach EXIF data as a nested object
+    img.data["exifData"] = {
+        "@type": "PropertyValue",
         "Make": "Canon",
         "Model": "EOS R5",
-        "DateTime": "2024-01-15T18:30:00",
-        "GPSLatitude": 34.0522,
-        "GPSLongitude": -118.2437
+        "geo": {
+            "@type": "GeoCoordinates",
+            "latitude": 34.0522,
+            "longitude": -118.2437,
+        },
     }
-    img.set_exif_data(exif)
+    img.set_property("dateCreated", "2024-01-15T18:30:00", PropertyType.DATETIME)
 
     # Add creator
     img.add_person("creator", "John Photographer", url="https://example.com/photographers/john")
 
-    # Add thumbnail
+    # Add thumbnail (surviving helper)
     img.set_thumbnail("https://example.com/photos/sunset-thumb.jpg")
 
     print("\nJSON-LD Output:")
@@ -130,27 +143,29 @@ def example_3_video_with_stats():
     video = VideoGenerator()
 
     # Set basic info
-    video.set_basic_info(
-        name="Product Demo",
-        content_url="https://example.com/videos/demo.mp4",
-        upload_date=datetime(2024, 1, 10),
-        description="Complete product demonstration and walkthrough",
-        thumbnail_url="https://example.com/videos/demo-thumb.jpg"
+    video.set_property("name", "Product Demo", PropertyType.TEXT)
+    video.set_property("contentUrl", "https://example.com/videos/demo.mp4", PropertyType.URL)
+    video.set_property("uploadDate", datetime(2024, 1, 10), PropertyType.DATETIME)
+    video.set_property(
+        "description",
+        "Complete product demonstration and walkthrough",
+        PropertyType.TEXT,
+    )
+    video.set_property(
+        "thumbnailUrl", "https://example.com/videos/demo-thumb.jpg", PropertyType.URL
     )
 
     # Set media details
-    video.set_media_details(
-        duration="PT15M30S",  # 15 minutes 30 seconds
-        width=1920,
-        height=1080,
-        encoding_format="video/mp4",
-        bitrate="5000kbps"
-    )
+    video.set_property("duration", "PT15M30S", PropertyType.TEXT)  # 15 min 30 sec
+    video.set_property("width", 1920, PropertyType.INTEGER)
+    video.set_property("height", 1080, PropertyType.INTEGER)
+    video.set_property("encodingFormat", "video/mp4", PropertyType.TEXT)
+    video.set_property("bitrate", "5000kbps", PropertyType.TEXT)
 
     # Add creator
     video.add_person("creator", "Marketing Team")
 
-    # Set interaction statistics
+    # Set interaction statistics (surviving helper)
     video.set_interaction_stats(
         view_count=50000,
         comment_count=342
@@ -170,26 +185,24 @@ def example_4_music_recording():
     music = AudioGenerator("MusicRecording")
 
     # Set basic info
-    music.set_basic_info(
-        name="Summer Vibes",
-        content_url="https://example.com/music/summer-vibes.mp3",
-        description="Upbeat summer track with tropical influences",
-        duration="PT3M45S"
+    music.set_property("name", "Summer Vibes", PropertyType.TEXT)
+    music.set_property("contentUrl", "https://example.com/music/summer-vibes.mp3", PropertyType.URL)
+    music.set_property(
+        "description", "Upbeat summer track with tropical influences", PropertyType.TEXT
     )
+    music.set_property("duration", "PT3M45S", PropertyType.TEXT)
 
-    # Set music info
-    music.set_music_info(
-        album="Summer Collection",
-        artist="DJ Sunny",
-        genre="Electronic Pop",
-        isrc="USRC12345678"
-    )
+    # Set music info (nested album/artist objects)
+    music.data["inAlbum"] = {"@type": "MusicAlbum", "name": "Summer Collection"}
+    music.data["byArtist"] = {"@type": "MusicGroup", "name": "DJ Sunny"}
+    music.set_property("genre", "Electronic Pop", PropertyType.TEXT)
+    music.set_property("isrcCode", "USRC12345678", PropertyType.TEXT)
 
     # Set dates
     music.set_dates(published=datetime(2024, 6, 1))
 
     # Set language
-    music.set_language("en")
+    music.set_property("inLanguage", "en", PropertyType.TEXT)
 
     print("\nJSON-LD Output:")
     print(music.to_json_ld())
@@ -205,29 +218,31 @@ def example_5_source_code():
     code = CodeGenerator()
 
     # Set basic info
-    code.set_basic_info(
-        name="data_processor.py",
-        programming_language="Python",
-        description="Data processing utilities for file analysis"
+    code.set_property("name", "data_processor.py", PropertyType.TEXT)
+    code.set_property("programmingLanguage", "Python", PropertyType.TEXT)
+    code.set_property(
+        "description", "Data processing utilities for file analysis", PropertyType.TEXT
     )
 
     # Set repository info
-    code.set_repository_info(
-        repository_url="https://github.com/example/file-organizer",
-        branch="main",
-        commit="abc123def456789"
+    code.set_property(
+        "codeRepository", "https://github.com/example/file-organizer", PropertyType.URL
     )
 
     # Set runtime info
-    code.set_runtime_info(
-        runtime_platform=["Python 3.9", "Python 3.10", "Python 3.11"],
-        target_product="File Organizer System"
+    code.set_property(
+        "runtimePlatform",
+        ["Python 3.9", "Python 3.10", "Python 3.11"],
+        PropertyType.ARRAY,
     )
+    code.set_property("targetProduct", "File Organizer System", PropertyType.TEXT)
 
-    # Add dependencies
-    code.add_dependency("numpy", "1.24.0")
-    code.add_dependency("pandas", "2.0.0")
-    code.add_dependency("scikit-learn", "1.3.0")
+    # Add dependencies (list of SoftwareApplication objects)
+    code.data["dependencies"] = [
+        {"@type": "SoftwareApplication", "name": "numpy"},
+        {"@type": "SoftwareApplication", "name": "pandas"},
+        {"@type": "SoftwareApplication", "name": "scikit-learn"},
+    ]
 
     # Add author
     code.add_person("author", "Dev Team", email="dev@example.com")
@@ -252,11 +267,13 @@ def example_6_dataset():
     dataset = DatasetGenerator()
 
     # Set basic info
-    dataset.set_basic_info(
-        name="Global Temperature Data",
-        description="Historical temperature measurements from weather stations worldwide",
-        url="https://example.com/datasets/temperature"
+    dataset.set_property("name", "Global Temperature Data", PropertyType.TEXT)
+    dataset.set_property(
+        "description",
+        "Historical temperature measurements from weather stations worldwide",
+        PropertyType.TEXT,
     )
+    dataset.set_property("url", "https://example.com/datasets/temperature", PropertyType.URL)
 
     # Add creator
     dataset.add_organization(
@@ -266,28 +283,30 @@ def example_6_dataset():
         logo="https://example.com/gwi/logo.png"
     )
 
-    # Add distributions
-    dataset.add_distribution(
-        content_url="https://example.com/datasets/temperature.csv",
-        encoding_format="text/csv",
-        content_size=10485760
-    )
-    dataset.add_distribution(
-        content_url="https://example.com/datasets/temperature.json",
-        encoding_format="application/json",
-        content_size=15728640
-    )
+    # Add distributions (list of DataDownload objects)
+    dataset.data["distribution"] = [
+        {
+            "@type": "DataDownload",
+            "contentUrl": "https://example.com/datasets/temperature.csv",
+            "encodingFormat": "text/csv",
+        },
+        {
+            "@type": "DataDownload",
+            "contentUrl": "https://example.com/datasets/temperature.json",
+            "encodingFormat": "application/json",
+        },
+    ]
 
     # Set coverage
-    dataset.set_coverage(
-        temporal="2000-01-01/2023-12-31",
-        spatial="Global"
-    )
+    dataset.set_property("temporalCoverage", "2000-01-01/2023-12-31", PropertyType.TEXT)
+    dataset.set_property("spatialCoverage", "Global", PropertyType.TEXT)
 
-    # Add measured variables
-    dataset.add_variable_measured("temperature", "Temperature in Celsius")
-    dataset.add_variable_measured("humidity", "Relative humidity percentage")
-    dataset.add_variable_measured("pressure", "Atmospheric pressure in hPa")
+    # Add measured variables (list of PropertyValue objects)
+    dataset.data["variableMeasured"] = [
+        {"@type": "PropertyValue", "name": "temperature"},
+        {"@type": "PropertyValue", "name": "humidity"},
+        {"@type": "PropertyValue", "name": "pressure"},
+    ]
 
     # Add keywords
     dataset.add_keywords(["climate", "temperature", "weather", "historical data"])
@@ -309,38 +328,37 @@ def example_7_archive_with_contents():
     archive = ArchiveGenerator()
 
     # Set basic info
-    archive.set_basic_info(
-        name="project-backup.zip",
-        encoding_format="application/zip",
-        description="Complete project backup including code, docs, and assets",
-        content_size=52428800  # 50 MB
+    archive.set_property("name", "project-backup.zip", PropertyType.TEXT)
+    archive.set_property("encodingFormat", "application/zip", PropertyType.TEXT)
+    archive.set_property(
+        "description",
+        "Complete project backup including code, docs, and assets",
+        PropertyType.TEXT,
     )
+    archive.set_property("contentSize", "52428800B", PropertyType.TEXT)  # 50 MB
 
     # Set compression info
-    archive.set_compression_info(
-        compression_method="DEFLATE",
-        compression_ratio=0.65
-    )
+    archive.set_property("compressionMethod", "DEFLATE", PropertyType.TEXT)
+    archive.set_property("compressionRatio", 0.65, PropertyType.NUMBER)
 
     # Create contained files
     readme = DocumentGenerator()
-    readme.set_basic_info(name="README.md").set_file_info(
-        encoding_format="text/markdown",
-        url="file:///README.md"
-    )
+    readme.set_property("name", "README.md", PropertyType.TEXT)
+    readme.set_property("encodingFormat", "text/markdown", PropertyType.TEXT)
+    readme.set_property("url", "https://example.com/README.md", PropertyType.URL)
 
     source = CodeGenerator()
-    source.set_basic_info(name="main.py", programming_language="Python")
+    source.set_property("name", "main.py", PropertyType.TEXT)
+    source.set_property("programmingLanguage", "Python", PropertyType.TEXT)
 
-    # Add contained files to archive
-    archive.add_contained_file(readme)
-    archive.add_contained_file(source)
+    # Add contained files to archive (hasPart list)
+    archive.data["hasPart"] = [readme.to_dict(), source.to_dict()]
 
     # Add creator
     archive.add_person("author", "Build System")
 
     # Set dates
-    archive.set_dates(created=datetime.now())
+    archive.set_dates(created=datetime(2024, 1, 1))
 
     print("\nJSON-LD Output:")
     print(archive.to_json_ld())
@@ -396,6 +414,9 @@ def example_8_metadata_enrichment():
     doc = DocumentGenerator("ScholarlyArticle")
     for key, value in merged.items():
         try:
+            # JSON-LD output needs serializable values; normalize datetimes.
+            if isinstance(value, datetime):
+                value = value.isoformat()
             doc.set_property(key, value)
         except Exception:
             pass
@@ -412,10 +433,9 @@ def example_9_multiple_formats():
 
     # Create a simple document
     doc = DocumentGenerator()
-    doc.set_basic_info("Example Document").set_file_info(
-        "application/pdf",
-        "https://example.com/doc.pdf"
-    )
+    doc.set_property("name", "Example Document", PropertyType.TEXT)
+    doc.set_property("encodingFormat", "application/pdf", PropertyType.TEXT)
+    doc.set_property("url", "https://example.com/doc.pdf", PropertyType.URL)
 
     # Create integration layer
     integration = SchemaIntegration()
@@ -454,13 +474,19 @@ def example_10_registry_and_search():
 
     # Create and register multiple schemas
     doc1 = DocumentGenerator()
-    doc1.set_basic_info("Python Guide").set_file_info("application/pdf", "https://example.com/python.pdf")
+    doc1.set_property("name", "Python Guide", PropertyType.TEXT)
+    doc1.set_property("encodingFormat", "application/pdf", PropertyType.TEXT)
+    doc1.set_property("url", "https://example.com/python.pdf", PropertyType.URL)
 
     doc2 = DocumentGenerator()
-    doc2.set_basic_info("JavaScript Tutorial").set_file_info("application/pdf", "https://example.com/js.pdf")
+    doc2.set_property("name", "JavaScript Tutorial", PropertyType.TEXT)
+    doc2.set_property("encodingFormat", "application/pdf", PropertyType.TEXT)
+    doc2.set_property("url", "https://example.com/js.pdf", PropertyType.URL)
 
     img1 = ImageGenerator()
-    img1.set_basic_info("Logo", "https://example.com/logo.png", "image/png")
+    img1.set_property("name", "Logo", PropertyType.TEXT)
+    img1.set_property("contentUrl", "https://example.com/logo.png", PropertyType.URL)
+    img1.set_property("encodingFormat", "image/png", PropertyType.TEXT)
 
     # Register schemas
     registry.register("doc-001", doc1.to_dict(), {"category": "programming"})
@@ -502,15 +528,17 @@ def example_11_validation_workflow():
 
     # Good schema
     good_doc = DocumentGenerator()
-    good_doc.set_basic_info("Complete Document", "Full description")
-    good_doc.set_file_info("application/pdf", "https://example.com/good.pdf")
+    good_doc.set_property("name", "Complete Document", PropertyType.TEXT)
+    good_doc.set_property("description", "Full description", PropertyType.TEXT)
+    good_doc.set_property("encodingFormat", "application/pdf", PropertyType.TEXT)
+    good_doc.set_property("url", "https://example.com/good.pdf", PropertyType.URL)
     good_doc.add_person("author", "John Doe")
-    good_doc.set_dates(created=datetime.now())
+    good_doc.set_dates(created=datetime(2024, 1, 1))
     schemas.append(good_doc.to_dict())
 
     # Incomplete schema
     incomplete_doc = DocumentGenerator()
-    incomplete_doc.set_basic_info("Incomplete Document")
+    incomplete_doc.set_property("name", "Incomplete Document", PropertyType.TEXT)
     # Missing encoding format and other recommended properties
     schemas.append(incomplete_doc.to_dict())
 

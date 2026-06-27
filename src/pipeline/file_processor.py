@@ -85,29 +85,23 @@ class FileProcessor:
 
         if schema_type == "ImageObject":
             generator: Any = ImageGenerator(schema_type)
-            generator.set_basic_info(
-                name=file_path.name,
-                content_url=file_url,
-                encoding_format=mime_type or "image/png",
-                description=file_path.name,
-            )
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
+            generator.set_property("contentUrl", file_url, PropertyType.URL)
+            generator.set_property("encodingFormat", mime_type or "image/png", PropertyType.TEXT)
+            generator.set_property("description", file_path.name, PropertyType.TEXT)
         elif schema_type in ("DigitalDocument", "Article"):
             generator = DocumentGenerator(schema_type)
-            generator.set_basic_info(
-                name=file_path.name,
-                description=file_path.name,
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
+            generator.set_property("description", file_path.name, PropertyType.TEXT)
+            generator.set_property(
+                "encodingFormat", mime_type or "application/octet-stream", PropertyType.TEXT
             )
-            generator.set_file_info(
-                encoding_format=mime_type or "application/octet-stream",
-                url=file_url,
-                content_size=stats.st_size,
-            )
+            generator.set_property("url", file_url, PropertyType.URL)
+            generator.set_property("contentSize", f"{stats.st_size}B", PropertyType.TEXT)
         else:
             generator = DocumentGenerator()
-            generator.set_basic_info(
-                name=file_path.name,
-                description=file_path.name,
-            )
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
+            generator.set_property("description", file_path.name, PropertyType.TEXT)
 
         try:
             generator.set_dates(

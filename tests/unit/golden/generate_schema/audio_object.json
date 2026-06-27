@@ -1,0 +1,11 @@
+{
+  "@context": "https://schema.org",
+  "@id": "<normalized>",
+  "@type": "AudioObject",
+  "contentUrl": "https://localhost/files/sample_track.mp3",
+  "dateCreated": "<normalized>",
+  "dateModified": "<normalized>",
+  "description": "AudioObject: sample_track.mp3",
+  "filePath": "<normalized>",
+  "name": "sample_track.mp3"
+}

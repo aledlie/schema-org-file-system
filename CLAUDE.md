@@ -61,7 +61,6 @@ mypy src/ scripts/            # type check
 │       ├── models.py            # ORM models with to_schema_org()
 │       ├── schema_org_exporter.py   # Bulk export (JSON, NDJSON, @graph)
 │       ├── schema_org_context.py    # JSON-LD @context document generation
-│       ├── schema_org_variants.py   # CategoryVariants, PersonVariants, FileVariants
 │       └── schema_org_base.py       # Shared base types
 ├── scripts/
 │   ├── shared/                          # Shared utilities
@@ -72,9 +71,9 @@ mypy src/ scripts/            # type check
 │   │   ├── file_organizer.py            # FileOrganizer (mode=in-place|folder, drives both renamers)
 │   │   └── ...                          # file_ops, filename_utils, constants, status, confidence_gate
 │   ├── file_organizer_content_based.py  # Main AI organizer
-│   ├── image_content_renamer.py         # CLIP-based image renaming via FileOrganizer (mode=in-place default)
-│   ├── screenshot_renamer.py            # CLIP screenshot renamer via FileOrganizer (mode=folder default)
-│   └── image_content_analyzer.py        # Image content analysis
+│   ├── rename_images.py                 # Unified CLIP renamer; --profile {photo,screenshot} selects vocab/mode
+│   ├── image_content_analyzer.py        # Image content analysis
+│   └── relabel_test_set.py              # Re-label evaluation test set against current classifier
 ├── tests/
 │   ├── unit/               # Unit tests (pytest)
 │   ├── integration/        # Integration tests (schema.org export pipeline)
@@ -91,12 +90,13 @@ mypy src/ scripts/            # type check
 1. **Organization Detection** - client, vendor, invoice, company names
 2. **Person Detection** - resume, contact, signatures (OCR-enhanced)
 3. **Legal/Contract** - contracts, agreements, terms
-4. **E-commerce/Shopping** - product listings, carts
-5. **Software UI** - app interfaces, dashboards
-6. **Game Assets** - 200+ patterns, sprites, textures, audio
-7. **Filepath Matching** - directory structure patterns
-8. **Content Analysis** - OCR text and CLIP vision
-9. **MIME Type Fallback** - file extension
+4. **Research Paper** - arXiv/SSRN/DOI prefixes route to `Research/{Publisher}/` with `schema_type=ScholarlyArticle`
+5. **E-commerce/Shopping** - product listings, carts
+6. **Software UI** - app interfaces, dashboards
+7. **Game Assets** - 200+ patterns, sprites, textures, audio
+8. **Filepath Matching** - directory structure patterns (includes `parent_folder=Games` fallback)
+9. **Content Analysis** - OCR text and CLIP vision
+10. **MIME Type Fallback** - file extension
 
 ## Output Folders
 
@@ -161,13 +161,18 @@ Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 | Large images silently skipped | Pillow rejects images >178M pixels (decompression-bomb guard); affects oversized PNGs like maps/renders |
 | CLIP embedding cache | Lives at `.cache/clip_embeddings_v2/` (fp32 `.npy` per image); safe to `rm -rf` to reset |
 | `scripts/shared/` import path | Scripts must run from project root so `from shared.x import y` resolves; `organize-files` CLI handles this automatically |
-| FileOrganizer modes | Both `image_content_renamer.py` and `screenshot_renamer.py` support `--mode in-place\|folder` and `FILE_ORGANIZE_MODE` env var; defaults differ by script |
+| FileOrganizer modes | `rename_images.py` takes `--profile {photo,screenshot}`; mode default comes from the profile (`photo`=in-place, `screenshot`=folder) but can be overridden with `--mode` or `FILE_ORGANIZE_MODE` |
 | Unified CLIP+OCR API | `classify_with_ocr_fallback()` in `scripts/shared/clip_classification.py` is the shared entry point; returns `CLIPResult(category, confidence, all_scores)`; both renamer tools call it |
+| Screenshot OCR keyword threshold | `_SCREENSHOT_OCR_KEYWORD_THRESHOLD = 0.10` in `scripts/shared/clip_utils.py`; was previously 0.30 which silently rejected valid scores — do not raise without verifying eval impact |
+| Oversized image guard | `CLIPClassifier` encode paths catch Pillow's `DecompressionBombError` and thumbnail down to `_CLIP_INPUT_SIZE` instead of skipping; large maps/renders now classify rather than silently drop |
+| Generator builder API removed | `generators.py` no longer has fluent builders (`set_basic_info`, `set_file_info`, etc.) — build schemas via `set_property(name, value, PropertyType)` directly or the `add_person`/`add_organization`/`set_dates` helpers |
+| Golden snapshot tests | `tests/unit/golden/generate_schema/*.json` are recorded baselines for `generate_schema()` output — do not hand-edit; re-record with `UPDATE_GOLDEN=1 pytest tests/unit/test_generate_schema_golden.py` |
+| Storage timestamps | Use `from ._time import utcnow` (naive UTC) instead of deprecated `datetime.utcnow()`; DateTime columns are timezone-naive, so do not introduce tz-aware datetimes without a column migration |
 
 ## Testing
 
 ```bash
-pytest tests/unit/           # 755 unit tests
+pytest tests/unit/           # ~735 unit tests
 pytest tests/integration/    # schema.org export pipeline
 pytest tests/performance/ --benchmark-only -m "not slow"   # benchmarks (skip 10k)
 pytest tests/e2e/            # Playwright E2E

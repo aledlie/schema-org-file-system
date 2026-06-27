@@ -72,7 +72,7 @@ flowchart TB
 4. Game assets (`classify_game_asset`)
 5. Filepath patterns (`classify_by_filepath`)
 6. Identification documents — OCR with confidence
-   (`shared.ocr_utils.extract_ocr_with_confidence`) + optional KIE
+   (`shared.ocr_classifier.extract_ocr_with_confidence`) + optional KIE
 7. Media classification (`classify_media_file`)
 8. Screenshot sub-classification — `shared.ocr_classifier.classify_by_ocr`
    (4-tuple: category, confidence, scores, text), then
@@ -93,11 +93,11 @@ flowchart TB
 
 | Concern | Module | Key function | Return |
 |---|---|---|---|
-| Image OCR text | `shared/ocr_utils.py` | `extract_ocr_with_confidence` | `OCRResult(text, confidence, language)` |
-| PDF OCR text | `shared/ocr_utils.py` | `extract_ocr_text_pdf` | `str` |
+| Image OCR text | `shared/ocr_classifier.py` | `extract_ocr_with_confidence` | `OCRResult(text, confidence, language)` |
+| PDF OCR text | `shared/ocr_classifier.py` | `extract_ocr_text_pdf` | `str` |
 | OCR-driven classification | `shared/ocr_classifier.py:86` | `classify_by_ocr` | `(category, confidence, scores, text)` — 4-tuple |
 | CLIP + OCR fallback | `shared/clip_classification.py:71` | `classify_with_ocr_fallback` | `CLIPResult(category, confidence, all_scores)` |
-| Image rename analysis | `scripts/image_content_renamer.py:84` | `ImageAnalyzer.analyze_image` | `dict(new_name, category, confidence, status)` |
+| Image rename analysis | `scripts/rename_images.py` | `ImageAnalyzer.analyze_image` (profile-driven) | `dict(new_name, category, confidence, status)` |
 | Content (text) classifier | `src/classifiers/content_classifier.py` | `ContentClassifier.classify_content` | `(category, subcategory, company, people)` |
 
 CLIP confidence thresholds in `ImageAnalyzer`:
