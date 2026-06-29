@@ -1,0 +1,88 @@
+{
+  "total_records": 22,
+  "load_time": "2026-06-27T02:22:07.888535",
+  "features_extracted": 22,
+  "category_distribution": {
+    "legal": 10,
+    "business": 1,
+    "personal": 5,
+    "uncategorized": 2,
+    "financial": 4
+  },
+  "subcategory_distribution": {
+    "other": 7,
+    "contracts": 4,
+    "identification": 4,
+    "tax": 3,
+    "real_estate": 1,
+    "marketing": 1,
+    "employment": 1,
+    "statements": 1
+  },
+  "extension_distribution": {
+    ".docx": 20,
+    ".pdf": 1,
+    ".xlsx": 1
+  },
+  "pattern_counts": {
+    "screenshots": 0,
+    "game_assets": 0,
+    "documents": 1
+  },
+  "metadata_availability": {
+    "has_text": 21,
+    "has_datetime": 0,
+    "has_gps": 0
+  },
+  "filename_analysis": {
+    "avg_length": 50.64,
+    "top_tokens": {
+      "2025": 13,
+      "notes": 12,
+      "by": 12,
+      "gemini": 12,
+      "10": 10,
+      "cdt": 9,
+      "integrity": 7,
+      "weekly": 7,
+      "cadence": 7,
+      "thurs": 7,
+      "13": 6,
+      "zouk": 5,
+      "oct": 4,
+      "social": 4,
+      "at": 4,
+      "14": 4,
+      "11": 4,
+      "31": 3,
+      "rhythm": 3,
+      "house": 3,
+      "12": 3,
+      "leora": 2,
+      "intro": 2,
+      "30": 2,
+      "sumedh": 2,
+      "29": 2,
+      "meeting": 2,
+      "02": 2,
+      "16": 2,
+      "cst": 2
+    }
+  },
+  "data_quality": {
+    "total_records": 22,
+    "uncategorized_count": 2,
+    "empty_filename_count": 0,
+    "duplicate_count": 0,
+    "unknown_extension_count": 0,
+    "quality_score": 95.45,
+    "issues_sample": {
+      "uncategorized": [
+        "Sumedh3.docx",
+        "Oct 25 Zouk social at the Mansion.docx"
+      ],
+      "duplicates": [],
+      "unknown_extensions": []
+    }
+  }
+}

@@ -42,6 +42,7 @@ Thumbs.db
 # Results (large JSON files, keep HTML for GitHub Pages)
 results/*.json
 results/*.db
+results/*.txt
 results/ml_data/
 results/ml_data_*/
 !results/ml_data_explorer.html

@@ -1,0 +1,16 @@
+{
+  "label_to_id": {
+    "business": 0,
+    "financial": 1,
+    "legal": 2,
+    "personal": 3,
+    "uncategorized": 4
+  },
+  "id_to_label": {
+    "0": "business",
+    "1": "financial",
+    "2": "legal",
+    "3": "personal",
+    "4": "uncategorized"
+  }
+}
