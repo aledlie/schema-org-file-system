@@ -1,7 +1,7 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-06-26.
+Last updated: 2026-06-27.
 
 ## Open Items
 
@@ -72,3 +72,135 @@ Consider which approach aligns with project goals: broader coverage (option 1) o
 - `src/storage/kv_store.py` (comparison/arithmetic audit)
 - `src/storage/migration.py` (data migration)
 - `tests/integration/` + any JSON-LD output assertions (offset format change)
+
+### ~~Remove obsolete renamer files re-added on `feat/easyocr-integration`~~
+
+**Status:** Done (2026-06-29) — both files deleted; entry point and importers verified clean.
+**Priority:** P1 (blocks clean merge of `feat/easyocr-integration`; one file is import-broken)
+**Source:** easyocr integration session, 2026-06-27
+**Context:** A concurrent Claude session created branch `feat/easyocr-integration` and commit `045d3d3` ("salvage compatible parts of easyocr WIP stash"), which restored `scripts/image_content_renamer.py` and `scripts/screenshot_renamer.py` — the pre-consolidation files that refactor `725f7a8` deliberately deleted when unifying the renamers into `scripts/rename_images.py` + `scripts/shared/`. `screenshot_renamer.py:23` imports `from shared.ocr_utils import ...`, but `ocr_utils.py` no longer exists (it became `shared/ocr_classifier.py`), so the file fails to import. The later easyocr commit (`3af68ce`) does not depend on either file.
+
+**Resolution (2026-06-29):**
+1. `git rm scripts/image_content_renamer.py scripts/screenshot_renamer.py`.
+2. Confirmed no code imports either file — the only residual mentions are comments (`rename_images.py:4` historical docstring; `filename_classifier.py:1040/1061` describe the on-disk filename pattern produced by the old tool, not a code dependency). Consolidated entry point `rename_images.py --profile {photo,screenshot}` parses clean.
+3. The other `045d3d3` edits are kept: `requirements.txt` `easyocr>=1.7.0` is now genuinely used by `3af68ce`, and the `CLIPClassifier.get_instance()` changes in `analyze_renamed_files.py` / `image_content_analyzer.py` are compatible.
+
+**Affected:**
+- `scripts/image_content_renamer.py` (deleted)
+- `scripts/screenshot_renamer.py` (deleted)
+
+### Benchmark easyocr vs docTR accuracy on the screenshot test set
+
+**Status:** Open
+**Priority:** P2 (validates the premise behind the whole easyocr integration)
+**Source:** easyocr integration session, 2026-06-27
+**Context:** easyocr was wired into the screenshot/mobile OCR path (`extract_screenshot_text` → `classify_by_ocr`) on the asserted basis that it is "more accurate on screenshots and mobile UI text" than docTR — but this was never measured against this project's data. The selector currently *always* prefers easyocr when installed; if easyocr is in fact worse on some screenshot classes, this regresses classification silently.
+
+**Proposed fix:**
+1. Assemble (or reuse) a labeled screenshot/mobile-capture subset of the eval set.
+2. Run both backends (`extract_text_easyocr` vs `extract_ocr_text`) and compare downstream `classify_by_ocr` category accuracy + raw text quality (char-error-rate against ground truth where available).
+3. If mixed, replace the unconditional preference with an evidence-based choice (e.g., easyocr only for high-density UI text / small fonts; docTR otherwise) or add a confidence-gated fallback.
+4. Record results so the preference order is justified, not assumed.
+
+**Affected:**
+- `scripts/evaluate_model.py` or a new bench under `tests/performance/`
+- `scripts/shared/ocr_classifier.py::extract_screenshot_text` (selection logic, if findings warrant)
+
+### easyocr runs CPU-only on Apple Silicon (MPS unused)
+
+**Status:** Open
+**Priority:** P2 (latency on the primary dev platform; macOS arm64)
+**Source:** easyocr integration session, 2026-06-27
+**Context:** `ocr_easyocr._use_gpu()` returns `torch.cuda.is_available()`, so on macOS (MPS) and CPU-only hosts easyocr loads with `gpu=False`. easyocr historically has no MPS backend, so this is currently correct — but it means every screenshot OCR on the dev machine runs on CPU, which is slow for the per-image readtext path. Verified at runtime: the Reader logs `pin_memory ... not supported on MPS` and falls back to CPU.
+
+**Proposed fix:**
+1. Confirm current easyocr (≥1.7.2) still lacks usable MPS support; if a build supports it, allow `gpu=True` (or `gpu='mps'`) on MPS.
+2. Otherwise, document the CPU limitation and consider: (a) caching OCR results per image like the CLIP embedding cache, and/or (b) restricting easyocr to the cases where its accuracy edge justifies the CPU cost (see the benchmark item above).
+
+**Affected:**
+- `scripts/shared/ocr_easyocr.py::_use_gpu` / `_get_reader`
+
+### Pre-warm / share the easyocr Reader to amortize model-load latency
+
+**Status:** Open
+**Priority:** P3 (first-call latency; batch runs)
+**Source:** easyocr integration session, 2026-06-27
+**Context:** `ocr_easyocr._get_reader()` lazily builds a process-local singleton `easyocr.Reader` on first use (multi-second model load). In a batch organize run the first screenshot pays this cost mid-loop, and the Reader is not pre-warmed the way `BatchProcessor` pre-warms the CLIP cache. There is also no `clear_cache()` equivalent for tests/long-running processes to reclaim the Reader's memory (CLIPClassifier has one).
+
+**Proposed fix:**
+1. Add an optional pre-warm hook (mirror the CLIP cache pre-warm in `src/pipeline/batch_processor.py`) so the Reader loads before the per-file loop when easyocr is enabled and screenshots are expected.
+2. Add a `clear_reader()`/`clear_cache()` to `ocr_easyocr` for symmetry with `CLIPClassifier.clear_cache()`.
+
+**Affected:**
+- `scripts/shared/ocr_easyocr.py`
+- `src/pipeline/batch_processor.py` (pre-warm)
+
+### easyocr screenshot path discards confidence/language/orientation
+
+**Status:** Open
+**Priority:** P3 (feature parity with docTR OCRResult)
+**Source:** easyocr integration session, 2026-06-27
+**Context:** `extract_text_easyocr` calls `reader.readtext(..., detail=0, paragraph=True)`, which returns plain text only. The docTR path exposes a rich `OCRResult` (confidence, language, word_count, orientation) via `extract_ocr_with_confidence`, used by the content organizer. There is currently no easyocr-backed equivalent, so any confidence-aware screenshot logic silently uses docTR even when easyocr is the active screenshot backend.
+
+**Proposed fix:**
+1. Add an easyocr variant that uses `detail=1` to recover per-box text + confidence, mapping into the existing `OCRResult` shape (language/orientation may be unavailable → `None`).
+2. Route `extract_ocr_with_confidence` (or a screenshot-specific sibling) through it when `EASYOCR_AVAILABLE`, consistent with `extract_screenshot_text`.
+
+**Affected:**
+- `scripts/shared/ocr_easyocr.py` (detail=1 extraction)
+- `scripts/shared/ocr_classifier.py::extract_ocr_with_confidence`
+
+### easyocr language set hardcoded to English
+
+**Status:** Open
+**Priority:** P3 (non-English mobile captures)
+**Source:** easyocr integration session, 2026-06-27
+**Context:** `ocr_easyocr._EASYOCR_LANGUAGES = ["en"]`. Mobile captures and screenshots frequently contain non-English text; docTR's predictor runs with `detect_language=True`. The easyocr Reader's language list is fixed at construction and adding languages increases model load/memory, so this needs a deliberate default + override.
+
+**Proposed fix:**
+1. Make the language list configurable (env var, e.g. `OCR_EASYOCR_LANGS`, or a constant in `shared/constants.py`).
+2. Default to `["en"]` to keep load cost low; document the memory/latency tradeoff of adding languages.
+
+**Affected:**
+- `scripts/shared/ocr_easyocr.py`
+- `scripts/shared/constants.py` (if centralizing the default)
+
+### easyocr not applied to the `rename_images.py --profile screenshot` flow
+
+**Status:** Open (uninvestigated)
+**Priority:** P3 (coverage gap; possible duplicate OCR backends)
+**Source:** easyocr integration session, 2026-06-27
+**Context:** easyocr currently routes only through `classify_by_ocr` (the content-organizer CLIP-fallback path). The standalone `rename_images.py --profile screenshot` analyzer still extracts text via docTR (`ImageAnalyzer._detect_number` at `rename_images.py:392` uses `extract_ocr_text` with a residual `--psm 10 --oem 3` tesseract config string that is now ignored). It is unclear whether the screenshot renamer profile should also prefer easyocr for its text extraction, or whether `_detect_number` (single-character sprite numbering) is better served by docTR.
+
+**Proposed fix:**
+1. Decide whether the screenshot renamer profile should share `extract_screenshot_text`.
+2. Clean up the dead `config="--psm 10 --oem 3"` argument left over from the pytesseract era.
+
+**Affected:**
+- `scripts/rename_images.py:392` (`_detect_number`, and the screenshot profile's OCR usage)
+
+### Drop stale `stash@{0}` (feat/easyocr-replaces-pytesseract WIP)
+
+**Status:** Open
+**Priority:** P3 (housekeeping)
+**Source:** easyocr integration session, 2026-06-27
+**Context:** `stash@{0}` ("WIP on feat/easyocr-replaces-pytesseract: 0863309") predates the CLIP/OCR consolidation; applying it earlier this session produced merge conflicts and reverted the `open_clip` refactor. Its only easyocr content was a dependency line (the real easyocr code lived in commit `0863309`'s `ocr_utils.py`). Now that easyocr is reimplemented against the current docTR architecture (commit `3af68ce`), the stash is obsolete.
+
+**Proposed fix:** After confirming nothing else is wanted from it (`git stash show -p stash@{0}`), `git stash drop stash@{0}`.
+
+**Affected:** git stash (no files)
+
+### Guard against multi-agent shared-working-dir collisions
+
+**Status:** Open
+**Priority:** P2 (process/safety; recurrence of a previously-recorded issue)
+**Source:** easyocr integration session, 2026-06-27
+**Context:** During this session a *separate* concurrent Claude process created branch `feat/easyocr-integration` and committed `045d3d3` in the **shared** repo working directory, which silently reverted cleanup done on `main` in this session (checked-out branch changed under us). Four `claude` processes were running against the same checkout. This is a recurrence of the pattern recorded in project memory ("forked skill made unauthorized commits; audit git after any write-capable fork"). The repo already uses isolated `worktree-agent-*` branches for parallel work, so the collision came from agents operating directly in the primary checkout rather than in worktrees.
+
+**Proposed fix:**
+1. Establish a convention that parallel/background agents must run in their own git worktree (the repo already has the `worktree-agent-*` pattern + `EnterWorktree` tooling), never the shared primary checkout.
+2. Consider a pre-write/pre-commit guard that warns when more than one agent session has the same checkout open, or asserts the expected branch before committing.
+3. Audit git state at session start when background agents may be active (the memory note already advises this).
+
+**Affected:**
+- Process/tooling (no single source file); optionally a guard hook under `hooks/`
