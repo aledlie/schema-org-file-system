@@ -395,8 +395,8 @@ class ImageAnalyzer:
             text = extract_screenshot_text(image_path) or ""
         else:
             text = extract_ocr_text(image_path) or ""
-        if text and text.strip().isdigit():
-            return text.strip()
+        if text and text.isdigit():
+            return text
         match = re.match(r"^(\d+)_", image_path.stem)
         return match.group(1) if match else None
 
