@@ -116,3 +116,54 @@ def extract_text_easyocr(image_path: Path, max_chars: int = 500) -> str | None:
     except Exception as e:
         logger.warning("easyocr failed on %s: %s", image_path, e)
         return None
+
+
+def extract_text_easyocr_with_confidence(
+    image_path: Path,
+    max_chars: int = 0,
+) -> "OCRResult | None":
+    """Extract text with per-box confidence from a screenshot via easyocr.
+
+    Uses detail=1 to get (bbox, text, confidence) tuples. Aggregates confidence
+    as the mean of per-word scores. Language and orientation are not reported by
+    easyocr and are returned as None to match the OCRResult shape from docTR.
+
+    Returns None if easyocr is unavailable, the image cannot be read, or no text
+    is found. Use max_chars=0 for no truncation.
+    """
+    if not EASYOCR_AVAILABLE:
+        return None
+    try:
+        from shared.ocr_classifier import OCRResult
+
+        reader = _get_reader()
+        detections = reader.readtext(str(image_path), detail=1, paragraph=False)
+        if not detections:
+            return None
+
+        words: list[str] = []
+        confidences: list[float] = []
+        for _bbox, word_text, conf in detections:
+            cleaned = word_text.strip()
+            if cleaned:
+                words.append(cleaned)
+                confidences.append(float(conf))
+
+        if not words:
+            return None
+
+        text = " ".join(" ".join(words).split())
+        if max_chars and len(text) > max_chars:
+            text = text[:max_chars] + "..."
+
+        avg_confidence = sum(confidences) / len(confidences)
+        return OCRResult(
+            text=text,
+            confidence=avg_confidence,
+            language=None,
+            word_count=len(words),
+            orientation=None,
+        )
+    except Exception as e:
+        logger.warning("easyocr (detail=1) failed on %s: %s", image_path, e)
+        return None

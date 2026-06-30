@@ -10,7 +10,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-from shared.ocr_easyocr import EASYOCR_AVAILABLE, extract_text_easyocr
+from shared.ocr_easyocr import (
+    EASYOCR_AVAILABLE,
+    extract_text_easyocr,
+    extract_text_easyocr_with_confidence,
+)
 
 OCR_AVAILABLE = False
 _predictor = None
@@ -342,12 +346,26 @@ def extract_ocr_text_pdf(
 def extract_ocr_with_confidence(
     image_path: Path,
     max_chars: int = 0,
+    prefer_easyocr: bool = True,
 ) -> OCRResult | None:
     """Extract text with confidence scores, language, and orientation.
+
+    When ``prefer_easyocr`` is True (the default) and easyocr is installed, the
+    easyocr detail=1 path is tried first because it is more accurate on
+    screenshots and mobile UI captures. Falls back to docTR if easyocr returns
+    nothing. Set ``prefer_easyocr=False`` to force the docTR path (e.g. for
+    scanned documents where docTR is the stronger backend).
 
     Returns None if OCR unavailable or no text found.
     Use max_chars=0 for no truncation.
     """
+    if prefer_easyocr and EASYOCR_AVAILABLE:
+        easyocr_result = extract_text_easyocr_with_confidence(
+            image_path, max_chars=max_chars
+        )
+        if easyocr_result is not None:
+            return easyocr_result
+
     result = _run_image_ocr(image_path)
     if result is None:
         return None
