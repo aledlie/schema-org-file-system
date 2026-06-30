@@ -34,7 +34,7 @@ from shared.constants import (
 from shared.file_ops import resolve_collision
 from shared.file_organizer import FileOrganizer
 from shared.filename_utils import is_generic_filename
-from shared.ocr_classifier import extract_ocr_text
+from shared.ocr_classifier import extract_ocr_text, extract_screenshot_text
 from shared.status import ProcessingStatus, create_result_dict
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -389,9 +389,14 @@ class ImageAnalyzer:
         self._metadata_parser = ImageMetadataParser()
 
     def _detect_number(self, image_path: Path) -> Optional[str]:
-        text = extract_ocr_text(image_path, config="--psm 10 --oem 3") or ""
-        if text and text.isdigit():
-            return text
+        # Screenshot profile routes through extract_screenshot_text (prefers
+        # easyocr when available); photo profile uses docTR directly.
+        if self.profile.name == "screenshot":
+            text = extract_screenshot_text(image_path) or ""
+        else:
+            text = extract_ocr_text(image_path) or ""
+        if text and text.strip().isdigit():
+            return text.strip()
         match = re.match(r"^(\d+)_", image_path.stem)
         return match.group(1) if match else None
 
