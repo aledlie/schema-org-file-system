@@ -26,18 +26,20 @@ import os
 import threading
 from pathlib import Path
 
+from shared.constants import EASYOCR_DEFAULT_LANGUAGE
+
 logger = logging.getLogger(__name__)
 
 # Detect availability without importing the heavy module at load time.
 EASYOCR_AVAILABLE = importlib.util.find_spec("easyocr") is not None
 
-# Default language set: English-only keeps the model small/fast.
-# Adding languages increases model load time and memory usage — each additional
-# language downloads its own recognition weights (~50–100 MB each).
-_EASYOCR_LANG_DEFAULT = "en"
 
 def _resolve_languages() -> list[str]:
     """Read OCR_EASYOCR_LANGS env var (comma-separated ISO codes) or return default.
+
+    Resolved at Reader-construction time (not import time) so the env var can be
+    set after this module is imported (e.g. in tests/notebooks). Adding languages
+    increases model load time and memory — each downloads ~50–100 MB of weights.
 
     Examples:
       OCR_EASYOCR_LANGS=en,fr,es   → ["en", "fr", "es"]
@@ -49,12 +51,8 @@ def _resolve_languages() -> list[str]:
         if langs:
             logger.debug("easyocr: using languages from OCR_EASYOCR_LANGS: %s", langs)
             return langs
-    return [_EASYOCR_LANG_DEFAULT]
+    return [EASYOCR_DEFAULT_LANGUAGE]
 
-
-# Languages passed to easyocr.Reader. Resolved once at import time so the
-# singleton Reader is always built with the configured language list.
-_EASYOCR_LANGUAGES = _resolve_languages()
 
 _reader = None
 _lock = threading.Lock()
@@ -101,7 +99,9 @@ def _get_reader():
                             )
                     except Exception:
                         pass
-                _reader = easyocr.Reader(_EASYOCR_LANGUAGES, gpu=gpu, verbose=False)
+                _reader = easyocr.Reader(
+                    _resolve_languages(), gpu=gpu, verbose=False
+                )
     return _reader
 
 
