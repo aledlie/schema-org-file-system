@@ -18,7 +18,7 @@ except ImportError:
   _BATCH_PREWARM_AVAILABLE = False
 
 try:
-  from shared.ocr_easyocr import EASYOCR_AVAILABLE, _get_reader as _easyocr_get_reader
+  from shared.ocr_easyocr import EASYOCR_AVAILABLE, prewarm_reader as _easyocr_prewarm
   _EASYOCR_PREWARM_AVAILABLE = EASYOCR_AVAILABLE
 except ImportError:
   _EASYOCR_PREWARM_AVAILABLE = False
@@ -124,7 +124,7 @@ class BatchProcessor:
             if screenshot_count:
                 print(f"Pre-warming easyocr Reader ({screenshot_count} potential screenshot(s))")
                 try:
-                    _easyocr_get_reader()
+                    _easyocr_prewarm()
                     print("easyocr Reader pre-warm complete\n")
                 except Exception as exc:
                     print(f"easyocr pre-warm failed (will load on first use): {exc}\n")

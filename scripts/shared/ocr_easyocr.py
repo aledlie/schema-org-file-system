@@ -105,6 +105,19 @@ def _get_reader():
     return _reader
 
 
+def prewarm_reader() -> None:
+    """Eagerly build the singleton easyocr Reader to amortize first-call latency.
+
+    The Reader's multi-second model load otherwise happens lazily on the first
+    screenshot mid-batch. Call this before a per-file loop (see BatchProcessor)
+    so the cost is paid up front. No-op if easyocr is unavailable or the Reader
+    is already loaded; thread-safe via _get_reader's double-checked locking.
+    """
+    if not EASYOCR_AVAILABLE:
+        return
+    _get_reader()
+
+
 def clear_reader() -> None:
     """Release the cached easyocr Reader and free its memory.
 
