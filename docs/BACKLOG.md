@@ -44,7 +44,7 @@ Consider which approach aligns with project goals: broader coverage (option 1) o
 
 ### Pre-warm / share the easyocr Reader to amortize model-load latency
 
-**Status:** Open
+**Status:** Done
 **Priority:** P3 (first-call latency; batch runs)
 **Source:** easyocr integration session, 2026-06-27
 **Context:** `ocr_easyocr._get_reader()` lazily builds a process-local singleton `easyocr.Reader` on first use (multi-second model load). In a batch organize run the first screenshot pays this cost mid-loop, and the Reader is not pre-warmed the way `BatchProcessor` pre-warms the CLIP cache. There is also no `clear_cache()` equivalent for tests/long-running processes to reclaim the Reader's memory (CLIPClassifier has one).
@@ -89,7 +89,7 @@ Consider which approach aligns with project goals: broader coverage (option 1) o
 
 ### easyocr not applied to the `rename_images.py --profile screenshot` flow
 
-**Status:** Open (uninvestigated)
+**Status:** Done
 **Priority:** P3 (coverage gap; possible duplicate OCR backends)
 **Source:** easyocr integration session, 2026-06-27
 **Context:** easyocr currently routes only through `classify_by_ocr` (the content-organizer CLIP-fallback path). The standalone `rename_images.py --profile screenshot` analyzer still extracts text via docTR (`ImageAnalyzer._detect_number` at `rename_images.py:392` uses `extract_ocr_text` with a residual `--psm 10 --oem 3` tesseract config string that is now ignored). It is unclear whether the screenshot renamer profile should also prefer easyocr for its text extraction, or whether `_detect_number` (single-character sprite numbering) is better served by docTR.
