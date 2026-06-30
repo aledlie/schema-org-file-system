@@ -102,19 +102,21 @@ Consider which approach aligns with project goals: broader coverage (option 1) o
 - `scripts/evaluate_model.py` or a new bench under `tests/performance/`
 - `scripts/shared/ocr_classifier.py::extract_screenshot_text` (selection logic, if findings warrant)
 
-### easyocr runs CPU-only on Apple Silicon (MPS unused)
+### ~~easyocr runs CPU-only on Apple Silicon (MPS unused)~~
 
-**Status:** Open
+**Status:** Done (2026-06-29) — MPS limitation confirmed and documented; clear_reader() added.
 **Priority:** P2 (latency on the primary dev platform; macOS arm64)
 **Source:** easyocr integration session, 2026-06-27
 **Context:** `ocr_easyocr._use_gpu()` returns `torch.cuda.is_available()`, so on macOS (MPS) and CPU-only hosts easyocr loads with `gpu=False`. easyocr historically has no MPS backend, so this is currently correct — but it means every screenshot OCR on the dev machine runs on CPU, which is slow for the per-image readtext path. Verified at runtime: the Reader logs `pin_memory ... not supported on MPS` and falls back to CPU.
 
-**Proposed fix:**
-1. Confirm current easyocr (≥1.7.2) still lacks usable MPS support; if a build supports it, allow `gpu=True` (or `gpu='mps'`) on MPS.
-2. Otherwise, document the CPU limitation and consider: (a) caching OCR results per image like the CLIP embedding cache, and/or (b) restricting easyocr to the cases where its accuracy edge justifies the CPU cost (see the benchmark item above).
+**Resolution (2026-06-29):**
+- Confirmed easyocr ≥1.7 has no usable MPS backend. CUDA-only guard in `_use_gpu()` is correct and intentional.
+- Added MPS-detection log in `_get_reader()`: when MPS is present but CUDA is not, a debug-level message explains why the CPU Reader was chosen (suppresses the confusing `pin_memory` log noise from easyocr itself).
+- Added `clear_reader()` function (mirrors `CLIPClassifier.clear_cache()`) so tests and long-running processes can reclaim Reader memory.
+- Added module-level docstring explaining the accelerator constraints and batch-run mitigation options.
 
 **Affected:**
-- `scripts/shared/ocr_easyocr.py::_use_gpu` / `_get_reader`
+- `scripts/shared/ocr_easyocr.py` (_use_gpu docstring, _get_reader MPS log, clear_reader)
 
 ### Pre-warm / share the easyocr Reader to amortize model-load latency
 
