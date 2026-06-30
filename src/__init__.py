@@ -5,7 +5,7 @@ A comprehensive, production-ready system for generating, validating, and managin
 Schema.org structured data for various file types.
 """
 
-__version__ = "1.2.0"
+__version__ = "2.1.0"
 __author__ = "File Organization System"
 
 from .base import SchemaOrgBase, SchemaContext

@@ -88,7 +88,7 @@ class BatchProcessor:
 
         if not ocr_available:
             print("WARNING: OCR libraries not available")
-            print("   Install with: pip install pytesseract Pillow pypdf pdf2image")
+            print("   Install with: pip install 'python-doctr[torch]' easyocr")
             print("   Content classification will be limited to filenames\n")
 
         all_files: List[Path] = []
