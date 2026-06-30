@@ -192,17 +192,18 @@ Actual accuracy comparison deferred until a labeled screenshot subset is assembl
 
 **Affected:** git stash (no files)
 
-### Guard against multi-agent shared-working-dir collisions
+### ~~Guard against multi-agent shared-working-dir collisions~~
 
-**Status:** Open
+**Status:** Done (2026-06-29) — worktree convention documented; pre-commit warning hook installed.
 **Priority:** P2 (process/safety; recurrence of a previously-recorded issue)
 **Source:** easyocr integration session, 2026-06-27
 **Context:** During this session a *separate* concurrent Claude process created branch `feat/easyocr-integration` and committed `045d3d3` in the **shared** repo working directory, which silently reverted cleanup done on `main` in this session (checked-out branch changed under us). Four `claude` processes were running against the same checkout. This is a recurrence of the pattern recorded in project memory ("forked skill made unauthorized commits; audit git after any write-capable fork"). The repo already uses isolated `worktree-agent-*` branches for parallel work, so the collision came from agents operating directly in the primary checkout rather than in worktrees.
 
-**Proposed fix:**
-1. Establish a convention that parallel/background agents must run in their own git worktree (the repo already has the `worktree-agent-*` pattern + `EnterWorktree` tooling), never the shared primary checkout.
-2. Consider a pre-write/pre-commit guard that warns when more than one agent session has the same checkout open, or asserts the expected branch before committing.
-3. Audit git state at session start when background agents may be active (the memory note already advises this).
+**Resolution (2026-06-29):**
+1. Worktree convention documented in `CLAUDE.md` Gotchas table: parallel/background agents must use `EnterWorktree` / `worktree-agent-*` branches, never the primary checkout.
+2. Added `.git/hooks/pre-commit` (executable) that counts Claude sessions whose cwd matches the repo root via `lsof`. When >1 session is detected it prints a human-readable warning (does not block the commit) so the author can abort and switch to a worktree.
+3. The easyocr MPS CPU-only limitation also added to CLAUDE.md Gotchas in the same commit.
 
 **Affected:**
-- Process/tooling (no single source file); optionally a guard hook under `hooks/`
+- `.git/hooks/pre-commit` (new warning hook)
+- `CLAUDE.md` (worktree rule + easyocr MPS gotcha)

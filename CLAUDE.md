@@ -168,6 +168,8 @@ Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 | Generator builder API removed | `generators.py` no longer has fluent builders (`set_basic_info`, `set_file_info`, etc.) — build schemas via `set_property(name, value, PropertyType)` directly or the `add_person`/`add_organization`/`set_dates` helpers |
 | Golden snapshot tests | `tests/unit/golden/generate_schema/*.json` are recorded baselines for `generate_schema()` output — do not hand-edit; re-record with `UPDATE_GOLDEN=1 pytest tests/unit/test_generate_schema_golden.py` |
 | Storage timestamps | Use `from ._time import utcnow` (naive UTC) instead of deprecated `datetime.utcnow()`; DateTime columns are timezone-naive, so do not introduce tz-aware datetimes without a column migration |
+| Parallel agents — worktree rule | **Never run background/parallel Claude agents in the primary checkout.** Each agent must operate in its own git worktree (`EnterWorktree` / `worktree-agent-*` branches). Concurrent agents in the shared checkout silently clobber each other's changes (branch switch, conflicting commits). A `pre-commit` hook warns when multiple Claude sessions share the same directory. |
+| easyocr MPS (Apple Silicon) | easyocr has no usable MPS backend; the Reader always loads on CPU on macOS arm64. CUDA-only guard in `ocr_easyocr._use_gpu()` is intentional. Call `clear_reader()` to reclaim Reader memory between batches or in tests. |
 
 ## Testing
 
