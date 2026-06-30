@@ -138,6 +138,13 @@ CLIP_LABEL_TO_ORGANIZER: dict[str, tuple[str, str]] = {
     "a meme or social media image": ("media", "photos_social"),
 }
 
+# easyocr language configuration
+# The easyocr Reader is built once per process with a fixed language list.
+# Override via OCR_EASYOCR_LANGS env var (comma-separated ISO 639-1 codes).
+# Each additional language downloads ~50–100 MB of recognition weights and
+# increases model load time. See ocr_easyocr._resolve_languages().
+EASYOCR_DEFAULT_LANGUAGE = "en"
+
 CLIP_BATCH_SIZE: int = 32
 
 # Canonical CLIP confidence thresholds (single source of truth).
