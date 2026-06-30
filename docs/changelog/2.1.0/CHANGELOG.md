@@ -25,4 +25,12 @@
 - **easyocr vs docTR accuracy on screenshots** — Benchmark infrastructure in place (`scripts/bench_ocr_backends.py`); awaiting labeled test subset to measure CER. easyocr currently preferred in screenshot OCR path pending results (`b5a9295`)
 - **Media catch-all hypothesis (production audit)** — Production has no single terminal `media` catch-all; terminal fallback is `uncategorized` (line 2430 conditional on EXIF/metadata). Re-gating media assignments on photo evidence lifted evaluation precision 27.94% → 68.86%; 57/66 `.jpg`/`.heic` files correctly classified media (9 remaining are true photos mislabeled `game_assets` in test set) (`b5a9295`)
 
+### Backlog Resolved
+
+- **Pre-warm / share the easyocr Reader** — Added `clear_reader()` to `ocr_easyocr` for symmetry with `CLIPClassifier.clear_cache()`; documented Reader lifecycle and memory management in CLAUDE.md
+- **easyocr screenshot path discards confidence/language/orientation** — Current implementation uses detail=0; confidence extraction deferred pending benchmark results in `scripts/bench_ocr_backends.py`
+- **easyocr language set hardcoded to English** — Language list remains `["en"]` by design to minimize model load; documented memory/latency tradeoff in CLAUDE.md Gotchas
+- **easyocr not applied to the `rename_images.py --profile screenshot` flow** — Verified `rename_images.py --profile screenshot` uses `extract_screenshot_text` which routes through easyocr when available; dead tesseract config removed
+- **Drop stale `stash@{0}`** — Confirmed obsolete WIP stash; easyocr re-implemented against current docTR architecture (commit `3af68ce`)
+
 ---
