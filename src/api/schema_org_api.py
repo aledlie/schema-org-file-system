@@ -32,7 +32,7 @@ from api.schema_org_models import (
 app = FastAPI(
     title="Schema.org API",
     description="JSON-LD representations of file system entities",
-    version="1.0.0",
+    version="2.1.0",
     responses={
         404: {"model": ErrorResponse},
         400: {"model": ErrorResponse},
