@@ -116,6 +116,7 @@ mypy src/ scripts/            # type check
 |----------|-------------|
 | `FILE_SYSTEM_SENTRY_DSN` | Sentry error tracking (Doppler) |
 | `FILE_ORGANIZE_MODE` | `in-place` (default for image renamer) or `folder` (default for screenshot renamer) |
+| `OCR_EASYOCR_LANGS` | Comma-separated ISO language codes for easyocr (e.g. `en,fr,es`); defaults to `en`. Resolved at Reader-construction time — set it before first OCR use. |
 | `--sentry-dsn` | CLI override |
 
 ## Dependencies
@@ -169,7 +170,8 @@ Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 | Golden snapshot tests | `tests/unit/golden/generate_schema/*.json` are recorded baselines for `generate_schema()` output — do not hand-edit; re-record with `UPDATE_GOLDEN=1 pytest tests/unit/test_generate_schema_golden.py` |
 | Storage timestamps | Use `from ._time import utcnow` (naive UTC) instead of deprecated `datetime.utcnow()`; DateTime columns are timezone-naive, so do not introduce tz-aware datetimes without a column migration |
 | Parallel agents — worktree rule | **Never run background/parallel Claude agents in the primary checkout.** Each agent must operate in its own git worktree (`EnterWorktree` / `worktree-agent-*` branches). Concurrent agents in the shared checkout silently clobber each other's changes (branch switch, conflicting commits). A `pre-commit` hook warns when multiple Claude sessions share the same directory. |
-| easyocr MPS (Apple Silicon) | easyocr has no usable MPS backend; the Reader always loads on CPU on macOS arm64. CUDA-only guard in `ocr_easyocr._use_gpu()` is intentional. Call `clear_reader()` to reclaim Reader memory between batches or in tests. |
+| easyocr MPS (Apple Silicon) | easyocr has no usable MPS backend; the Reader always loads on CPU on macOS arm64. CUDA-only guard in `ocr_easyocr._use_gpu()` is intentional. Call `prewarm_reader()` before a batch loop to amortize model-load latency; call `clear_reader()` to reclaim Reader memory between batches or in tests. |
+| Screenshot renamer OCR backend | `rename_images.py --profile screenshot` routes `_detect_number` through `extract_screenshot_text` (prefers easyocr when installed, falls back to docTR). The `--profile photo` path uses docTR directly. |
 
 ## Testing
 
@@ -181,4 +183,4 @@ pytest tests/e2e/            # Playwright E2E
 ```
 
 ---
-**Python:** 3.13 (3.14 blocked by macOS 26 libexpat ABI) | **Version:** 2.0.0 | **Files:** 265,000+ processed
+**Python:** 3.13 (3.14 blocked by macOS 26 libexpat ABI) | **Version:** 2.1.0 | **Files:** 265,000+ processed
