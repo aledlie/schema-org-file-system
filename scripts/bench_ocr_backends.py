@@ -82,7 +82,7 @@ def _cer(ref: str, hyp: str) -> float:
             cost = 0 if ref[i - 1] == hyp[j - 1] else 1
             curr[j] = min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost)
         prev = curr
-    return prev[m] / max(n, m)
+    return prev[m] / n
 
 
 # ---------------------------------------------------------------------------
