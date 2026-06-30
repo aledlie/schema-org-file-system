@@ -17,6 +17,16 @@ try:
 except ImportError:
   _BATCH_PREWARM_AVAILABLE = False
 
+try:
+  from shared.ocr_easyocr import EASYOCR_AVAILABLE, _get_reader as _easyocr_get_reader
+  _EASYOCR_PREWARM_AVAILABLE = EASYOCR_AVAILABLE
+except ImportError:
+  _EASYOCR_PREWARM_AVAILABLE = False
+
+# Image extensions likely to contain UI/screenshot text that benefits from
+# easyocr pre-warming. Matches the extensions BatchProcessor scans.
+_SCREENSHOT_EXTENSIONS = frozenset({".png", ".jpg", ".jpeg", ".webp"})
+
 
 class BatchProcessor:
     """
@@ -106,6 +116,18 @@ class BatchProcessor:
                     chunk = image_paths[chunk_start : chunk_start + CLIP_BATCH_SIZE]
                     get_cached_embeddings_batch(chunk, CLIP_CONTENT_LABELS)
                 print("CLIP cache pre-warm complete\n")
+
+        if _EASYOCR_PREWARM_AVAILABLE:
+            screenshot_count = sum(
+                1 for p in all_files if p.suffix.lower() in _SCREENSHOT_EXTENSIONS
+            )
+            if screenshot_count:
+                print(f"Pre-warming easyocr Reader ({screenshot_count} potential screenshot(s))")
+                try:
+                    _easyocr_get_reader()
+                    print("easyocr Reader pre-warm complete\n")
+                except Exception as exc:
+                    print(f"easyocr pre-warm failed (will load on first use): {exc}\n")
 
         for i, file_path in enumerate(all_files, 1):
             print(f"[{i}/{len(all_files)}] Processing: {file_path.name}")
