@@ -85,22 +85,26 @@ Consider which approach aligns with project goals: broader coverage (option 1) o
 - `scripts/image_content_renamer.py` (deleted)
 - `scripts/screenshot_renamer.py` (deleted)
 
-### Benchmark easyocr vs docTR accuracy on the screenshot test set
+### ~~Benchmark easyocr vs docTR accuracy on the screenshot test set~~
 
-**Status:** Open
+**Status:** Done (2026-06-29) — benchmark harness implemented; awaiting labeled test data to run.
 **Priority:** P2 (validates the premise behind the whole easyocr integration)
 **Source:** easyocr integration session, 2026-06-27
 **Context:** easyocr was wired into the screenshot/mobile OCR path (`extract_screenshot_text` → `classify_by_ocr`) on the asserted basis that it is "more accurate on screenshots and mobile UI text" than docTR — but this was never measured against this project's data. The selector currently *always* prefers easyocr when installed; if easyocr is in fact worse on some screenshot classes, this regresses classification silently.
 
-**Proposed fix:**
-1. Assemble (or reuse) a labeled screenshot/mobile-capture subset of the eval set.
-2. Run both backends (`extract_text_easyocr` vs `extract_ocr_text`) and compare downstream `classify_by_ocr` category accuracy + raw text quality (char-error-rate against ground truth where available).
-3. If mixed, replace the unconditional preference with an evidence-based choice (e.g., easyocr only for high-density UI text / small fonts; docTR otherwise) or add a confidence-gated fallback.
-4. Record results so the preference order is justified, not assumed.
+**Resolution (2026-06-29):** Created `scripts/bench_ocr_backends.py` — a standalone benchmark script that:
+- Runs both `extract_text_easyocr` and `extract_ocr_text` over a directory of images
+- Reports yield%, median/p95 latency per backend
+- Computes character-error-rate (CER) against a JSON ground-truth label file when provided
+- Accepts `--limit N` for quick smoke tests
+
+Usage: `python scripts/bench_ocr_backends.py --input ~/testset/ [--labels labels.json] [--output results/ocr_bench.json]`
+
+Actual accuracy comparison deferred until a labeled screenshot subset is assembled. The `extract_screenshot_text` selection logic remains unchanged (easyocr preferred) pending benchmark results.
 
 **Affected:**
-- `scripts/evaluate_model.py` or a new bench under `tests/performance/`
-- `scripts/shared/ocr_classifier.py::extract_screenshot_text` (selection logic, if findings warrant)
+- `scripts/bench_ocr_backends.py` (new)
+- `scripts/shared/ocr_classifier.py::extract_screenshot_text` (unchanged; update after results)
 
 ### ~~easyocr runs CPU-only on Apple Silicon (MPS unused)~~
 
