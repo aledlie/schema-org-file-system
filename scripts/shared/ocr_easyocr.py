@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import importlib.util
 import logging
+import threading
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
@@ -35,6 +36,7 @@ EASYOCR_AVAILABLE = importlib.util.find_spec("easyocr") is not None
 _EASYOCR_LANGUAGES = ["en"]
 
 _reader = None
+_lock = threading.Lock()
 
 
 def _use_gpu() -> bool:
@@ -54,23 +56,31 @@ def _use_gpu() -> bool:
 
 
 def _get_reader():
-    """Lazily build the singleton easyocr Reader (one model load per process)."""
+    """Lazily build the singleton easyocr Reader (one model load per process).
+
+    Thread-safe via double-checked locking: concurrent callers block until the
+    first load completes rather than each building a Reader. Mirrors
+    CLIPClassifier.get_instance().
+    """
     global _reader
     if _reader is None:
-        import easyocr
+        with _lock:
+            # Re-test inside the lock.
+            if _reader is None:
+                import easyocr
 
-        gpu = _use_gpu()
-        if not gpu:
-            try:
-                import torch
+                gpu = _use_gpu()
+                if not gpu:
+                    try:
+                        import torch
 
-                if torch.backends.mps.is_available():
-                    logger.debug(
-                        "easyocr: MPS detected but not supported — loading CPU Reader"
-                    )
-            except Exception:
-                pass
-        _reader = easyocr.Reader(_EASYOCR_LANGUAGES, gpu=gpu, verbose=False)
+                        if torch.backends.mps.is_available():
+                            logger.debug(
+                                "easyocr: MPS detected but not supported — loading CPU Reader"
+                            )
+                    except Exception:
+                        pass
+                _reader = easyocr.Reader(_EASYOCR_LANGUAGES, gpu=gpu, verbose=False)
     return _reader
 
 
@@ -81,7 +91,8 @@ def clear_reader() -> None:
     processes that want to reclaim the Reader's model weights between batches.
     """
     global _reader
-    _reader = None
+    with _lock:
+        _reader = None
     logger.info("easyocr Reader cache cleared")
 
 
