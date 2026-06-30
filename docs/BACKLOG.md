@@ -5,21 +5,17 @@ Last updated: 2026-06-27.
 
 ## Open Items
 
-### Add low-confidence → uncategorized rule in evaluator
+### ~~Add low-confidence → uncategorized rule in evaluator~~
 
-**Status:** Open
+**Status:** Done (2026-06-29) — option 1 implemented; media precision lifted 27.94% → 68.86%.
 **Priority:** P2 (271 uncategorized → media misclassifications)
 **Source:** model-evaluation session, 2026-05-16
 **Context:** 271 uncategorized files are being misclassified as media. Root cause: `FileCategorizationModel.predict_category` never emits 'uncategorized' for image files — it always falls through to `('media', 'photos_other', 0.6)`. The evaluator needs explicit logic to route low-confidence predictions to uncategorized.
 
-**Proposed fix:** Two options:
-  1. Add explicit low-confidence threshold (e.g., max score < 0.5) that routes to 'uncategorized' instead of falling through to default media category.
-  2. Further relabel the test set (scripts/data_preprocessing.py) if these low-confidence files are actually disguised game assets or other hard categories.
+**Resolution (2026-06-29):** Option 1 — added `_has_photo_evidence()` predicate to `FileCategorizationModel` in `scripts/evaluate_model.py`. Images without positive photo evidence (EXIF datetime/GPS, date-stamped filename, or photo-folder parent) now route to `('uncategorized', 'other', 0.3)` instead of the `media` catch-all. Commit `b5a9295`.
 
 **Affected:**
-- `scripts/evaluate_model.py:60-61` (prediction routing)
-- `src/classifiers/file_categorization_model.py` (predict_category logic, if choosing option 1)
-- `scripts/data_preprocessing.py` (test set relabeling, if choosing option 2)
+- `scripts/evaluate_model.py` (predict_category + _has_photo_evidence)
 
 ### Test set class imbalance in model evaluation
 
