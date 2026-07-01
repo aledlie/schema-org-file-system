@@ -432,5 +432,39 @@
     "path_depth": 3,
     "parent_folder": "redacted",
     "filename_hash": "5bb0adc0"
+  },
+  {
+    "filename": "specimen_drivers_license.png",
+    "filename_lower": "specimen_drivers_license.png",
+    "filepath": "results/test_set_augmentation/redacted/specimen_drivers_license.png",
+    "category": "identification",
+    "subcategory": "drivers_license",
+    "extension": ".png",
+    "extension_category": "image",
+    "filename_tokens": [
+      "specimen",
+      "drivers",
+      "license"
+    ],
+    "filename_length": 28,
+    "has_numbers": false,
+    "has_underscores": true,
+    "has_dashes": false,
+    "has_spaces": false,
+    "starts_with_date": false,
+    "is_screenshot": false,
+    "is_game_asset": false,
+    "is_document": false,
+    "has_extracted_text": false,
+    "extracted_text_length": 0,
+    "has_company_name": false,
+    "has_people_names": false,
+    "people_count": 0,
+    "has_datetime": false,
+    "has_gps": false,
+    "has_location": false,
+    "path_depth": 3,
+    "parent_folder": "redacted",
+    "filename_hash": "88dabda2"
   }
 ]

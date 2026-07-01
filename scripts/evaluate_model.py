@@ -26,6 +26,14 @@ from shared.constants import (
 PHOTO_PARENT_FOLDERS = {"Camera", "Photos", "Photos (2)", "Photos 3",
                         "Screenshots", "Social_Media", "WhatsApp"}
 
+# Minimum per-class support (actual samples of that class) required before its
+# precision/recall/F1 are treated as reliable enough to report. Classes below
+# this are segregated into `low_support_categories` and excluded from the macro
+# average, so a class with 1-2 samples cannot drag the headline metric toward a
+# misleading 0% (see backlog: "report per-class metrics only for classes with
+# adequate support").
+DEFAULT_MIN_SUPPORT = 5
+
 
 class FileCategorizationModel:
     """Simulates the categorization logic from file_organizer_content_based.py"""
@@ -195,13 +203,18 @@ class ContentClassifierModel:
 
 
 def evaluate_model(test_data_path: str, output_path: str = None,
-                   classifier: str = 'baseline') -> Dict[str, Any]:
+                   classifier: str = 'baseline',
+                   min_support: int = DEFAULT_MIN_SUPPORT) -> Dict[str, Any]:
     """
     Evaluate the categorization model on test data.
 
     Args:
         test_data_path: Path to test.json
         output_path: Path to save results (optional)
+        classifier: 'baseline' (filename heuristic) or 'content' (CLIP+OCR).
+        min_support: Minimum actual-sample count for a class's per-class metrics
+            to be reported and counted in the macro average. Classes below this
+            are listed under `low_support_categories` instead.
 
     Returns:
         Evaluation results dictionary
@@ -275,8 +288,12 @@ def evaluate_model(test_data_path: str, output_path: str = None,
     subcategory_accuracy = correct_subcategory / evaluated if evaluated else 0
     avg_confidence = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0
 
-    # Per-category metrics
+    # Per-category metrics. `support` is the count of actual samples of the
+    # class (tp + fn); a class present only via false positives has support 0.
+    # Classes with support < min_support are flagged unreported so their noisy
+    # near-zero F1 does not distort the headline macro metric.
     per_category_metrics = {}
+    low_support_categories = []
     for category in category_metrics:
         tp = category_metrics[category]['tp']
         fp = category_metrics[category]['fp']
@@ -286,12 +303,39 @@ def evaluate_model(test_data_path: str, output_path: str = None,
         recall = tp / (tp + fn) if (tp + fn) > 0 else 0
         f1 = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
 
+        support = tp + fn
+        reported = support >= min_support
         per_category_metrics[category] = {
             'precision': round(precision, 4),
             'recall': round(recall, 4),
             'f1_score': round(f1, 4),
-            'support': tp + fn
+            'support': support,
+            'reported': reported,
         }
+        if not reported:
+            low_support_categories.append({'category': category, 'support': support})
+
+    low_support_categories.sort(key=lambda c: -c['support'])
+
+    # Macro average over adequately-supported classes only. Unweighted mean of
+    # per-class precision/recall/F1 — excludes low-support classes so a 1-sample
+    # class cannot swing it.
+    reported_metrics = [m for m in per_category_metrics.values() if m['reported']]
+    n_reported = len(reported_metrics)
+    if n_reported:
+        macro_precision = sum(m['precision'] for m in reported_metrics) / n_reported
+        macro_recall = sum(m['recall'] for m in reported_metrics) / n_reported
+        macro_f1 = sum(m['f1_score'] for m in reported_metrics) / n_reported
+    else:
+        macro_precision = macro_recall = macro_f1 = 0
+    macro_avg = {
+        'precision': round(macro_precision, 4),
+        'recall': round(macro_recall, 4),
+        'f1_score': round(macro_f1, 4),
+        'min_support': min_support,
+        'classes_reported': n_reported,
+        'classes_excluded': len(low_support_categories),
+    }
 
     # Find misclassifications
     misclassifications = [r for r in results if not r['correct']]
@@ -307,6 +351,7 @@ def evaluate_model(test_data_path: str, output_path: str = None,
             'test_samples': len(test_data),
             'evaluated': evaluated,
             'skipped_missing': skipped_missing,
+            'min_support': min_support,
             'model': ('ContentBasedFileOrganizer (CLIP+OCR)' if classifier == 'content'
                       else 'FileCategorizationModel v1.0')
         },
@@ -317,7 +362,9 @@ def evaluate_model(test_data_path: str, output_path: str = None,
             'total_correct': correct,
             'total_incorrect': evaluated - correct
         },
+        'macro_avg_supported': macro_avg,
         'per_category_metrics': per_category_metrics,
+        'low_support_categories': low_support_categories,
         'confusion_matrix': {k: dict(v) for k, v in confusion_matrix.items()},
         'top_misclassifications': [
             {
@@ -364,16 +411,34 @@ def print_report(evaluation: Dict[str, Any]):
     print(f"  Correct Predictions:  {metrics['total_correct']:,}")
     print(f"  Incorrect Predictions:{metrics['total_incorrect']:,}")
 
+    min_support = meta.get('min_support', DEFAULT_MIN_SUPPORT)
     print("\n" + "-" * 40)
-    print("PER-CATEGORY METRICS")
+    print(f"PER-CATEGORY METRICS (support >= {min_support})")
     print("-" * 40)
     print(f"  {'Category':<25} {'Precision':>10} {'Recall':>10} {'F1':>10} {'Support':>10}")
     print("  " + "-" * 65)
 
     for category, m in sorted(evaluation['per_category_metrics'].items(),
                               key=lambda x: -x[1]['support']):
+        if not m.get('reported', True):
+            continue
         print(f"  {category:<25} {m['precision']:>10.2%} {m['recall']:>10.2%} "
               f"{m['f1_score']:>10.2%} {m['support']:>10,}")
+
+    macro = evaluation.get('macro_avg_supported')
+    if macro:
+        print("  " + "-" * 65)
+        print(f"  {'macro avg (' + str(macro['classes_reported']) + ' classes)':<25} "
+              f"{macro['precision']:>10.2%} {macro['recall']:>10.2%} "
+              f"{macro['f1_score']:>10.2%}")
+
+    low_support = evaluation.get('low_support_categories', [])
+    if low_support:
+        print("\n" + "-" * 40)
+        print(f"LOW-SUPPORT CATEGORIES (support < {min_support}, metrics not reported)")
+        print("-" * 40)
+        for c in low_support:
+            print(f"  {c['category']:<25} support={c['support']:,}")
 
     print("\n" + "-" * 40)
     print("TOP MISCLASSIFICATIONS")
@@ -398,11 +463,16 @@ def main():
                         choices=['baseline', 'content'], default='baseline',
                         help='baseline = filename heuristic; content = production '
                              'CLIP+OCR classifier (requires test files on disk)')
+    parser.add_argument('--min-support', type=int, default=DEFAULT_MIN_SUPPORT,
+                        help='Minimum actual-sample count for a class to have its '
+                             f'per-class metrics reported (default: {DEFAULT_MIN_SUPPORT})')
 
     args = parser.parse_args()
 
     # Run evaluation
-    evaluation = evaluate_model(args.test_data, args.output, classifier=args.classifier)
+    evaluation = evaluate_model(args.test_data, args.output,
+                                classifier=args.classifier,
+                                min_support=args.min_support)
 
     # Print report
     print_report(evaluation)

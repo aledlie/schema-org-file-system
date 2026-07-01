@@ -233,6 +233,10 @@ For more help on a specific command:
         '--classifier', '-c', choices=['baseline', 'content'], default='baseline',
         help='baseline = filename heuristic; content = production CLIP+OCR classifier'
     )
+    evaluate_parser.add_argument(
+        '--min-support', type=int, default=None,
+        help='Minimum per-class sample count for its metrics to be reported'
+    )
     evaluate_parser.set_defaults(func=cmd_evaluate)
 
     # Database migration
