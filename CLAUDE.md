@@ -73,6 +73,7 @@ mypy src/ scripts/            # type check
 │   ├── file_organizer_content_based.py  # Main AI organizer
 │   ├── rename_images.py                 # Unified CLIP renamer; --profile {photo,screenshot} selects vocab/mode
 │   ├── image_content_analyzer.py        # Image content analysis
+│   ├── redact_pii.py                    # Rasterize + OCR-redact PII from docs before adding to VCS
 │   └── relabel_test_set.py              # Re-label evaluation test set against current classifier
 ├── tests/
 │   ├── unit/               # Unit tests (pytest)
@@ -172,6 +173,7 @@ Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 | Parallel agents — worktree rule | **Never run background/parallel Claude agents in the primary checkout.** Each agent must operate in its own git worktree (`EnterWorktree` / `worktree-agent-*` branches). Concurrent agents in the shared checkout silently clobber each other's changes (branch switch, conflicting commits). A `pre-commit` hook warns when multiple Claude sessions share the same directory. |
 | easyocr MPS (Apple Silicon) | easyocr has no usable MPS backend; the Reader always loads on CPU on macOS arm64. CUDA-only guard in `ocr_easyocr._use_gpu()` is intentional. Call `prewarm_reader()` before a batch loop to amortize model-load latency; call `clear_reader()` to reclaim Reader memory between batches or in tests. |
 | Screenshot renamer OCR backend | `rename_images.py --profile screenshot` routes `_detect_number` through `extract_screenshot_text` (prefers easyocr when installed, falls back to docTR). The `--profile photo` path uses docTR directly. |
+| PII redaction (`scripts/redact_pii.py`) | Rasterizes PDFs/images to flat PNGs (kills hidden text layer + metadata), then OCR-blacks tokens matching digit/email/date/name patterns. Only digit-bearing + configured-name PII is caught — **alphabetic PII (street names, third-party names) is NOT**, so rasterized outputs are flagged `review_recommended` in `manifest.json` and require human review before `git add`. Run: `python scripts/redact_pii.py <path>... --output DIR [--name TERM]`. |
 
 ## Testing
 
