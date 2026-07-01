@@ -167,5 +167,16 @@
     ],
     "redacted": false,
     "note": "public SSRN research paper \u2014 coverage for 'research' category; filename keeps 'ssrn' for ScholarlyArticle detection"
+  },
+  {
+    "source": "scripts/generate_specimen_id.py (fabricated constants only)",
+    "type": "png",
+    "status": "synthetic",
+    "outputs": [
+      "specimen_drivers_license.png"
+    ],
+    "redacted": false,
+    "review_recommended": false,
+    "note": "fully synthetic SPECIMEN driver license \u2014 no real-image input, no biometric/PII; fills identification-category coverage gap. Replaces removed real DL (460014-ALYSHIA-MLEDLIE)."
   }
 ]
