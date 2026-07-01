@@ -1,0 +1,418 @@
+{
+  "metadata": {
+    "timestamp": "2026-07-01T14:30:56.258144",
+    "test_samples": 13,
+    "evaluated": 13,
+    "skipped_missing": 0,
+    "model": "ContentBasedFileOrganizer (CLIP+OCR)"
+  },
+  "overall_metrics": {
+    "accuracy": 0.2308,
+    "subcategory_accuracy": 0.0,
+    "avg_confidence": 0.9732,
+    "total_correct": 3,
+    "total_incorrect": 10
+  },
+  "per_category_metrics": {
+    "medical": {
+      "precision": 1.0,
+      "recall": 0.2,
+      "f1_score": 0.3333,
+      "support": 5
+    },
+    "game_assets": {
+      "precision": 0.0,
+      "recall": 0,
+      "f1_score": 0,
+      "support": 0
+    },
+    "media": {
+      "precision": 0.0,
+      "recall": 0,
+      "f1_score": 0,
+      "support": 0
+    },
+    "person": {
+      "precision": 0.0,
+      "recall": 0,
+      "f1_score": 0,
+      "support": 0
+    },
+    "financial": {
+      "precision": 0,
+      "recall": 0.0,
+      "f1_score": 0,
+      "support": 2
+    },
+    "personal": {
+      "precision": 0,
+      "recall": 0.0,
+      "f1_score": 0,
+      "support": 2
+    },
+    "technical": {
+      "precision": 1.0,
+      "recall": 0.5,
+      "f1_score": 0.6667,
+      "support": 4
+    },
+    "business": {
+      "precision": 0.0,
+      "recall": 0,
+      "f1_score": 0,
+      "support": 0
+    },
+    "filepath": {
+      "precision": 0.0,
+      "recall": 0,
+      "f1_score": 0,
+      "support": 0
+    }
+  },
+  "confusion_matrix": {
+    "medical": {
+      "game_assets": 2,
+      "media": 1,
+      "medical": 1,
+      "person": 1
+    },
+    "financial": {
+      "media": 2
+    },
+    "personal": {
+      "person": 2
+    },
+    "technical": {
+      "business": 1,
+      "filepath": 1,
+      "technical": 2
+    }
+  },
+  "top_misclassifications": [
+    {
+      "from": "medical",
+      "to": "game_assets",
+      "count": 2
+    },
+    {
+      "from": "financial",
+      "to": "media",
+      "count": 2
+    },
+    {
+      "from": "personal",
+      "to": "person",
+      "count": 2
+    },
+    {
+      "from": "medical",
+      "to": "media",
+      "count": 1
+    },
+    {
+      "from": "medical",
+      "to": "person",
+      "count": 1
+    },
+    {
+      "from": "technical",
+      "to": "business",
+      "count": 1
+    },
+    {
+      "from": "technical",
+      "to": "filepath",
+      "count": 1
+    }
+  ],
+  "sample_results": [
+    {
+      "filename": "medellin_bloodwork_2_p1.png",
+      "filepath": "results/test_set_augmentation/redacted/medellin_bloodwork_2_p1.png",
+      "actual_category": "medical",
+      "actual_subcategory": "lab_result",
+      "predicted_category": "game_assets",
+      "predicted_subcategory": "textures",
+      "confidence": 1.0,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "medellin_bloodwork_2_p2.png",
+      "filepath": "results/test_set_augmentation/redacted/medellin_bloodwork_2_p2.png",
+      "actual_category": "medical",
+      "actual_subcategory": "lab_result",
+      "predicted_category": "game_assets",
+      "predicted_subcategory": "textures",
+      "confidence": 1.0,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "insurance_card_back.png",
+      "filepath": "results/test_set_augmentation/redacted/insurance_card_back.png",
+      "actual_category": "medical",
+      "actual_subcategory": "insurance_card",
+      "predicted_category": "media",
+      "predicted_subcategory": "photos_other",
+      "confidence": 1.0,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "insurance_card_back_2.png",
+      "filepath": "results/test_set_augmentation/redacted/insurance_card_back_2.png",
+      "actual_category": "medical",
+      "actual_subcategory": "insurance_card",
+      "predicted_category": "medical",
+      "predicted_subcategory": "insurance",
+      "confidence": 0.849362598163662,
+      "correct": true,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "email_2107250448_152012542_pdf_p1.png",
+      "filepath": "results/test_set_augmentation/redacted/email_2107250448_152012542_pdf_p1.png",
+      "actual_category": "medical",
+      "actual_subcategory": "lab_result",
+      "predicted_category": "person",
+      "predicted_subcategory": "contacts",
+      "confidence": 0.8694976892964308,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "my_documents_usaa_p1.png",
+      "filepath": "results/test_set_augmentation/redacted/my_documents_usaa_p1.png",
+      "actual_category": "financial",
+      "actual_subcategory": "statement",
+      "predicted_category": "media",
+      "predicted_subcategory": "photos_documents",
+      "confidence": 0.9574577453245962,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "my_documents_usaa_p2.png",
+      "filepath": "results/test_set_augmentation/redacted/my_documents_usaa_p2.png",
+      "actual_category": "financial",
+      "actual_subcategory": "statement",
+      "predicted_category": "media",
+      "predicted_subcategory": "photos_documents",
+      "confidence": 0.9748017513272378,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "460014_alyshia_mledlie_p1.png",
+      "filepath": "results/test_set_augmentation/redacted/460014_alyshia_mledlie_p1.png",
+      "actual_category": "personal",
+      "actual_subcategory": "document",
+      "predicted_category": "person",
+      "predicted_subcategory": "contacts",
+      "confidence": 1.0,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "460014_alyshia_mledlie_p2.png",
+      "filepath": "results/test_set_augmentation/redacted/460014_alyshia_mledlie_p2.png",
+      "actual_category": "personal",
+      "actual_subcategory": "document",
+      "predicted_category": "person",
+      "predicted_subcategory": "contacts",
+      "confidence": 1.0,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "flutter_auth.txt",
+      "filepath": "results/test_set_augmentation/redacted/flutter_auth.txt",
+      "actual_category": "technical",
+      "actual_subcategory": "documentation",
+      "predicted_category": "business",
+      "predicted_subcategory": "planning",
+      "confidence": 1.0,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "hooks_architecture.md",
+      "filepath": "results/test_set_augmentation/redacted/hooks_architecture.md",
+      "actual_category": "technical",
+      "actual_subcategory": "documentation",
+      "predicted_category": "filepath",
+      "predicted_subcategory": "Technical/Documentation/redacted",
+      "confidence": 1.0,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "readme.txt",
+      "filepath": "results/test_set_augmentation/redacted/readme.txt",
+      "actual_category": "technical",
+      "actual_subcategory": "readme",
+      "predicted_category": "technical",
+      "predicted_subcategory": "documentation",
+      "confidence": 1.0,
+      "correct": true,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "organization_results.json",
+      "filepath": "results/test_set_augmentation/redacted/organization_results.json",
+      "actual_category": "technical",
+      "actual_subcategory": "data",
+      "predicted_category": "technical",
+      "predicted_subcategory": "other",
+      "confidence": 1.0,
+      "correct": true,
+      "subcategory_correct": false
+    }
+  ],
+  "all_predictions": [
+    {
+      "filename": "medellin_bloodwork_2_p1.png",
+      "filepath": "results/test_set_augmentation/redacted/medellin_bloodwork_2_p1.png",
+      "actual_category": "medical",
+      "actual_subcategory": "lab_result",
+      "predicted_category": "game_assets",
+      "predicted_subcategory": "textures",
+      "confidence": 1.0,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "medellin_bloodwork_2_p2.png",
+      "filepath": "results/test_set_augmentation/redacted/medellin_bloodwork_2_p2.png",
+      "actual_category": "medical",
+      "actual_subcategory": "lab_result",
+      "predicted_category": "game_assets",
+      "predicted_subcategory": "textures",
+      "confidence": 1.0,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "insurance_card_back.png",
+      "filepath": "results/test_set_augmentation/redacted/insurance_card_back.png",
+      "actual_category": "medical",
+      "actual_subcategory": "insurance_card",
+      "predicted_category": "media",
+      "predicted_subcategory": "photos_other",
+      "confidence": 1.0,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "insurance_card_back_2.png",
+      "filepath": "results/test_set_augmentation/redacted/insurance_card_back_2.png",
+      "actual_category": "medical",
+      "actual_subcategory": "insurance_card",
+      "predicted_category": "medical",
+      "predicted_subcategory": "insurance",
+      "confidence": 0.849362598163662,
+      "correct": true,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "email_2107250448_152012542_pdf_p1.png",
+      "filepath": "results/test_set_augmentation/redacted/email_2107250448_152012542_pdf_p1.png",
+      "actual_category": "medical",
+      "actual_subcategory": "lab_result",
+      "predicted_category": "person",
+      "predicted_subcategory": "contacts",
+      "confidence": 0.8694976892964308,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "my_documents_usaa_p1.png",
+      "filepath": "results/test_set_augmentation/redacted/my_documents_usaa_p1.png",
+      "actual_category": "financial",
+      "actual_subcategory": "statement",
+      "predicted_category": "media",
+      "predicted_subcategory": "photos_documents",
+      "confidence": 0.9574577453245962,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "my_documents_usaa_p2.png",
+      "filepath": "results/test_set_augmentation/redacted/my_documents_usaa_p2.png",
+      "actual_category": "financial",
+      "actual_subcategory": "statement",
+      "predicted_category": "media",
+      "predicted_subcategory": "photos_documents",
+      "confidence": 0.9748017513272378,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "460014_alyshia_mledlie_p1.png",
+      "filepath": "results/test_set_augmentation/redacted/460014_alyshia_mledlie_p1.png",
+      "actual_category": "personal",
+      "actual_subcategory": "document",
+      "predicted_category": "person",
+      "predicted_subcategory": "contacts",
+      "confidence": 1.0,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "460014_alyshia_mledlie_p2.png",
+      "filepath": "results/test_set_augmentation/redacted/460014_alyshia_mledlie_p2.png",
+      "actual_category": "personal",
+      "actual_subcategory": "document",
+      "predicted_category": "person",
+      "predicted_subcategory": "contacts",
+      "confidence": 1.0,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "flutter_auth.txt",
+      "filepath": "results/test_set_augmentation/redacted/flutter_auth.txt",
+      "actual_category": "technical",
+      "actual_subcategory": "documentation",
+      "predicted_category": "business",
+      "predicted_subcategory": "planning",
+      "confidence": 1.0,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "hooks_architecture.md",
+      "filepath": "results/test_set_augmentation/redacted/hooks_architecture.md",
+      "actual_category": "technical",
+      "actual_subcategory": "documentation",
+      "predicted_category": "filepath",
+      "predicted_subcategory": "Technical/Documentation/redacted",
+      "confidence": 1.0,
+      "correct": false,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "readme.txt",
+      "filepath": "results/test_set_augmentation/redacted/readme.txt",
+      "actual_category": "technical",
+      "actual_subcategory": "readme",
+      "predicted_category": "technical",
+      "predicted_subcategory": "documentation",
+      "confidence": 1.0,
+      "correct": true,
+      "subcategory_correct": false
+    },
+    {
+      "filename": "organization_results.json",
+      "filepath": "results/test_set_augmentation/redacted/organization_results.json",
+      "actual_category": "technical",
+      "actual_subcategory": "data",
+      "predicted_category": "technical",
+      "predicted_subcategory": "other",
+      "confidence": 1.0,
+      "correct": true,
+      "subcategory_correct": false
+    }
+  ]
+}
