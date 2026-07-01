@@ -7,7 +7,7 @@ Last updated: 2026-07-01.
 
 ### [P1 / SECURITY] Scrub driver's-license PII from git history before any push
 
-**Status:** Open — **blocks first push of `main`**
+**Status:** Done (2026-07-01) — `git filter-repo --invert-paths` removed both blobs; verified `git rev-list --all --objects` finds no `460014` objects and no commit references them. History rewritten (all SHAs changed); first push is a force-push.
 **Priority:** P1 (biometric PII in version-control history)
 **Source:** test-set augmentation, 2026-07-01
 **Context:** `results/test_set_augmentation/redacted/460014_alyshia_mledlie_p1.png` and `_p2.png` are a **driver's license**. OCR-based redaction (`scripts/redact_pii.py`) blacked out digits/name but **cannot remove the biometric face photo or physical description** — non-text PII is outside the tool's reach. The files were removed from the working tree in commit `1eacc17`, but the blobs still exist in history at commit `faf8586`. `main` has **never been pushed** (origin is at `ff6e6c4`), so the PII has not left the machine — but it must be scrubbed before the first push.
