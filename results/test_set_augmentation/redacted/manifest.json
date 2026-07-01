@@ -92,13 +92,11 @@
   {
     "source": "/Users/alyshialedlie/Desktop/460014-ALYSHIA-MLEDLIE.pdf",
     "type": "pdf",
-    "status": "redacted",
-    "outputs": [
-      "460014_alyshia_mledlie_p1.png",
-      "460014_alyshia_mledlie_p2.png"
-    ],
+    "status": "removed",
+    "outputs": [],
     "boxes_blacked": 38,
-    "review_recommended": true
+    "review_recommended": true,
+    "reason": "driver's license \u2014 OCR redaction cannot remove biometric face photo / physical description; removed from repo (biometric PII)"
   },
   {
     "source": "/Users/alyshialedlie/Desktop/email_2107250448_152012542.PDF.pdf",
@@ -149,5 +147,25 @@
     ],
     "text_subs": 4,
     "review_recommended": false
+  },
+  {
+    "source": "/System/Library/Fonts/Supplemental/Andale Mono.ttf",
+    "type": "ttf",
+    "status": "copied",
+    "outputs": [
+      "andale_mono.ttf"
+    ],
+    "redacted": false,
+    "note": "system font, no PII \u2014 coverage for 'fonts' category"
+  },
+  {
+    "source": "~/Downloads/ssrn-5458215.pdf",
+    "type": "pdf",
+    "status": "copied",
+    "outputs": [
+      "ssrn_5458215.pdf"
+    ],
+    "redacted": false,
+    "note": "public SSRN research paper \u2014 coverage for 'research' category; filename keeps 'ssrn' for ScholarlyArticle detection"
   }
 ]

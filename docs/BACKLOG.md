@@ -7,20 +7,46 @@ Last updated: 2026-07-01.
 
 ### Test set class imbalance in model evaluation
 
-**Status:** Open
-**Priority:** P3 (support starvation issue — not a model issue)
-**Source:** model-evaluation session, 2026-05-16
-**Context:** Classes with ≤2 samples (financial, property, technical, business, personal, legal, medical, filepath, creative) all score 0% precision/recall in evaluation. This is a test set issue, not a model issue — the classes have insufficient representation to meaningfully test or train.
+**Status:** Reframed (2026-07-01) — original premise was wrong; residual work is classifier accuracy + coverage, not sample count.
+**Priority:** P3
+**Source:** model-evaluation session, 2026-05-16; investigated 2026-07-01
+**Original context:** Classes with ≤2 samples scored 0% F1; assumed a test-set support-starvation issue.
 
-**Proposed fix:** Two options:
-  1. Rebalance the test set in `scripts/data_preprocessing.py` to ensure all categories have ≥30 samples (or adjust threshold as appropriate).
-  2. Report evaluation metrics weighted only on classes with adequate support (e.g., support ≥ 30) to avoid reporting misleading per-class metrics.
+**2026-07-01 investigation findings:**
+- The old `evaluate_model.py` ran only the **filename-heuristic baseline** (`FileCategorizationModel`), which has *no code path* to medical/financial/personal/property/business — so those classes scored 0% regardless of sample count. Fixed by adding `--classifier content` (runs the production `ContentBasedFileOrganizer` CLIP+OCR pipeline).
+- Test-set label vocabulary **already matches** the production classifier (verified by set-diff against the full production vocab). Earlier "taxonomy mismatch" reports (`financial→media`, `medical→game_assets`) were **misclassifications**, not label problems.
+- `filepath` **is** a valid production category (the filepath-matching stage emits it); do not treat it as alien vocab.
 
-Consider which approach aligns with project goals: broader coverage (option 1) or more honest metrics on well-represented classes (option 2).
+**Remaining work (real, not sample count):**
+1. **Classifier accuracy** — under `--classifier content`, scanned financial statements classify as `media` and medical scans as `game_assets` (CLIP sees a document raster as a generic image). Improve via CLIP vocab / OCR-first routing for document-type rasters.
+2. **Coverage gaps** — production categories `person`, `identification`, `other` still have **no** test samples. `fonts` and `research` were added 2026-07-01 (`results/test_set_augmentation/`). `identification` needs a real ID doc, but the only candidate (a driver's license) was removed for biometric PII — source a synthetic/sample ID.
+3. **Option 2 still valid** — report per-class metrics only for classes with adequate support to avoid misleading 0%s.
 
 **Affected:**
-- `scripts/data_preprocessing.py` (class rebalancing, if choosing option 1)
-- `scripts/evaluate_model.py` (metric filtering, if choosing option 2)
+- `scripts/evaluate_model.py` (content classifier path — done; metric filtering — pending)
+- `src/classifiers/content_classifier.py`, CLIP vocab (accuracy on document rasters)
+
+### Reconcile `person` vs `personal` category convention
+
+**Status:** Open
+**Priority:** P3 (taxonomy ambiguity; causes avoidable eval misses)
+**Source:** test-set / classifier alignment, 2026-07-01
+**Context:** The production classifier can emit **both** `person` and `personal` as a file's main category, from two different stages of `detect_file_category`:
+- **Person entity detection** (Classification Priority #2) fires first for name-bearing documents (resumes, signatures, contact info) → returns `person`.
+- **Content classification** (`content_classifier.py`, later stage) has a `personal` document category → returns `personal` when no person entity is detected.
+
+Because Person detection runs earlier and wins, a personal document that names an individual is labeled `person`, while an equivalent one without a detectable name is labeled `personal`. The split is an artifact of stage ordering, not a meaningful semantic distinction, and it produces avoidable evaluation misses (test label `personal` vs prediction `person`).
+
+**Proposed fix (define a convention):**
+1. Decide the canonical taxonomy: either (a) **merge** — treat `person` as the entity/owner and `personal` as the document class, and have the evaluator map one to the other; or (b) **keep distinct** with an explicit rule (e.g., `person` = files attributable to a specific named individual; `personal` = personal-life documents with no identified person) and relabel the test set accordingly.
+2. Document the chosen convention in `CLAUDE.md` (Classification Priority) and apply it consistently in `content_classifier.py` and any test-set labels.
+3. Add an evaluator alias/mapping layer if (a) is chosen so `person`/`personal` are scored consistently.
+
+**Affected:**
+- `src/classifiers/content_classifier.py` (category vocabulary)
+- `scripts/file_organizer_content_based.py` (`detect_file_category` stage ordering)
+- `CLAUDE.md` (Classification Priority documentation)
+- test-set labels + `scripts/evaluate_model.py` (optional alias mapping)
 
 ### Migrate storage timestamps to timezone-aware datetimes
 
