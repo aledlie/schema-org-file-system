@@ -266,6 +266,15 @@ _TEXT_LENGTH_FULL_CHARS = 200
 _TEXT_MIN_CHARS = 30
 _SIGNAL_AGREEMENT_BOOST = 0.15
 
+# Content categories that indicate a *document* (as opposed to a photo, game
+# asset, or generic media). Used to let clean, high-confidence OCR text override
+# a filename-driven game-asset/media guess — e.g. "medellin_bloodwork" matches
+# the game sprite keyword "blood" but OCRs as Spanish lab results → medical.
+# Excludes 'media', 'game_assets', and 'uncategorized' on purpose.
+_DOCUMENT_CONTENT_CATEGORIES = frozenset(
+    {"financial", "medical", "legal", "business", "personal", "technical", "research", "education"}
+)
+
 # Personal titles that strongly indicate a human (vs. an org/brand name).
 _HUMAN_TITLE_RE = re.compile(
     r"\b(?:Mr|Mrs|Ms|Miss|Dr|Prof|Sir|Madam|Hon|Rev|Esq|Atty)\.?\s+[A-Z]",
@@ -2726,8 +2735,9 @@ class ContentBasedFileOrganizer:
         Returns (category, subcategory) or None to keep original classification.
         """
         clip_candidate, clip_score = self._run_clip_signal(file_path, image_metadata)
-        if clip_score <= 0:
-            return None
+        # Do NOT bail when CLIP is weak — that is exactly when OCR text should
+        # decide. _merge_clip_text_scores tolerates a missing CLIP signal and
+        # returns None only when neither CLIP nor text yields a candidate.
 
         text_candidate: Optional[Tuple[str, str]] = None
         text_chars = 0
@@ -2755,6 +2765,36 @@ class ContentBasedFileOrganizer:
         winner, top_score, src = merged
         print(f"  Unified → {winner[0]}/{winner[1]} ({src}; total {top_score:.2f})")
         return winner
+
+    def _ocr_document_override(self, file_path: Path) -> Optional[Tuple[str, str]]:
+        """Return a (category, subcategory) from OCR content when a document image
+        was misrouted by a filename heuristic (e.g. "bloodwork" → game "blood").
+
+        Runs OCR (reusing cached text when present), classifies it, and returns the
+        content category only when OCR is reliable and maps to a genuine document
+        category (_DOCUMENT_CONTENT_CATEGORIES). Returns None otherwise so the
+        caller keeps its original classification.
+        """
+        if not getattr(self, "ocr_available", False):
+            return None
+        ocr_text = self._last_file_ocr_text
+        if not ocr_text:
+            _res = extract_ocr_with_confidence(file_path, max_chars=0)
+            if _res:
+                ocr_text = _res.text
+                self._last_file_ocr_confidence = _res.confidence
+                self._last_file_detected_language = _res.language
+                if ocr_text:
+                    self._last_file_ocr_text = ocr_text
+        conf = self._last_file_ocr_confidence
+        if not ocr_text or len(ocr_text) < _TEXT_MIN_CHARS:
+            return None
+        if conf is not None and conf < _OCR_CONFIDENCE_THRESHOLD:
+            return None
+        cat, subcat, _, _ = self.classifier.classify_content(ocr_text, file_path.name)
+        if cat in _DOCUMENT_CONTENT_CATEGORIES:
+            return (cat, subcat)
+        return None
 
     def detect_file_category(
         self,
@@ -2877,6 +2917,25 @@ class ContentBasedFileOrganizer:
         game_asset = self.classify_game_asset(file_path)
         if game_asset:
             category, subcategory = game_asset
+            # A game keyword can collide with a real word (e.g. "blood" in
+            # "bloodwork"). For the ambiguous "textures" bucket on images, let
+            # clean high-confidence OCR document text override the guess.
+            if subcategory == "textures" and schema_type == "ImageObject":
+                override = self._ocr_document_override(file_path)
+                if override:
+                    print(
+                        f"  ✓ OCR document override: {override[0]}/{override[1]} "
+                        f"(was game_assets/{subcategory})"
+                    )
+                    return (
+                        override[0],
+                        override[1],
+                        schema_type,
+                        self._last_file_ocr_text or "",
+                        None,
+                        [],
+                        {},
+                    )
             print(f"  ✓ Game asset detected: {subcategory}")
             return (category, subcategory, schema_type, "", None, [], {})
 
