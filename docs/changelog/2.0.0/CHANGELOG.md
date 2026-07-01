@@ -242,10 +242,12 @@ Completed in `c2ad740` and `8b64fcf` (`REFACTORING_GUIDE.md` integration checkli
 #### C1 — Batch CLIP inference cache layer
 
 **Status:** Done (2026-03-29, PRs #4–#7)
-- Replaced joblib cache with manual pickle + probe-without-execute
-- Added `get_cached_embeddings_batch()` API
+- Replaced joblib cache with a manual disk cache supporting batch cache-miss collection (probe-without-execute)
+- Added `get_cached_embeddings_batch()` API and `CLIP_BATCH_SIZE = 32` constant
 - Routed `ContentBasedFileOrganizer` and `ImageContentAnalyzer` through cache
 - Added CLIP pre-warm in `BatchProcessor`
+- Follow-up perf: replaced hot-path `stat()` calls with `lru_cache`, sped up cache-key derivation (`6b70ff6`, 2026-03-30)
+- **Superseded by C13** (2026-06-26): the cache now stores raw fp32 image *embeddings* (`.npy`, keyed by file identity) instead of pickled `classify()` results, so label-set changes no longer invalidate entries
 
 **Files:** `scripts/shared/clip_cache.py`, `src/pipeline/batch_processor.py`
 

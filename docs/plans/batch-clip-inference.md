@@ -4,6 +4,46 @@
 **Scope:** Fix cache layer + route main pipeline through it to unlock batch inference
 **Audit ref:** `docs/deep-learning-analysis-03-27-2026.md` — open item: "Single-image inference"
 
+**Status: ✅ COMPLETE (all 4 phases landed).** Shipped 2026-03-29, hardened since. The final
+implementation diverged from the design below — see **Implementation status** for what actually landed.
+
+---
+
+## Implementation status
+
+| Phase | Status | Commits |
+|-------|--------|---------|
+| 1 — Replace joblib cache; add `get_cached_embeddings_batch()` | ✅ Done | `edaae8c` (2026-03-29) |
+| 2 — Add `CLIP_BATCH_SIZE` constant + export batch fn | ✅ Done | `18de76b` (2026-03-29) |
+| 3 — Route `classify_image_content()` through cache | ✅ Done | `edaae8c`, later `a367451` |
+| 4 — Pre-warm cache before per-file loop in `BatchProcessor` | ✅ Done | `bec4928` (2026-03-29) |
+
+**Follow-ups after the plan landed:**
+
+- `6b70ff6` (2026-03-30) — `perf(pipeline)`: replace hot-path `stat()` calls with `lru_cache`, speed up CLIP cache key.
+- `a367451` (2026-06-26) — `refactor(clip)`: **the key divergence.** The cache no longer stores pickled
+  `classify()` results keyed by `(content_hash, labels, prompt)`. It now stores the raw fp32 **image
+  embedding** (`.npy`) keyed by **file identity** (`name + mtime + size`). Different label sets reuse the
+  same cached embedding — only a cheap dot-product + softmax (`score_embedding`) repeats, not the encode.
+  A `store_embedding()` helper lets a call site that already encoded an image (e.g. the rename pre-step)
+  seed the cache. This is strictly better than the original pickle-of-results design: label-set changes
+  no longer invalidate the cache.
+
+**Where it landed in code (current):**
+
+- `scripts/shared/clip_cache.py` — embedding cache: `get_cached_embedding`, `get_cached_embeddings_batch`,
+  `store_embedding`, `_file_identity`, `_load_embedding`/`_save_embedding`. `CLIP_CACHE_AVAILABLE` gates on numpy.
+- `scripts/shared/constants.py:148` — `CLIP_BATCH_SIZE: int = 32`.
+- `scripts/shared/clip_utils.py:302` — `_DEFAULT_BATCH_SIZE = CLIP_BATCH_SIZE`; batch encode at `encode_images_to_numpy`.
+- `scripts/shared/__init__.py` — exports `get_cached_embedding`, `get_cached_embeddings_batch`.
+- `scripts/file_organizer_content_based.py:2705` and `src/analyzers/image_analyzer.py:137` — route through
+  `get_cached_embedding(..., prompt_prefix="")`, guarded by `CLIP_CACHE_AVAILABLE`.
+- `src/pipeline/batch_processor.py:111` — `_BATCH_PREWARM_AVAILABLE` pre-warm block ("Pre-warming CLIP cache" log line).
+
+> Cache layout is now `.cache/clip_embeddings_v2/{aa}/{hash}.npy` (fp32 numpy), not the `.pkl` layout drafted below.
+
+The design below is preserved as the original plan of record. Read it as history, not current code.
+
 ---
 
 ## Background
@@ -230,6 +270,9 @@ time organize-files content --source ~/Downloads --dry-run --limit 100
 
 ---
 
-## Follow-on: migrate to `open-clip-torch`
+## Follow-on: migrate to `open-clip-torch` — ✅ Done
 
-See `docs/BACKLOG.md` — "Migrate CLIP backend to `open-clip-torch`". Depends on this plan landing first.
+Landed after this plan. `CLIPClassifier` in `scripts/shared/clip_utils.py` now runs a single
+`open-clip-torch` ViT-B-32 backend (OpenAI weights) shared by all callers via `get_instance()`;
+`open-clip-torch>=2.29.0` is a core dependency (`pyproject.toml:61`). Batch encode uses the direct
+`open_clip` tensor API (no DataLoader overhead) at `clip_utils.py:350`.
