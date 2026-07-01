@@ -73,3 +73,6 @@ test-results/
 # Repomix
 repomix-output.xml
 docs/repomix/*
+
+# Claude Code session worktrees (never tracked)
+.claude/worktrees/
