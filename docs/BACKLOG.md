@@ -36,13 +36,17 @@ git filter-repo --invert-paths \
 - Insurance cards classify as `medical`/`insurance` (not `identification`); an intermediate relabel to `identification` was reverted. `fonts` and `research` samples were verified to classify correctly under `--classifier content`.
 
 **Remaining work (real, not sample count):**
-1. **Classifier accuracy** — under `--classifier content`, scanned financial statements classify as `media` and medical scans as `game_assets` (CLIP sees a document raster as a generic image). Improve via CLIP vocab / OCR-first routing for document-type rasters.
-2. **Coverage gaps** — production categories `person`, `identification`, `other` still have **no** test samples. `fonts` and `research` were added 2026-07-01 (`results/test_set_augmentation/`). `identification` needs a real ID doc, but the only candidate (a driver's license) was removed for biometric PII — source a synthetic/sample ID.
+1. **Classifier accuracy — partially done (2026-07-01, commit `3ac3b9c`).** The root cause was **not** CLIP treating documents as generic images; it was (a) filename-keyword collisions routing document rasters before OCR runs, and (b) `enhance_weak_image_classification` bailing before consulting OCR whenever CLIP was weak.
+   - **Fixed — medical → `game_assets`:** `medellin_bloodwork` matched the game sprite keyword `blood` (Priority 3) so OCR never ran. New `_ocr_document_override` lets clean, high-confidence OCR that classifies as a document category override the ambiguous game-asset `textures` guess, and `enhance_weak_image_classification` now consults OCR even when CLIP is weak. `medellin_bloodwork` now → `medical`. Covered by `tests/unit/test_ocr_document_override.py`.
+   - **Not a code bug — financial → `media`:** the redacted `my_documents_usaa` sample's OCR is destroyed by over-redaction (`PAGE 1 48 65 90A CIC USAA…`) and legitimately classifies as `legal`. Needs a **less-destructively-redacted financial sample**, not a routing change.
+   - **New sub-thread:** `email_…lab` (medical) → `person` because the ID stage (Priority 3.5) over-matches `date of birth`; resolves under the Option C person-taxonomy work above.
+2. **Coverage gaps** — `identification` now covered (2026-07-01) by a **fully synthetic specimen** (`scripts/generate_specimen_id.py` → `results/test_set_augmentation/redacted/specimen_drivers_license.png`; fabricated data, no biometric PII — replaces the removed real DL). It classifies as `personal/identification` (main category `personal`), so test-label-vs-prediction hinges on the Option C taxonomy decision. `person` and `other` still have **no** test samples. `fonts` and `research` were added 2026-07-01.
 3. **Option 2 — done (2026-07-01)** — `evaluate_model.py` now takes `--min-support` (default `DEFAULT_MIN_SUPPORT=5`). Classes below the threshold are moved to `low_support_categories` and excluded from both the printed per-class table and the new `macro_avg_supported` metric, so a 1-2 sample class no longer shows a misleading 0% F1 or drags the headline number. Per-class entries carry a `reported` flag; full raw metrics are still retained in `per_category_metrics`.
 
 **Affected:**
+- `scripts/file_organizer_content_based.py` — `_ocr_document_override` + OCR-when-CLIP-weak (commit `3ac3b9c`)
 - `scripts/evaluate_model.py` (content classifier path — done; metric filtering — done)
-- `src/classifiers/content_classifier.py`, CLIP vocab (accuracy on document rasters)
+- financial test-sample re-redaction (test data, not code)
 
 ### Implement Option C — demote `person` from a category to a relationship
 
