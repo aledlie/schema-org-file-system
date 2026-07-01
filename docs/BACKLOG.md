@@ -38,15 +38,28 @@ git filter-repo --invert-paths \
 **Remaining work (real, not sample count):**
 1. **Classifier accuracy** — under `--classifier content`, scanned financial statements classify as `media` and medical scans as `game_assets` (CLIP sees a document raster as a generic image). Improve via CLIP vocab / OCR-first routing for document-type rasters.
 2. **Coverage gaps** — production categories `person`, `identification`, `other` still have **no** test samples. `fonts` and `research` were added 2026-07-01 (`results/test_set_augmentation/`). `identification` needs a real ID doc, but the only candidate (a driver's license) was removed for biometric PII — source a synthetic/sample ID.
-3. **Option 2 still valid** — report per-class metrics only for classes with adequate support to avoid misleading 0%s.
+3. **Option 2 — done (2026-07-01)** — `evaluate_model.py` now takes `--min-support` (default `DEFAULT_MIN_SUPPORT=5`). Classes below the threshold are moved to `low_support_categories` and excluded from both the printed per-class table and the new `macro_avg_supported` metric, so a 1-2 sample class no longer shows a misleading 0% F1 or drags the headline number. Per-class entries carry a `reported` flag; full raw metrics are still retained in `per_category_metrics`.
 
 **Affected:**
-- `scripts/evaluate_model.py` (content classifier path — done; metric filtering — pending)
+- `scripts/evaluate_model.py` (content classifier path — done; metric filtering — done)
 - `src/classifiers/content_classifier.py`, CLIP vocab (accuracy on document rasters)
+
+### Implement Option C — demote `person` from a category to a relationship
+
+**Status:** Planned (2026-07-01) — full implementation plan at [`PERSON_TAXONOMY_OPTION_C_PLAN.md`](../PERSON_TAXONOMY_OPTION_C_PLAN.md).
+**Priority:** P3 (resolves the `person`/`personal` convention below)
+**Source:** person/personal taxonomy reconciliation, 2026-07-01
+
+**Summary:** Stop emitting `person` as a top-level category; classify every file by document class (`personal`, etc.) and rebuild `Person/{Name}/` as a derived symlink view from the existing `file→person` graph edges. Key findings feeding the plan:
+- `person` is emitted from **four** sites; the primary is shared code (`scripts/shared/filename_classifier.py`) that both organizers delegate to — editing only `classify_by_person` would leave `person` in the output.
+- Person attribution is already a category-independent graph relationship (`add_file_to_person`), so demoting the category loses nothing.
+- Migration of the ~38 existing on-disk `Person/` files is the risky part (~30 have no DB row): filesystem-walk driven, dry-run default, collision-safe, manifest rollback, no re-OCR. View root == migration source root, so migrate-out must complete before the symlink view is written.
+
+See the plan for the person→personal subcategory mapping, exact line-level edits (both organizers), the new `PersonViewGenerator` + `person-view`/`migrate-person` CLI, and end-to-end verification. Implementing this **closes the convention item below.**
 
 ### Reconcile `person` vs `personal` category convention
 
-**Status:** Open
+**Status:** Superseded by the Option C plan above (chosen convention: demote `person` to a relationship).
 **Priority:** P3 (taxonomy ambiguity; causes avoidable eval misses)
 **Source:** test-set / classifier alignment, 2026-07-01
 **Context:** The production classifier can emit **both** `person` and `personal` as a file's main category, from two different stages of `detect_file_category`:
