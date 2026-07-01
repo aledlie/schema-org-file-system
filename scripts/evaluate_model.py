@@ -165,7 +165,37 @@ class FileCategorizationModel:
         return 'other'
 
 
-def evaluate_model(test_data_path: str, output_path: str = None) -> Dict[str, Any]:
+class ContentClassifierModel:
+    """Adapter over the production ContentBasedFileOrganizer classifier.
+
+    Runs the real CLIP + OCR pipeline (detect_file_category) instead of the
+    filename-only heuristic. Because it reads file content, each test entry's
+    'filepath' must point to a file that exists on disk; entries whose file is
+    missing return the SKIP sentinel and are excluded from metrics.
+    """
+
+    SKIP = "__skip__"
+
+    def __init__(self) -> None:
+        from file_organizer_content_based import ContentBasedFileOrganizer
+        # No cost tracking or DB writes during evaluation.
+        self.organizer = ContentBasedFileOrganizer(
+            enable_cost_tracking=False, db_path=None,
+        )
+
+    def predict_category(self, feature: Dict) -> Tuple[str, str, float]:
+        path = Path(feature.get('filepath') or '')
+        if not path.exists():
+            return (self.SKIP, self.SKIP, 0.0)
+        main_category, subcategory, *_ = self.organizer.detect_file_category(path)
+        # detect_file_category has no scalar confidence; fall back to the last
+        # OCR confidence when present, else treat a first-match rule as certain.
+        confidence = getattr(self.organizer, '_last_file_ocr_confidence', None) or 1.0
+        return (main_category, subcategory, confidence)
+
+
+def evaluate_model(test_data_path: str, output_path: str = None,
+                   classifier: str = 'baseline') -> Dict[str, Any]:
     """
     Evaluate the categorization model on test data.
 
@@ -182,23 +212,30 @@ def evaluate_model(test_data_path: str, output_path: str = None) -> Dict[str, An
 
     print(f"Loaded {len(test_data)} test samples")
 
-    model = FileCategorizationModel()
+    model = ContentClassifierModel() if classifier == 'content' else FileCategorizationModel()
 
     # Run predictions
     results = []
     correct = 0
     correct_subcategory = 0
+    skipped_missing = 0
 
     category_metrics = defaultdict(lambda: {'tp': 0, 'fp': 0, 'fn': 0})
     confusion_matrix = defaultdict(lambda: defaultdict(int))
     confidence_scores = []
 
-    print("Running predictions...")
+    print(f"Running predictions (classifier={classifier})...")
     for i, feature in enumerate(test_data):
         actual_category = feature.get('category', 'uncategorized')
         actual_subcategory = feature.get('subcategory', 'other')
 
         predicted_category, predicted_subcategory, confidence = model.predict_category(feature)
+
+        # Content classifier reads real files; skip entries whose file is gone
+        # so they do not distort metrics as false uncategorized predictions.
+        if predicted_category == getattr(model, 'SKIP', None):
+            skipped_missing += 1
+            continue
 
         # Track results
         is_correct = predicted_category == actual_category
@@ -232,9 +269,10 @@ def evaluate_model(test_data_path: str, output_path: str = None) -> Dict[str, An
         if (i + 1) % 1000 == 0:
             print(f"  Processed {i + 1}/{len(test_data)}")
 
-    # Calculate metrics
-    accuracy = correct / len(test_data) if test_data else 0
-    subcategory_accuracy = correct_subcategory / len(test_data) if test_data else 0
+    # Calculate metrics over evaluated (non-skipped) samples only.
+    evaluated = len(results)
+    accuracy = correct / evaluated if evaluated else 0
+    subcategory_accuracy = correct_subcategory / evaluated if evaluated else 0
     avg_confidence = sum(confidence_scores) / len(confidence_scores) if confidence_scores else 0
 
     # Per-category metrics
@@ -267,14 +305,17 @@ def evaluate_model(test_data_path: str, output_path: str = None) -> Dict[str, An
         'metadata': {
             'timestamp': datetime.now().isoformat(),
             'test_samples': len(test_data),
-            'model': 'FileCategorizationModel v1.0'
+            'evaluated': evaluated,
+            'skipped_missing': skipped_missing,
+            'model': ('ContentBasedFileOrganizer (CLIP+OCR)' if classifier == 'content'
+                      else 'FileCategorizationModel v1.0')
         },
         'overall_metrics': {
             'accuracy': round(accuracy, 4),
             'subcategory_accuracy': round(subcategory_accuracy, 4),
             'avg_confidence': round(avg_confidence, 4),
             'total_correct': correct,
-            'total_incorrect': len(test_data) - correct
+            'total_incorrect': evaluated - correct
         },
         'per_category_metrics': per_category_metrics,
         'confusion_matrix': {k: dict(v) for k, v in confusion_matrix.items()},
@@ -305,8 +346,13 @@ def print_report(evaluation: Dict[str, Any]):
     print("MODEL EVALUATION REPORT")
     print("=" * 60)
 
-    print(f"\nTimestamp: {evaluation['metadata']['timestamp']}")
-    print(f"Test Samples: {evaluation['metadata']['test_samples']:,}")
+    meta = evaluation['metadata']
+    print(f"\nTimestamp: {meta['timestamp']}")
+    print(f"Model: {meta.get('model')}")
+    print(f"Test Samples: {meta['test_samples']:,}")
+    if meta.get('skipped_missing'):
+        print(f"Evaluated: {meta.get('evaluated', 0):,} "
+              f"(skipped {meta['skipped_missing']:,} missing files)")
 
     print("\n" + "-" * 40)
     print("OVERALL METRICS")
@@ -348,11 +394,15 @@ def main():
     parser.add_argument('--output', '-o',
                         default='results/model_evaluation.json',
                         help='Output path for results JSON')
+    parser.add_argument('--classifier', '-c',
+                        choices=['baseline', 'content'], default='baseline',
+                        help='baseline = filename heuristic; content = production '
+                             'CLIP+OCR classifier (requires test files on disk)')
 
     args = parser.parse_args()
 
     # Run evaluation
-    evaluation = evaluate_model(args.test_data, args.output)
+    evaluation = evaluate_model(args.test_data, args.output, classifier=args.classifier)
 
     # Print report
     print_report(evaluation)

@@ -229,6 +229,10 @@ For more help on a specific command:
     )
     evaluate_parser.add_argument('--test-data', help='Path to test dataset')
     evaluate_parser.add_argument('--model', help='Model to evaluate')
+    evaluate_parser.add_argument(
+        '--classifier', '-c', choices=['baseline', 'content'], default='baseline',
+        help='baseline = filename heuristic; content = production CLIP+OCR classifier'
+    )
     evaluate_parser.set_defaults(func=cmd_evaluate)
 
     # Database migration
