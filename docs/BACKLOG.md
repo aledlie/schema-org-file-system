@@ -5,6 +5,23 @@ Last updated: 2026-07-01.
 
 ## Open Items
 
+### [P1 / SECURITY] Scrub driver's-license PII from git history before any push
+
+**Status:** Open — **blocks first push of `main`**
+**Priority:** P1 (biometric PII in version-control history)
+**Source:** test-set augmentation, 2026-07-01
+**Context:** `results/test_set_augmentation/redacted/460014_alyshia_mledlie_p1.png` and `_p2.png` are a **driver's license**. OCR-based redaction (`scripts/redact_pii.py`) blacked out digits/name but **cannot remove the biometric face photo or physical description** — non-text PII is outside the tool's reach. The files were removed from the working tree in commit `1eacc17`, but the blobs still exist in history at commit `faf8586`. `main` has **never been pushed** (origin is at `ff6e6c4`), so the PII has not left the machine — but it must be scrubbed before the first push.
+
+**Fix (run when the checkout is quiet — history rewrite changes all SHAs; do not run with concurrent Claude sessions active):**
+```
+git filter-repo --invert-paths \
+  --path results/test_set_augmentation/redacted/460014_alyshia_mledlie_p1.png \
+  --path results/test_set_augmentation/redacted/460014_alyshia_mledlie_p2.png
+```
+(or drop the two files from `faf8586` via interactive rebase). Verify with `git log --all --oneline -- 'results/test_set_augmentation/redacted/460014*'` returning nothing.
+
+**Root-cause note — `redact_pii.py` blind spots** (also in CLAUDE.md Gotchas): OCR redaction cannot remove (a) **biometric photos** (driver's license, passport), (b) **OCR-unreadable stylized text** (the certificate was excluded for a machine-invisible but human-readable name), or (c) **alphabetic PII** (addresses, third-party names). Never commit such documents on OCR-redaction alone.
+
 ### Test set class imbalance in model evaluation
 
 **Status:** Reframed (2026-07-01) — original premise was wrong; residual work is classifier accuracy + coverage, not sample count.
@@ -16,6 +33,7 @@ Last updated: 2026-07-01.
 - The old `evaluate_model.py` ran only the **filename-heuristic baseline** (`FileCategorizationModel`), which has *no code path* to medical/financial/personal/property/business — so those classes scored 0% regardless of sample count. Fixed by adding `--classifier content` (runs the production `ContentBasedFileOrganizer` CLIP+OCR pipeline).
 - Test-set label vocabulary **already matches** the production classifier (verified by set-diff against the full production vocab). Earlier "taxonomy mismatch" reports (`financial→media`, `medical→game_assets`) were **misclassifications**, not label problems.
 - `filepath` **is** a valid production category (the filepath-matching stage emits it); do not treat it as alien vocab.
+- Insurance cards classify as `medical`/`insurance` (not `identification`); an intermediate relabel to `identification` was reverted. `fonts` and `research` samples were verified to classify correctly under `--classifier content`.
 
 **Remaining work (real, not sample count):**
 1. **Classifier accuracy** — under `--classifier content`, scanned financial statements classify as `media` and medical scans as `game_assets` (CLIP sees a document raster as a generic image). Improve via CLIP vocab / OCR-first routing for document-type rasters.
