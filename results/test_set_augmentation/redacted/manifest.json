@@ -1,0 +1,153 @@
+[
+  {
+    "source": "/Users/alyshialedlie/Desktop/Medellin_bloodwork_2.pdf",
+    "type": "pdf",
+    "status": "redacted",
+    "outputs": [
+      "medellin_bloodwork_2_p1.png",
+      "medellin_bloodwork_2_p2.png"
+    ],
+    "boxes_blacked": 447,
+    "review_recommended": true,
+    "trimmed_from_pages": 15
+  },
+  {
+    "source": "/Users/alyshialedlie/Desktop/insurance_card_back.png",
+    "type": "png",
+    "status": "redacted",
+    "outputs": [
+      "insurance_card_back.png"
+    ],
+    "boxes_blacked": 8,
+    "review_recommended": true
+  },
+  {
+    "source": "/Users/alyshialedlie/Desktop/insurance_card_back_2.png",
+    "type": "png",
+    "status": "redacted",
+    "outputs": [
+      "insurance_card_back_2.png"
+    ],
+    "boxes_blacked": 11,
+    "review_recommended": true
+  },
+  {
+    "source": "/Users/alyshialedlie/Desktop/Nick_Taylor_Appraisal.pdf",
+    "type": "pdf",
+    "status": "omitted",
+    "outputs": [],
+    "boxes_blacked": 72,
+    "review_recommended": true,
+    "trimmed_from_pages": 3,
+    "reason": "high alphabetic-PII risk (addresses/third-party names) not caught by OCR redaction; excluded from test set"
+  },
+  {
+    "source": "/Users/alyshialedlie/Desktop/Complete_with_Docusign_CE24009074_CCR.pdf",
+    "type": "pdf",
+    "status": "omitted",
+    "outputs": [],
+    "boxes_blacked": 14,
+    "review_recommended": true,
+    "reason": "high alphabetic-PII risk (addresses/third-party names) not caught by OCR redaction; excluded from test set"
+  },
+  {
+    "source": "/Users/alyshialedlie/Desktop/Complete_with_Docusign_CE24009074LOC.pdf",
+    "type": "pdf",
+    "status": "omitted",
+    "outputs": [],
+    "boxes_blacked": 18,
+    "review_recommended": true,
+    "reason": "high alphabetic-PII risk (addresses/third-party names) not caught by OCR redaction; excluded from test set"
+  },
+  {
+    "source": "/Users/alyshialedlie/Desktop/My Documents _ USAA.pdf",
+    "type": "pdf",
+    "status": "redacted",
+    "outputs": [
+      "my_documents_usaa_p1.png",
+      "my_documents_usaa_p2.png"
+    ],
+    "boxes_blacked": 322,
+    "review_recommended": true,
+    "trimmed_from_pages": 90
+  },
+  {
+    "source": "/Users/alyshialedlie/Desktop/alyshia ledlie.pdf",
+    "type": "pdf",
+    "status": "omitted",
+    "outputs": [],
+    "boxes_blacked": 10,
+    "review_recommended": true,
+    "reason": "high alphabetic-PII risk (addresses/third-party names) not caught by OCR redaction; excluded from test set"
+  },
+  {
+    "source": "/Users/alyshialedlie/Desktop/alyshia_ledlie_certificate.pdf",
+    "type": "pdf",
+    "status": "excluded",
+    "outputs": [],
+    "boxes_blacked": 0,
+    "review_recommended": true,
+    "reason": "OCR-unreadable stylized text; name visible but not machine-detectable -> cannot auto-redact"
+  },
+  {
+    "source": "/Users/alyshialedlie/Desktop/460014-ALYSHIA-MLEDLIE.pdf",
+    "type": "pdf",
+    "status": "redacted",
+    "outputs": [
+      "460014_alyshia_mledlie_p1.png",
+      "460014_alyshia_mledlie_p2.png"
+    ],
+    "boxes_blacked": 38,
+    "review_recommended": true
+  },
+  {
+    "source": "/Users/alyshialedlie/Desktop/email_2107250448_152012542.PDF.pdf",
+    "type": "pdf",
+    "status": "redacted",
+    "outputs": [
+      "email_2107250448_152012542_pdf_p1.png"
+    ],
+    "boxes_blacked": 15,
+    "review_recommended": true
+  },
+  {
+    "source": "/Users/alyshialedlie/Desktop/flutter_auth.txt",
+    "type": "txt",
+    "status": "redacted",
+    "outputs": [
+      "flutter_auth.txt"
+    ],
+    "text_subs": 0,
+    "review_recommended": false
+  },
+  {
+    "source": "/Users/alyshialedlie/Desktop/organization_results.json",
+    "type": "json",
+    "status": "redacted",
+    "outputs": [
+      "organization_results.json"
+    ],
+    "text_subs": 46,
+    "review_recommended": false
+  },
+  {
+    "source": "/Users/alyshialedlie/Desktop/README.txt",
+    "type": "txt",
+    "status": "redacted",
+    "outputs": [
+      "readme.txt"
+    ],
+    "text_subs": 1,
+    "review_recommended": false
+  },
+  {
+    "source": "/Users/alyshialedlie/Desktop/HOOKS_ARCHITECTURE.md",
+    "type": "md",
+    "status": "redacted",
+    "outputs": [
+      "hooks_architecture.md"
+    ],
+    "text_subs": 4,
+    "review_recommended": false
+  }
+]

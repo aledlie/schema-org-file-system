@@ -1,0 +1,255 @@
+{
+  "timestamp": "2026-04-19T20:38:10.631437",
+  "source_dir": "/Users/<user>/Desktop",
+  "output_dir": "/Users/<user>/Desktop",
+  "dry_run": true,
+  "stats": {
+    "processed": 14,
+    "Software/Documentation": 1,
+    "Software/Shopping": 2,
+    "Software/Dashboards": 3,
+    "Software/Settings": 1,
+    "Software/Infographics": 1,
+    "Environment/Buildings": 1,
+    "UI/Numbers": 1,
+    "UI/StatusBars": 1,
+    "Uncategorized": 3,
+    "errors": 0
+  },
+  "results": [
+    {
+      "original_path": "/Users/<user>/Desktop/Screenshot 2026-04-01 at 1.55.31\u202fAM.png",
+      "original_name": "Screenshot 2026-04-01 at 1.55.31\u202fAM.png",
+      "category": "a documentation or technical guide page",
+      "folder": "Software/Documentation",
+      "new_name": "docs_1e68ba6d.png",
+      "confidence": 0.029327392578125,
+      "detected_text": null,
+      "top_scores": {
+        "a documentation or technical guide page": 0.029327392578125,
+        "an infographic or diagram with text": 0.0289306640625,
+        "a terminal or command line interface": 0.0287628173828125,
+        "a settings or preferences screen": 0.0287322998046875,
+        "a marketing or landing page website": 0.028656005859375
+      },
+      "dest_folder": "/Users/<user>/Desktop/Software/Documentation",
+      "dest_path": "/Users/<user>/Desktop/Software/Documentation/docs_1e68ba6d.png"
+    },
+    {
+      "original_path": "/Users/<user>/Desktop/Screenshot 2026-04-01 at 2.04.48\u202fAM.png",
+      "original_name": "Screenshot 2026-04-01 at 2.04.48\u202fAM.png",
+      "category": "an e-commerce or online shopping page",
+      "folder": "Software/Shopping",
+      "new_name": "shop_eb044b9d.png",
+      "confidence": 0.030059814453125,
+      "detected_text": null,
+      "top_scores": {
+        "an e-commerce or online shopping page": 0.030059814453125,
+        "a product listing or retail website": 0.029937744140625,
+        "a software dashboard or admin panel": 0.029815673828125,
+        "a web browser screenshot": 0.029632568359375,
+        "a marketing or landing page website": 0.02960205078125
+      },
+      "dest_folder": "/Users/<user>/Desktop/Software/Shopping",
+      "dest_path": "/Users/<user>/Desktop/Software/Shopping/shop_eb044b9d.png"
+    },
+    {
+      "original_path": "/Users/<user>/Desktop/Screenshot 2026-04-01 at 2.05.42\u202fAM.png",
+      "original_name": "Screenshot 2026-04-01 at 2.05.42\u202fAM.png",
+      "category": "a software dashboard or admin panel",
+      "folder": "Software/Dashboards",
+      "new_name": "dashboard_818f5483.png",
+      "confidence": 0.030059814453125,
+      "detected_text": null,
+      "top_scores": {
+        "a software dashboard or admin panel": 0.030059814453125,
+        "an e-commerce or online shopping page": 0.030059814453125,
+        "a product listing or retail website": 0.029937744140625,
+        "a marketing or landing page website": 0.0298919677734375,
+        "a web browser screenshot": 0.0295257568359375
+      },
+      "dest_folder": "/Users/<user>/Desktop/Software/Dashboards",
+      "dest_path": "/Users/<user>/Desktop/Software/Dashboards/dashboard_818f5483.png"
+    },
+    {
+      "original_path": "/Users/<user>/Desktop/Screenshot 2026-04-01 at 2.07.37\u202fAM.png",
+      "original_name": "Screenshot 2026-04-01 at 2.07.37\u202fAM.png",
+      "category": "a software dashboard or admin panel",
+      "folder": "Software/Dashboards",
+      "new_name": "dashboard_4389160c.png",
+      "confidence": 0.0302734375,
+      "detected_text": null,
+      "top_scores": {
+        "a software dashboard or admin panel": 0.0302734375,
+        "an e-commerce or online shopping page": 0.02978515625,
+        "a product listing or retail website": 0.02978515625,
+        "a marketing or landing page website": 0.029693603515625,
+        "a documentation or technical guide page": 0.0294189453125
+      },
+      "dest_folder": "/Users/<user>/Desktop/Software/Dashboards",
+      "dest_path": "/Users/<user>/Desktop/Software/Dashboards/dashboard_4389160c.png"
+    },
+    {
+      "original_path": "/Users/<user>/Desktop/Screenshot 2026-04-01 at 2.08.00\u202fAM.png",
+      "original_name": "Screenshot 2026-04-01 at 2.08.00\u202fAM.png",
+      "category": "a software dashboard or admin panel",
+      "folder": "Software/Dashboards",
+      "new_name": "dashboard_de3499ca.png",
+      "confidence": 0.0303802490234375,
+      "detected_text": null,
+      "top_scores": {
+        "a software dashboard or admin panel": 0.0303802490234375,
+        "an e-commerce or online shopping page": 0.0297393798828125,
+        "a product listing or retail website": 0.0297393798828125,
+        "a marketing or landing page website": 0.029449462890625,
+        "a documentation or technical guide page": 0.029388427734375
+      },
+      "dest_folder": "/Users/<user>/Desktop/Software/Dashboards",
+      "dest_path": "/Users/<user>/Desktop/Software/Dashboards/dashboard_de3499ca.png"
+    },
+    {
+      "original_path": "/Users/<user>/Desktop/Screenshot 2026-04-02 at 12.00.04\u202fAM.png",
+      "original_name": "Screenshot 2026-04-02 at 12.00.04\u202fAM.png",
+      "category": "a settings or preferences screen",
+      "folder": "Software/Settings",
+      "new_name": "settings_df647b90.png",
+      "confidence": 0.02972412109375,
+      "detected_text": null,
+      "top_scores": {
+        "a settings or preferences screen": 0.02972412109375,
+        "a health or status bar": 0.029449462890625,
+        "a software dashboard or admin panel": 0.029205322265625,
+        "a chat or messaging application": 0.0290069580078125,
+        "a web browser screenshot": 0.0287322998046875
+      },
+      "dest_folder": "/Users/<user>/Desktop/Software/Settings",
+      "dest_path": "/Users/<user>/Desktop/Software/Settings/settings_df647b90.png"
+    },
+    {
+      "original_path": "/Users/<user>/Desktop/Screenshot 2026-04-03 at 10.41.07\u202fPM.png",
+      "original_name": "Screenshot 2026-04-03 at 10.41.07\u202fPM.png",
+      "category": "an infographic or diagram with text",
+      "folder": "Software/Infographics",
+      "new_name": "infographic_1fd5832a.png",
+      "confidence": 0.0296478271484375,
+      "detected_text": null,
+      "top_scores": {
+        "an infographic or diagram with text": 0.0296478271484375,
+        "a software dashboard or admin panel": 0.0294189453125,
+        "a documentation or technical guide page": 0.0289764404296875,
+        "a product listing or retail website": 0.028839111328125,
+        "a marketing or landing page website": 0.028839111328125
+      },
+      "dest_folder": "/Users/<user>/Desktop/Software/Infographics",
+      "dest_path": "/Users/<user>/Desktop/Software/Infographics/infographic_1fd5832a.png"
+    },
+    {
+      "original_path": "/Users/<user>/Desktop/Screenshot 2026-04-11 at 11.43.18\u202fPM.png",
+      "original_name": "Screenshot 2026-04-11 at 11.43.18\u202fPM.png",
+      "category": "a building or structure sprite",
+      "folder": "Environment/Buildings",
+      "new_name": "building_e3e8ba61.png",
+      "confidence": 0.02899169921875,
+      "detected_text": null,
+      "top_scores": {
+        "a building or structure sprite": 0.02899169921875,
+        "a number or digit icon": 0.0288848876953125,
+        "a tile or terrain sprite": 0.028717041015625,
+        "a health or status bar": 0.02850341796875,
+        "a game UI button or icon": 0.0284881591796875
+      },
+      "dest_folder": "/Users/<user>/Desktop/Environment/Buildings",
+      "dest_path": "/Users/<user>/Desktop/Environment/Buildings/building_e3e8ba61.png"
+    },
+    {
+      "original_path": "/Users/<user>/Desktop/Screenshot 2026-04-11 at 9.20.24\u202fPM.png",
+      "original_name": "Screenshot 2026-04-11 at 9.20.24\u202fPM.png",
+      "category": "a number or digit icon",
+      "folder": "UI/Numbers",
+      "new_name": "num_86bd161d.png",
+      "confidence": 0.0287322998046875,
+      "detected_text": null,
+      "top_scores": {
+        "a number or digit icon": 0.0287322998046875,
+        "a health or status bar": 0.0287017822265625,
+        "a web browser screenshot": 0.0286865234375,
+        "a product listing or retail website": 0.0286102294921875,
+        "an infographic or diagram with text": 0.0285797119140625
+      },
+      "dest_folder": "/Users/<user>/Desktop/UI/Numbers",
+      "dest_path": "/Users/<user>/Desktop/UI/Numbers/num_86bd161d.png"
+    },
+    {
+      "original_path": "/Users/<user>/Desktop/Screenshot 2026-04-19 at 4.51.48\u202fPM.png",
+      "original_name": "Screenshot 2026-04-19 at 4.51.48\u202fPM.png",
+      "category": "a health or status bar",
+      "folder": "UI/StatusBars",
+      "new_name": "status_34f823ef.png",
+      "confidence": 0.0295867919921875,
+      "detected_text": null,
+      "top_scores": {
+        "a health or status bar": 0.0295867919921875,
+        "a product listing or retail website": 0.0289306640625,
+        "an infographic or diagram with text": 0.0289306640625,
+        "an e-commerce or online shopping page": 0.02880859375,
+        "a documentation or technical guide page": 0.028778076171875
+      },
+      "dest_folder": "/Users/<user>/Desktop/UI/StatusBars",
+      "dest_path": "/Users/<user>/Desktop/UI/StatusBars/status_34f823ef.png"
+    },
+    {
+      "original_path": "/Users/<user>/Desktop/Screenshot 2026-04-19 at 4.51.53\u202fPM.png",
+      "original_name": "Screenshot 2026-04-19 at 4.51.53\u202fPM.png",
+      "category": "a product listing or retail website",
+      "folder": "Software/Shopping",
+      "new_name": "product_586f7e70.png",
+      "confidence": 0.02960205078125,
+      "detected_text": null,
+      "top_scores": {
+        "a product listing or retail website": 0.02960205078125,
+        "an e-commerce or online shopping page": 0.0295257568359375,
+        "a documentation or technical guide page": 0.02923583984375,
+        "a health or status bar": 0.0292205810546875,
+        "a web browser screenshot": 0.0291748046875
+      },
+      "dest_folder": "/Users/<user>/Desktop/Software/Shopping",
+      "dest_path": "/Users/<user>/Desktop/Software/Shopping/product_586f7e70.png"
+    },
+    {
+      "original_path": "/Users/<user>/Desktop/<redacted-token>.png",
+      "original_name": "<redacted-token>.png",
+      "category": "unknown",
+      "folder": "Uncategorized",
+      "new_name": "asset_60d4c160.png",
+      "confidence": 0.0,
+      "detected_text": null,
+      "top_scores": {},
+      "dest_folder": "/Users/<user>/Desktop/Uncategorized",
+      "dest_path": "/Users/<user>/Desktop/Uncategorized/asset_60d4c160.png"
+    },
+    {
+      "original_path": "/Users/<user>/Desktop/flipside_swolmates_map.png",
+      "original_name": "flipside_swolmates_map.png",
+      "category": "unknown",
+      "folder": "Uncategorized",
+      "new_name": "asset_7fafcf47.png",
+      "confidence": 0.0,
+      "detected_text": null,
+      "top_scores": {},
+      "dest_folder": "/Users/<user>/Desktop/Uncategorized",
+      "dest_path": "/Users/<user>/Desktop/Uncategorized/asset_7fafcf47.png"
+    },
+    {
+      "original_path": "/Users/<user>/Desktop/flipside_swolmates_map_grid.png",
+      "original_name": "flipside_swolmates_map_grid.png",
+      "category": "unknown",
+      "folder": "Uncategorized",
+      "new_name": "asset_f8d075c6.png",
+      "confidence": 0.0,
+      "detected_text": null,
+      "top_scores": {},
+      "dest_folder": "/Users/<user>/Desktop/Uncategorized",
+      "dest_path": "/Users/<user>/Desktop/Uncategorized/asset_f8d075c6.png"
+    }
+  ]
+}
