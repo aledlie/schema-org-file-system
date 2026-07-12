@@ -45,6 +45,8 @@ results/*.db
 results/*.db-shm
 results/*.db-wal
 results/*.db-journal
+results/*.db.bak*
+results/*.bak
 results/*.txt
 results/ml_data/
 results/ml_data_*/
@@ -77,5 +79,7 @@ test-results/
 repomix-output.xml
 docs/repomix/*
 
+# Claude Code local tooling (agents/skills/hooks/commands — not part of this project)
+.claude/
 # Claude Code session worktrees (never tracked)
 .claude/worktrees/
