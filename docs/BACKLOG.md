@@ -22,6 +22,21 @@ git filter-repo --invert-paths \
 
 **Root-cause note — `redact_pii.py` blind spots** (also in CLAUDE.md Gotchas): OCR redaction cannot remove (a) **biometric photos** (driver's license, passport), (b) **OCR-unreadable stylized text** (the certificate was excluded for a machine-invisible but human-readable name), or (c) **alphabetic PII** (addresses, third-party names). Never commit such documents on OCR-redaction alone.
 
+### Core-query export path in SchemaOrgExporter
+
+**Status:** Done (2026-07-12) — `SchemaOrgExporter(use_core=True)`, now the **default**. Byte-identical to the ORM path (both share the `build_*_jsonld` pure builders in `models.py`), parity-locked by `tests/integration/test_core_export_parity.py`.
+**Priority:** P3 (perf)
+**Source:** export-perf investigation, 2026-07-12
+**Context:** ORM bulk export cost is dominated by per-entity ORM object construction, not serialization or JSON encoding (a fresh 10k-entity export ≈ 0.5–0.8s cold, ~90% of it ORM hydration). `_collect_records_core` bulk-selects columns + association tables and builds JSON-LD via the shared functions, skipping ORM instantiation.
+
+**Prototype caveat — now RESOLVED:** the original prototype covered only the *no-relation File* path. The shipped production version handles the relationship joins/aggregation for categories/companies/people/locations **and** File image/GPS fields (plus Category parent/subcategory), with full ORM parity. As predicted, relationship loading adds cost — measured **3.2× faster** than ORM (vs the 12× column-only microbenchmark ceiling): relationships add cost but stay **far below per-object ORM hydration**.
+
+**Residual caveats:**
+- Relationship-order parity depends on association rows being read in natural (insertion) order so the first category becomes `mainEntityOfPage`. Guarded by the parity test — do **not** add `ORDER BY` to `_load_file_refs` without re-verifying parity.
+- `export_entities_filtered` still uses the ORM path (not Core).
+- Unknown entity types (outside File/Category/Company/Person/Location) fall back to per-object ORM serialization.
+- `to_schema_org()` methods are thin delegators to the shared builders — edit the builders, not the methods, or the two paths diverge.
+
 ### Test set class imbalance in model evaluation
 
 **Status:** Reframed (2026-07-01) — original premise was wrong; residual work is classifier accuracy + coverage, not sample count.
