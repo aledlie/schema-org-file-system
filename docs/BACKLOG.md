@@ -1,7 +1,7 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-07-01.
+Last updated: 2026-07-12.
 
 ## Open Items
 
@@ -82,7 +82,7 @@ git filter-repo --invert-paths \
 - **Graph:** `GraphStore.get_all_people_with_files` / `get_files_by_person` reverse queries (with false-positive-name denylist).
 - **View:** new `src/storage/person_view_generator.py` (`PersonViewGenerator`, idempotent symlink regen, aborts on real files under the view root) wired to `organize-files person-view [--view-root] [--apply]`.
 - **Migration:** new `src/storage/person_migration.py` (filesystem-walk driven, dry-run default, collision-safe, manifest-backed rollback, no re-OCR) wired to `organize-files migrate-person [--apply] [--rollback]`.
-- **Tests/docs:** `test_content_organizer.py` assertions updated; new tests for filename mapping, graph queries, `PersonViewGenerator`, and `person_migration`; `CLAUDE.md` Classification Priority + Output Folders updated. Full suite green (pre-existing `jsonschema`-missing failures unrelated). Plan step-7 grep confirms no filing-category `person` label remains (only entity/schema.org/vision-vocab usages).
+- **Tests/docs:** `test_content_organizer.py` assertions updated; new tests for filename mapping, graph queries, `PersonViewGenerator`, and `person_migration`; `CLAUDE.md` Classification Priority + Output Folders updated. Full suite green. Plan step-7 grep confirms no filing-category `person` label remains (only entity/schema.org/vision-vocab usages). (`jsonschema` was missing from the venv and blocked `test_schema_org_validation.py`; installed and added to the `dev` extra in `pyproject.toml` — unrelated to Option C.)
 
 **Operational note:** `migrate-person --apply` was run against real data (2026-07-12): 33 files moved into `Personal/{subcat}/`, `~/Documents/Person/` emptied of real files. `person-view --apply` (symlink regen) is the only remaining on-disk step and is left for the user to run.
 
