@@ -21,7 +21,7 @@ import json
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Set
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -63,6 +63,14 @@ SUBCAT_OTHER = "other"
 SUBCAT_SOURCE_DB = "db"
 SUBCAT_SOURCE_SUBFOLDER = "subfolder"
 SUBCAT_SOURCE_FALLBACK = "fallback"
+
+# Legacy Person/ subfolder names that are NOT real people, so they must never
+# become a person edge when indexing (mirrors the migration's "Unknown" buckets).
+NON_PERSON_DIRS = frozenset({"Unknown"})
+
+# Graph edge role recorded for an indexed person: these are personal documents
+# whose subject/owner is the named individual, not merely a mention.
+PERSON_INDEX_ROLE = "subject"
 
 MIGRATION_REASON = "migrated from legacy Person/ category (Option C phase 5)"
 ROLLBACK_REASON = "rolled back Option C phase 5 person migration"
@@ -437,3 +445,129 @@ def rollback_person_migration(
         print(f"  Restored {restored}/{len(entries)} files")
 
     return {"restored": restored, "total": len(entries)}
+
+
+# ---------------------------------------------------------------------------
+# Person indexing: register migrated files in the graph at their current
+# location and attach person edges, WITHOUT moving anything. Uses the manifest
+# `src` (the original Person/{Name}/... path) as the person signal -- the
+# user's own prior filing -- rather than re-running OCR/CLIP classification.
+# This is what populates the person-view symlink tree.
+# ---------------------------------------------------------------------------
+
+
+def _person_from_source_path(src: str, person_root: Path) -> Optional[str]:
+    """Derive the person from a migrated file's original Person/ path.
+
+    Returns the first path component (between the Person/ root and the
+    filename) that looks like a person NAME dir and isn't a non-person bucket
+    (e.g. "Unknown"); None when no such component exists.
+    """
+    src_path = Path(src)
+    try:
+        parts = src_path.relative_to(person_root).parts
+    except ValueError:
+        return None
+    for component in parts[:-1]:
+        if component in NON_PERSON_DIRS:
+            continue
+        if _looks_like_person_name_dir(component):
+            return component
+    return None
+
+
+def build_person_index(
+    manifest_path: Path,
+    person_root: Path = DEFAULT_PERSON_ROOT,
+) -> List[Tuple[str, str]]:
+    """Return (current_path, person_name) pairs for every migrated file whose
+    original Person/ path attributes it to a named individual. Files with no
+    person name dir in their source path are omitted (they get no edge)."""
+    person_root = Path(person_root).expanduser()
+    entries = load_manifest(manifest_path)
+    index: List[Tuple[str, str]] = []
+    for entry in entries:
+        person = _person_from_source_path(entry.src, person_root)
+        if person:
+            index.append((entry.dst, person))
+    return index
+
+
+def apply_person_index(index: List[Tuple[str, str]], db_path: str) -> int:
+    """Upsert a File row (at its current path) and attach a person edge for
+    each (current_path, person_name) pair. Idempotent: add_file updates an
+    existing row and add_file_to_person no-ops a duplicate edge. Returns the
+    number of person edges written."""
+    graph_store = GraphStore(db_path)
+    session = graph_store.get_session()
+    edges = 0
+    try:
+        for current_path, person_name in index:
+            path_obj = Path(current_path)
+            file = graph_store.add_file(
+                original_path=current_path,
+                filename=path_obj.name,
+                current_path=current_path,
+                session=session,
+            )
+            if graph_store.add_file_to_person(
+                file.id,
+                person_name,
+                role=PERSON_INDEX_ROLE,
+                session=session,
+            ):
+                edges += 1
+        session.commit()
+    finally:
+        session.close()
+    return edges
+
+
+def index_person_files(
+    manifest_path: Path = DEFAULT_MANIFEST_PATH,
+    db_path: str = "results/file_organization.db",
+    person_root: Path = DEFAULT_PERSON_ROOT,
+    apply: bool = False,
+    verbose: bool = True,
+) -> Dict[str, Any]:
+    """Register migrated files in the graph with person edges (no file moves).
+
+    Dry-run by default: reports the per-person attribution without touching the
+    DB. Pass apply=True to write the File rows and person edges that populate
+    the person-view symlink tree.
+    """
+    manifest_path = Path(manifest_path)
+    index = build_person_index(manifest_path, person_root)
+
+    per_person: Dict[str, int] = {}
+    for _current_path, person_name in index:
+        per_person[person_name] = per_person.get(person_name, 0) + 1
+
+    if verbose:
+        print("=" * SEPARATOR_WIDTH_MEDIUM)
+        print("Person Indexing (graph edges, no file moves)")
+        print("=" * SEPARATOR_WIDTH_MEDIUM)
+        print(f"  Manifest:            {manifest_path}")
+        print(f"  Attributed files:    {len(index)}")
+        for name, count in sorted(per_person.items(), key=lambda kv: -kv[1]):
+            print(f"    {name}: {count}")
+
+    if not apply:
+        if verbose:
+            print("\n  [DRY RUN] No graph rows or edges written")
+        return {
+            "dry_run": True,
+            "attributed": len(index),
+            "people": per_person,
+        }
+
+    edges = apply_person_index(index, db_path)
+    if verbose:
+        print(f"\n  Wrote {edges} person edges across {len(per_person)} people")
+
+    return {
+        "dry_run": False,
+        "attributed": len(index),
+        "edges": edges,
+        "people": per_person,
+    }

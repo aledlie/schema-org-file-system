@@ -31,7 +31,11 @@ from src.storage.person_migration import (
     SUBCAT_RECORDS,
     SUBCAT_SOURCE_FALLBACK,
     SUBCAT_SOURCE_SUBFOLDER,
+    MigrationEntry,
+    apply_person_index,
     build_migration_plan,
+    build_person_index,
+    index_person_files,
     load_manifest,
     migrate_person_files,
     rollback_person_migration,
@@ -398,3 +402,99 @@ class TestDbHintPrecedence:
         assert entry.subcat_source == "db"
         assert entry.flagged is False
         assert entry.file_id == file_id
+
+
+class TestPersonIndex:
+    """index-people: attach person edges from the manifest without moving files."""
+
+    def _manifest(self, tmp_path: Path, person_root: Path) -> Path:
+        # src paths encode the person via the original Person/{Name}/ dir; one
+        # entry sits under a doc-class dir with no name (must get no edge).
+        entries = [
+            MigrationEntry(
+                src=str(person_root / "Jane Smith" / "resume.pdf"),
+                dst=str(tmp_path / "Personal" / "Contacts" / "resume.pdf"),
+                subcat="contacts",
+                subcat_source="subfolder",
+            ),
+            MigrationEntry(
+                src=str(person_root / "Identity" / "Jane Smith" / "passport.jpg"),
+                dst=str(tmp_path / "Personal" / "Identification" / "passport.jpg"),
+                subcat="identification",
+                subcat_source="subfolder",
+            ),
+            MigrationEntry(
+                src=str(person_root / "Employment" / "orphan.pdf"),
+                dst=str(tmp_path / "Personal" / "Employment" / "orphan.pdf"),
+                subcat="employment",
+                subcat_source="subfolder",
+            ),
+        ]
+        manifest_path = tmp_path / "manifest.json"
+        write_manifest(entries, manifest_path)
+        return manifest_path
+
+    def test_build_index_attributes_by_name_dir(self, tmp_path: Path) -> None:
+        person_root = tmp_path / "Documents" / "Person"
+        manifest = self._manifest(tmp_path, person_root)
+
+        index = build_person_index(manifest, person_root=person_root)
+        people = {name for _dst, name in index}
+
+        assert people == {"Jane Smith"}  # orphan.pdf excluded
+        assert len(index) == 2  # resume + passport, both Jane Smith
+        # the name dir nested under Identity/ is still attributed
+        assert any("passport.jpg" in dst for dst, _ in index)
+
+    def test_apply_creates_person_edges(self, tmp_path: Path, db_path: str) -> None:
+        person_root = tmp_path / "Documents" / "Person"
+        manifest = self._manifest(tmp_path, person_root)
+        index = build_person_index(manifest, person_root=person_root)
+
+        edges = apply_person_index(index, db_path)
+        assert edges == 2
+
+        store = GraphStore(db_path)
+        session = store.get_session()
+        try:
+            people = store.get_all_people_with_files(session=session)
+        finally:
+            session.close()
+        by_name = dict(people)
+        assert "Jane Smith" in by_name
+        assert len(by_name["Jane Smith"]) == 2  # current_paths recorded
+
+    def test_dry_run_writes_nothing(self, tmp_path: Path, db_path: str) -> None:
+        person_root = tmp_path / "Documents" / "Person"
+        manifest = self._manifest(tmp_path, person_root)
+
+        result = index_person_files(
+            manifest_path=manifest, db_path=db_path,
+            person_root=person_root, apply=False, verbose=False,
+        )
+        assert result["dry_run"] is True
+        assert result["attributed"] == 2
+        assert result["people"] == {"Jane Smith": 2}
+
+        store = GraphStore(db_path)
+        session = store.get_session()
+        try:
+            assert store.get_all_people_with_files(session=session) == []
+        finally:
+            session.close()
+
+    def test_apply_is_idempotent(self, tmp_path: Path, db_path: str) -> None:
+        person_root = tmp_path / "Documents" / "Person"
+        manifest = self._manifest(tmp_path, person_root)
+        index = build_person_index(manifest, person_root=person_root)
+
+        apply_person_index(index, db_path)
+        apply_person_index(index, db_path)  # second run must not duplicate edges
+
+        store = GraphStore(db_path)
+        session = store.get_session()
+        try:
+            people = dict(store.get_all_people_with_files(session=session))
+        finally:
+            session.close()
+        assert len(people["Jane Smith"]) == 2

@@ -131,6 +131,22 @@ def cmd_migrate_person(args: Any) -> None:
     )
 
 
+def cmd_index_people(args: Any) -> None:
+    """Register migrated files in the graph with person edges (no file moves)."""
+    from storage.person_migration import DEFAULT_MANIFEST_PATH, index_person_files
+
+    manifest_path = Path(args.manifest) if args.manifest else DEFAULT_MANIFEST_PATH
+    person_root = Path(args.person_root).expanduser() if args.person_root else None
+    kwargs = {
+        "manifest_path": manifest_path,
+        "db_path": args.db_path,
+        "apply": bool(args.apply),
+    }
+    if person_root is not None:
+        kwargs["person_root"] = person_root
+    index_person_files(**kwargs)
+
+
 def cmd_health(args: Any) -> None:
     """Run system health check."""
     from health_check import check_system
@@ -335,6 +351,24 @@ For more help on a specific command:
     migrate_person_parser.add_argument('--rollback', action='store_true',
                                        help='Reverse a prior apply using the manifest')
     migrate_person_parser.set_defaults(func=cmd_migrate_person)
+
+    # Index migrated files into the graph with person edges (no file moves)
+    index_people_parser = subparsers.add_parser(
+        'index-people',
+        help='Attach person->file graph edges for migrated files (no moves)',
+        description='Register migrated Personal/ files in the graph at their '
+                    'current path and attach person edges derived from the '
+                    'migration manifest, so person-view can populate. No files move.'
+    )
+    index_people_parser.add_argument('--manifest',
+                                     help='Migration manifest path (default person-migrate-manifest.json)')  # noqa: E501
+    index_people_parser.add_argument('--person-root',
+                                     help='Original Person/ root the manifest sources came from (default ~/Documents/Person)')  # noqa: E501
+    index_people_parser.add_argument('--db-path', default='results/file_organization.db',
+                                     help='Path to SQLite database')
+    index_people_parser.add_argument('--apply', action='store_true',
+                                     help='Write graph rows/edges (default is dry-run)')
+    index_people_parser.set_defaults(func=cmd_index_people)
 
     # Health check
     health_parser = subparsers.add_parser(
