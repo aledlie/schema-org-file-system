@@ -36,8 +36,9 @@ def cmd_content(args: Any) -> None:
 
 def cmd_name(args: Any) -> None:
     """Run name-based organization (no AI)."""
+    sys.path.insert(0, str(Path(__file__).parent.parent))
     sys.path.insert(0, str(Path(__file__).parent.parent / 'scripts'))
-    from file_organizer_by_name import main as name_main
+    from src.organizers.name_organizer import main as name_main
 
     sys.argv = ['organize-files name'] + _args_to_argv(args)
     name_main()

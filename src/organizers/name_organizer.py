@@ -717,7 +717,7 @@ class FileNameOrganizer:
 
     def save_report(self):
         """Save organization report to JSON."""
-        results_dir = Path(__file__).parent / 'results'
+        results_dir = Path(__file__).resolve().parents[2] / 'results'
         results_dir.mkdir(exist_ok=True)
 
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -743,23 +743,25 @@ def main():
         epilog='''
 Examples:
   # Dry run (preview only)
-  python3 file_organizer_by_name.py --dry-run --source ~/Documents/Uncategorized
+  organize-files name --dry-run --source ~/Documents/Uncategorized
 
   # Organize files
-  python3 file_organizer_by_name.py --source ~/Documents/Uncategorized
+  organize-files name --source ~/Documents/Uncategorized
 
   # Recursive with limit
-  python3 file_organizer_by_name.py --source ~/Documents --recursive --limit 500
+  organize-files name --source ~/Documents --recursive --limit 500
 
   # Custom base path
-  python3 file_organizer_by_name.py --base-path ~/MyFiles --source ~/Downloads
+  organize-files name --base-path ~/MyFiles --source ~/Downloads
         '''
     )
 
     parser.add_argument(
-        '--source',
+        '--source', '--sources',
+        dest='sources',
+        nargs='+',
         required=True,
-        help='Source directory to organize'
+        help='Source directories to organize'
     )
 
     parser.add_argument(
@@ -794,12 +796,13 @@ Examples:
         dry_run=args.dry_run
     )
 
-    # Organize directory
-    organizer.organize_directory(
-        source_dir=args.source,
-        recursive=args.recursive,
-        limit=args.limit
-    )
+    # Organize directories
+    for source_dir in args.sources:
+        organizer.organize_directory(
+            source_dir=source_dir,
+            recursive=args.recursive,
+            limit=args.limit
+        )
 
 
 if __name__ == '__main__':
