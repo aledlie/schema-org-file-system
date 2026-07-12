@@ -8,8 +8,9 @@
 > **Completion note (2026-07-12):** The Part 1 test suite and Part 2 refactor of
 > `file_organizer_content_based.py` into `src/{classifiers,analyzers,organizers,pipeline}/`
 > shipped. Divergences from this plan: `category_rules.py`,
-> `workflow.py`, `mime_classifier.py`, `name_organizer.py`, `src/ml/`, and `src/feedback/`
-> were never split out (`entity_detector.py` since landed, 2026-07-12);
+> `workflow.py`, `src/ml/`, and `src/feedback/`
+> were never split out (`entity_detector.py`, `category_config.py`, `mime_classifier.py`,
+> and `name_organizer.py` since landed, 2026-07-12);
 > `test_cli.py` and `test_health_check.py` were not written
 > (`test_storage_models.py` and `test_uri_utils.py` landed at `tests/unit/`); `test_validator.py` lives at `tests/` not
 > `tests/unit/`; and `file_organizer_content_based.py` was **not** reduced to a thin wrapper
@@ -532,10 +533,10 @@ class ContentBasedFileOrganizer:
 **Week 7: Base Organizers**
 - [x] Extract category config from `file_organizer.py` — ✅ COMPLETE (`CATEGORY_PATHS` in `src/organizers/category_config.py`; script imports it)
 - [x] Create `src/organizers/category_config.py` — ✅ COMPLETE
-- [ ] Create `src/organizers/mime_classifier.py` — not created (MIME mapping kept inline)
+- [x] Create `src/organizers/mime_classifier.py` — ✅ COMPLETE (`classify_by_mime` + `classify_font`; `scripts/file_organizer.py` delegates to them)
 - [ ] Consolidate `category_paths` across organizers — `ContentOrganizer` and `scripts/file_organizer_content_based.py` each define their own differently-shaped `category_paths` (nested media/photos/screenshots) separate from `CATEGORY_PATHS` in `src/organizers/category_config.py`; unify likely alongside the `mime_classifier.py` extraction
 - [x] Create `src/organizers/base_organizer.py` — ✅ COMPLETE
-- [ ] Move `FileOrganizerByName` → `src/organizers/name_organizer.py` — not moved
+- [x] Move `FileOrganizerByName` → `src/organizers/name_organizer.py` — ✅ COMPLETE (class is `FileNameOrganizer`; `scripts/file_organizer_by_name.py` removed, `src/cli.py` updated; also fixed pre-existing `organize-files name` breakage — outer parser emits `--sources`, inner parser now accepts it and loops)
 
 **Week 8: Polish & Documentation**
 - [x] Update CLI to use refactored modules — ✅ COMPLETE (`src/cli.py` drives `src/organizers`)

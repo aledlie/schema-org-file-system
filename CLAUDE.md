@@ -52,7 +52,7 @@ mypy src/ scripts/            # type check
 │   ├── generators.py       # Schema.org metadata generation
 │   ├── error_tracking.py   # Sentry integration
 │   ├── classifiers/        # content_classifier + entity_detector (company/person extraction)
-│   ├── organizers/         # File organizer implementations (base, content)
+│   ├── organizers/         # File organizers (base, content, name) + category_config/mime_classifier
 │   ├── pipeline/           # Batch processing pipeline (batch_processor, file_processor)
 │   ├── analyzers/          # Image/content analyzers
 │   ├── utils/              # Shared utilities
