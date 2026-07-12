@@ -201,23 +201,20 @@ class TestGetDestinationPath:
         assert "Acme Corp" in str(result)
         assert "Organization" in str(result)
 
-    def test_person_with_name(self, organizer: ContentOrganizer, tmp_path: Path) -> None:
+    def test_personal_contacts_ignores_people_names(
+        self, organizer: ContentOrganizer, tmp_path: Path
+    ) -> None:
+        # Option C: `person` is demoted to a graph relationship, not a filing
+        # category — people_names no longer creates a name subfolder here.
         result = organizer.get_destination_path(
             file_path=Path("/src/resume.pdf"),
-            category="person",
+            category="personal",
             subcategory="contacts",
             people_names=["Jane Doe"],
         )
-        assert "Jane Doe" in str(result)
-        assert "Person" in str(result)
-
-    def test_person_without_name_uses_unknown(self, organizer: ContentOrganizer, tmp_path: Path) -> None:
-        result = organizer.get_destination_path(
-            file_path=Path("/src/resume.pdf"),
-            category="person",
-            subcategory="contacts",
-        )
-        assert "Unknown" in str(result)
+        assert "Personal" in str(result)
+        assert "Contacts" in str(result)
+        assert "Jane Doe" not in str(result)
 
     def test_filepath_category_uses_subcategory_as_path(
         self, organizer: ContentOrganizer, tmp_path: Path
@@ -291,7 +288,8 @@ class TestClassifyByFilenamePatterns:
             Path("/docs/Alyshia_Ledlie_Resume.pdf")
         )
         assert result is not None
-        assert result[0] == 'person'
+        assert result[0] == 'personal'
+        assert result[1] == 'contacts'
         assert len(result[3]) > 0  # people_names
 
     def test_nda_document(self, organizer: ContentOrganizer) -> None:
@@ -303,6 +301,47 @@ class TestClassifyByFilenamePatterns:
     def test_unknown_returns_none(self, organizer: ContentOrganizer) -> None:
         result = organizer.classify_by_filename_patterns(Path("/random/xyzxyz_unique_file.pdf"))
         assert result is None
+
+    def test_travel_document_maps_to_personal_other(self, organizer: ContentOrganizer) -> None:
+        # Option C: person/travel is retired; travel docs file under personal/other.
+        result = organizer.classify_by_filename_patterns(Path("/docs/austin_to_bombay.docx"))
+        assert result is not None
+        assert result[0] == 'personal'
+        assert result[1] == 'other'
+
+    def test_event_document_maps_to_personal_other(self, organizer: ContentOrganizer) -> None:
+        result = organizer.classify_by_filename_patterns(Path("/docs/Oct25Event.docx"))
+        assert result is not None
+        assert result[0] == 'personal'
+        assert result[1] == 'other'
+
+    def test_journal_entry_maps_to_personal_other(self, organizer: ContentOrganizer) -> None:
+        result = organizer.classify_by_filename_patterns(Path("/docs/dream_journal.docx"))
+        assert result is not None
+        assert result[0] == 'personal'
+        assert result[1] == 'other'
+
+    def test_cover_letter_maps_to_personal_contacts(self, organizer: ContentOrganizer) -> None:
+        result = organizer.classify_by_filename_patterns(Path("/docs/cover_letter.pdf"))
+        assert result is not None
+        assert result[0] == 'personal'
+        assert result[1] == 'contacts'
+
+    def test_no_person_category_ever_returned(self, organizer: ContentOrganizer) -> None:
+        # Option C: `person` must never appear as a filing category anymore —
+        # only as a graph relationship (file.people via GraphStore).
+        candidates = [
+            "/docs/Alyshia_Ledlie_Resume.pdf",
+            "/docs/cover_letter.pdf",
+            "/docs/austin_to_bombay.docx",
+            "/docs/Oct25Event.docx",
+            "/docs/dream_journal.docx",
+            "/docs/Sumedh3.docx",
+        ]
+        for candidate in candidates:
+            result = organizer.classify_by_filename_patterns(Path(candidate))
+            if result is not None:
+                assert result[0] != 'person'
 
 
 # ------------------------------------------------------------------ #

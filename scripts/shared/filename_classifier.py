@@ -525,7 +525,7 @@ def classify_by_filename_patterns(
         # If name found in filename, return immediately
         if person_name:
             print(f"  ✓ Filename pattern: Resume ({person_name})")
-            return ("person", "contacts", None, [person_name])
+            return ("personal", "contacts", None, [person_name])
         # If no name found, don't return - fall through to OCR content extraction
         # This allows "Modern Minimalist CV Resume.pdf" to get name from PDF content
         print("  ✓ Filename pattern: Resume (extracting name from content...)")
@@ -544,13 +544,13 @@ def classify_by_filename_patterns(
         print(
             "  ✓ Filename pattern: Cover letter" + (f" ({person_name})" if person_name else "")
         )
-        return ("person", "contacts", None, [person_name] if person_name else [])
+        return ("personal", "contacts", None, [person_name] if person_name else [])
 
     # Check for known person names in filename (e.g., ledlie) - non-resume files
     for pattern, person_name in known_person_patterns.items():
         if pattern in filename_lower:
             print(f"  ✓ Filename pattern: Person ({person_name})")
-            return ("person", "contacts", None, [person_name])
+            return ("personal", "contacts", None, [person_name])
 
     # =========================================================
     # ENTITY-BASED FILES: Company names in filename (check BEFORE extension)
@@ -726,7 +726,7 @@ def classify_by_filename_patterns(
         print(
             "  ✓ Filename pattern: Cover letter" + (f" ({person_name})" if person_name else "")
         )
-        return ("person", "contacts", None, [person_name] if person_name else [])
+        return ("personal", "contacts", None, [person_name] if person_name else [])
 
     # =========================================================
     # CONFIG/MANIFEST FILES: Technical config
@@ -1508,7 +1508,7 @@ def classify_by_filename_patterns(
     # =========================================================
     if "_to_" in stem or "-to-" in stem:
         print("  ✓ Filename pattern: Travel document")
-        return ("person", "travel", None, [])
+        return ("personal", "other", None, [])
 
     # =========================================================
     # ZOUK: Dance events and classes
@@ -1568,7 +1568,7 @@ def classify_by_filename_patterns(
         for month in month_patterns:
             if month in stem and re.search(r"\d{1,2}", stem):
                 print("  ✓ Filename pattern: Event document")
-                return ("person", "events", None, [])
+                return ("personal", "other", None, [])
 
     # =========================================================
     # JOURNAL ENTRIES: Dream, Diary, Thoughts, Reflections
@@ -1587,7 +1587,7 @@ def classify_by_filename_patterns(
     if ext in {".docx", ".doc", ".txt", ".md"}:
         if any(kw in stem for kw in journal_keywords):
             print("  ✓ Filename pattern: Journal entry")
-            return ("person", "other", None, [])
+            return ("personal", "other", None, [])
 
     # =========================================================
     # PERSONAL DOCUMENTS: Short name + version (Sumedh3.docx)
@@ -1597,11 +1597,11 @@ def classify_by_filename_patterns(
         # Short name followed by digit (personal documents)
         if re.match(r"^[A-Z][a-z]+\d$", original_stem):
             print("  ✓ Filename pattern: Personal document")
-            return ("person", "other", None, [])
+            return ("personal", "other", None, [])
         # PascalCase event names (ZoukSocial, DanceNight)
         if re.match(r"^([A-Z][a-z]+){2,}$", original_stem):
             print("  ✓ Filename pattern: Event document")
-            return ("person", "events", None, [])
+            return ("personal", "other", None, [])
 
     # =========================================================
     # PITCH/PROPOSAL FILES: Pitch, Proposal with version

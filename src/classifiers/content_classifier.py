@@ -110,12 +110,13 @@ class ContentClassifier:
                     'resume', 'cv', 'cover letter', 'curriculum vitae', 'employment',
                     'personal', 'identification', 'passport', 'driver license', 'ssn',
                     'birth certificate', 'marriage', 'divorce', 'diploma', 'transcript',
-                    'reference', 'recommendation'
+                    'reference', 'recommendation', 'vcard', 'contact'
                 ],
                 'subcategories': {
                     'employment': ['resume', 'cv', 'cover letter', 'employment', 'reference'],
                     'identification': ['passport', 'driver license', 'ssn', 'id'],
                     'certificates': ['birth certificate', 'marriage', 'divorce', 'diploma'],
+                    'contacts': ['resume', 'cv', 'vcard', 'contact', 'curriculum vitae'],
                     'other': []
                 }
             },

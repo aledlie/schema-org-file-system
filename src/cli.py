@@ -82,6 +82,55 @@ def cmd_migrate(args: Any) -> None:
     print("\nMigration complete. Canonical IDs have been generated for existing records.")
 
 
+def cmd_person_view(args: Any) -> None:
+    """Regenerate the derived Person/{Name}/ symlink view from graph edges."""
+    from storage.graph_store import GraphStore
+    from storage.person_view_generator import PersonViewGenerator
+
+    view_root = Path(args.view_root).expanduser() if args.view_root else None
+    graph_store = GraphStore(args.db_path)
+    generator = PersonViewGenerator(graph_store, view_root=view_root)
+    apply = bool(args.apply)
+    summary = generator.generate(dry_run=not apply, apply=apply)
+
+    label = "APPLIED" if apply else "DRY RUN"
+    print(f"\n[{label}] Person view: {summary['people']} people, "
+          f"{summary['symlinks_created']} symlinks, "
+          f"{summary['removed_stale']} stale removed")
+    for err in summary.get('errors', []):
+        print(f"  ! {err}")
+
+
+def cmd_migrate_person(args: Any) -> None:
+    """Migrate legacy on-disk Person/ files into Personal/{subcat}/ folders."""
+    from storage.person_migration import (
+        DEFAULT_DOCUMENTS_ROOT,
+        DEFAULT_MANIFEST_PATH,
+        DEFAULT_PERSON_ROOT,
+        migrate_person_files,
+        rollback_person_migration,
+    )
+
+    manifest_path = Path(args.manifest) if args.manifest else DEFAULT_MANIFEST_PATH
+    db_path = None if args.no_db else args.db_path
+
+    if args.rollback:
+        rollback_person_migration(manifest_path, db_path=db_path)
+        return
+
+    person_root = Path(args.person_root).expanduser() if args.person_root else DEFAULT_PERSON_ROOT
+    documents_root = (
+        Path(args.documents_root).expanduser() if args.documents_root else DEFAULT_DOCUMENTS_ROOT
+    )
+    migrate_person_files(
+        person_root=person_root,
+        documents_root=documents_root,
+        db_path=db_path,
+        manifest_path=manifest_path,
+        apply=bool(args.apply),
+    )
+
+
 def cmd_health(args: Any) -> None:
     """Run system health check."""
     from health_check import check_system
@@ -248,6 +297,44 @@ For more help on a specific command:
     migrate_parser.add_argument('--db-path', default='results/file_organization.db',
                                 help='Path to SQLite database')
     migrate_parser.set_defaults(func=cmd_migrate)
+
+    # Person symlink view (derived from graph edges)
+    person_view_parser = subparsers.add_parser(
+        'person-view',
+        help='Regenerate the derived Person/{Name}/ symlink view from graph edges',
+        description='Rebuild ~/Documents/Person/ as symlinks to doc-class files '
+                    '(idempotent; aborts if a real file is found under the view root)'
+    )
+    person_view_parser.add_argument('--view-root',
+                                    help='Root directory for the symlink view (default ~/Documents/Person)')  # noqa: E501
+    person_view_parser.add_argument('--db-path', default='results/file_organization.db',
+                                    help='Path to SQLite database')
+    person_view_parser.add_argument('--apply', action='store_true',
+                                    help='Write symlinks (default is dry-run)')
+    person_view_parser.set_defaults(func=cmd_person_view)
+
+    # Migrate legacy on-disk Person/ files into Personal/{subcat}/
+    migrate_person_parser = subparsers.add_parser(
+        'migrate-person',
+        help='Migrate legacy on-disk Person/ files into Personal/{subcat}/ folders',
+        description='Filesystem-walk migration of ~/Documents/Person/ into '
+                    'Personal/{subcat}/; dry-run by default, manifest-backed rollback'
+    )
+    migrate_person_parser.add_argument('--person-root',
+                                       help='Source root to migrate (default ~/Documents/Person)')
+    migrate_person_parser.add_argument('--documents-root',
+                                       help='Destination base for Personal/ (default ~/Documents)')
+    migrate_person_parser.add_argument('--manifest',
+                                       help='Manifest path (default person-migrate-manifest.json)')
+    migrate_person_parser.add_argument('--db-path', default='results/file_organization.db',
+                                       help='Path to SQLite database')
+    migrate_person_parser.add_argument('--no-db', action='store_true',
+                                       help='Skip DB lookups and updates')
+    migrate_person_parser.add_argument('--apply', action='store_true',
+                                       help='Move files (default is dry-run)')
+    migrate_person_parser.add_argument('--rollback', action='store_true',
+                                       help='Reverse a prior apply using the manifest')
+    migrate_person_parser.set_defaults(func=cmd_migrate_person)
 
     # Health check
     health_parser = subparsers.add_parser(

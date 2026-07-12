@@ -266,6 +266,23 @@ _TEXT_LENGTH_FULL_CHARS = 200
 _TEXT_MIN_CHARS = 30
 _SIGNAL_AGREEMENT_BOOST = 0.15
 
+# Option C: `person` is demoted from a category to a graph relationship.
+# classify_by_person() still detects *which kind* of person document this is,
+# but now maps that detection onto the `personal` category's subcategories
+# instead of returning a separate `person` category. See
+# PERSON_TAXONOMY_OPTION_C_PLAN.md for the full rationale.
+_PERSON_SUBCAT_TO_PERSONAL_SUBCAT = {
+    "contacts": "contacts",
+    "employees": "employment",
+    "references": "employment",
+    "clients": "other",
+    "travel": "other",
+    "events": "other",
+    "journal": "other",
+    "family": "other",
+    "other": "other",
+}
+
 # Content categories that indicate a *document* (as opposed to a photo, game
 # asset, or generic media). Used to let clean, high-confidence OCR text override
 # a filename-driven game-asset/media guess — e.g. "medellin_bloodwork" matches
@@ -512,11 +529,14 @@ class ContentClassifier:
                     "transcript",
                     "reference",
                     "recommendation",
+                    "vcard",
+                    "contact",
                 ],
                 "subcategories": {
                     "employment": ["resume", "cv", "cover letter", "employment", "reference"],
                     "identification": ["passport", "driver license", "ssn", "id"],
                     "certificates": ["birth certificate", "marriage", "divorce", "diploma"],
+                    "contacts": ["resume", "cv", "vcard", "contact", "curriculum vitae"],
                     "other": [],
                 },
             },
@@ -1623,6 +1643,7 @@ class ContentBasedFileOrganizer:
                 "other": "Business/Other",
             },
             "personal": {
+                "contacts": "Personal/Contacts",
                 "employment": "Personal/Employment",
                 "identification": "Personal/Identification",
                 "certificates": "Personal/Certificates",
@@ -1685,19 +1706,6 @@ class ContentBasedFileOrganizer:
                 "nonprofit": "Organization",
                 "meeting_notes": "Organization",  # Gets Meeting Notes subfolder after company
                 "other": "Organization",
-            },
-            # Person: root folder with person-named subfolders
-            # Structure: Person/{PersonName}/ for all types
-            "person": {
-                "contacts": "Person",  # Root folder, person name added dynamically
-                "employees": "Person",
-                "clients": "Person",
-                "family": "Person",
-                "references": "Person",
-                "travel": "Person/Travel",
-                "events": "Person/Events",
-                "journal": "Person/Journal",  # Personal writing, dreams, reflections
-                "other": "Person",
             },
             "game_assets": {
                 "audio": "GameAssets/Audio",
@@ -2356,7 +2364,7 @@ class ContentBasedFileOrganizer:
         resume_patterns = ["resume", "cv", "curriculum", "vitae"]
         if any(pat in filename_lower for pat in resume_patterns):
             people = self.classifier.extract_people_names(text)
-            return ("person", "contacts", people if people else [])
+            return ("personal", "contacts", people if people else [])
 
         # Check for person type indicators
         for person_type, keywords in person_indicators.items():
@@ -2364,7 +2372,8 @@ class ContentBasedFileOrganizer:
             if matches >= 2:  # Require at least 2 keyword matches
                 people = self.classifier.extract_people_names(text)
                 if people and _has_human_name_signal(text):
-                    return ("person", person_type, people)
+                    subcat = _PERSON_SUBCAT_TO_PERSONAL_SUBCAT[person_type]
+                    return ("personal", subcat, people)
 
         return None
 
@@ -2965,7 +2974,7 @@ class ContentBasedFileOrganizer:
                 print(f"  ✓ Location: {image_metadata['location_name']}")
 
         # PRIORITY 3.5: Check for identification documents in images (passport, ID, license)
-        # These should go to Person/ folder, not Media/
+        # These should go to Personal/Identification, not Media/
         id_result = self._classify_identification_document(
             file_path,
             schema_type,
@@ -3111,8 +3120,8 @@ class ContentBasedFileOrganizer:
                 if people_names:
                     print(f"  ✓ Person identified: {people_names[0]}")
                 return (
-                    "person",
-                    "contacts",
+                    "personal",
+                    "identification",
                     schema_type,
                     ocr_text,
                     None,
@@ -3500,21 +3509,6 @@ class ContentBasedFileOrganizer:
                 else:
                     # All other org types: Organization/{OrgName}/
                     relative_path = f"{relative_path}/{sanitized_company}"
-
-        # Person: Create person-named subfolders under Person/
-        # Structure: Person/{PersonName}/ for all types
-        if category == "person" and people_names:
-            # Use first person name as the folder name
-            person_name = people_names[0] if people_names else "Unknown"
-            sanitized_person = self.classifier.sanitize_company_name(person_name)
-            # Only create person subfolder if name is valid
-            if sanitized_person:
-                relative_path = f"{relative_path}/{sanitized_person}"
-            else:
-                relative_path = f"{relative_path}/Unknown"
-        elif category == "person" and not people_names:
-            # Fallback for person category without extracted names
-            relative_path = f"{relative_path}/Unknown"
 
         # Legacy: client files from business category with company name
         if category == "business" and subcategory == "clients" and company_name:

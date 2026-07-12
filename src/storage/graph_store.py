@@ -38,6 +38,20 @@ except ImportError:
     )
 
 
+# Substrings (case-insensitive) that mark a `Person.name` as an obvious
+# non-person false positive (organization/meeting names misdetected as
+# people). Used by `get_all_people_with_files` to filter results.
+_PERSON_NAME_DENYLIST = (
+    "studio",
+    "meeting",
+    "member id",
+    "inc",
+    "llc",
+    "corp",
+    "company",
+)
+
+
 class GraphStore:
     """
     High-level interface for graph-based file storage.
@@ -568,6 +582,87 @@ class GraphStore:
         except Exception as e:
             session.rollback()
             raise e
+        finally:
+            if close_session:
+                session.close()
+
+    def get_all_people_with_files(
+        self,
+        session: Session = None,
+        min_files: int = 1
+    ) -> List[Tuple[str, List[str]]]:
+        """
+        Get all people who have at least `min_files` organized files.
+
+        Filters out obvious non-person false positives (organization or
+        meeting names accidentally detected as people) using
+        `_PERSON_NAME_DENYLIST`, and excludes files that haven't been
+        organized yet (current_path is None).
+
+        Args:
+            session: Optional existing session
+            min_files: Minimum number of valid (organized) files a person
+                must have to be included in the results
+
+        Returns:
+            List of (display_name, [file.current_path, ...]) tuples
+        """
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            results = []
+            people = session.query(Person).options(selectinload(Person.files)).all()
+
+            for person in people:
+                name_lower = person.name.lower()
+                if any(term in name_lower for term in _PERSON_NAME_DENYLIST):
+                    continue
+
+                paths = [f.current_path for f in person.files if f.current_path]
+
+                if len(paths) >= min_files:
+                    results.append((person.name, paths))
+
+            return results
+        finally:
+            if close_session:
+                session.close()
+
+    def get_files_by_person(
+        self,
+        person_id_or_name,
+        session: Session = None
+    ) -> List[str]:
+        """
+        Get the current file paths associated with a single person.
+
+        Args:
+            person_id_or_name: Person primary key (int), or name (str,
+                matched via Person.normalize_name, same lookup style as
+                get_or_create_person)
+            session: Optional existing session
+
+        Returns:
+            List of file.current_path values (None paths excluded); empty
+            list if the person isn't found
+        """
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            if isinstance(person_id_or_name, int):
+                person = session.query(Person).filter(Person.id == person_id_or_name).first()
+            else:
+                normalized = Person.normalize_name(person_id_or_name)
+                person = session.query(Person).filter(
+                    Person.normalized_name == normalized
+                ).first()
+
+            if not person:
+                return []
+
+            return [f.current_path for f in person.files if f.current_path]
         finally:
             if close_session:
                 session.close()

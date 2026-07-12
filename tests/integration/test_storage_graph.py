@@ -395,6 +395,115 @@ class TestGraphStorePersonOperations:
         finally:
             session.close()
 
+    def test_get_files_by_person_by_name(self, graph_store, sample_file_data):
+        """Test looking up a person's organized files by name."""
+        session = graph_store.get_session()
+        try:
+            file = graph_store.add_file(**sample_file_data, session=session)
+            file_id = file.id
+            graph_store.add_file_to_person(file_id, "Ada Lovelace", session=session)
+            graph_store.update_file_status(
+                file_id,
+                FileStatus.ORGANIZED,
+                destination='/organized/Person/Ada Lovelace/sample.jpg',
+                session=session
+            )
+
+            paths = graph_store.get_files_by_person("Ada Lovelace", session=session)
+
+            assert paths == ['/organized/Person/Ada Lovelace/sample.jpg']
+        finally:
+            session.close()
+
+    def test_get_files_by_person_by_id(self, graph_store, sample_file_data):
+        """Test looking up a person's organized files by primary key."""
+        session = graph_store.get_session()
+        try:
+            file = graph_store.add_file(**sample_file_data, session=session)
+            file_id = file.id
+            person = graph_store.add_file_to_person(file_id, "Grace Hopper", session=session)
+            assert person is True
+            graph_store.update_file_status(
+                file_id,
+                FileStatus.ORGANIZED,
+                destination='/organized/Person/Grace Hopper/sample.jpg',
+                session=session
+            )
+
+            person_obj = graph_store.get_or_create_person("Grace Hopper", session=session)
+            person_id = person_obj.id
+
+            paths = graph_store.get_files_by_person(person_id, session=session)
+
+            assert paths == ['/organized/Person/Grace Hopper/sample.jpg']
+        finally:
+            session.close()
+
+    def test_get_files_by_person_not_found(self, graph_store):
+        """Test that an unknown person returns an empty list, not an error."""
+        session = graph_store.get_session()
+        try:
+            assert graph_store.get_files_by_person("Nobody At All", session=session) == []
+            assert graph_store.get_files_by_person(999999, session=session) == []
+        finally:
+            session.close()
+
+    def test_get_all_people_with_files(self, graph_store, sample_file_data):
+        """Test aggregating all people with at least one organized file."""
+        session = graph_store.get_session()
+        try:
+            file = graph_store.add_file(**sample_file_data, session=session)
+            file_id = file.id
+            graph_store.add_file_to_person(file_id, "Marie Curie", session=session)
+            graph_store.update_file_status(
+                file_id,
+                FileStatus.ORGANIZED,
+                destination='/organized/Person/Marie Curie/sample.jpg',
+                session=session
+            )
+
+            people = graph_store.get_all_people_with_files(session=session)
+
+            assert ("Marie Curie", ['/organized/Person/Marie Curie/sample.jpg']) in people
+        finally:
+            session.close()
+
+    def test_get_all_people_with_files_excludes_denylisted_names(self, graph_store, sample_file_data):
+        """Test that org/meeting false positives are filtered from the view."""
+        session = graph_store.get_session()
+        try:
+            file = graph_store.add_file(**sample_file_data, session=session)
+            file_id = file.id
+            graph_store.add_file_to_person(file_id, "Integrity Studio", session=session)
+            graph_store.update_file_status(
+                file_id,
+                FileStatus.ORGANIZED,
+                destination='/organized/Person/Integrity Studio/sample.jpg',
+                session=session
+            )
+
+            people = graph_store.get_all_people_with_files(session=session)
+
+            assert all(name != "Integrity Studio" for name, _ in people)
+        finally:
+            session.close()
+
+    def test_get_all_people_with_files_excludes_unorganized_files(self, graph_store, sample_file_data):
+        """Test that files with no current_path (not yet organized) are excluded,
+        and a person left with zero valid paths is excluded entirely."""
+        session = graph_store.get_session()
+        try:
+            file = graph_store.add_file(**sample_file_data, session=session)
+            file_id = file.id
+            graph_store.add_file_to_person(file_id, "Unorganized Person", session=session)
+            # current_path is left unset (None) - file hasn't been organized yet
+
+            people = graph_store.get_all_people_with_files(session=session)
+
+            assert all(name != "Unorganized Person" for name, _ in people)
+        finally:
+            session.close()
+
 
 class TestGraphStoreLocationOperations:
     """Test location management."""

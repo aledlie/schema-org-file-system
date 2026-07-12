@@ -213,6 +213,7 @@ class ContentOrganizer(BaseOrganizer):
                 'other': 'Business/Other',
             },
             'personal': {
+                'contacts': 'Personal/Contacts',
                 'employment': 'Personal/Employment',
                 'identification': 'Personal/Identification',
                 'certificates': 'Personal/Certificates',
@@ -270,17 +271,6 @@ class ContentOrganizer(BaseOrganizer):
                 'nonprofit': 'Organization',
                 'meeting_notes': 'Organization',
                 'other': 'Organization',
-            },
-            'person': {
-                'contacts': 'Person',
-                'employees': 'Person',
-                'clients': 'Person',
-                'family': 'Person',
-                'references': 'Person',
-                'travel': 'Person/Travel',
-                'events': 'Person/Events',
-                'journal': 'Person/Journal',
-                'other': 'Person',
             },
             'game_assets': {
                 'audio': 'GameAssets/Audio',
@@ -635,14 +625,22 @@ class ContentOrganizer(BaseOrganizer):
         resume_patterns = ['resume', 'cv', 'curriculum', 'vitae']
         if any(pat in filename_lower for pat in resume_patterns):
             people = self.classifier.extract_people_names(text)
-            return ('person', 'contacts', people if people else [])
+            return ('personal', 'contacts', people if people else [])
+
+        person_subcat_map = {
+            'contacts': 'contacts',
+            'employees': 'employment',
+            'references': 'employment',
+            'clients': 'other',
+        }
 
         for person_type, keywords in person_indicators.items():
             matches = sum(1 for kw in keywords if kw in text_lower)
             if matches >= 2:
                 people = self.classifier.extract_people_names(text)
                 if people:
-                    return ('person', person_type, people)
+                    subcategory = person_subcat_map.get(person_type, 'other')
+                    return ('personal', subcategory, people)
 
         return None
 
@@ -1002,16 +1000,6 @@ class ContentOrganizer(BaseOrganizer):
                     relative_path = f"{relative_path}/{sanitized_company}/Meeting Notes"
                 else:
                     relative_path = f"{relative_path}/{sanitized_company}"
-
-        if category == 'person' and people_names:
-            person_name = people_names[0] if people_names else 'Unknown'
-            sanitized_person = self.classifier.sanitize_company_name(person_name)
-            if sanitized_person:
-                relative_path = f"{relative_path}/{sanitized_person}"
-            else:
-                relative_path = f"{relative_path}/Unknown"
-        elif category == 'person' and not people_names:
-            relative_path = f"{relative_path}/Unknown"
 
         if category == 'business' and subcategory == 'clients' and company_name:
             sanitized_company = self.classifier.sanitize_company_name(company_name)
