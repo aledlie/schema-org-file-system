@@ -1,0 +1,31 @@
+{
+  "name": "prompt-finder-agent",
+  "version": "1.0.0",
+  "description": "Intelligent prompt discovery agent that helps users find effective prompts from prompts.chat dataset",
+  "type": "module",
+  "main": "prompt-finder-implementation.ts",
+  "scripts": {
+    "start": "node prompt-finder-implementation.ts",
+    "build": "tsc --noEmit",
+    "dev": "node --loader ts-node/esm prompt-finder-implementation.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.0.0"
+  },
+  "keywords": [
+    "prompt",
+    "agent",
+    "claude",
+    "ai",
+    "prompts.chat",
+    "discovery",
+    "recommendation"
+  ],
+  "author": "",
+  "license": "MIT"
+}

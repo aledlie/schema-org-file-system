@@ -1,0 +1,971 @@
+{
+  "version": "1.0",
+  "skills": {
+    "git-commit-smart": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "high",
+      "promptTriggers": {
+        "keywords": [
+          "/gc",
+          "/commit-smart",
+          "commit message",
+          "conventional commit",
+          "generate commit",
+          "staged changes"
+        ],
+        "intentPatterns": [
+          "(generate|create|write).*?commit.*?message",
+          "(what|how).*?commit.*?(staged|changes)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "bug-detective": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "high",
+      "promptTriggers": {
+        "keywords": [
+          "debug",
+          "root cause",
+          "test failure",
+          "failing test",
+          "error triage",
+          "bugfix"
+        ],
+        "intentPatterns": [
+          "(debug|investigate|diagnose).*?(error|bug|failure)",
+          "(find|identify).*?root cause"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "content-creator": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "/content",
+          "/content-creator",
+          "blog post",
+          "social media post",
+          "newsletter",
+          "landing page copy"
+        ],
+        "intentPatterns": [
+          "(write|create|draft).*?(blog|post|article|newsletter|content)",
+          "(social|linkedin|twitter).*?(post|content)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "frontend-design": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "frontend design",
+          "web component",
+          "landing page",
+          "UI design",
+          "build a page",
+          "web interface"
+        ],
+        "intentPatterns": [
+          "(build|create|design).*?(page|component|interface|UI|frontend)",
+          "(html|css|react|vue).*?(design|layout|component)"
+        ]
+      },
+      "fileTriggers": {
+        "pathPatterns": [
+          "**/*.html",
+          "**/*.css"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "ralph-wiggum": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "/ralph-loop",
+          "/cancel-ralph",
+          "ralph wiggum",
+          "iterative loop",
+          "feedback loop"
+        ],
+        "intentPatterns": [
+          "(start|run).*?ralph",
+          "(iterative|self-referential).*?loop"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "otel-quality-reporting": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "/otel-quality-reporting",
+          "quality report",
+          "session telemetry",
+          "otel report",
+          "session quality",
+          "telemetry report",
+          "evaluate session"
+        ],
+        "intentPatterns": [
+          "(generate|create|run).*?(quality|telemetry|otel).*?report",
+          "(analyze|evaluate|score).*?session",
+          "session.*?(quality|telemetry|metrics)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "backlog-implementer": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "/implement-backlog",
+          "implement backlog",
+          "clear backlog",
+          "backlog sweep",
+          "unmitigated items",
+          "backlog items"
+        ],
+        "intentPatterns": [
+          "(implement|clear|sweep|process).*?backlog",
+          "(fix|resolve|address).*?(backlog|unmitigated)"
+        ]
+      },
+      "fileTriggers": {
+        "pathPatterns": [
+          "**/BACKLOG.md"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "otel-output-provenance": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "/otel-output-provenance",
+          "trace provenance",
+          "output provenance",
+          "aggregate telemetry",
+          "session lineage",
+          "which sessions created",
+          "contributing sessions",
+          "sessions that touched",
+          "file history sessions",
+          "multi-session analysis",
+          "what created this"
+        ],
+        "intentPatterns": [
+          "(trace|find|discover).*?(provenance|lineage|sessions).*?(created|produced|contributed)",
+          "(aggregate|multi-session).*?(telemetry|report|analysis)",
+          "which.*?sessions.*?(created|contributed|produced|modified|touched)",
+          "(otel|telemetry).*?(aggregate|provenance)",
+          "(session|commit).*?history.*?(file|feature)",
+          "what.*?(created|produced|built).*?this"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "agent-improvement": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "agent quality",
+          "agent audit",
+          "agent rewrite",
+          "improve agents",
+          "agent score",
+          "grade agents"
+        ],
+        "intentPatterns": [
+          "(improve|audit|score|rewrite).*?agent",
+          "agent.*?(quality|grade|threshold)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "feature-dev": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "/feature-dev",
+          "feature development",
+          "new feature",
+          "implement feature",
+          "feature workflow",
+          "guided development"
+        ],
+        "intentPatterns": [
+          "(build|implement|develop|add).*?feature",
+          "feature.*?(workflow|development|plan)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "otel-session-summary": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "/otel-session-summary",
+          "session summary",
+          "otel summary",
+          "telemetry summary",
+          "session dashboard",
+          "quick session review"
+        ],
+        "intentPatterns": [
+          "(summarize|review).*?session",
+          "session.*?(summary|overview|dashboard)",
+          "otel.*?summary"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "session-backlog": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "/session-backlog",
+          "session backlog",
+          "deferred work",
+          "remaining items",
+          "sweep session",
+          "document backlog"
+        ],
+        "intentPatterns": [
+          "(sweep|document|capture).*?(backlog|deferred|remaining)",
+          "session.*?(backlog|remaining|deferred)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "session-report": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "/session-report",
+          "session report",
+          "work report",
+          "session summary report",
+          "document session",
+          "jekyll report"
+        ],
+        "intentPatterns": [
+          "(create|generate|write).*?(session|work).*?report",
+          "(document|summarize).*?session.*?work"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "backlog-migrate": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "/backlog-migrate",
+          "migrate backlog",
+          "move done items",
+          "clean up backlog",
+          "backlog to changelog"
+        ],
+        "intentPatterns": [
+          "(migrate|move|clean).*?(backlog|done items)",
+          "backlog.*?(changelog|migrate|archive)"
+        ]
+      },
+      "fileTriggers": {
+        "pathPatterns": [
+          "**/BACKLOG.md"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "typescript-type-validator": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "type error",
+          "zod",
+          "runtime validation",
+          "type-safe api",
+          "schema validation",
+          "typescript validation"
+        ],
+        "intentPatterns": [
+          "(fix|resolve).*?type.*?error",
+          "(add|implement).*?(zod|runtime).*?validation"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "building-neural-networks": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "neural network",
+          "build neural network",
+          "neural architecture",
+          "deep learning model"
+        ],
+        "intentPatterns": [
+          "(build|create|design).*?neural.*?(network|architecture)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "claude-md-improver": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "CLAUDE.md",
+          "claude-md",
+          "project memory",
+          "audit CLAUDE.md",
+          "improve CLAUDE.md"
+        ],
+        "intentPatterns": [
+          "(audit|check|update|improve|fix).*?CLAUDE\\.md",
+          "project memory.*?optimization"
+        ]
+      },
+      "fileTriggers": {
+        "pathPatterns": [
+          "**/CLAUDE.md"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "configuring-auto-scaling-policies": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "auto-scaling",
+          "autoscaling",
+          "elastic scaling",
+          "scaling policy"
+        ],
+        "intentPatterns": [
+          "(configure|setup|implement).*?(auto-?scaling|scaling policy)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "creating-apm-dashboards": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "APM dashboard",
+          "monitoring dashboard",
+          "performance dashboard",
+          "application performance monitoring"
+        ],
+        "intentPatterns": [
+          "(create|build|generate).*?(apm|monitoring|performance).*?dashboard"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "drive-motivation": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "intrinsic motivation",
+          "autonomy mastery purpose",
+          "team incentives",
+          "gamification",
+          "purpose-driven"
+        ],
+        "intentPatterns": [
+          "(design|build).*?motivation.*?system",
+          "(intrinsic|team).*?motivation"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "influence-psychology": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "social proof",
+          "persuasive copy",
+          "ethical persuasion",
+          "influence psychology",
+          "cialdini"
+        ],
+        "intentPatterns": [
+          "(persuasion|persuasive).*?(copy|design|principle)",
+          "why.*?users.*?(don't|dont).*?convert"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "optimizing-deep-learning-models": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "optimize deep learning",
+          "improve model performance",
+          "learning rate scheduling",
+          "Adam optimizer",
+          "SGD optimizer"
+        ],
+        "intentPatterns": [
+          "(optimize|tune).*?(deep learning|neural|model).*?(performance|accuracy|training)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "orchestrating-multi-agent-systems": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "multi-agent system",
+          "orchestrate agents",
+          "agent handoff",
+          "agent workflow coordination"
+        ],
+        "intentPatterns": [
+          "(create|build|orchestrate).*?multi-agent",
+          "(coordinate|orchestrate).*?agent.*?workflow"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "personal-finance": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "/personal-finance",
+          "review my finances",
+          "personal finance review",
+          "optimize cashflow",
+          "credit card recommendation",
+          "best credit card for",
+          "where should I park cash",
+          "sign-up bonus",
+          "pay off debt or invest",
+          "what order should I fund accounts"
+        ],
+        "intentPatterns": [
+          "(review|optimize).*?(finances|cashflow|budget)",
+          "(best|recommend).*?credit card",
+          "(where|how).*?park.*?cash",
+          "(pay off|payoff).*?debt.*?invest",
+          "fund.*?(accounts|401k|roth|hsa)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "prompts-chat": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "prompts.chat",
+          "find a prompt",
+          "role prompt",
+          "system prompt",
+          "acting as"
+        ],
+        "intentPatterns": [
+          "(find|load|get).*?(role|system)?.*?prompt",
+          "prompt.*?for.*?acting as"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "rate-limiting-apis": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "rate limiting",
+          "rate limit",
+          "token bucket",
+          "sliding window",
+          "API quota"
+        ],
+        "intentPatterns": [
+          "(add|implement|configure).*?rate.?limit",
+          "limit.*?API.*?request"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "repomix-reference-repomix": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "repomix internals",
+          "repomix codebase",
+          "repomix implementation",
+          "repomix source"
+        ],
+        "intentPatterns": [
+          "(understand|explore|search).*?repomix.*?(code|source|implementation)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "scanning-accessibility": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "accessibility scan",
+          "WCAG compliance",
+          "a11y audit",
+          "screen reader",
+          "ARIA validation"
+        ],
+        "intentPatterns": [
+          "(scan|audit|check|validate).*?(accessibility|a11y|wcag|aria)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "scanning-for-gdpr-compliance": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "GDPR compliance",
+          "data privacy scan",
+          "EU data protection",
+          "validate GDPR"
+        ],
+        "intentPatterns": [
+          "(scan|check|validate|audit).*?(gdpr|data privacy|data protection)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "scientific-skills": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "rdkit",
+          "pubmed",
+          "scanpy",
+          "DESeq2",
+          "bioinformatics",
+          "cheminformatics",
+          "scientific computing"
+        ],
+        "intentPatterns": [
+          "(use|query|analyze|run).*?(rdkit|pubmed|scanpy|deseq2|biopython)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "sentry-code-review": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "sentry code review",
+          "sentry PR comments",
+          "sentry PR feedback"
+        ],
+        "intentPatterns": [
+          "(review|fix).*?sentry.*?(pr|pull request|comment)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "sentry-create-alert": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "sentry alert",
+          "create sentry alert",
+          "sentry notification",
+          "sentry workflow engine"
+        ],
+        "intentPatterns": [
+          "(create|setup|configure).*?sentry.*?(alert|notification)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "sentry-feature-setup": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "sentry feature setup",
+          "sentry OpenTelemetry",
+          "sentry AI monitoring",
+          "sentry LLM monitoring"
+        ],
+        "intentPatterns": [
+          "(configure|setup).*?sentry.*?(feature|otel|opentelemetry|ai|llm)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "sentry-fix-issues": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "high",
+      "promptTriggers": {
+        "keywords": [
+          "sentry issue",
+          "fix sentry error",
+          "sentry exception",
+          "production issue sentry",
+          "sentry bug"
+        ],
+        "intentPatterns": [
+          "(fix|debug|investigate|resolve).*?sentry.*?(issue|error|bug|exception)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "sentry-otel-exporter-setup": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "sentry otel exporter",
+          "sentry collector",
+          "OpenTelemetry Collector Sentry"
+        ],
+        "intentPatterns": [
+          "(setup|configure).*?sentry.*?(otel|collector|exporter)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "sentry-pr-code-review": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "seer bug prediction",
+          "sentry PR review",
+          "sentry seer"
+        ],
+        "intentPatterns": [
+          "(review|check).*?(pr|pull request).*?sentry.*?seer"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "sentry-sdk-setup": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "install sentry",
+          "add sentry",
+          "sentry SDK setup",
+          "setup error monitoring",
+          "sentry init"
+        ],
+        "intentPatterns": [
+          "(add|install|setup|configure).*?sentry(?!.*(alert|otel|collector))",
+          "(setup|add).*?error.*?monitoring"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "sentry-sdk-skill-creator": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "create sentry skill",
+          "sentry SDK skill",
+          "new platform skill"
+        ],
+        "intentPatterns": [
+          "(create|write|add).*?sentry.*?sdk.*?skill"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "sentry-sdk-upgrade": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "upgrade sentry",
+          "sentry migration",
+          "sentry breaking changes",
+          "sentry version bump"
+        ],
+        "intentPatterns": [
+          "(upgrade|migrate).*?sentry.*?(sdk|version)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "sentry-setup-ai-monitoring": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "sentry AI monitoring",
+          "monitor LLM calls",
+          "track AI agents sentry",
+          "instrument OpenAI",
+          "instrument Anthropic"
+        ],
+        "intentPatterns": [
+          "(setup|configure).*?sentry.*?(ai|llm|agent).*?monitoring",
+          "(monitor|track).*?(llm|ai agent)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "sentry-workflow": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "sentry workflow",
+          "triage sentry",
+          "sentry production issue",
+          "debug with sentry"
+        ],
+        "intentPatterns": [
+          "(fix|debug|triage|review).*?sentry",
+          "sentry.*?(workflow|context)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "setting-up-synthetic-monitoring": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "low",
+      "promptTriggers": {
+        "keywords": [
+          "synthetic monitoring",
+          "uptime check",
+          "health check",
+          "transaction monitoring",
+          "API health monitoring"
+        ],
+        "intentPatterns": [
+          "(setup|configure).*?(synthetic|uptime|health).*?(monitoring|check)"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    },
+
+    "skill-creator": {
+      "type": "domain",
+      "enforcement": "suggest",
+      "priority": "medium",
+      "promptTriggers": {
+        "keywords": [
+          "create skill",
+          "new skill",
+          "skill eval",
+          "skill benchmark",
+          "optimize skill"
+        ],
+        "intentPatterns": [
+          "(create|build|write|draft).*?skill",
+          "(test|eval|benchmark|optimize).*?skill"
+        ]
+      },
+      "skipConditions": {
+        "sessionSkillUsed": true
+      }
+    }
+  }
+}

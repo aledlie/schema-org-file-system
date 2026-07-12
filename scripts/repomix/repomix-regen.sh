@@ -5,6 +5,12 @@ set -euo pipefail
 # Optional input directory (defaults to repo root)
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
+# Extra ignore patterns applied to filesystem-scanning artifacts (token-tree,
+# lossless, compressed) on top of .gitignore. `.claude/` is local Claude Code
+# tooling, not part of this project, and is not fully covered by .gitignore.
+# Overridable via the environment; the config-less generators consume it.
+export REPOMIX_EXTRA_IGNORE="${REPOMIX_EXTRA_IGNORE:-.claude/**,**/.claude/**}"
+
 # repomix compression variant names
 TREE_FILE="token-tree"
 COMPRESSED_FILE="repo-compressed"

@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robustness Review — 2026-02-15</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface-2: #1a1a26;
+    --surface-3: #22222f;
+    --border: #2a2a3a;
+    --border-bright: #3a3a50;
+    --text: #e4e4ef;
+    --text-dim: #8888a0;
+    --text-muted: #555570;
+    --accent: #7b61ff;
+    --accent-glow: rgba(123, 97, 255, 0.15);
+    --critical: #ff3b5c;
+    --critical-bg: rgba(255, 59, 92, 0.08);
+    --critical-border: rgba(255, 59, 92, 0.25);
+    --high: #ff9f1c;
+    --high-bg: rgba(255, 159, 28, 0.08);
+    --high-border: rgba(255, 159, 28, 0.25);
+    --success: #22d97f;
+    --success-bg: rgba(34, 217, 127, 0.08);
+    --success-border: rgba(34, 217, 127, 0.25);
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Ambient glow */
+  body::before {
+    content: '';
+    position: fixed;
+    top: -200px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 500px;
+    background: radial-gradient(ellipse, rgba(123, 97, 255, 0.06) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 40px 32px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-bottom: 48px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-left h1 {
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+  }
+
+  .header-left .subtitle {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--text-dim);
+  }
+
+  .score-badge {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 24px;
+  }
+
+  .score-ring {
+    width: 64px;
+    height: 64px;
+    position: relative;
+  }
+
+  .score-ring svg {
+    transform: rotate(-90deg);
+    width: 64px;
+    height: 64px;
+  }
+
+  .score-ring .track {
+    fill: none;
+    stroke: var(--surface-3);
+    stroke-width: 5;
+  }
+
+  .score-ring .fill {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 5;
+    stroke-linecap: round;
+    stroke-dasharray: 163.36;
+    stroke-dashoffset: 163.36;
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .score-ring .value {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .score-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .score-meta .label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: var(--text-muted);
+  }
+
+  .score-meta .detail {
+    font-size: 14px;
+    color: var(--text-dim);
+  }
+
+  /* Metrics strip */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 12px;
+    margin-bottom: 40px;
+  }
+
+  .metric-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .metric-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+  }
+
+  .metric-card.critical::after { background: var(--critical); }
+  .metric-card.high::after { background: var(--high); }
+  .metric-card.success::after { background: var(--success); }
+  .metric-card.accent::after { background: var(--accent); }
+
+  .metric-card .number {
+    font-family: var(--mono);
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .metric-card.critical .number { color: var(--critical); }
+  .metric-card.high .number { color: var(--high); }
+  .metric-card.success .number { color: var(--success); }
+  .metric-card.accent .number { color: var(--accent); }
+
+  .metric-card .label {
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+  }
+
+  /* Sections */
+  .section {
+    margin-bottom: 40px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+
+  .section-header h2 {
+    font-size: 16px;
+    font-weight: 600;
+    letter-spacing: -0.2px;
+  }
+
+  .section-header .count {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    background: var(--surface-2);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+
+  /* Findings table */
+  .findings-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  .findings-table th {
+    text-align: left;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    color: var(--text-muted);
+    padding: 14px 20px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+
+  .findings-table td {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    vertical-align: top;
+  }
+
+  .findings-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  .findings-table tr:hover td {
+    background: var(--surface-2);
+  }
+
+  .finding-id {
+    font-family: var(--mono);
+    font-weight: 600;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+
+  .severity {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  .severity.critical {
+    color: var(--critical);
+    background: var(--critical-bg);
+    border: 1px solid var(--critical-border);
+  }
+
+  .severity.high {
+    color: var(--high);
+    background: var(--high-bg);
+    border: 1px solid var(--high-border);
+  }
+
+  .status-fixed {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 4px 10px;
+    border-radius: 4px;
+    color: var(--success);
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+  }
+
+  .file-path {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+  }
+
+  .finding-desc {
+    color: var(--text);
+    line-height: 1.5;
+  }
+
+  /* Commit timeline */
+  .timeline {
+    position: relative;
+    padding-left: 28px;
+  }
+
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 7px;
+    top: 8px;
+    bottom: 8px;
+    width: 1px;
+    background: var(--border);
+  }
+
+  .commit {
+    position: relative;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 10px;
+    display: grid;
+    grid-template-columns: 80px 1fr auto auto;
+    align-items: center;
+    gap: 16px;
+    transition: border-color 0.2s;
+  }
+
+  .commit:hover {
+    border-color: var(--border-bright);
+  }
+
+  .commit::before {
+    content: '';
+    position: absolute;
+    left: -24px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: 2px solid var(--bg);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+
+  .commit-hash {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--accent);
+  }
+
+  .commit-msg {
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .commit-tag {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--surface-3);
+    color: var(--text-dim);
+    white-space: nowrap;
+  }
+
+  .review-pass {
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    color: var(--success);
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+    white-space: nowrap;
+  }
+
+  /* Reviews grid */
+  .reviews-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+  }
+
+  .review-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .review-card .review-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .review-card .review-title {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 600;
+  }
+
+  .review-card .grade {
+    font-family: var(--mono);
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--success);
+  }
+
+  .review-card .review-items {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .review-card .review-items li {
+    font-size: 13px;
+    color: var(--text-dim);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .review-card .review-items li::before {
+    content: '';
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--text-muted);
+    flex-shrink: 0;
+  }
+
+  .review-card .review-items li.finding::before {
+    background: var(--high);
+  }
+
+  /* Backlog summary */
+  .backlog-summary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 24px;
+  }
+
+  .backlog-bars {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .bar-row {
+    display: grid;
+    grid-template-columns: 60px 1fr 40px;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .bar-label {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-dim);
+    text-align: right;
+  }
+
+  .bar-track {
+    height: 6px;
+    background: var(--surface-3);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 0;
+  }
+
+  .bar-fill.p1 { background: var(--critical); }
+  .bar-fill.p2 { background: var(--high); }
+  .bar-fill.p3 { background: var(--accent); }
+
+  .bar-count {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+    text-align: center;
+  }
+
+  /* Footer */
+  .footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .footer-left {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .footer-right {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate {
+    opacity: 0;
+    animation: fadeUp 0.5s ease forwards;
+  }
+
+  .delay-1 { animation-delay: 0.1s; }
+  .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.3s; }
+  .delay-4 { animation-delay: 0.4s; }
+  .delay-5 { animation-delay: 0.5s; }
+  .delay-6 { animation-delay: 0.6s; }
+  .delay-7 { animation-delay: 0.7s; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .metrics { grid-template-columns: repeat(3, 1fr); }
+    .reviews-grid { grid-template-columns: 1fr; }
+    .commit { grid-template-columns: 1fr; gap: 8px; }
+    .header { flex-direction: column; align-items: flex-start; gap: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Header -->
+  <div class="header animate">
+    <div class="header-left">
+      <h1>Robustness Review</h1>
+      <div class="subtitle">~/.claude &mdash; 2026-02-15 &mdash; session m29</div>
+    </div>
+    <div class="score-badge">
+      <div class="score-ring">
+        <svg viewBox="0 0 64 64">
+          <circle class="track" cx="32" cy="32" r="26"/>
+          <circle class="fill" id="scoreArc" cx="32" cy="32" r="26"/>
+        </svg>
+        <div class="value">7<span style="font-size:12px;color:var(--text-muted)">/10</span></div>
+      </div>
+      <div class="score-meta">
+        <div class="label">Final Score</div>
+        <div class="detail">No critical/high open</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metrics -->
+  <div class="metrics animate delay-1">
+    <div class="metric-card critical">
+      <div class="number">2</div>
+      <div class="label">Critical</div>
+    </div>
+    <div class="metric-card high">
+      <div class="number">3</div>
+      <div class="label">High</div>
+    </div>
+    <div class="metric-card success">
+      <div class="number">5/5</div>
+      <div class="label">Fixed</div>
+    </div>
+    <div class="metric-card accent">
+      <div class="number">6</div>
+      <div class="label">Commits</div>
+    </div>
+    <div class="metric-card success">
+      <div class="number">720</div>
+      <div class="label">Tests Pass</div>
+    </div>
+  </div>
+
+  <!-- Findings -->
+  <div class="section animate delay-2">
+    <div class="section-header">
+      <h2>Findings</h2>
+      <span class="count">5 items</span>
+    </div>
+    <table class="findings-table">
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>Severity</th>
+          <th>Finding</th>
+          <th>File</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="finding-id">C1</span></td>
+          <td><span class="severity critical">Critical</span></td>
+          <td class="finding-desc">Gzip decompression bomb &mdash; no size limit on decompressed payload allows OOM via crafted archive</td>
+          <td><span class="file-path">services/obtool-ingest/src/index.ts:48</span></td>
+          <td><span class="status-fixed">Fixed</span></td>
+        </tr>
+        <tr>
+          <td><span class="finding-id">C2</span></td>
+          <td><span class="severity critical">Critical</span></td>
+          <td class="finding-desc">Regex injection &mdash; unsanitized RegExp from skill-rules.json enables ReDoS via nested quantifiers</td>
+          <td><span class="file-path">hooks/handlers/user-prompt.ts:147</span></td>
+          <td><span class="status-fixed">Fixed</span></td>
+        </tr>
+        <tr>
+          <td><span class="finding-id">H1</span></td>
+          <td><span class="severity high">High</span></td>
+          <td class="finding-desc">Silent JSON parse failure &mdash; invalid stdin JSON swallowed, hooks run without session data</td>
+          <td><span class="file-path">hooks/hook-runner.ts:55</span></td>
+          <td><span class="status-fixed">Fixed</span></td>
+        </tr>
+        <tr>
+          <td><span class="finding-id">H2</span></td>
+          <td><span class="severity high">High</span></td>
+          <td class="finding-desc">TOCTOU race &mdash; redundant existsSync before mkdirSync({recursive}) creates window for race condition</td>
+          <td><span class="file-path">hooks/lib/file-utils.ts:47</span></td>
+          <td><span class="status-fixed">Fixed</span></td>
+        </tr>
+        <tr>
+          <td><span class="finding-id">H5</span></td>
+          <td><span class="severity high">High</span></td>
+          <td class="finding-desc">Promise.all without isolation &mdash; single handler failure kills all concurrent handlers</td>
+          <td><span class="file-path">hooks/handlers/post-tool.ts:712</span></td>
+          <td><span class="status-fixed">Fixed</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Commit Timeline -->
+  <div class="section animate delay-3">
+    <div class="section-header">
+      <h2>Commit Timeline</h2>
+      <span class="count">6 commits</span>
+    </div>
+    <div class="timeline">
+      <div class="commit">
+        <span class="commit-hash">6af1cc6</span>
+        <span class="commit-msg">fix(obtool-ingest): prevent gzip decompression bomb</span>
+        <span class="commit-tag">C1</span>
+        <span class="review-pass">Review: B+</span>
+      </div>
+      <div class="commit">
+        <span class="commit-hash">756fef6</span>
+        <span class="commit-msg">fix(obtool-ingest): add reader cleanup and sanitize error logging</span>
+        <span class="commit-tag">C1 fixup</span>
+        <span class="review-pass">Fixup</span>
+      </div>
+      <div class="commit">
+        <span class="commit-hash">db39a85</span>
+        <span class="commit-msg">fix(hooks): prevent ReDoS in skill intent pattern matching</span>
+        <span class="commit-tag">C2</span>
+        <span class="review-pass">Review: B+</span>
+      </div>
+      <div class="commit">
+        <span class="commit-hash">204100e</span>
+        <span class="commit-msg">fix(hooks): log diagnostic on stdin JSON parse failure</span>
+        <span class="commit-tag">H1</span>
+        <span class="review-pass">Review: Pass</span>
+      </div>
+      <div class="commit">
+        <span class="commit-hash">8d70e6d</span>
+        <span class="commit-msg">fix(hooks): remove TOCTOU race in ensureDirExists</span>
+        <span class="commit-tag">H2</span>
+        <span class="review-pass">Review: Pass</span>
+      </div>
+      <div class="commit">
+        <span class="commit-hash">1e1e744</span>
+        <span class="commit-msg">fix(hooks): isolate handler errors with Promise.allSettled</span>
+        <span class="commit-tag">H5</span>
+        <span class="review-pass">Review: Pass</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Reviews -->
+  <div class="section animate delay-4">
+    <div class="section-header">
+      <h2>Code Reviews</h2>
+      <span class="count">3 per-commit + 1 final</span>
+    </div>
+    <div class="reviews-grid">
+      <div class="review-card">
+        <div class="review-header">
+          <span class="review-title">C1 Review</span>
+          <span class="grade">B+</span>
+        </div>
+        <ul class="review-items">
+          <li>Streaming chunk reader validated</li>
+          <li>Size guard at MAX_PAYLOAD_BYTES</li>
+          <li class="finding">M1: Reader cleanup &rarr; fixed in 756fef6</li>
+          <li class="finding">M3: Error log sanitization &rarr; fixed</li>
+        </ul>
+      </div>
+      <div class="review-card">
+        <div class="review-header">
+          <span class="review-title">C2 Review</span>
+          <span class="grade">B+</span>
+        </div>
+        <ul class="review-items">
+          <li>Pattern length cap at 200 chars</li>
+          <li>Prompt truncation at 2000 chars</li>
+          <li class="finding">ReDoS heuristic misses (a{2,5})+ style</li>
+          <li>Tracked as RR10 in backlog</li>
+        </ul>
+      </div>
+      <div class="review-card">
+        <div class="review-header">
+          <span class="review-title">Final Stack Review</span>
+          <span class="grade">7/10</span>
+        </div>
+        <ul class="review-items">
+          <li>No critical/high findings open</li>
+          <li class="finding">Test coverage gaps (RR13-15)</li>
+          <li class="finding">stop.ts Promise.all consistency</li>
+          <li>21 items added to backlog</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Backlog Summary -->
+  <div class="section animate delay-5">
+    <div class="section-header">
+      <h2>Session Backlog</h2>
+      <span class="count">21 items captured</span>
+    </div>
+    <div class="backlog-summary">
+      <div class="backlog-bars">
+        <div class="bar-row">
+          <span class="bar-label">P1</span>
+          <div class="bar-track">
+            <div class="bar-fill p1" data-width="38"></div>
+          </div>
+          <span class="bar-count">8</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">P2</span>
+          <div class="bar-track">
+            <div class="bar-fill p2" data-width="33"></div>
+          </div>
+          <span class="bar-count">7</span>
+        </div>
+        <div class="bar-row">
+          <span class="bar-label">P3</span>
+          <div class="bar-track">
+            <div class="bar-fill p3" data-width="29"></div>
+          </div>
+          <span class="bar-count">6</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer animate delay-6">
+    <div class="footer-left">~/.claude robustness review session</div>
+    <div class="footer-right">Generated 2026-02-15 &mdash; Claude Code</div>
+  </div>
+
+</div>
+
+<script>
+  // Animate score ring
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      const arc = document.getElementById('scoreArc');
+      const circumference = 2 * Math.PI * 26;
+      const score = 7;
+      const offset = circumference * (1 - score / 10);
+      arc.style.strokeDashoffset = offset;
+    }, 600);
+  });
+
+  // Animate bars
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      document.querySelectorAll('.bar-fill').forEach(bar => {
+        bar.style.width = bar.dataset.width + '%';
+      });
+    }, 800);
+  });
+</script>
+
+</body>
+</html>

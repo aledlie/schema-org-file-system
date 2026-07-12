@@ -1,0 +1,38 @@
+[
+  {
+    "hash": "6af1cc6",
+    "message": "fix(obtool-ingest): prevent gzip decompression bomb",
+    "tag": "C1",
+    "review": "Review: B+"
+  },
+  {
+    "hash": "756fef6",
+    "message": "fix(obtool-ingest): add reader cleanup and sanitize error logging",
+    "tag": "C1 fixup",
+    "review": "Fixup"
+  },
+  {
+    "hash": "db39a85",
+    "message": "fix(hooks): prevent ReDoS in skill intent pattern matching",
+    "tag": "C2",
+    "review": "Review: B+"
+  },
+  {
+    "hash": "204100e",
+    "message": "fix(hooks): log diagnostic on stdin JSON parse failure",
+    "tag": "H1",
+    "review": "Review: Pass"
+  },
+  {
+    "hash": "8d70e6d",
+    "message": "fix(hooks): remove TOCTOU race in ensureDirExists",
+    "tag": "H2",
+    "review": "Review: Pass"
+  },
+  {
+    "hash": "1e1e744",
+    "message": "fix(hooks): isolate handler errors with Promise.allSettled",
+    "tag": "H5",
+    "review": "Review: Pass"
+  }
+]

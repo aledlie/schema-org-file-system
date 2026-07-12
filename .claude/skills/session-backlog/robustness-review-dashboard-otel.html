@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Robustness Review — 2026-02-15</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0a0f;
+    --surface: #12121a;
+    --surface-2: #1a1a26;
+    --surface-3: #22222f;
+    --border: #2a2a3a;
+    --border-bright: #3a3a50;
+    --text: #e4e4ef;
+    --text-dim: #8888a0;
+    --text-muted: #555570;
+    --accent: #7b61ff;
+    --accent-glow: rgba(123, 97, 255, 0.15);
+    --critical: #ff3b5c;
+    --critical-bg: rgba(255, 59, 92, 0.08);
+    --critical-border: rgba(255, 59, 92, 0.25);
+    --high: #ff9f1c;
+    --high-bg: rgba(255, 159, 28, 0.08);
+    --high-border: rgba(255, 159, 28, 0.25);
+    --success: #22d97f;
+    --success-bg: rgba(34, 217, 127, 0.08);
+    --success-border: rgba(34, 217, 127, 0.25);
+    --mono: 'JetBrains Mono', monospace;
+    --sans: 'Space Grotesk', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg); color: var(--text); font-family: var(--sans);
+    min-height: 100vh; overflow-x: hidden;
+  }
+  body::before {
+    content: ''; position: fixed; top: -200px; left: 50%; transform: translateX(-50%);
+    width: 800px; height: 500px;
+    background: radial-gradient(ellipse, rgba(123, 97, 255, 0.06) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+  }
+  .container { max-width: 1320px; margin: 0 auto; padding: 40px 32px; position: relative; z-index: 1; }
+
+  /* Header */
+  .header { display: flex; align-items: flex-end; justify-content: space-between;
+    margin-bottom: 40px; padding-bottom: 24px; border-bottom: 1px solid var(--border); }
+  .header-left h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 4px; }
+  .header-left .subtitle { font-family: var(--mono); font-size: 13px; color: var(--text-dim); }
+  .score-badge { display: flex; align-items: center; gap: 16px; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 12px; padding: 16px 24px; }
+  .score-ring { width: 64px; height: 64px; position: relative; }
+  .score-ring svg { transform: rotate(-90deg); width: 64px; height: 64px; }
+  .score-ring .track { fill: none; stroke: var(--surface-3); stroke-width: 5; }
+  .score-ring .fill { fill: none; stroke: var(--accent); stroke-width: 5; stroke-linecap: round;
+    stroke-dasharray: 163.36; stroke-dashoffset: 163.36;
+    transition: stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
+  .score-ring .value { position: absolute; inset: 0; display: flex; align-items: center;
+    justify-content: center; font-family: var(--mono); font-size: 20px; font-weight: 700; }
+  .score-meta { display: flex; flex-direction: column; gap: 2px; }
+  .score-meta .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: var(--text-muted); }
+  .score-meta .detail { font-size: 14px; color: var(--text-dim); }
+
+  /* Metrics strip */
+  .metrics { display: grid; grid-template-columns: repeat(6, 1fr); gap: 12px; margin-bottom: 32px; }
+  .metric-card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+    padding: 18px; position: relative; overflow: hidden; }
+  .metric-card::after { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 2px; }
+  .metric-card.critical::after { background: var(--critical); }
+  .metric-card.high::after { background: var(--high); }
+  .metric-card.success::after { background: var(--success); }
+  .metric-card.accent::after { background: var(--accent); }
+  .metric-card .number { font-family: var(--mono); font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 4px; }
+  .metric-card.critical .number { color: var(--critical); }
+  .metric-card.high .number { color: var(--high); }
+  .metric-card.success .number { color: var(--success); }
+  .metric-card.accent .number { color: var(--accent); }
+  .metric-card .label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); }
+
+  /* Section */
+  .section { margin-bottom: 32px; }
+  .section-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .section-header h2 { font-size: 16px; font-weight: 600; letter-spacing: -0.2px; }
+  .section-header .count { font-family: var(--mono); font-size: 12px; color: var(--text-muted);
+    background: var(--surface-2); padding: 2px 8px; border-radius: 4px; }
+
+  /* Two-column layout */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 32px; }
+
+  /* Quality Scorecard */
+  .scorecard { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  .scorecard-row { display: grid; grid-template-columns: 140px 1fr 60px 40px 70px; align-items: center;
+    gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--border); }
+  .scorecard-row:last-child { border-bottom: none; }
+  .scorecard-name { font-size: 13px; color: var(--text); }
+  .scorecard-bar-track { height: 5px; background: var(--surface-3); border-radius: 3px; overflow: hidden; }
+  .scorecard-bar-fill { height: 100%; border-radius: 3px; transition: width 1s cubic-bezier(0.4, 0, 0.2, 1); width: 0; }
+  .scorecard-value { font-family: var(--mono); font-size: 13px; font-weight: 600; text-align: right; }
+  .scorecard-count { font-family: var(--mono); font-size: 11px; color: var(--text-muted); text-align: center; }
+  .scorecard-status { font-family: var(--mono); font-size: 10px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.5px; padding: 2px 6px; border-radius: 3px; text-align: center; }
+
+  /* Token usage */
+  .token-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .token-card { background: var(--surface-2); border-radius: 8px; padding: 14px; }
+  .token-card .token-val { font-family: var(--mono); font-size: 22px; font-weight: 700; color: var(--accent); }
+  .token-card .token-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1px;
+    color: var(--text-muted); margin-top: 2px; }
+
+  /* Tool breakdown */
+  .tool-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  .tool-row { display: grid; grid-template-columns: 180px 1fr 50px; align-items: center; gap: 8px;
+    padding: 5px 0; border-bottom: 1px solid var(--border); }
+  .tool-row:last-child { border-bottom: none; }
+  .tool-name { font-family: var(--mono); font-size: 12px; color: var(--text-dim);
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .tool-bar-track { height: 4px; background: var(--surface-3); border-radius: 2px; overflow: hidden; }
+  .tool-bar-fill { display: block; height: 100%; border-radius: 2px; background: var(--success);
+    transition: width 1s ease; width: 0; }
+  .tool-count { font-family: var(--mono); font-size: 11px; color: var(--text-muted); text-align: right; }
+
+  /* Alerts */
+  .alerts-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 20px; }
+  .alert-item { padding: 10px 14px; border-radius: 6px; margin-bottom: 8px;
+    display: grid; grid-template-columns: 60px 120px 1fr; align-items: center; gap: 8px; }
+  .alert-item:last-child { margin-bottom: 0; }
+  .alert-sev { font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: 0.5px; }
+  .alert-metric { font-family: var(--mono); font-size: 12px; color: var(--text-dim); }
+  .alert-msg { font-size: 13px; color: var(--text); }
+  .no-alerts { font-size: 13px; color: var(--text-muted); font-style: italic; padding: 12px 0; }
+
+  /* Findings table */
+  .findings-table { width: 100%; border-collapse: separate; border-spacing: 0; background: var(--surface);
+    border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+  .findings-table th { text-align: left; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px;
+    color: var(--text-muted); padding: 12px 18px; background: var(--surface-2); border-bottom: 1px solid var(--border); }
+  .findings-table td { padding: 14px 18px; border-bottom: 1px solid var(--border); font-size: 13px; vertical-align: top; }
+  .findings-table tr:last-child td { border-bottom: none; }
+  .findings-table tr:hover td { background: var(--surface-2); }
+  .finding-id { font-family: var(--mono); font-weight: 600; font-size: 13px; white-space: nowrap; }
+  .severity { display: inline-flex; align-items: center; font-family: var(--mono); font-size: 10px;
+    font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; padding: 3px 8px; border-radius: 4px; }
+  .status-fixed { display: inline-flex; font-family: var(--mono); font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.8px; padding: 3px 8px; border-radius: 4px;
+    color: var(--success); background: var(--success-bg); border: 1px solid var(--success-border); }
+  .file-path { font-family: var(--mono); font-size: 11px; color: var(--text-dim); }
+  .finding-desc { color: var(--text); line-height: 1.5; }
+
+  /* Timeline */
+  .timeline { position: relative; padding-left: 28px; }
+  .timeline::before { content: ''; position: absolute; left: 7px; top: 8px; bottom: 8px;
+    width: 1px; background: var(--border); }
+  .commit { position: relative; background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 14px 18px; margin-bottom: 8px;
+    display: grid; grid-template-columns: 72px 1fr auto auto; align-items: center; gap: 14px;
+    transition: border-color 0.2s; }
+  .commit:hover { border-color: var(--border-bright); }
+  .commit::before { content: ''; position: absolute; left: -24px; top: 50%; transform: translateY(-50%);
+    width: 9px; height: 9px; border-radius: 50%; background: var(--accent);
+    border: 2px solid var(--bg); box-shadow: 0 0 0 1px var(--accent); }
+  .commit-hash { font-family: var(--mono); font-size: 13px; font-weight: 500; color: var(--accent); }
+  .commit-msg { font-size: 13px; color: var(--text); }
+  .commit-tag { font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 4px;
+    background: var(--surface-3); color: var(--text-dim); white-space: nowrap; }
+  .review-pass { font-family: var(--mono); font-size: 11px; padding: 3px 8px; border-radius: 4px;
+    color: var(--success); background: var(--success-bg); border: 1px solid var(--success-border); white-space: nowrap; }
+
+  /* Footer */
+  .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border);
+    display: flex; justify-content: space-between; align-items: center; }
+  .footer-left { font-family: var(--mono); font-size: 12px; color: var(--text-muted); }
+  .footer-right { font-size: 12px; color: var(--text-muted); }
+
+  /* Animations */
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+  .animate { opacity: 0; animation: fadeUp 0.5s ease forwards; }
+  .delay-1 { animation-delay: 0.1s; } .delay-2 { animation-delay: 0.2s; }
+  .delay-3 { animation-delay: 0.3s; } .delay-4 { animation-delay: 0.4s; }
+  .delay-5 { animation-delay: 0.5s; } .delay-6 { animation-delay: 0.6s; }
+
+  @media (max-width: 960px) {
+    .metrics { grid-template-columns: repeat(3, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+    .commit { grid-template-columns: 1fr; gap: 6px; }
+    .header { flex-direction: column; align-items: flex-start; gap: 16px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header animate">
+    <div class="header-left">
+      <h1>Robustness Review</h1>
+      <div class="subtitle">session c50b5b27 &mdash; 2026-02-15 &mdash; 302 spans</div>
+    </div>
+    <div class="score-badge">
+      <div class="score-ring">
+        <svg viewBox="0 0 64 64">
+          <circle class="track" cx="32" cy="32" r="26"/>
+          <circle class="fill" id="scoreArc" cx="32" cy="32" r="26"/>
+        </svg>
+        <div class="value">9<span style="font-size:12px;color:var(--text-muted)">/10</span></div>
+      </div>
+      <div class="score-meta">
+        <div class="label">Quality Score</div>
+        <div class="detail">warning</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Metrics strip -->
+  <div class="metrics animate delay-1">
+    <div class="metric-card accent">
+      <div class="number">302</div>
+      <div class="label">Spans</div>
+    </div>
+    <div class="metric-card success">
+      <div class="number">168/168</div>
+      <div class="label">Tool Calls</div>
+    </div>
+    <div class="metric-card success">
+      <div class="number">100.0%</div>
+      <div class="label">Tool Accuracy</div>
+    </div>
+    <div class="metric-card accent">
+      <div class="number">0</div>
+      <div class="label">Tokens</div>
+    </div>
+    <div class="metric-card success">
+      <div class="number">100%</div>
+      <div class="label">Task Compl.</div>
+    </div>
+    <div class="metric-card accent">
+      <div class="number">3</div>
+      <div class="label">Agents</div>
+    </div>
+  </div>
+
+  <!-- Quality Scorecard + Token Usage (two columns) -->
+  <div class="two-col animate delay-2">
+    <div>
+      <div class="section-header">
+        <h2>Quality Scorecard</h2>
+        <span class="count">OTEL evaluations</span>
+      </div>
+      <div class="scorecard">
+        <div class="scorecard-row" style="border-bottom:1px solid var(--border-bright)">
+          <div class="scorecard-name" style="font-weight:600;color:var(--text-muted);font-size:11px;text-transform:uppercase;letter-spacing:1px">Metric</div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px"></div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;text-align:right;font-family:var(--mono)">Avg</div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;text-align:center;font-family:var(--mono)">N</div>
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:1px;text-align:center;font-family:var(--mono)">Status</div>
+        </div>
+        
+      <div class="scorecard-row">
+        <div class="scorecard-name">Response Relevance</div>
+        <div class="scorecard-bar-track">
+          <div class="scorecard-bar-fill" data-width="75"
+               style="background:var(--success)"></div>
+        </div>
+        <div class="scorecard-value" style="color:var(--success)">74.8%</div>
+        <div class="scorecard-count">9</div>
+        <span class="scorecard-status" style="color:var(--success);background:var(--success-bg);border:1px solid var(--success-border)">healthy</span>
+      </div>
+
+      <div class="scorecard-row">
+        <div class="scorecard-name">Task Completion Rate</div>
+        <div class="scorecard-bar-track">
+          <div class="scorecard-bar-fill" data-width="85"
+               style="background:var(--success)"></div>
+        </div>
+        <div class="scorecard-value" style="color:var(--success)">85.4%</div>
+        <div class="scorecard-count">109</div>
+        <span class="scorecard-status" style="color:var(--success);background:var(--success-bg);border:1px solid var(--success-border)">healthy</span>
+      </div>
+
+      <div class="scorecard-row">
+        <div class="scorecard-name">Tool Selection Accuracy</div>
+        <div class="scorecard-bar-track">
+          <div class="scorecard-bar-fill" data-width="100"
+               style="background:var(--success)"></div>
+        </div>
+        <div class="scorecard-value" style="color:var(--success)">100.0%</div>
+        <div class="scorecard-count">4379</div>
+        <span class="scorecard-status" style="color:var(--success);background:var(--success-bg);border:1px solid var(--success-border)">healthy</span>
+      </div>
+
+      <div class="scorecard-row">
+        <div class="scorecard-name">Hallucination Rate</div>
+        <div class="scorecard-bar-track">
+          <div class="scorecard-bar-fill" data-width="85"
+               style="background:var(--high)"></div>
+        </div>
+        <div class="scorecard-value" style="color:var(--high)">14.8%</div>
+        <div class="scorecard-count">9</div>
+        <span class="scorecard-status" style="color:var(--high);background:var(--high-bg);border:1px solid var(--high-border)">warning</span>
+      </div>
+
+      <div class="scorecard-row">
+        <div class="scorecard-name">Evaluation Latency</div>
+        <div class="scorecard-bar-track">
+          <div class="scorecard-bar-fill" data-width="50"
+               style="background:var(--success)"></div>
+        </div>
+        <div class="scorecard-value" style="color:var(--success)">0.048s</div>
+        <div class="scorecard-count">5476</div>
+        <span class="scorecard-status" style="color:var(--success);background:var(--success-bg);border:1px solid var(--success-border)">healthy</span>
+      </div>
+
+      <div class="scorecard-row">
+        <div class="scorecard-name">Response Faithfulness</div>
+        <div class="scorecard-bar-track">
+          <div class="scorecard-bar-fill" data-width="85"
+               style="background:var(--success)"></div>
+        </div>
+        <div class="scorecard-value" style="color:var(--success)">85.2%</div>
+        <div class="scorecard-count">9</div>
+        <span class="scorecard-status" style="color:var(--success);background:var(--success-bg);border:1px solid var(--success-border)">healthy</span>
+      </div>
+
+      <div class="scorecard-row">
+        <div class="scorecard-name">Response Coherence</div>
+        <div class="scorecard-bar-track">
+          <div class="scorecard-bar-fill" data-width="79"
+               style="background:var(--success)"></div>
+        </div>
+        <div class="scorecard-value" style="color:var(--success)">79.5%</div>
+        <div class="scorecard-count">9</div>
+        <span class="scorecard-status" style="color:var(--success);background:var(--success-bg);border:1px solid var(--success-border)">healthy</span>
+      </div>
+      </div>
+    </div>
+    <div>
+      <div class="section-header">
+        <h2>Token Usage</h2>
+        <span class="count">0 total</span>
+      </div>
+      <div class="scorecard" style="margin-bottom:16px">
+        <div class="token-grid">
+          <div class="token-card">
+            <div class="token-val">0</div>
+            <div class="token-label">Input</div>
+          </div>
+          <div class="token-card">
+            <div class="token-val">0</div>
+            <div class="token-label">Output</div>
+          </div>
+          <div class="token-card">
+            <div class="token-val">0</div>
+            <div class="token-label">Cache Read</div>
+          </div>
+          <div class="token-card">
+            <div class="token-val">0.005s</div>
+            <div class="token-label">Median Latency</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <h2>Alerts</h2>
+        <span class="count">1</span>
+      </div>
+      <div class="alerts-panel">
+        
+      <div class="alert-item" style="border-left:3px solid var(--high);background:var(--high-bg)">
+        <span class="alert-sev" style="color:var(--high)">WARNING</span>
+        <span class="alert-metric">hallucination</span>
+        <span class="alert-msg">Hallucination rate (0.1482) above 10% threshold (n=9 evaluations)</span>
+      </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tool Breakdown -->
+  <div class="two-col animate delay-3">
+    <div>
+      <div class="section-header">
+        <h2>Tool Breakdown</h2>
+        <span class="count">6 tools</span>
+      </div>
+      <div class="tool-panel">
+        
+      <div class="tool-row">
+        <span class="tool-name">Bash</span>
+        <span class="tool-bar-track">
+          <span class="tool-bar-fill" data-width="100"></span>
+        </span>
+        <span class="tool-count">103/103</span>
+      </div>
+
+      <div class="tool-row">
+        <span class="tool-name">TaskUpdate</span>
+        <span class="tool-bar-track">
+          <span class="tool-bar-fill" data-width="100"></span>
+        </span>
+        <span class="tool-count">24/24</span>
+      </div>
+
+      <div class="tool-row">
+        <span class="tool-name">Edit</span>
+        <span class="tool-bar-track">
+          <span class="tool-bar-fill" data-width="100"></span>
+        </span>
+        <span class="tool-count">19/19</span>
+      </div>
+
+      <div class="tool-row">
+        <span class="tool-name">TaskCreate</span>
+        <span class="tool-bar-track">
+          <span class="tool-bar-fill" data-width="100"></span>
+        </span>
+        <span class="tool-count">12/12</span>
+      </div>
+
+      <div class="tool-row">
+        <span class="tool-name">TaskOutput</span>
+        <span class="tool-bar-track">
+          <span class="tool-bar-fill" data-width="100"></span>
+        </span>
+        <span class="tool-count">6/6</span>
+      </div>
+
+      <div class="tool-row">
+        <span class="tool-name">Write</span>
+        <span class="tool-bar-track">
+          <span class="tool-bar-fill" data-width="100"></span>
+        </span>
+        <span class="tool-count">4/4</span>
+      </div>
+      </div>
+    </div>
+    <div>
+      <div class="section-header">
+        <h2>Hooks &amp; Agents</h2>
+        <span class="count">9 hooks</span>
+      </div>
+      <div class="tool-panel">
+        <div class="tool-row" style="grid-template-columns:1fr"><span class="tool-name">hook:agent-post-tool</span></div>
+<div class="tool-row" style="grid-template-columns:1fr"><span class="tool-name">hook:agent-pre-tool</span></div>
+<div class="tool-row" style="grid-template-columns:1fr"><span class="tool-name">hook:builtin-post-tool</span></div>
+<div class="tool-row" style="grid-template-columns:1fr"><span class="tool-name">hook:builtin-pre-tool</span></div>
+<div class="tool-row" style="grid-template-columns:1fr"><span class="tool-name">hook:plugin-post-tool</span></div>
+<div class="tool-row" style="grid-template-columns:1fr"><span class="tool-name">hook:plugin-pre-tool</span></div>
+<div class="tool-row" style="grid-template-columns:1fr"><span class="tool-name">hook:session-start</span></div>
+<div class="tool-row" style="grid-template-columns:1fr"><span class="tool-name">hook:skill-activation-prompt</span></div>
+<div class="tool-row" style="grid-template-columns:1fr"><span class="tool-name">hook:tsc-check</span></div>
+        <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border)"><div class="tool-row" style="grid-template-columns:1fr 50px"><span class="tool-name">agent: code-reviewer</span><span class="tool-count">6</span></div>
+<div class="tool-row" style="grid-template-columns:1fr 50px"><span class="tool-name">agent: genai-quality-monitor</span><span class="tool-count">1</span></div>
+<div class="tool-row" style="grid-template-columns:1fr 50px"><span class="tool-name">agent: Explore</span><span class="tool-count">2</span></div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Findings (if provided) -->
+  
+    <div class="section animate delay-3">
+      <div class="section-header">
+        <h2>Findings</h2>
+        <span class="count">5 items</span>
+      </div>
+      <table class="findings-table">
+        <thead><tr><th>ID</th><th>Severity</th><th>Finding</th><th>File</th><th>Status</th></tr></thead>
+        <tbody>
+        <tr>
+          <td><span class="finding-id">C1</span></td>
+          <td><span class="severity" style="color:var(--critical);background:var(--critical-bg);border:1px solid var(--critical-border)">Critical</span></td>
+          <td class="finding-desc">Gzip Decompression Bomb &mdash; No size limit on decompressed payload allows OOM via crafted archive</td>
+          <td><span class="file-path">services/obtool-ingest/src/index.ts:48</span></td>
+          <td><span class="status-fixed">Fixed</span></td>
+        </tr>
+
+        <tr>
+          <td><span class="finding-id">C2</span></td>
+          <td><span class="severity" style="color:var(--critical);background:var(--critical-bg);border:1px solid var(--critical-border)">Critical</span></td>
+          <td class="finding-desc">Regex Injection &mdash; Unsanitized RegExp from skill-rules.json enables ReDoS via nested quantifiers</td>
+          <td><span class="file-path">hooks/handlers/user-prompt.ts:147</span></td>
+          <td><span class="status-fixed">Fixed</span></td>
+        </tr>
+
+        <tr>
+          <td><span class="finding-id">H1</span></td>
+          <td><span class="severity" style="color:var(--high);background:var(--high-bg);border:1px solid var(--high-border)">High</span></td>
+          <td class="finding-desc">Silent JSON Parse Failure &mdash; Invalid stdin JSON swallowed, hooks run without session data</td>
+          <td><span class="file-path">hooks/hook-runner.ts:55</span></td>
+          <td><span class="status-fixed">Fixed</span></td>
+        </tr>
+
+        <tr>
+          <td><span class="finding-id">H2</span></td>
+          <td><span class="severity" style="color:var(--high);background:var(--high-bg);border:1px solid var(--high-border)">High</span></td>
+          <td class="finding-desc">TOCTOU Race &mdash; Redundant existsSync before mkdirSync({recursive}) creates race condition window</td>
+          <td><span class="file-path">hooks/lib/file-utils.ts:47</span></td>
+          <td><span class="status-fixed">Fixed</span></td>
+        </tr>
+
+        <tr>
+          <td><span class="finding-id">H5</span></td>
+          <td><span class="severity" style="color:var(--high);background:var(--high-bg);border:1px solid var(--high-border)">High</span></td>
+          <td class="finding-desc">Promise.all Without Error Isolation &mdash; Single handler failure kills all concurrent handlers</td>
+          <td><span class="file-path">hooks/handlers/post-tool.ts:712</span></td>
+          <td><span class="status-fixed">Fixed</span></td>
+        </tr></tbody>
+      </table>
+    </div>
+
+  <!-- Commits (if provided) -->
+  
+    <div class="section animate delay-4">
+      <div class="section-header">
+        <h2>Commit Timeline</h2>
+        <span class="count">6 commits</span>
+      </div>
+      <div class="timeline">
+      <div class="commit">
+        <span class="commit-hash">6af1cc6</span>
+        <span class="commit-msg">fix(obtool-ingest): prevent gzip decompression bomb</span>
+        <span class="commit-tag">C1</span>
+        <span class="review-pass">Review: B+</span>
+      </div>
+
+      <div class="commit">
+        <span class="commit-hash">756fef6</span>
+        <span class="commit-msg">fix(obtool-ingest): add reader cleanup and sanitize error logging</span>
+        <span class="commit-tag">C1 fixup</span>
+        <span class="review-pass">Fixup</span>
+      </div>
+
+      <div class="commit">
+        <span class="commit-hash">db39a85</span>
+        <span class="commit-msg">fix(hooks): prevent ReDoS in skill intent pattern matching</span>
+        <span class="commit-tag">C2</span>
+        <span class="review-pass">Review: B+</span>
+      </div>
+
+      <div class="commit">
+        <span class="commit-hash">204100e</span>
+        <span class="commit-msg">fix(hooks): log diagnostic on stdin JSON parse failure</span>
+        <span class="commit-tag">H1</span>
+        <span class="review-pass">Review: Pass</span>
+      </div>
+
+      <div class="commit">
+        <span class="commit-hash">8d70e6d</span>
+        <span class="commit-msg">fix(hooks): remove TOCTOU race in ensureDirExists</span>
+        <span class="commit-tag">H2</span>
+        <span class="review-pass">Review: Pass</span>
+      </div>
+
+      <div class="commit">
+        <span class="commit-hash">1e1e744</span>
+        <span class="commit-msg">fix(hooks): isolate handler errors with Promise.allSettled</span>
+        <span class="commit-tag">H5</span>
+        <span class="review-pass">Review: Pass</span>
+      </div></div>
+    </div>
+
+  <!-- Footer -->
+  <div class="footer animate delay-6">
+    <div class="footer-left">session c50b5b27 &mdash; 302 spans &mdash; 168 tool calls</div>
+    <div class="footer-right">Generated 2026-02-15T16:39:29 &mdash; observability-toolkit</div>
+  </div>
+
+</div>
+
+<script>
+  requestAnimationFrame(() => {
+    setTimeout(() => {
+      const arc = document.getElementById('scoreArc');
+      const circumference = 2 * Math.PI * 26;
+      arc.style.strokeDashoffset = circumference * (1 - 9 / 10);
+    }, 400);
+    setTimeout(() => {
+      document.querySelectorAll('.scorecard-bar-fill, .tool-bar-fill').forEach(bar => {
+        bar.style.width = bar.dataset.width + '%';
+      });
+    }, 600);
+  });
+</script>
+</body>
+</html>

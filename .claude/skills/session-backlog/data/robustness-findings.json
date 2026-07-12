@@ -1,0 +1,42 @@
+[
+  {
+    "id": "C1",
+    "severity": "Critical",
+    "title": "Gzip Decompression Bomb",
+    "description": "No size limit on decompressed payload allows OOM via crafted archive",
+    "file": "services/obtool-ingest/src/index.ts:48",
+    "status": "Fixed"
+  },
+  {
+    "id": "C2",
+    "severity": "Critical",
+    "title": "Regex Injection",
+    "description": "Unsanitized RegExp from skill-rules.json enables ReDoS via nested quantifiers",
+    "file": "hooks/handlers/user-prompt.ts:147",
+    "status": "Fixed"
+  },
+  {
+    "id": "H1",
+    "severity": "High",
+    "title": "Silent JSON Parse Failure",
+    "description": "Invalid stdin JSON swallowed, hooks run without session data",
+    "file": "hooks/hook-runner.ts:55",
+    "status": "Fixed"
+  },
+  {
+    "id": "H2",
+    "severity": "High",
+    "title": "TOCTOU Race",
+    "description": "Redundant existsSync before mkdirSync({recursive}) creates race condition window",
+    "file": "hooks/lib/file-utils.ts:47",
+    "status": "Fixed"
+  },
+  {
+    "id": "H5",
+    "severity": "High",
+    "title": "Promise.all Without Error Isolation",
+    "description": "Single handler failure kills all concurrent handlers",
+    "file": "hooks/handlers/post-tool.ts:712",
+    "status": "Fixed"
+  }
+]

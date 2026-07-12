@@ -1,0 +1,53 @@
+{
+  "name": "claude-hooks",
+  "version": "1.0.0",
+  "description": "TypeScript hooks for Claude Code skill auto-activation",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit",
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "test:manual": "tsx skill-activation-prompt.ts < test-input.json"
+  },
+  "dependencies": {
+    "@types/node": "^20.11.0",
+    "lru-cache": "^11.3.5",
+    "p-queue": "^9.1.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.9.3",
+    "@opentelemetry/api": "^1.9.0",
+    "@opentelemetry/api-logs": "^0.215.0",
+    "@opentelemetry/exporter-logs-otlp-http": "^0.219.0",
+    "@opentelemetry/exporter-logs-otlp-proto": "^0.219.0",
+    "@opentelemetry/exporter-metrics-otlp-http": "^0.219.0",
+    "@opentelemetry/exporter-metrics-otlp-proto": "^0.219.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.219.0",
+    "@opentelemetry/exporter-trace-otlp-proto": "^0.219.0",
+    "@opentelemetry/resources": "^2.6.0",
+    "@opentelemetry/sdk-logs": "^0.219.0",
+    "@opentelemetry/sdk-metrics": "^2.6.0",
+    "@opentelemetry/sdk-node": "^0.219.0",
+    "@opentelemetry/sdk-trace-node": "^2.6.0",
+    "@opentelemetry/semantic-conventions": "^1.40.0",
+    "proper-lockfile": "^4.1.2"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@typescript-eslint/eslint-plugin": "^8.58.2",
+    "@typescript-eslint/parser": "^8.58.2",
+    "@vitest/coverage-v8": "^4.0.18",
+    "eslint": "^10.2.1",
+    "typescript-eslint": "^8.58.2",
+    "vitest": "^4.0.18",
+    "@types/proper-lockfile": "^4.1.4"
+  },
+  "optionalDependencies": {
+    "@rollup/rollup-darwin-arm64": "^4.57.0"
+  }
+}

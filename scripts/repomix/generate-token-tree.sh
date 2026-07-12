@@ -5,7 +5,8 @@ set -euo pipefail
 ROOT="${1:?Usage: $0 <root_dir> <output_file>}"
 OUTPUT_FILE="${2:?Usage: $0 <root_dir> <output_file>}"
 
-FORCE_COLOR=0 NO_COLOR=1 npx repomix "$ROOT" --token-count-tree --no-files --no-file-summary 2>&1 \
+FORCE_COLOR=0 NO_COLOR=1 npx repomix "$ROOT" --token-count-tree --no-files --no-file-summary \
+  ${REPOMIX_EXTRA_IGNORE:+--ignore "$REPOMIX_EXTRA_IGNORE"} 2>&1 \
   | tr -d '\r' \
   | sed -E 's/\x1B\[[0-9;]*[A-Za-z]//g' \
   | awk 'BEGIN{keep=0} /^🔢 Token Count Tree:/{keep=1} /^🔎 Security Check:/{keep=0} keep' \

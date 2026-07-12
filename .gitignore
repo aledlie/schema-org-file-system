@@ -79,7 +79,8 @@ test-results/
 repomix-output.xml
 docs/repomix/*
 
-# Claude Code local tooling (agents/skills/hooks/commands — not part of this project)
-.claude/
-# Claude Code session worktrees (never tracked)
-.claude/worktrees/
+# Claude Code local/transient state (tracked config under .claude/ stays visible)
+.claude/worktrees/                 # session worktrees (never tracked)
+.claude/hooks/                     # local hook tooling: own node_modules/dist/package-lock, nothing tracked here
+.claude/scheduled_tasks.lock       # session scheduler lock
+.claude/**/.claude/                # nested .claude dirs from running claude in subdirectories

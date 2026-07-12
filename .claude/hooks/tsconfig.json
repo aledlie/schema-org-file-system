@@ -1,0 +1,22 @@
+{
+    "compilerOptions": {
+        "target": "ES2022",
+        "module": "NodeNext",
+        "moduleResolution": "NodeNext",
+        "lib": ["ES2022"],
+        "outDir": "./dist",
+        "rootDir": ".",
+        "strict": true,
+        "esModuleInterop": true,
+        "skipLibCheck": true,
+        "forceConsistentCasingInFileNames": true,
+        "resolveJsonModule": true,
+        "allowSyntheticDefaultImports": true,
+        "incremental": true,
+        "tsBuildInfoFile": "./dist/.tsbuildinfo",
+        "isolatedModules": true,
+        "types": ["node"]
+    },
+    "include": ["hook-runner.ts", "handlers/**/*.ts", "lib/**/*.ts"],
+    "exclude": ["node_modules", "dist", "*-otel.ts", "test-*.ts", "error-handling-reminder.ts", "skill-activation-prompt.ts"]
+}

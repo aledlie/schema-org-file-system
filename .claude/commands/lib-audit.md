@@ -1,0 +1,1 @@
+you have extensive SME in typescript libraries and performant, robust typescript code modules. use repomix parser skill to audit the file at docs/repomix/repo-compressed.xml and recommend libraries for this project to improve it's performance or minimize custom code maintenence without a negative trade-off

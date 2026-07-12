@@ -19,7 +19,8 @@ from typing import Dict, List, Tuple, Optional
 from collections import defaultdict
 from urllib.parse import quote
 
-# Add src directory to path (portable)
+# Add project root and src directory to path (portable)
+sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
 
 from generators import (
@@ -51,6 +52,7 @@ def generate_canonical_iri(entity_type: str, natural_key: str) -> str:
     return f"urn:uuid:{uuid.uuid5(ns, natural_key.lower().strip())}"
 
 from integration import SchemaRegistry
+from src.organizers.category_config import CATEGORY_PATHS
 
 
 class FileOrganizer:
@@ -65,81 +67,7 @@ class FileOrganizer:
         self.stats = defaultdict(int)
 
         # Define organization structure
-        self.category_paths = {
-            'images': {
-                'screenshots': 'Images/Screenshots',
-                'photos': 'Images/Photos',
-                'graphics': 'Images/Graphics',
-                'other': 'Images/Other'
-            },
-            'documents': {
-                'pdf': 'Documents/PDFs',
-                'word': 'Documents/Word',
-                'spreadsheets': 'Documents/Spreadsheets',
-                'presentations': 'Documents/Presentations',
-                'text': 'Documents/Text',
-                'markdown': 'Documents/Markdown',
-                'other': 'Documents/Other'
-            },
-            'media': {
-                'videos': 'Media/Videos',
-                'audio': 'Media/Audio',
-                'music': 'Media/Music',
-                'other': 'Media/Other'
-            },
-            'archives': {
-                'zip': 'Archives/Compressed',
-                'other': 'Archives/Other'
-            },
-            'software': {
-                'installers': 'Software/Installers',
-                'packages': 'Software/Packages',
-                'other': 'Software/Other'
-            },
-            'code': {
-                'python': 'Code/Python',
-                'javascript': 'Code/JavaScript',
-                'other': 'Code/Other'
-            },
-            'data': {
-                'json': 'Data/JSON',
-                'csv': 'Data/CSV',
-                'databases': 'Data/Databases',
-                'other': 'Data/Other'
-            },
-            'research': {
-                'papers': 'Research/Papers',
-                'notes': 'Research/Notes',
-                'other': 'Research/Other'
-            },
-            'contacts': {
-                'people': 'Contacts/People',
-                'vcards': 'Contacts/vCards',
-                'other': 'Contacts/Other'
-            },
-            'business': {
-                'companies': 'Business/Companies',
-                'clients': 'Business/Clients',
-                'invoices': 'Business/Invoices',
-                'contracts': 'Business/Contracts',
-                'other': 'Business/Other'
-            },
-            'game_assets': {
-                'sprites': 'GameAssets/Sprites',
-                'textures': 'GameAssets/Textures',
-                'fonts': 'GameAssets/Fonts',
-                'audio': 'GameAssets/Audio',
-                'music': 'GameAssets/Music',
-                'other': 'GameAssets/Other'
-            },
-            'fonts': {
-                'truetype': 'CreativeWork/Fonts/TrueType',
-                'opentype': 'CreativeWork/Fonts/OpenType',
-                'web': 'CreativeWork/Fonts/Web',
-                'other': 'CreativeWork/Fonts/Other'
-            },
-            'other': 'Other'
-        }
+        self.category_paths = CATEGORY_PATHS
 
         # Game asset detection patterns
         import re
