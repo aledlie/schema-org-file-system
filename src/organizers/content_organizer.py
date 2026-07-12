@@ -1,11 +1,13 @@
 """Content-based file organizer with classification/routing methods."""
 
 import re
+from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from src.organizers.base_organizer import BaseOrganizer
+from src.organizers.category_config import CONTENT_CATEGORY_PATHS
 from shared.filename_classifier import (
     classify_by_filename_patterns as _classify_by_filename_patterns,
 )
@@ -187,157 +189,9 @@ class ContentOrganizer(BaseOrganizer):
             'pyproject.toml': 'Technical/Build',
         }
 
-        # Content-based organization structure
-        self.category_paths: Dict[str, Any] = {
-            'legal': {
-                'contracts': 'Legal/Contracts',
-                'real_estate': 'Legal/RealEstate',
-                'corporate': 'Legal/Corporate',
-                'other': 'Legal/Other',
-            },
-            'financial': {
-                'tax': 'Financial/Tax',
-                'invoices': 'Financial/Invoices',
-                'statements': 'Financial/Statements',
-                'other': 'Financial/Other',
-            },
-            'business': {
-                'planning': 'Business/Planning',
-                'marketing': 'Business/Marketing',
-                'proposals': 'Business/Proposals',
-                'presentations': 'Business/Presentations',
-                'crm': 'Business/CRM',
-                'hr': 'Business/HR',
-                'meeting_notes': 'Business/MeetingNotes',
-                'clients': 'Business/Clients',
-                'other': 'Business/Other',
-            },
-            'personal': {
-                'contacts': 'Personal/Contacts',
-                'employment': 'Personal/Employment',
-                'identification': 'Personal/Identification',
-                'certificates': 'Personal/Certificates',
-                'journal': 'Personal/Journal',
-                'events': 'Personal/Events',
-                'legal': 'Personal/Legal',
-                'records': 'Personal/Records',
-                'other': 'Personal/Other',
-            },
-            'medical': {
-                'records': 'Medical/Records',
-                'insurance': 'Medical/Insurance',
-                'prescriptions': 'Medical/Prescriptions',
-                'other': 'Medical/Other',
-            },
-            'property': {
-                'leases': 'Property/Leases',
-                'maintenance': 'Property/Maintenance',
-                'other': 'Property/Other',
-            },
-            'education': {
-                'coursework': 'Education/Coursework',
-                'research': 'Education/Research',
-                'records': 'Education/Records',
-                'other': 'Education/Other',
-            },
-            'technical': {
-                'documentation': 'Technical/Documentation',
-                'architecture': 'Technical/Architecture',
-                'config': 'Technical/Config',
-                'data': 'Technical/Data',
-                'logs': 'Technical/Logs',
-                'web': 'Technical/Web',
-                'software_packages': 'Technical/Software_Packages',
-                'other': 'Technical/Other',
-            },
-            'creative': {
-                'design': 'Creative/Design',
-                'branding': 'Creative/Branding',
-                'photos': 'Creative/Photos',
-                'other': 'Creative/Other',
-            },
-            'property_management': 'Property_Management',
-            'zouk': {
-                'events': 'Zouk/Events',
-                'classes': 'Zouk/Classes',
-                'other': 'Zouk/Other',
-            },
-            'organization': {
-                'clients': 'Organization/Clients',
-                'vendors': 'Organization',
-                'partners': 'Organization',
-                'employers': 'Organization',
-                'government': 'Organization',
-                'healthcare': 'Organization',
-                'property_management': 'Organization',
-                'financial': 'Organization',
-                'educational': 'Organization',
-                'nonprofit': 'Organization',
-                'meeting_notes': 'Organization',
-                'other': 'Organization',
-            },
-            'game_assets': {
-                'audio': 'GameAssets/Audio',
-                'music': 'GameAssets/Music',
-                'sprites': 'GameAssets/Sprites',
-                'textures': 'GameAssets/Textures',
-                'fonts': 'GameAssets/Fonts',
-                'other': 'GameAssets/Other',
-            },
-            'fonts': {
-                'truetype': 'CreativeWork/Fonts/TrueType',
-                'opentype': 'CreativeWork/Fonts/OpenType',
-                'web': 'CreativeWork/Fonts/Web',
-                'other': 'CreativeWork/Fonts/Other',
-            },
-            'media': {
-                'photos': {
-                    'screenshots': {
-                        'browser': 'Media/Photos/Screenshots/Browser',
-                        'terminal': 'Media/Photos/Screenshots/Terminal',
-                        'code': 'Media/Photos/Screenshots/CodeEditors',
-                        'docs': 'Media/Photos/Screenshots/Docs',
-                        'settings': 'Media/Photos/Screenshots/Settings',
-                        'products': 'Media/Photos/Screenshots/Products',
-                        'dashboard': 'Media/Photos/Screenshots/Dashboards',
-                        'chat': 'Media/Photos/Screenshots/Chat',
-                        'other': 'Media/Photos/Screenshots',
-                    },
-                    'travel': 'Media/Photos/Travel',
-                    'portraits': 'Media/Photos/Portraits',
-                    'events': 'Media/Photos/Events',
-                    'documents': 'Media/Photos/Documents',
-                    'social': 'Media/Photos/Social',
-                    'chatgpt': 'Media/Photos/ChatGPT',
-                    'facebook': 'Media/Photos/Facebook',
-                    'logos': 'Media/Photos/Logos',
-                    'stock': 'Media/Photos/Stock',
-                    'nature': 'Media/Photos/Nature',
-                    'lifestyle': 'Media/Photos/Lifestyle',
-                    'products': 'Media/Photos/Products',
-                    'other': 'Media/Photos/Other',
-                },
-                'videos': {
-                    'recordings': 'Media/Videos/Recordings',
-                    'exports': 'Media/Videos/Exports',
-                    'screencasts': 'Media/Videos/Screencasts',
-                    'other': 'Media/Videos/Other',
-                },
-                'audio': {
-                    'recordings': 'Media/Audio/Recordings',
-                    'music': 'Media/Audio/Music',
-                    'podcasts': 'Media/Audio/Podcasts',
-                    'other': 'Media/Audio/Other',
-                },
-                'graphics': {
-                    'vector': 'Media/Graphics/Vector',
-                    'icons': 'Media/Graphics/Icons',
-                    'other': 'Media/Graphics/Other',
-                },
-                'other': 'Media/Other',
-            },
-            'uncategorized': 'Uncategorized',
-        }
+        # Content-based organization structure: shared taxonomy, deepcopied
+        # so per-instance mutation cannot leak into the module constant.
+        self.category_paths: Dict[str, Any] = deepcopy(CONTENT_CATEGORY_PATHS)
 
         # Game asset detection patterns
         self.game_audio_keywords: List[str] = [

@@ -534,7 +534,7 @@ class ContentBasedFileOrganizer:
 - [x] Extract category config from `file_organizer.py` — ✅ COMPLETE (`CATEGORY_PATHS` in `src/organizers/category_config.py`; script imports it)
 - [x] Create `src/organizers/category_config.py` — ✅ COMPLETE
 - [x] Create `src/organizers/mime_classifier.py` — ✅ COMPLETE (`classify_by_mime` + `classify_font`; `scripts/file_organizer.py` delegates to them)
-- [ ] Consolidate `category_paths` across organizers — `ContentOrganizer` and `scripts/file_organizer_content_based.py` each define their own differently-shaped `category_paths` (nested media/photos/screenshots) separate from `CATEGORY_PATHS` in `src/organizers/category_config.py`; unify likely alongside the `mime_classifier.py` extraction
+- [x] Consolidate `category_paths` across organizers — ✅ COMPLETE (`CONTENT_CATEGORY_PATHS` in `src/organizers/category_config.py`; `ContentOrganizer` and `scripts/file_organizer_content_based.py` both `deepcopy` it — the script still extends the screenshots sub-dict per instance. The shared constant includes the `research` taxonomy the script had and `ContentOrganizer` lacked.)
 - [x] Create `src/organizers/base_organizer.py` — ✅ COMPLETE
 - [x] Move `FileOrganizerByName` → `src/organizers/name_organizer.py` — ✅ COMPLETE (class is `FileNameOrganizer`; `scripts/file_organizer_by_name.py` removed, `src/cli.py` updated; also fixed pre-existing `organize-files name` breakage — outer parser emits `--sources`, inner parser now accepts it and loops)
 
