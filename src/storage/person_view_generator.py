@@ -169,18 +169,41 @@ class PersonViewGenerator:
     def _prune_empty_dirs(self) -> None:
         if not self.view_root.exists():
             return
+        # Deepest-first, so a dir whose only entries are OS junk (and, by now,
+        # already-pruned subdirs) is treated as empty: drop the junk and rmdir.
+        # This clears the migration's leftover Person/ skeleton so regeneration
+        # reuses the clean "{Name}" dir instead of collision-suffixing it.
         for dirpath, _dirnames, _filenames in os.walk(self.view_root, topdown=False):
             if Path(dirpath) == self.view_root:
                 continue
             try:
-                if not os.listdir(dirpath):
-                    os.rmdir(dirpath)
+                entries = os.listdir(dirpath)
+                if any(not is_os_junk_file(entry) for entry in entries):
+                    continue
+                for entry in entries:
+                    try:
+                        os.remove(os.path.join(dirpath, entry))
+                    except OSError:
+                        pass
+                os.rmdir(dirpath)
             except OSError:
                 continue
 
     def _write_view(self, people: List[Tuple[str, List[str]]], errors: List[str]) -> int:
         created = 0
         for display_name, file_paths in people:
+            existing = []
+            for file_path in file_paths:
+                src = Path(file_path)
+                if src.exists():
+                    existing.append(src)
+                else:
+                    errors.append(f"source file missing, skipped: {file_path}")
+            # Don't materialize an empty person dir when every file is missing
+            # (e.g. a stale graph row pointing at a since-deleted file).
+            if not existing:
+                continue
+
             person_dir = resolve_collision(self.view_root / _sanitize_person_name(display_name))
             try:
                 person_dir.mkdir(parents=True, exist_ok=True)
@@ -188,12 +211,7 @@ class PersonViewGenerator:
                 errors.append(f"failed to create directory {person_dir}: {exc}")
                 continue
 
-            for file_path in file_paths:
-                src = Path(file_path)
-                if not src.exists():
-                    errors.append(f"source file missing, skipped: {file_path}")
-                    continue
-
+            for src in existing:
                 dst = resolve_collision(person_dir / src.name)
                 try:
                     dst.symlink_to(src)

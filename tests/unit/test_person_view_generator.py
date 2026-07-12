@@ -214,6 +214,41 @@ def test_os_junk_does_not_trip_abort_guard(real_files_dir, view_root):
     assert (view_root / ".DS_Store").exists()  # left untouched, just ignored
 
 
+def test_person_with_only_missing_files_gets_no_dir(real_files_dir, view_root):
+    # A stale graph row whose single file is gone must not leave an empty
+    # person dir behind.
+    present = real_files_dir / "here.pdf"
+    present.write_text("real")
+    ghost = str(real_files_dir / "ghost.pdf")  # never created
+
+    store = FakeGraphStore({"Real Person": [str(present)], "Ghost Person": [ghost]})
+    generator = PersonViewGenerator(store, view_root=view_root)
+    generator.generate(dry_run=False, apply=True)
+
+    assert (view_root / "Real Person").is_dir()
+    assert not (view_root / "Ghost Person").exists()
+
+
+def test_junk_only_skeleton_dir_is_pruned_and_name_reused(real_files_dir, view_root):
+    # The migration leaves an empty "{Name}" dir (only .DS_Store) under the view
+    # root; regeneration must prune it so the symlink dir uses the clean name,
+    # not a collision-suffixed "{Name}_1".
+    resume = real_files_dir / "resume.pdf"
+    resume.write_text("resume contents")
+
+    stale_dir = view_root / "Jane Smith"
+    (stale_dir / "sub").mkdir(parents=True)
+    (stale_dir / ".DS_Store").write_text("junk")
+    (stale_dir / "sub" / ".DS_Store").write_text("junk")
+
+    store = FakeGraphStore({"Jane Smith": [str(resume)]})
+    generator = PersonViewGenerator(store, view_root=view_root)
+    generator.generate(dry_run=False, apply=True)
+
+    assert (view_root / "Jane Smith" / "resume.pdf").is_symlink()
+    assert not (view_root / "Jane Smith_1").exists()  # no collision suffix
+
+
 def test_folder_name_collision_disambiguated(real_files_dir, view_root):
     file_a = real_files_dir / "a.pdf"
     file_b = real_files_dir / "b.pdf"
