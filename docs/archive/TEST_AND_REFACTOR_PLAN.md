@@ -533,6 +533,7 @@ class ContentBasedFileOrganizer:
 - [x] Extract category config from `file_organizer.py` — ✅ COMPLETE (`CATEGORY_PATHS` in `src/organizers/category_config.py`; script imports it)
 - [x] Create `src/organizers/category_config.py` — ✅ COMPLETE
 - [ ] Create `src/organizers/mime_classifier.py` — not created (MIME mapping kept inline)
+- [ ] Consolidate `category_paths` across organizers — `ContentOrganizer` and `scripts/file_organizer_content_based.py` each define their own differently-shaped `category_paths` (nested media/photos/screenshots) separate from `CATEGORY_PATHS` in `src/organizers/category_config.py`; unify likely alongside the `mime_classifier.py` extraction
 - [x] Create `src/organizers/base_organizer.py` — ✅ COMPLETE
 - [ ] Move `FileOrganizerByName` → `src/organizers/name_organizer.py` — not moved
 
