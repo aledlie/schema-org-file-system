@@ -18,6 +18,7 @@ picking a more precise subcategory than the on-disk folder name alone allows.
 """
 
 import json
+import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -71,6 +72,20 @@ NON_PERSON_DIRS = frozenset({"Unknown"})
 # Graph edge role recorded for an indexed person: these are personal documents
 # whose subject/owner is the named individual, not merely a mention.
 PERSON_INDEX_ROLE = "subject"
+
+# A filename only encodes a person in a resume/CV context.
+_RESUME_FILENAME_MARKERS = ("resume", "cv", "curriculum")
+
+# Resume/CV and template/style/color words that are never part of a person's
+# name -- used to reject filename false positives like "Resume Blue" or
+# "Modern Minimalist Resume" while still extracting real names ("Chyna Strange").
+_FILENAME_NAME_STOPWORDS = frozenset({
+    "resume", "cv", "curriculum", "vitae", "cover", "letter",
+    "modern", "minimalist", "professional", "creative", "simple",
+    "elegant", "classic", "template", "standard", "basic", "clean",
+    "blue", "orange", "red", "green", "black", "white", "gray", "grey",
+    "technical", "final", "draft", "copy", "new", "old",
+})
 
 MIGRATION_REASON = "migrated from legacy Person/ category (Option C phase 5)"
 ROLLBACK_REASON = "rolled back Option C phase 5 person migration"
@@ -476,18 +491,46 @@ def _person_from_source_path(src: str, person_root: Path) -> Optional[str]:
     return None
 
 
+def _person_from_filename(filename: str) -> Optional[str]:
+    """Derive a person from a resume/CV filename when no name dir attributes it.
+
+    Conservative by design: only fires on resume/CV filenames, and only when
+    two adjacent proper-case tokens survive stopword filtering -- so
+    "RESUME1-ChynaStrange.pdf" -> "Chyna Strange", but "Resume-Blue.docx" and
+    "MarketingTemplate.docx" yield None.
+    """
+    stem = filename.split(".", 1)[0]
+    if not any(marker in stem.lower() for marker in _RESUME_FILENAME_MARKERS):
+        return None
+    # Normalize separators, then split CamelCase (ChynaStrange -> Chyna Strange).
+    spaced = re.sub(r"[_\-]+", " ", stem)
+    spaced = re.sub(r"(?<=[a-z])(?=[A-Z])", " ", spaced)
+    tokens = [
+        tok
+        for tok in spaced.split()
+        if re.fullmatch(r"[A-Z][a-z]+", tok) and tok.lower() not in _FILENAME_NAME_STOPWORDS
+    ]
+    if len(tokens) < MIN_NAME_WORD_COUNT:
+        return None
+    candidate = f"{tokens[0]} {tokens[1]}"
+    return candidate if _looks_like_person_name_dir(candidate) else None
+
+
 def build_person_index(
     manifest_path: Path,
     person_root: Path = DEFAULT_PERSON_ROOT,
 ) -> List[Tuple[str, str]]:
-    """Return (current_path, person_name) pairs for every migrated file whose
-    original Person/ path attributes it to a named individual. Files with no
-    person name dir in their source path are omitted (they get no edge)."""
+    """Return (current_path, person_name) pairs for every migrated file
+    attributable to a named individual. Attribution prefers the original
+    Person/{Name}/ dir; a resume/CV filename is a conservative fallback
+    (e.g. RESUME1-ChynaStrange.pdf). Files with neither signal are omitted."""
     person_root = Path(person_root).expanduser()
     entries = load_manifest(manifest_path)
     index: List[Tuple[str, str]] = []
     for entry in entries:
-        person = _person_from_source_path(entry.src, person_root)
+        person = _person_from_source_path(entry.src, person_root) or _person_from_filename(
+            Path(entry.src).name
+        )
         if person:
             index.append((entry.dst, person))
     return index

@@ -32,6 +32,7 @@ from src.storage.person_migration import (
     SUBCAT_SOURCE_FALLBACK,
     SUBCAT_SOURCE_SUBFOLDER,
     MigrationEntry,
+    _person_from_filename,
     apply_person_index,
     build_migration_plan,
     build_person_index,
@@ -445,6 +446,40 @@ class TestPersonIndex:
         assert len(index) == 2  # resume + passport, both Jane Smith
         # the name dir nested under Identity/ is still attributed
         assert any("passport.jpg" in dst for dst, _ in index)
+
+    @pytest.mark.parametrize(
+        "filename, expected",
+        [
+            ("RESUME1-ChynaStrange.pdf", "Chyna Strange"),
+            ("Chyna_Strange_Resume.pdf", "Chyna Strange"),
+            ("CV JohnDoe.docx", "John Doe"),
+            # False positives that must stay None:
+            ("Resume-Blue.docx.webp", None),        # template color
+            ("Resume-Orange.docx.webp", None),      # template color
+            ("Modern-Minimalist-Resume.pdf", None),  # template/style words
+            ("MarketingTemplate.docx", None),       # not a resume/cv context
+            ("PAS-PartTime.docx", None),            # not a resume/cv context
+            ("resume.pdf", None),                   # no name tokens
+        ],
+    )
+    def test_person_from_filename(self, filename: str, expected) -> None:
+        assert _person_from_filename(filename) == expected
+
+    def test_build_index_uses_filename_fallback(self, tmp_path: Path) -> None:
+        person_root = tmp_path / "Documents" / "Person"
+        entries = [
+            MigrationEntry(
+                src=str(person_root / "Employment" / "RESUME1-ChynaStrange.pdf"),
+                dst=str(tmp_path / "Personal" / "Contacts" / "RESUME1-ChynaStrange.pdf"),
+                subcat="contacts",
+                subcat_source="subfolder",
+            ),
+        ]
+        manifest = tmp_path / "manifest.json"
+        write_manifest(entries, manifest)
+
+        index = build_person_index(manifest, person_root=person_root)
+        assert {name for _dst, name in index} == {"Chyna Strange"}
 
     def test_apply_creates_person_edges(self, tmp_path: Path, db_path: str) -> None:
         person_root = tmp_path / "Documents" / "Person"
