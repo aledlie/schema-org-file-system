@@ -270,7 +270,7 @@ _SIGNAL_AGREEMENT_BOOST = 0.15
 # classify_by_person() still detects *which kind* of person document this is,
 # but now maps that detection onto the `personal` category's subcategories
 # instead of returning a separate `person` category. See
-# PERSON_TAXONOMY_OPTION_C_PLAN.md for the full rationale.
+# docs/changelog/2.1.0/PERSON_TAXONOMY_OPTION_C_PLAN.md for the full rationale.
 _PERSON_SUBCAT_TO_PERSONAL_SUBCAT = {
     "contacts": "contacts",
     "employees": "employment",

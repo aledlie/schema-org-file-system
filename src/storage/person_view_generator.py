@@ -4,7 +4,7 @@ Derived Person/{Name}/ symlink view generator.
 
 Regenerates a browsable `Person/{Name}/` tree of symlinks pointing at the
 real (doc-class) files recorded against each person in the graph. See
-PERSON_TAXONOMY_OPTION_C_PLAN.md, Phase 4, for the design this implements.
+docs/changelog/2.1.0/PERSON_TAXONOMY_OPTION_C_PLAN.md, Phase 4, for the design this implements.
 """
 
 import os

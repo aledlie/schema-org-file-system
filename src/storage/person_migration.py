@@ -5,7 +5,7 @@ Person/ -> Personal/{subcat}/ Migration Tool (Option C, Phase 5).
 Moves the pre-existing on-disk files under `~/Documents/Person/` into the new
 doc-class folders under `~/Documents/Personal/{subcat}/`, since the `person`
 filing category is being retired in favor of `personal` (see
-`PERSON_TAXONOMY_OPTION_C_PLAN.md`). `Person/` will later be regenerated as a
+`docs/changelog/2.1.0/PERSON_TAXONOMY_OPTION_C_PLAN.md`). `Person/` will later be regenerated as a
 symlink view (a separate, not-yet-built generator) and that generator aborts
 if it finds any real (non-symlink) file under its root -- so this migration
 must fully empty `Person/` of real files.
@@ -95,7 +95,7 @@ ROLLBACK_REASON = "rolled back Option C phase 5 person migration"
 # that aren't in SUBFOLDER_NAME_TO_SUBCAT (which map to `other`, flagged).
 MIN_NAME_WORD_COUNT = 2
 
-# Table from PERSON_TAXONOMY_OPTION_C_PLAN.md: legacy `person` DB subcategory
+# Table from docs/changelog/2.1.0/PERSON_TAXONOMY_OPTION_C_PLAN.md: legacy `person` DB subcategory
 # -> new `personal` subcategory.
 DB_PERSON_SUBCAT_TO_PERSONAL_SUBCAT: Dict[str, str] = {
     "contacts": SUBCAT_CONTACTS,

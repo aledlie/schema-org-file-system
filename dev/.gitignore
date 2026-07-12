@@ -1,0 +1,22 @@
+# Claude Code temporary files
+.claude/cache/
+.claude/logs/
+active/**/tmp/
+
+# Keep structure but ignore work-in-progress
+active/*
+!active/.gitkeep
+
+# Hook dependencies
+.claude/hooks/node_modules/
+
+# OS files
+.DS_Store
+*.swp
+*.swo
+*~
+
+# Editor directories
+.vscode/
+.idea/
+*.code-workspace
