@@ -9,8 +9,8 @@
 > `file_organizer_content_based.py` into `src/{classifiers,analyzers,organizers,pipeline}/`
 > shipped. Divergences from this plan: `entity_detector.py`, `category_rules.py`,
 > `workflow.py`, `mime_classifier.py`, `name_organizer.py`, `src/ml/`, and `src/feedback/`
-> were never split out; `test_uri_utils.py`, `test_cli.py`, and `test_health_check.py` were
-> not written (`test_storage_models.py` landed at `tests/unit/`); `test_validator.py` lives at `tests/` not
+> were never split out; `test_cli.py` and `test_health_check.py` were not written
+> (`test_storage_models.py` and `test_uri_utils.py` landed at `tests/unit/`); `test_validator.py` lives at `tests/` not
 > `tests/unit/`; and `file_organizer_content_based.py` was **not** reduced to a thin wrapper
 > (still ~4.3k LOC). Checklist items below are marked accordingly.
 
@@ -483,7 +483,7 @@ class ContentBasedFileOrganizer:
 - [x] Create `tests/conftest.py` with fixtures — ✅ COMPLETE
 - [x] Write `tests/integration/test_storage_models.py` (P0-4) — ✅ COMPLETE (landed at `tests/unit/test_storage_models.py`)
 - [x] Write `tests/integration/test_storage_graph.py` (P0-1) — ✅ COMPLETE
-- [ ] Write `tests/unit/test_uri_utils.py` (P1-3) — not written
+- [x] Write `tests/unit/test_uri_utils.py` (P1-3) — ✅ COMPLETE (tests IRI/canonical-ID contract on `src/storage/models.py`; no standalone `src/uri_utils.py` module)
 - [ ] Achieve 80%+ coverage on storage layer — not verified
 
 **Week 2: Core Generators Tests**
