@@ -7,9 +7,10 @@
 
 > **Completion note (2026-07-12):** The Part 1 test suite and Part 2 refactor of
 > `file_organizer_content_based.py` into `src/{classifiers,analyzers,organizers,pipeline}/`
-> shipped. Divergences from this plan: `entity_detector.py`, `category_rules.py`,
+> shipped. Divergences from this plan: `category_rules.py`,
 > `workflow.py`, `mime_classifier.py`, `name_organizer.py`, `src/ml/`, and `src/feedback/`
-> were never split out; `test_cli.py` and `test_health_check.py` were not written
+> were never split out (`entity_detector.py` since landed, 2026-07-12);
+> `test_cli.py` and `test_health_check.py` were not written
 > (`test_storage_models.py` and `test_uri_utils.py` landed at `tests/unit/`); `test_validator.py` lives at `tests/` not
 > `tests/unit/`; and `file_organizer_content_based.py` was **not** reduced to a thin wrapper
 > (still ~4.3k LOC). Checklist items below are marked accordingly.
@@ -497,7 +498,7 @@ class ContentBasedFileOrganizer:
 **Week 3: Extract Classifiers & Analyzers**
 - [x] Create `src/classifiers/` module — ✅ COMPLETE
 - [x] Extract `ContentClassifier` → `src/classifiers/content_classifier.py` — ✅ COMPLETE
-- [ ] Extract entity detection → `src/classifiers/entity_detector.py` — not split out (kept in content classifier)
+- [x] Extract entity detection → `src/classifiers/entity_detector.py` — ✅ COMPLETE (company/people/relationship extraction + name normalization moved to `EntityDetector`; `ContentClassifier` composes and delegates; API unchanged)
 - [x] Create `src/analyzers/` module — ✅ COMPLETE
 - [x] Extract `ImageMetadataParser` → `src/analyzers/image_metadata.py` — ✅ COMPLETE
 - [x] Extract `ImageContentAnalyzer` → `src/analyzers/image_content.py` — ✅ COMPLETE (landed as `image_analyzer.py`; OCR as `text_extractor.py`)
