@@ -46,6 +46,12 @@ DEFAULT_PERSON_ROOT = Path("~/Documents/Person").expanduser()
 DEFAULT_DOCUMENTS_ROOT = Path("~/Documents").expanduser()
 DEFAULT_MANIFEST_PATH = Path("person-migrate-manifest.json")
 
+# OS/metadata junk that must never be migrated (matched on exact basename, plus
+# the AppleDouble "._*" resource-fork prefix). These would otherwise be swept
+# into Personal/Other and even collision-renamed (.DS_Store_1, ...).
+_IGNORED_FILENAMES = frozenset({".DS_Store", "Thumbs.db", ".localized", "desktop.ini"})
+_APPLEDOUBLE_PREFIX = "._"
+
 # Legacy top-level category name a `person`-filed row was stored under.
 PERSON_CATEGORY_NAME = "person"
 
@@ -141,8 +147,11 @@ def _iter_real_files(root: Path) -> Iterator[Path]:
     if not root.exists():
         return
     for path in sorted(root.rglob("*")):
-        if path.is_file() and not path.is_symlink():
-            yield path
+        if not (path.is_file() and not path.is_symlink()):
+            continue
+        if path.name in _IGNORED_FILENAMES or path.name.startswith(_APPLEDOUBLE_PREFIX):
+            continue
+        yield path
 
 
 def _find_db_file(session: Session, path: Path) -> Optional[File]:

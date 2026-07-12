@@ -111,6 +111,24 @@ class TestBuildMigrationPlan:
         entries = build_migration_plan(person_tree, documents_root)
         assert len(entries) == 4
 
+    def test_os_junk_files_are_excluded(
+        self, tmp_path: Path, documents_root: Path
+    ) -> None:
+        person_root = tmp_path / "Documents" / "Person"
+        name_dir = person_root / "Alyshia Ledlie"
+        name_dir.mkdir(parents=True)
+        (name_dir / "resume.pdf").write_text("resume contents")
+        # OS/metadata junk that must never be migrated.
+        (person_root / ".DS_Store").write_text("junk")
+        (name_dir / ".DS_Store").write_text("junk")
+        (name_dir / "._resume.pdf").write_text("appledouble")
+        (name_dir / "Thumbs.db").write_text("junk")
+
+        entries = build_migration_plan(person_root, documents_root)
+        migrated_names = {Path(e.src).name for e in entries}
+
+        assert migrated_names == {"resume.pdf"}
+
     def test_no_db_path_still_produces_full_plan(self, person_tree: Path, documents_root: Path) -> None:
         entries = build_migration_plan(person_tree, documents_root, db_path=None)
         assert len(entries) == 4
