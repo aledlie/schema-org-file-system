@@ -1,6 +1,8 @@
 # Option C — Demote `person` from a category to a relationship
 
-> **Status:** Planned, not yet implemented. Tracked in [`docs/BACKLOG.md`](docs/BACKLOG.md).
+> **Status:** ✅ Implemented 2026-07-12. Code + tests landed; the on-disk `~/Documents/Person/`
+> migration (`migrate-person --apply`) and view regen (`person-view --apply`) are left for the
+> user to run against real data (dry-run first). Tracked in [`docs/BACKLOG.md`](docs/BACKLOG.md).
 > Reconciles the `person` vs `personal` taxonomy overlap.
 
 ## Context

@@ -48,18 +48,23 @@ git filter-repo --invert-paths \
 - `scripts/evaluate_model.py` (content classifier path — done; metric filtering — done)
 - financial test-sample re-redaction (test data, not code)
 
-### Implement Option C — demote `person` from a category to a relationship
+### Implement Option C — demote `person` from a category to a relationship — DONE (2026-07-12)
 
-**Status:** Planned (2026-07-01) — full implementation plan at [`PERSON_TAXONOMY_OPTION_C_PLAN.md`](../PERSON_TAXONOMY_OPTION_C_PLAN.md).
+**Status:** ✅ Done (2026-07-12) — implemented per [`PERSON_TAXONOMY_OPTION_C_PLAN.md`](../PERSON_TAXONOMY_OPTION_C_PLAN.md).
 **Priority:** P3 (resolves the `person`/`personal` convention below)
 **Source:** person/personal taxonomy reconciliation, 2026-07-01
 
-**Summary:** Stop emitting `person` as a top-level category; classify every file by document class (`personal`, etc.) and rebuild `Person/{Name}/` as a derived symlink view from the existing `file→person` graph edges. Key findings feeding the plan:
-- `person` is emitted from **four** sites; the primary is shared code (`scripts/shared/filename_classifier.py`) that both organizers delegate to — editing only `classify_by_person` would leave `person` in the output.
-- Person attribution is already a category-independent graph relationship (`add_file_to_person`), so demoting the category loses nothing.
-- Migration of the ~38 existing on-disk `Person/` files is the risky part (~30 have no DB row): filesystem-walk driven, dry-run default, collision-safe, manifest rollback, no re-OCR. View root == migration source root, so migrate-out must complete before the symlink view is written.
+**Summary:** `person` is no longer emitted as a top-level category; every file is classified by document class (`personal/{contacts,employment,identification,certificates,other}`), and `Person/{Name}/` is now a derived symlink view regenerated from the `file→person` graph edges.
 
-See the plan for the person→personal subcategory mapping, exact line-level edits (both organizers), the new `PersonViewGenerator` + `person-view`/`migrate-person` CLI, and end-to-end verification. Implementing this **closes the convention item below.**
+**What shipped:**
+- **Classification:** all `person`-category returns remapped to `personal` in `scripts/shared/filename_classifier.py` (9 sites), `scripts/file_organizer_content_based.py` (`classify_by_person`, `_classify_identification_document`), and the dormant `src/organizers/content_organizer.py`. New `personal/contacts` subcategory (resume/CV/vCard) added to both `ContentClassifier` copies. Person→personal subcat mapping centralized in `_PERSON_SUBCAT_TO_PERSONAL_SUBCAT`.
+- **Routing:** `person` folder maps and `get_destination_path` person branches removed from both organizers; `Personal/Contacts` added to the `personal` map.
+- **Graph:** `GraphStore.get_all_people_with_files` / `get_files_by_person` reverse queries (with false-positive-name denylist).
+- **View:** new `src/storage/person_view_generator.py` (`PersonViewGenerator`, idempotent symlink regen, aborts on real files under the view root) wired to `organize-files person-view [--view-root] [--apply]`.
+- **Migration:** new `src/storage/person_migration.py` (filesystem-walk driven, dry-run default, collision-safe, manifest-backed rollback, no re-OCR) wired to `organize-files migrate-person [--apply] [--rollback]`.
+- **Tests/docs:** `test_content_organizer.py` assertions updated; new tests for filename mapping, graph queries, `PersonViewGenerator`, and `person_migration`; `CLAUDE.md` Classification Priority + Output Folders updated. Full suite green (pre-existing `jsonschema`-missing failures unrelated). Plan step-7 grep confirms no filing-category `person` label remains (only entity/schema.org/vision-vocab usages).
+
+**Operational note:** the on-disk `~/Documents/Person/` migration (`migrate-person --apply`) and view regeneration (`person-view --apply`) have not been run against real data yet — code is landed and tested, but the actual ~38-file migration is left for the user to run (dry-run first) since it mutates the real Documents tree.
 
 ### Reconcile `person` vs `personal` category convention
 

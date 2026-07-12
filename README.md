@@ -2,7 +2,7 @@
 
 AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and entity detection.
 
-**Version:** 2.0.0 | **Python:** 3.13 (3.14 blocked by macOS 26 libexpat ABI) | **Files Processed:** 265,000+
+**Version:** 2.1.0 | **Python:** 3.13 (3.14 blocked by macOS 26 libexpat ABI) | **Files Processed:** 265,000+
 
 ## Capabilities
 

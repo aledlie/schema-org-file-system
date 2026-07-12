@@ -89,7 +89,7 @@ mypy src/ scripts/            # type check
 ## Classification Priority
 
 1. **Organization Detection** - client, vendor, invoice, company names
-2. **Person Detection** - resume, contact, signatures (OCR-enhanced)
+2. **Personal Documents** - resume/CV/vCard (`contacts`), employment, identification, certificates (OCR-enhanced). Person attribution is a graph relationship (`GraphStore.add_file_to_person`), not a filing category — see `PERSON_TAXONOMY_OPTION_C_PLAN.md`.
 3. **Legal/Contract** - contracts, agreements, terms
 4. **Research Paper** - arXiv/SSRN/DOI prefixes route to `Research/{Publisher}/` with `schema_type=ScholarlyArticle`
 5. **E-commerce/Shopping** - product listings, carts
@@ -104,7 +104,9 @@ mypy src/ scripts/            # type check
 ```
 ~/Documents/
 ├── Organization/{CompanyName}/    # Vendor/partner files
-├── Person/{PersonName}/           # Person-related files
+├── Personal/{Contacts,Employment,Identification,Certificates,Other}/  # Doc-class filing
+├── Person/{PersonName}/           # Derived symlink view (regenerated from graph edges,
+│                                  # not a filing target) — organize-files person-view
 ├── GameAssets/                    # Sprites, textures, models
 ├── Financial/                     # Invoices, receipts
 ├── Technical/                     # Code, configs
@@ -165,7 +167,7 @@ Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 | `scripts/shared/` import path | Scripts must run from project root so `from shared.x import y` resolves; `organize-files` CLI handles this automatically |
 | FileOrganizer modes | `rename_images.py` takes `--profile {photo,screenshot}`; mode default comes from the profile (`photo`=in-place, `screenshot`=folder) but can be overridden with `--mode` or `FILE_ORGANIZE_MODE` |
 | Unified CLIP+OCR API | `classify_with_ocr_fallback()` in `scripts/shared/clip_classification.py` is the shared entry point; returns `CLIPResult(category, confidence, all_scores)`; both renamer tools call it |
-| Screenshot OCR keyword threshold | `_SCREENSHOT_OCR_KEYWORD_THRESHOLD = 0.10` in `scripts/shared/clip_utils.py`; was previously 0.30 which silently rejected valid scores — do not raise without verifying eval impact |
+| Screenshot OCR keyword threshold | `_SCREENSHOT_OCR_KEYWORD_THRESHOLD = 0.10` in `scripts/file_organizer_content_based.py`; was previously 0.30 which silently rejected valid scores — do not raise without verifying eval impact |
 | Oversized image guard | `CLIPClassifier` encode paths catch Pillow's `DecompressionBombError` and thumbnail down to `_CLIP_INPUT_SIZE` instead of skipping; large maps/renders now classify rather than silently drop |
 | Generator builder API removed | `generators.py` no longer has fluent builders (`set_basic_info`, `set_file_info`, etc.) — build schemas via `set_property(name, value, PropertyType)` directly or the `add_person`/`add_organization`/`set_dates` helpers |
 | Golden snapshot tests | `tests/unit/golden/generate_schema/*.json` are recorded baselines for `generate_schema()` output — do not hand-edit; re-record with `UPDATE_GOLDEN=1 pytest tests/unit/test_generate_schema_golden.py` |
@@ -178,7 +180,7 @@ Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 ## Testing
 
 ```bash
-pytest tests/unit/           # ~735 unit tests
+pytest tests/unit/           # ~685 unit tests
 pytest tests/integration/    # schema.org export pipeline
 pytest tests/performance/ --benchmark-only -m "not slow"   # benchmarks (skip 10k)
 pytest tests/e2e/            # Playwright E2E
