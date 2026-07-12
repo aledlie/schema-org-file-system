@@ -21,7 +21,7 @@ _SCRIPTS_DIR = Path(__file__).resolve().parent.parent.parent / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from shared.file_ops import resolve_collision  # noqa: E402
+from shared.file_ops import is_os_junk_file, resolve_collision  # noqa: E402
 
 DEFAULT_VIEW_ROOT = Path("~/Documents/Person")
 DEFAULT_MIN_FILES = 1
@@ -32,13 +32,6 @@ DEFAULT_MIN_FILES = 1
 _INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*]')
 _MAX_SANITIZED_NAME_LENGTH = 50
 _FALLBACK_SANITIZED_NAME = "Unknown"
-
-# OS/metadata junk ignored when scanning the view root: it must not trip the
-# real-file abort guard (person-migrate deliberately leaves these behind, so
-# aborting on them would permanently block regeneration). Kept in sync with
-# person_migration._IGNORED_FILENAMES / _APPLEDOUBLE_PREFIX.
-_IGNORED_FILENAMES = frozenset({".DS_Store", "Thumbs.db", ".localized", "desktop.ini"})
-_APPLEDOUBLE_PREFIX = "._"
 
 
 class PersonViewRealFileError(Exception):
@@ -152,7 +145,7 @@ class PersonViewGenerator:
             return
         for dirpath, _dirnames, filenames in os.walk(self.view_root):
             for filename in filenames:
-                if filename in _IGNORED_FILENAMES or filename.startswith(_APPLEDOUBLE_PREFIX):
+                if is_os_junk_file(filename):
                     continue
                 yield Path(dirpath) / filename
 

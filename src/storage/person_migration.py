@@ -35,22 +35,16 @@ except ImportError:
     from constants import SEPARATOR_WIDTH_MEDIUM
 
 try:
-    from shared.file_ops import resolve_collision
+    from shared.file_ops import is_os_junk_file, resolve_collision
 except ImportError:  # pragma: no cover - fallback when scripts/ isn't already on sys.path
     import sys
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
-    from shared.file_ops import resolve_collision
+    from shared.file_ops import is_os_junk_file, resolve_collision
 
 
 DEFAULT_PERSON_ROOT = Path("~/Documents/Person").expanduser()
 DEFAULT_DOCUMENTS_ROOT = Path("~/Documents").expanduser()
 DEFAULT_MANIFEST_PATH = Path("person-migrate-manifest.json")
-
-# OS/metadata junk that must never be migrated (matched on exact basename, plus
-# the AppleDouble "._*" resource-fork prefix). These would otherwise be swept
-# into Personal/Other and even collision-renamed (.DS_Store_1, ...).
-_IGNORED_FILENAMES = frozenset({".DS_Store", "Thumbs.db", ".localized", "desktop.ini"})
-_APPLEDOUBLE_PREFIX = "._"
 
 # Legacy top-level category name a `person`-filed row was stored under.
 PERSON_CATEGORY_NAME = "person"
@@ -166,7 +160,7 @@ def _iter_real_files(root: Path) -> Iterator[Path]:
     for path in sorted(root.rglob("*")):
         if not (path.is_file() and not path.is_symlink()):
             continue
-        if path.name in _IGNORED_FILENAMES or path.name.startswith(_APPLEDOUBLE_PREFIX):
+        if is_os_junk_file(path.name):
             continue
         yield path
 

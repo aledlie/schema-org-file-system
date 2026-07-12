@@ -1,6 +1,16 @@
 """Shared file operation utilities."""
 from pathlib import Path
 
+# OS/metadata junk that file walks should ignore rather than treat as user
+# data: exact basenames plus the AppleDouble "._*" resource-fork prefix.
+IGNORED_FILENAMES = frozenset({".DS_Store", "Thumbs.db", ".localized", "desktop.ini"})
+APPLEDOUBLE_PREFIX = "._"
+
+
+def is_os_junk_file(name: str) -> bool:
+  """True if `name` (a basename) is OS/metadata junk that should be skipped."""
+  return name in IGNORED_FILENAMES or name.startswith(APPLEDOUBLE_PREFIX)
+
 
 def resolve_collision(dest_path: Path) -> Path:
   """Resolve filename collision by appending incrementing counter.

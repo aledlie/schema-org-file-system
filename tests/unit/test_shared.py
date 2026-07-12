@@ -14,7 +14,24 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from shared.db_utils import db_connection, get_db_connection  # noqa: E402
-from shared.file_ops import resolve_collision  # noqa: E402
+from shared.file_ops import is_os_junk_file, resolve_collision  # noqa: E402
+
+# ---------------------------------------------------------------------------
+# is_os_junk_file
+# ---------------------------------------------------------------------------
+
+
+class TestIsOsJunkFile:
+    @pytest.mark.parametrize(
+        "name", [".DS_Store", "Thumbs.db", ".localized", "desktop.ini", "._resume.pdf"]
+    )
+    def test_junk_names_detected(self, name: str) -> None:
+        assert is_os_junk_file(name) is True
+
+    @pytest.mark.parametrize("name", ["resume.pdf", "passport.jpg", "notes.txt", "DS_Store"])
+    def test_real_files_not_flagged(self, name: str) -> None:
+        assert is_os_junk_file(name) is False
+
 
 # ---------------------------------------------------------------------------
 # resolve_collision
