@@ -1,5 +1,24 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+
+- **Core-query schema.org export** (`SchemaOrgExporter(use_core=True)`, now the default) — Collects records via Core column queries + bulk association loads and serializes through shared `build_*_jsonld` pure builders in `models.py`, skipping ORM hydration. Byte-identical to the ORM path, parity-locked by `tests/integration/test_core_export_parity.py`; ~3× faster on bulk export (`get_graph_document[1k]` 22.8→16.3ms cold) (`7cbe4c3`, `549228f`)
+- **Shared JSON-LD builders** — Each entity's `to_schema_org()` refactored into a module-level `build_*_jsonld(...)` pure function (single source of truth); the ORM methods are now thin delegators, so the ORM and Core export paths cannot diverge (`7cbe4c3`)
+- **Streaming exports** — `export_to_file`/`export_to_ndjson`/`export_with_graph`/`export_entities_filtered` write incrementally via `_stream_array` + a lazy `_iter_records` generator; the File path column-selects (no ORM File construction) and fetches with `yield_per`. Peak memory now flat regardless of file count (~5.8 MB vs 54 MB at 20k files, ~9× less), removing the 265k-export OOM risk (`c755748`)
+- **Subset-scoped relationship loading** — `_load_file_refs(file_ids=…)` scopes associations + referenced targets for filtered exports; `export_entities_filtered` routes File/Company/Person/Location through Core (Category + unknown types stay on ORM) (`c755748`)
+
+### Changed
+
+- **Export benchmark measures cold** — `tests/performance/test_export_benchmark.py` expunges the ORM identity map before each round (`expunge_all`), so timings reflect a real one-shot export instead of warm identity-map reuse that understated cost (`7cbe4c3`)
+- **Screenshot OCR keyword threshold 0.30 → 0.10** — `_SCREENSHOT_OCR_KEYWORD_THRESHOLD` moved to `scripts/file_organizer_content_based.py`; 0.30 silently rejected valid scores. Do not raise without verifying eval impact (`3182630`)
+- **Oversized-image handling** — `CLIPClassifier` encode paths catch Pillow's `DecompressionBombError` (>178M-pixel decompression-bomb guard) and thumbnail down to `_CLIP_INPUT_SIZE` instead of skipping; large maps/renders now classify rather than silently drop (`3182630`)
+
+### Removed
+
+- **Generator fluent builders** — `generators.py` `set_basic_info`/`set_file_info`/etc. removed; build schemas via `set_property(name, value, PropertyType)` or the `add_person`/`add_organization`/`set_dates` helpers (`4c08a42`)
+
 ## [2.1.0] - 2026-06-29
 
 ### Added
