@@ -5,11 +5,13 @@ set -euo pipefail
 # Optional input directory (defaults to repo root)
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
-# Extra ignore patterns applied to filesystem-scanning artifacts (token-tree,
-# lossless, compressed) on top of .gitignore. `.claude/` is local Claude Code
-# tooling, not part of this project, and is not fully covered by .gitignore.
-# Overridable via the environment; the config-less generators consume it.
-export REPOMIX_EXTRA_IGNORE="${REPOMIX_EXTRA_IGNORE:-.claude/**,**/.claude/**}"
+# Extra ignore patterns for the config-less, filesystem-scanning generators
+# (token-tree, lossless, compressed). Sourced from repomix.config.json's
+# ignore.customPatterns so the whole generator family shares ONE ignore registry
+# (git-ranked/docs read the same file). Overridable via the environment; falls
+# back to the .claude/ tooling excludes if jq is unavailable.
+_REGEN_CONFIG="$(cd "$(dirname "$0")" && pwd)/repomix.config.json"
+export REPOMIX_EXTRA_IGNORE="${REPOMIX_EXTRA_IGNORE:-$(jq -r '.ignore.customPatterns | join(",")' "$_REGEN_CONFIG" 2>/dev/null || echo ".claude/**,**/.claude/**")}"
 
 # repomix compression variant names
 TREE_FILE="token-tree"

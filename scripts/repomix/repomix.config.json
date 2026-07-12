@@ -26,6 +26,8 @@
     "useGitignore": true,
     "useDefaultPatterns": true,
     "customPatterns": [
+      ".claude/**",
+      "**/.claude/**",
       "venv/**",
       "node_modules/**",
       ".ast-grep-backups/**",

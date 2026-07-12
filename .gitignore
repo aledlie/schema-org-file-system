@@ -10,8 +10,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -25,14 +25,13 @@ venv/
 ENV/
 env/
 .venv/
-bin/
+/bin/
 pyvenv.cfg
 
 # IDE
 .idea/
 .vscode/
-*.swp
-*.swo
+*.sw[po]
 *~
 
 # OS
@@ -41,16 +40,10 @@ Thumbs.db
 
 # Results (large JSON files, keep HTML for GitHub Pages)
 results/*.json
-results/*.db
-results/*.db-shm
-results/*.db-wal
-results/*.db-journal
-results/*.db.bak*
+results/*.db*
 results/*.bak
 results/*.txt
-results/ml_data/
-results/ml_data_*/
-!results/ml_data_explorer.html
+results/ml_data*/
 
 # Corrections data (user-specific)
 corrections.json
@@ -70,17 +63,21 @@ package-lock.json
 playwright-report/
 test-results/
 
-# Claude Code
+# Claude Code local/transient state (tracked config under .claude/ stays visible)
 .claude/settings.local.json
 .claude/py-cache/
+# session worktrees (never tracked)
+.claude/worktrees/
+# local hook tooling: own node_modules/dist/package-lock, nothing tracked here
+.claude/hooks/
+# session scheduler lock
+.claude/scheduled_tasks.lock
+# nested .claude dirs from running claude in subdirectories
+.claude/**/.claude/
+
+# CLIP embedding cache
 .cache/
 
 # Repomix
 repomix-output.xml
-docs/repomix/*
-
-# Claude Code local/transient state (tracked config under .claude/ stays visible)
-.claude/worktrees/                 # session worktrees (never tracked)
-.claude/hooks/                     # local hook tooling: own node_modules/dist/package-lock, nothing tracked here
-.claude/scheduled_tasks.lock       # session scheduler lock
-.claude/**/.claude/                # nested .claude dirs from running claude in subdirectories
+docs/repomix/

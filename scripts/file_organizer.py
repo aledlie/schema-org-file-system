@@ -52,15 +52,17 @@ def generate_canonical_iri(entity_type: str, natural_key: str) -> str:
     return f"urn:uuid:{uuid.uuid5(ns, natural_key.lower().strip())}"
 
 from integration import SchemaRegistry
+from src.organizers.base_organizer import BaseOrganizer
 from src.organizers.category_config import CATEGORY_PATHS
+from src.organizers.mime_classifier import classify_by_mime, classify_font
 
 
-class FileOrganizer:
+class FileOrganizer(BaseOrganizer):
     """Organize files using Schema.org metadata."""
 
     def __init__(self, base_path: str = None):
         """Initialize the organizer."""
-        self.base_path = Path(base_path or "~/Documents").expanduser()
+        super().__init__(base_path or "~/Documents")
         self.enricher = MetadataEnricher()
         self.validator = SchemaValidator()
         self.registry = SchemaRegistry()
@@ -139,82 +141,9 @@ class FileOrganizer:
             return game_asset
 
         # =====================================================================
-        # Priority 5: Images
+        # Priority 5: MIME type / extension fallback
         # =====================================================================
-        if mime_type and mime_type.startswith('image/'):
-            if 'screenshot' in file_name or file_name.startswith('screen'):
-                return ('images', 'screenshots', 'ImageObject')
-            elif file_ext in ['.jpg', '.jpeg', '.heic']:
-                return ('images', 'photos', 'Photograph')
-            else:
-                return ('images', 'graphics', 'ImageObject')
-
-        # Documents
-        elif mime_type in ['application/pdf']:
-            # Check if in research directory
-            if 'research' in str(file_path.parent).lower():
-                return ('research', 'papers', 'ScholarlyArticle')
-            return ('documents', 'pdf', 'DigitalDocument')
-
-        elif mime_type in ['application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                           'application/msword']:
-            return ('documents', 'word', 'DigitalDocument')
-
-        elif mime_type in ['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                           'application/vnd.ms-excel']:
-            return ('documents', 'spreadsheets', 'DigitalDocument')
-
-        elif mime_type in ['application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                           'application/vnd.ms-powerpoint']:
-            return ('documents', 'presentations', 'DigitalDocument')
-
-        elif file_ext == '.md':
-            if 'research' in str(file_path.parent).lower():
-                return ('research', 'notes', 'Article')
-            return ('documents', 'markdown', 'Article')
-
-        elif mime_type and mime_type.startswith('text/'):
-            return ('documents', 'text', 'DigitalDocument')
-
-        # Media
-        elif mime_type and mime_type.startswith('video/'):
-            return ('media', 'videos', 'VideoObject')
-
-        elif mime_type and mime_type.startswith('audio/'):
-            if 'music' in file_name or file_ext in ['.mp3', '.m4a', '.flac']:
-                return ('media', 'music', 'MusicRecording')
-            return ('media', 'audio', 'AudioObject')
-
-        # Archives
-        elif mime_type in ['application/zip', 'application/x-zip-compressed'] or file_ext == '.zip':
-            return ('archives', 'zip', 'DigitalDocument')
-
-        elif file_ext in ['.tar', '.gz', '.bz2', '.7z', '.rar']:
-            return ('archives', 'other', 'DigitalDocument')
-
-        # Software
-        elif file_ext in ['.dmg', '.pkg', '.exe', '.msi', '.deb', '.rpm']:
-            return ('software', 'installers', 'SoftwareApplication')
-
-        # Code
-        elif file_ext == '.py':
-            return ('code', 'python', 'SoftwareSourceCode')
-
-        elif file_ext in ['.js', '.ts', '.jsx', '.tsx']:
-            return ('code', 'javascript', 'SoftwareSourceCode')
-
-        # Data
-        elif file_ext == '.json':
-            return ('data', 'json', 'Dataset')
-
-        elif file_ext == '.csv':
-            return ('data', 'csv', 'Dataset')
-
-        elif file_ext in ['.db', '.sqlite', '.sqlite3']:
-            return ('data', 'databases', 'Dataset')
-
-        # Default
-        return ('other', 'other', 'CreativeWork')
+        return classify_by_mime(file_path, mime_type)
 
     def _classify_font(self, file_ext: str) -> Optional[Tuple[str, str, str]]:
         """
@@ -223,16 +152,7 @@ class FileOrganizer:
         Returns:
             Tuple of (category, subcategory, schema_type) or None if not a font
         """
-        font_extensions = {
-            '.ttf': ('fonts', 'truetype', 'DigitalDocument'),
-            '.otf': ('fonts', 'opentype', 'DigitalDocument'),
-            '.woff': ('fonts', 'web', 'DigitalDocument'),
-            '.woff2': ('fonts', 'web', 'DigitalDocument'),
-            '.eot': ('fonts', 'web', 'DigitalDocument'),
-            '.fon': ('fonts', 'other', 'DigitalDocument'),
-            '.fnt': ('fonts', 'other', 'DigitalDocument'),
-        }
-        return font_extensions.get(file_ext.lower())
+        return classify_font(file_ext)
 
     def _classify_game_asset(self, file_path: Path, file_name: str, file_ext: str) -> Optional[Tuple[str, str, str]]:
         """
