@@ -33,6 +33,13 @@ _INVALID_FILENAME_CHARS = re.compile(r'[<>:"/\\|?*]')
 _MAX_SANITIZED_NAME_LENGTH = 50
 _FALLBACK_SANITIZED_NAME = "Unknown"
 
+# OS/metadata junk ignored when scanning the view root: it must not trip the
+# real-file abort guard (person-migrate deliberately leaves these behind, so
+# aborting on them would permanently block regeneration). Kept in sync with
+# person_migration._IGNORED_FILENAMES / _APPLEDOUBLE_PREFIX.
+_IGNORED_FILENAMES = frozenset({".DS_Store", "Thumbs.db", ".localized", "desktop.ini"})
+_APPLEDOUBLE_PREFIX = "._"
+
 
 class PersonViewRealFileError(Exception):
     """
@@ -100,9 +107,22 @@ class PersonViewGenerator:
         errors: List[str] = []
         people = self.graph_store.get_all_people_with_files(min_files=min_files)
 
+        # Only files that still exist on disk become symlinks; a graph row whose
+        # current_path was moved/deleted (e.g. by a later reorg) would otherwise
+        # yield a dangling link. Precompute the valid count and the missing
+        # targets so the dry-run's numbers match what apply actually does
+        # (apply's _write_view performs the same existence skip).
+        missing_targets = [
+            path
+            for _display_name, file_paths in people
+            for path in file_paths
+            if not Path(path).exists()
+        ]
+        valid_targets = sum(len(paths) for _, paths in people) - len(missing_targets)
+
         summary: Dict[str, Any] = {
             "people": len(people),
-            "symlinks_created": sum(len(paths) for _, paths in people),
+            "symlinks_created": valid_targets,
             "removed_stale": 0,
             "dry_run": dry_run,
             "errors": errors,
@@ -110,6 +130,8 @@ class PersonViewGenerator:
 
         should_write = apply and not dry_run
         if not should_write:
+            for path in missing_targets:
+                errors.append(f"source file missing, would skip: {path}")
             for real_file in self._find_real_files():
                 errors.append(f"blocked by real file (would abort apply): {real_file}")
             return summary
@@ -130,6 +152,8 @@ class PersonViewGenerator:
             return
         for dirpath, _dirnames, filenames in os.walk(self.view_root):
             for filename in filenames:
+                if filename in _IGNORED_FILENAMES or filename.startswith(_APPLEDOUBLE_PREFIX):
+                    continue
                 yield Path(dirpath) / filename
 
     def _find_real_files(self) -> List[Path]:

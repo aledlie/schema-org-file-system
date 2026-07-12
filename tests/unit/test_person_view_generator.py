@@ -167,6 +167,53 @@ def test_dry_run_reports_real_file_blocker_without_raising(real_files_dir, view_
     assert intruder.exists()
 
 
+def test_dry_run_excludes_missing_targets_from_count(real_files_dir, view_root):
+    # A graph row pointing at a moved/deleted file must not be counted as a
+    # would-be symlink (it would be a dangling link), and must be reported.
+    present = real_files_dir / "here.pdf"
+    present.write_text("real")
+    missing = str(real_files_dir / "gone.pdf")  # never created
+
+    store = FakeGraphStore({"Jane Smith": [str(present), missing]})
+    generator = PersonViewGenerator(store, view_root=view_root)
+    summary = generator.generate(dry_run=True, apply=False)
+
+    assert summary["symlinks_created"] == 1
+    assert any("gone.pdf" in e for e in summary["errors"])
+
+
+def test_apply_skips_missing_targets_no_broken_symlinks(real_files_dir, view_root):
+    present = real_files_dir / "here.pdf"
+    present.write_text("real")
+    missing = str(real_files_dir / "gone.pdf")
+
+    store = FakeGraphStore({"Jane Smith": [str(present), missing]})
+    generator = PersonViewGenerator(store, view_root=view_root)
+    summary = generator.generate(dry_run=False, apply=True)
+
+    assert summary["symlinks_created"] == 1
+    links = [p for p in view_root.rglob("*") if os.path.islink(p)]
+    assert len(links) == 1
+    assert all(p.resolve().exists() for p in links)  # no dangling links
+
+
+def test_os_junk_does_not_trip_abort_guard(real_files_dir, view_root):
+    # person-migrate leaves .DS_Store behind under the (now-empty) view root;
+    # regenerating the view must ignore it, not abort on it.
+    resume = real_files_dir / "resume.pdf"
+    resume.write_text("resume contents")
+
+    view_root.mkdir(parents=True)
+    (view_root / ".DS_Store").write_text("junk")
+
+    store = FakeGraphStore({"Jane Smith": [str(resume)]})
+    generator = PersonViewGenerator(store, view_root=view_root)
+    summary = generator.generate(dry_run=False, apply=True)
+
+    assert summary["symlinks_created"] == 1
+    assert (view_root / ".DS_Store").exists()  # left untouched, just ignored
+
+
 def test_folder_name_collision_disambiguated(real_files_dir, view_root):
     file_a = real_files_dir / "a.pdf"
     file_b = real_files_dir / "b.pdf"

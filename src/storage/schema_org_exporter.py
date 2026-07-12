@@ -48,14 +48,14 @@ class SchemaOrgExporter:
         exporter.export_to_ndjson("out.ndjson", entity_classes=[File])
         exporter.export_with_graph("out-graph.json")
 
-    Pass ``use_core=True`` to collect records via Core column queries instead of
-    ORM hydration. Output is byte-identical (both paths share the JSON-LD
-    builders in ``models.py``) but avoids per-entity ORM object construction —
-    much faster for large bulk exports. Unknown entity types fall back to the
-    ORM path automatically.
+    Records are collected via Core column queries (default) instead of ORM
+    hydration — byte-identical output (both paths share the JSON-LD builders in
+    ``models.py``) but ~3x faster for large bulk exports by avoiding per-entity
+    ORM object construction. Unknown entity types fall back to ORM automatically.
+    Pass ``use_core=False`` to force the ORM path.
     """
 
-    def __init__(self, session: Session, use_core: bool = False) -> None:
+    def __init__(self, session: Session, use_core: bool = True) -> None:
         self._session = session
         self._use_core = use_core
 
