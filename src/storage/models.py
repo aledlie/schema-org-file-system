@@ -312,136 +312,16 @@ class File(Base, SchemaOrgSerializable):
         return "DigitalDocument"
 
     def to_schema_org(self) -> Dict[str, Any]:
-        """Convert File to schema.org JSON-LD"""
-        # Select appropriate type
-        schema_type = self.get_schema_type()
-
-        result = {
-            "@context": "https://schema.org",
-            "@type": schema_type,        # https://schema.org/ImageObject | https://schema.org/VideoObject | https://schema.org/DigitalDocument
-            "@id": self.get_iri(),
-            "name": self.filename,       # https://schema.org/name
-        }
-
-        # Add optional properties if present
-        if self.created_at:
-            result["dateCreated"] = self.created_at.isoformat()      # https://schema.org/dateCreated
-
-        if self.modified_at:
-            result["dateModified"] = self.modified_at.isoformat()    # https://schema.org/dateModified
-
-        if self.mime_type:
-            result["encodingFormat"] = self.mime_type                # https://schema.org/encodingFormat
-
-        if self.file_size:
-            result["contentSize"] = str(self.file_size)              # https://schema.org/contentSize
-
-        if self.original_path:
-            result["url"] = self.original_path                       # https://schema.org/url
-
-        if self.extracted_text:
-            # Truncate to reasonable length for embedding
-            result["text"] = self.extracted_text[:2000]              # https://schema.org/text
-
-        if self.detected_language:
-            result["inLanguage"] = self.detected_language             # https://schema.org/inLanguage
-
-        # Add image metadata if present
-        if schema_type == "ImageObject":
-            if self.image_width:
-                result["width"] = self.image_width                   # https://schema.org/width
-            if self.image_height:
-                result["height"] = self.image_height                 # https://schema.org/height
-
-            if self.has_faces is not None:
-                result["hasFaces"] = self.has_faces                  # custom ml: extension (not schema.org)
-
-            if self.exif_datetime:
-                result["datePublished"] = self.exif_datetime.isoformat()  # https://schema.org/datePublished
-
-            if self.gps_latitude and self.gps_longitude:
-                result["contentLocation"] = {                        # https://schema.org/contentLocation
-                    "@type": "Place",                                # https://schema.org/Place
-                    "geo": {                                         # https://schema.org/geo
-                        "@type": "GeoCoordinates",                   # https://schema.org/GeoCoordinates
-                        "latitude": self.gps_latitude,               # https://schema.org/latitude
-                        "longitude": self.gps_longitude              # https://schema.org/longitude
-                    }
-                }
-
-        # Add relationships
-        relationships = self.build_schema_relationships()
-        if relationships:
-            result.update(relationships)
-
-        return result
+        """Convert File to schema.org JSON-LD (delegates to build_file_jsonld)."""
+        return build_file_jsonld(
+            self, self.categories, self.companies, self.people, self.locations
+        )
 
     def build_schema_relationships(self) -> Dict[str, Any]:
-        """Build relationships to other entities"""
-        relationships = {}
-
-        # Add categories — primary category as mainEntityOfPage, rest as about
-        if self.categories:
-            primary = self.categories[0]
-            relationships["mainEntityOfPage"] = {  # https://schema.org/mainEntityOfPage
-                "@type": "DefinedTerm",            # https://schema.org/DefinedTerm
-                "@id": primary.get_iri(),
-                "name": primary.name               # https://schema.org/name
-            }
-            if len(self.categories) > 1:
-                relationships["about"] = [         # https://schema.org/about
-                    {
-                        "@type": "DefinedTerm",    # https://schema.org/DefinedTerm
-                        "@id": cat.get_iri(),
-                        "name": cat.name           # https://schema.org/name
-                    }
-                    for cat in self.categories[1:]
-                ]
-
-        # Add companies and people
-        mentions = []
-        if self.companies:
-            mentions.extend([
-                {
-                    "@type": "Organization", # https://schema.org/Organization
-                    "@id": comp.get_iri(),
-                    "name": comp.name        # https://schema.org/name
-                }
-                for comp in self.companies
-            ])
-
-        if self.people:
-            mentions.extend([
-                {
-                    "@type": "Person",       # https://schema.org/Person
-                    "@id": person.get_iri(),
-                    "name": person.name      # https://schema.org/name
-                }
-                for person in self.people
-            ])
-
-        if mentions:
-            relationships["mentions"] = mentions  # https://schema.org/mentions
-
-        # Add locations
-        if self.locations:
-            if len(self.locations) == 1:
-                relationships["spatialCoverage"] = {    # https://schema.org/spatialCoverage
-                    "@type": "Place",                   # https://schema.org/Place
-                    "@id": self.locations[0].get_iri(),
-                    "name": self.locations[0].name      # https://schema.org/name
-                }
-            else:
-                relationships["spatialCoverage"] = [    # https://schema.org/spatialCoverage
-                    {
-                        "@type": "Place",               # https://schema.org/Place
-                        "@id": loc.get_iri(),
-                        "name": loc.name                # https://schema.org/name
-                    }
-                    for loc in self.locations
-                ]
-
-        return relationships
+        """Build relationships to other entities (delegates to build_file_relationships)."""
+        return build_file_relationships(
+            self.categories, self.companies, self.people, self.locations
+        )
 
     @hybrid_property
     def is_organized(self) -> bool:
@@ -541,62 +421,8 @@ class Category(Base, SchemaOrgSerializable):
         return f"urn:uuid:{self.canonical_id}"
 
     def to_schema_org(self) -> Dict[str, Any]:
-        """Convert Category to schema.org JSON-LD (DefinedTerm)"""
-
-        result = {
-            "@context": "https://schema.org",
-            "@type": self.get_schema_type(),     # https://schema.org/DefinedTerm
-            "@id": self.get_iri(),
-            "name": self.name,                   # https://schema.org/name
-        }
-
-        # Add identifier (hierarchical path)
-        if self.full_path:
-            result["identifier"] = self.full_path.lower().replace('/', '-')  # https://schema.org/identifier
-
-        # Add definition/description
-        if self.description:
-            result["definition"] = self.description          # custom: no schema.org equivalent; closest is https://schema.org/description
-        else:
-            result["definition"] = f"Category: {self.name}" # custom: see above
-
-        # Add taxonomy membership
-        result["inDefinedTermSet"] = {           # https://schema.org/inDefinedTermSet
-            "@type": "DefinedTermSet",           # https://schema.org/DefinedTermSet
-            "@id": "urn:uuid:categories-taxonomy",
-            "name": "File Organization Categories"  # https://schema.org/name
-        }
-
-        # Add parent category (broader)
-        if self.parent:
-            result["broader"] = {                # SKOS: https://www.w3.org/TR/skos-reference/#broader (not schema.org)
-                "@type": "DefinedTerm",          # https://schema.org/DefinedTerm
-                "@id": self.parent.get_iri(),
-                "name": self.parent.name         # https://schema.org/name
-            }
-
-        # Add child categories (narrower) if loaded
-        if self.subcategories:
-            result["narrower"] = [               # SKOS: https://www.w3.org/TR/skos-reference/#narrower (not schema.org)
-                {
-                    "@type": "DefinedTerm",      # https://schema.org/DefinedTerm
-                    "@id": subcat.get_iri(),
-                    "name": subcat.name          # https://schema.org/name
-                }
-                for subcat in self.subcategories
-            ]
-
-        # Custom extensions
-        result["fileCount"] = self.file_count or 0      # custom ml: extension (not schema.org)
-        result["hierarchyLevel"] = self.level or 0      # custom ml: extension (not schema.org)
-
-        if self.icon:
-            result["icon"] = self.icon                  # custom extension (not schema.org)
-
-        if self.color:
-            result["color"] = self.color                # custom extension (not schema.org)
-
-        return result
+        """Convert Category to schema.org JSON-LD (delegates to build_category_jsonld)."""
+        return build_category_jsonld(self, self.parent, self.subcategories)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -687,50 +513,8 @@ class Company(Base, SchemaOrgSerializable):
         return f"https://www.wikidata.org/wiki/Q{normalized}"
 
     def to_schema_org(self) -> Dict[str, Any]:
-        """Convert Company to schema.org JSON-LD (Organization)"""
-
-        result = {
-            "@context": "https://schema.org",
-            "@type": self.get_schema_type(),    # https://schema.org/Organization
-            "@id": self.get_iri(),
-            "name": self.name,                  # https://schema.org/name
-        }
-
-        # Add website URL
-        if self.domain:
-            url = self.domain if self.domain.startswith(('http://', 'https://')) else f"https://{self.domain}"
-            result["url"] = url                 # https://schema.org/url
-
-        # Add industry/sector
-        if self.industry:
-            result["knowsAbout"] = self.industry  # https://schema.org/knowsAbout
-
-        # Add founding date if available
-        if self.first_seen:
-            result["dateFounded"] = self.first_seen.date().isoformat()  # custom: non-standard; schema.org uses https://schema.org/foundingDate
-
-        # Add metadata timestamps
-        if self.first_seen:
-            result["dateCreated"] = self.first_seen.isoformat()   # https://schema.org/dateCreated
-
-        if self.last_seen:
-            result["dateModified"] = self.last_seen.isoformat()   # https://schema.org/dateModified
-
-        # Add external references
-        same_as = []
-        if self.domain:
-            same_as.append(f"https://{self.domain.replace('https://', '').replace('http://', '')}")
-
-        # Add potential Wikidata/Crunchbase references
-        same_as.append(self.generate_wikidata_url(self.name))
-
-        if same_as:
-            result["sameAs"] = [url for url in same_as if url]    # https://schema.org/sameAs
-
-        # Custom tracking properties
-        result["mentionCount"] = self.file_count or 0  # custom ml: extension (not schema.org)
-
-        return result
+        """Convert Company to schema.org JSON-LD (delegates to build_company_jsonld)."""
+        return build_company_jsonld(self)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -808,34 +592,8 @@ class Person(Base, SchemaOrgSerializable):
         return f"urn:uuid:{self.canonical_id}"
 
     def to_schema_org(self) -> Dict[str, Any]:
-        """Convert Person to schema.org JSON-LD"""
-
-        result = {
-            "@context": "https://schema.org",
-            "@type": self.get_schema_type(),    # https://schema.org/Person
-            "@id": self.get_iri(),
-            "name": self.name,                  # https://schema.org/name
-        }
-
-        # Add email if present
-        if self.email:
-            result["email"] = self.email        # https://schema.org/email
-
-        # Add job title/role
-        if self.role:
-            result["jobTitle"] = self.role      # https://schema.org/jobTitle
-
-        # Add temporal data
-        if self.first_seen:
-            result["dateCreated"] = self.first_seen.isoformat()   # https://schema.org/dateCreated
-
-        if self.last_seen:
-            result["dateModified"] = self.last_seen.isoformat()   # https://schema.org/dateModified
-
-        # Custom tracking
-        result["mentionCount"] = self.file_count or 0  # custom ml: extension (not schema.org)
-
-        return result
+        """Convert Person to schema.org JSON-LD (delegates to build_person_jsonld)."""
+        return build_person_jsonld(self)
 
     def to_schema_org_with_relationships(self,
                                        company: Optional['Company'] = None,
@@ -940,67 +698,11 @@ class Location(Base, SchemaOrgSerializable):
 
     def get_schema_type(self) -> str:
         """Return the schema.org @type for this location (Place, City, or Country)."""
-        if self.city and self.state and self.country:
-            return "Place"  # Full address
-        elif self.country and not self.state and not self.city:
-            return "Country"  # Just country
-        elif self.city:
-            return "City"  # At least city specified
-        else:
-            return "Place"  # Default
+        return location_schema_type(self.city, self.state, self.country)
 
     def to_schema_org(self) -> Dict[str, Any]:
-        """Convert Location to schema.org JSON-LD (Place)"""
-
-        schema_type = self.get_schema_type()
-
-        result = {
-            "@context": "https://schema.org",
-            "@type": schema_type,               # https://schema.org/Place | https://schema.org/City | https://schema.org/Country
-            "@id": self.get_iri(),
-            "name": self.name,                  # https://schema.org/name
-        }
-
-        # Add structured address
-        address = {}
-        if self.city:
-            address["addressLocality"] = self.city       # https://schema.org/addressLocality
-        if self.state:
-            address["addressRegion"] = self.state        # https://schema.org/addressRegion
-        if self.country:
-            # Use country code if 2 chars, otherwise country name
-            country = self.country
-            if len(country) == 2:
-                address["addressCountry"] = country      # https://schema.org/addressCountry
-            else:
-                address["addressCountry"] = country[:2]  # Attempt to extract code  # https://schema.org/addressCountry
-
-        if address:
-            result["address"] = {               # https://schema.org/address
-                "@type": "PostalAddress",       # https://schema.org/PostalAddress
-                **address
-            }
-
-        # Add geographic coordinates
-        if self.latitude is not None and self.longitude is not None:
-            result["geo"] = {                   # https://schema.org/geo
-                "@type": "GeoCoordinates",      # https://schema.org/GeoCoordinates
-                "latitude": self.latitude,      # https://schema.org/latitude
-                "longitude": self.longitude     # https://schema.org/longitude
-            }
-
-        # Add custom geohash property
-        if self.geohash:
-            result["geoHash"] = self.geohash    # custom ml: extension (not schema.org)
-
-        # Add timestamp
-        if self.created_at:
-            result["dateCreated"] = self.created_at.isoformat()  # https://schema.org/dateCreated
-
-        # Custom tracking
-        result["mentionCount"] = self.file_count or 0  # custom ml: extension (not schema.org)
-
-        return result
+        """Convert Location to schema.org JSON-LD (delegates to build_location_jsonld)."""
+        return build_location_jsonld(self)
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -1015,6 +717,261 @@ class Location(Base, SchemaOrgSerializable):
             'longitude': self.longitude,
             'file_count': self.file_count,
         }
+
+
+# ---------------------------------------------------------------------------
+# schema.org JSON-LD builders (single source of truth)
+#
+# Each ``to_schema_org()`` method delegates to the matching builder below.
+# Builders operate on any object exposing the entity's column attributes — an
+# ORM instance *or* a lightweight Core-query row — so the ORM path and the
+# exporter's Core-query path (SchemaOrgExporter, use_core=True) produce byte-
+# identical output with no duplicated serialization logic. Relationship args
+# are sequences of objects exposing ``get_iri()`` and ``name`` (ORM entities or
+# lightweight refs). Do not inline these back into the methods.
+# ---------------------------------------------------------------------------
+
+
+def build_file_relationships(categories, companies, people, locations) -> Dict[str, Any]:
+    """Build a File's schema.org relationship properties from related entities."""
+    relationships: Dict[str, Any] = {}
+
+    # Categories — primary as mainEntityOfPage, remainder as about
+    if categories:
+        primary = categories[0]
+        relationships["mainEntityOfPage"] = {
+            "@type": "DefinedTerm",
+            "@id": primary.get_iri(),
+            "name": primary.name,
+        }
+        if len(categories) > 1:
+            relationships["about"] = [
+                {"@type": "DefinedTerm", "@id": cat.get_iri(), "name": cat.name}
+                for cat in categories[1:]
+            ]
+
+    # Companies + people -> mentions
+    mentions = []
+    if companies:
+        mentions.extend(
+            {"@type": "Organization", "@id": comp.get_iri(), "name": comp.name}
+            for comp in companies
+        )
+    if people:
+        mentions.extend(
+            {"@type": "Person", "@id": person.get_iri(), "name": person.name}
+            for person in people
+        )
+    if mentions:
+        relationships["mentions"] = mentions
+
+    # Locations -> spatialCoverage (single object or list)
+    if locations:
+        if len(locations) == 1:
+            relationships["spatialCoverage"] = {
+                "@type": "Place",
+                "@id": locations[0].get_iri(),
+                "name": locations[0].name,
+            }
+        else:
+            relationships["spatialCoverage"] = [
+                {"@type": "Place", "@id": loc.get_iri(), "name": loc.name}
+                for loc in locations
+            ]
+
+    return relationships
+
+
+def build_file_jsonld(f, categories, companies, people, locations) -> Dict[str, Any]:
+    """Build a File's schema.org JSON-LD from column values + related entities."""
+    schema_type = f.schema_type or File.get_schema_type_from_mime(f.mime_type)
+
+    result = {
+        "@context": "https://schema.org",
+        "@type": schema_type,
+        "@id": f.canonical_id or f"urn:sha256:{f.id}",
+        "name": f.filename,
+    }
+
+    if f.created_at:
+        result["dateCreated"] = f.created_at.isoformat()
+    if f.modified_at:
+        result["dateModified"] = f.modified_at.isoformat()
+    if f.mime_type:
+        result["encodingFormat"] = f.mime_type
+    if f.file_size:
+        result["contentSize"] = str(f.file_size)
+    if f.original_path:
+        result["url"] = f.original_path
+    if f.extracted_text:
+        result["text"] = f.extracted_text[:2000]  # truncate for embedding
+    if f.detected_language:
+        result["inLanguage"] = f.detected_language
+
+    if schema_type == "ImageObject":
+        if f.image_width:
+            result["width"] = f.image_width
+        if f.image_height:
+            result["height"] = f.image_height
+        if f.has_faces is not None:
+            result["hasFaces"] = f.has_faces  # custom ml: extension
+        if f.exif_datetime:
+            result["datePublished"] = f.exif_datetime.isoformat()
+        if f.gps_latitude and f.gps_longitude:
+            result["contentLocation"] = {
+                "@type": "Place",
+                "geo": {
+                    "@type": "GeoCoordinates",
+                    "latitude": f.gps_latitude,
+                    "longitude": f.gps_longitude,
+                },
+            }
+
+    result.update(build_file_relationships(categories, companies, people, locations))
+    return result
+
+
+def build_category_jsonld(f, parent, subcategories) -> Dict[str, Any]:
+    """Build a Category's schema.org JSON-LD (DefinedTerm) from column values."""
+    result = {
+        "@context": "https://schema.org",
+        "@type": "DefinedTerm",
+        "@id": f"urn:uuid:{f.canonical_id}",
+        "name": f.name,
+    }
+
+    if f.full_path:
+        result["identifier"] = f.full_path.lower().replace("/", "-")
+
+    # definition: description if present, else a generated fallback (custom)
+    result["definition"] = f.description if f.description else f"Category: {f.name}"
+
+    result["inDefinedTermSet"] = {
+        "@type": "DefinedTermSet",
+        "@id": "urn:uuid:categories-taxonomy",
+        "name": "File Organization Categories",
+    }
+
+    if parent:  # SKOS broader
+        result["broader"] = {
+            "@type": "DefinedTerm",
+            "@id": parent.get_iri(),
+            "name": parent.name,
+        }
+    if subcategories:  # SKOS narrower
+        result["narrower"] = [
+            {"@type": "DefinedTerm", "@id": sub.get_iri(), "name": sub.name}
+            for sub in subcategories
+        ]
+
+    result["fileCount"] = f.file_count or 0        # custom ml: extension
+    result["hierarchyLevel"] = f.level or 0        # custom ml: extension
+    if f.icon:
+        result["icon"] = f.icon                    # custom extension
+    if f.color:
+        result["color"] = f.color                  # custom extension
+
+    return result
+
+
+def build_company_jsonld(f) -> Dict[str, Any]:
+    """Build a Company's schema.org JSON-LD (Organization) from column values."""
+    result = {
+        "@context": "https://schema.org",
+        "@type": "Organization",
+        "@id": f"urn:uuid:{f.canonical_id}",
+        "name": f.name,
+    }
+
+    if f.domain:
+        result["url"] = (
+            f.domain if f.domain.startswith(("http://", "https://")) else f"https://{f.domain}"
+        )
+    if f.industry:
+        result["knowsAbout"] = f.industry
+    if f.first_seen:
+        result["dateFounded"] = f.first_seen.date().isoformat()  # custom (non-standard)
+        result["dateCreated"] = f.first_seen.isoformat()
+    if f.last_seen:
+        result["dateModified"] = f.last_seen.isoformat()
+
+    same_as = []
+    if f.domain:
+        same_as.append(f"https://{f.domain.replace('https://', '').replace('http://', '')}")
+    same_as.append(Company.generate_wikidata_url(f.name))
+    if same_as:
+        result["sameAs"] = [url for url in same_as if url]
+
+    result["mentionCount"] = f.file_count or 0     # custom ml: extension
+    return result
+
+
+def build_person_jsonld(f) -> Dict[str, Any]:
+    """Build a Person's schema.org JSON-LD from column values."""
+    result = {
+        "@context": "https://schema.org",
+        "@type": "Person",
+        "@id": f"urn:uuid:{f.canonical_id}",
+        "name": f.name,
+    }
+
+    if f.email:
+        result["email"] = f.email
+    if f.role:
+        result["jobTitle"] = f.role
+    if f.first_seen:
+        result["dateCreated"] = f.first_seen.isoformat()
+    if f.last_seen:
+        result["dateModified"] = f.last_seen.isoformat()
+
+    result["mentionCount"] = f.file_count or 0     # custom ml: extension
+    return result
+
+
+def location_schema_type(city, state, country) -> str:
+    """Return the schema.org @type for a location (Place, City, or Country)."""
+    if city and state and country:
+        return "Place"  # full address
+    elif country and not state and not city:
+        return "Country"
+    elif city:
+        return "City"
+    return "Place"  # default
+
+
+def build_location_jsonld(f) -> Dict[str, Any]:
+    """Build a Location's schema.org JSON-LD (Place) from column values."""
+    result = {
+        "@context": "https://schema.org",
+        "@type": location_schema_type(f.city, f.state, f.country),
+        "@id": f"urn:uuid:{f.canonical_id}",
+        "name": f.name,
+    }
+
+    address = {}
+    if f.city:
+        address["addressLocality"] = f.city
+    if f.state:
+        address["addressRegion"] = f.state
+    if f.country:
+        # country code if already 2 chars, else attempt to derive one
+        address["addressCountry"] = f.country if len(f.country) == 2 else f.country[:2]
+    if address:
+        result["address"] = {"@type": "PostalAddress", **address}
+
+    if f.latitude is not None and f.longitude is not None:
+        result["geo"] = {
+            "@type": "GeoCoordinates",
+            "latitude": f.latitude,
+            "longitude": f.longitude,
+        }
+    if f.geohash:
+        result["geoHash"] = f.geohash              # custom ml: extension
+    if f.created_at:
+        result["dateCreated"] = f.created_at.isoformat()
+
+    result["mentionCount"] = f.file_count or 0     # custom ml: extension
+    return result
 
 
 class FileRelationship(Base):

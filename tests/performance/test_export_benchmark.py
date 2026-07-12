@@ -4,6 +4,12 @@ Performance benchmarks for SchemaOrgExporter.
 Measures throughput of all four export methods across three data sizes.
 10k tests are marked ``slow`` and skipped in normal CI runs.
 
+Exporter benchmarks run *cold*: the ORM identity map is expunged before each
+round (see ``_bench_cold``) so every timed call rebuilds ORM objects from
+scratch. Without this, pytest-benchmark reuses warm identity-map objects across
+rounds and reports times that never occur for a real one-shot export from a
+fresh session.
+
 Run benchmarks:
     pytest tests/performance/ -v --benchmark-only
     pytest tests/performance/ -v --benchmark-only -m "not slow"  # skip 10k
@@ -109,6 +115,30 @@ def seeded(request) -> tuple[Session, int]:
 
 
 # ---------------------------------------------------------------------------
+# Cold-measurement helper
+# ---------------------------------------------------------------------------
+
+_COLD_ROUNDS = 5
+
+
+def _bench_cold(benchmark, session, target, *args):
+    """Benchmark ``target(*args)`` with a fresh (cold) ORM identity map per round.
+
+    ``session.expunge_all()`` runs in pedantic ``setup`` before each timed round,
+    dropping all instances from the identity map so every call rebuilds ORM
+    objects from scratch — the real one-shot export cost. (``expire_all`` is
+    insufficient: it keeps object shells and only refreshes attributes, leaving
+    the measurement "semi-warm".) Returns the target's value.
+    """
+
+    def setup():
+        session.expunge_all()
+        return args, {}
+
+    return benchmark.pedantic(target, setup=setup, rounds=_COLD_ROUNDS, iterations=1)
+
+
+# ---------------------------------------------------------------------------
 # Benchmark: get_graph_document (in-memory, no I/O)
 # ---------------------------------------------------------------------------
 
@@ -116,7 +146,7 @@ def seeded(request) -> tuple[Session, int]:
 def test_bench_get_graph_document(benchmark, seeded):
     session, n = seeded
     exporter = SchemaOrgExporter(session)
-    result = benchmark(exporter.get_graph_document, [File, Category])
+    result = _bench_cold(benchmark, session, exporter.get_graph_document, [File, Category])
     assert len(result["@graph"]) == n * 2
 
 
@@ -129,7 +159,7 @@ def test_bench_export_to_file(benchmark, seeded, tmp_path):
     session, n = seeded
     exporter = SchemaOrgExporter(session)
     out = tmp_path / "export.json"
-    count = benchmark(exporter.export_to_file, out, [File, Category], False)
+    count = _bench_cold(benchmark, session, exporter.export_to_file, out, [File, Category], False)
     assert count == n * 2
 
 
@@ -142,7 +172,7 @@ def test_bench_export_to_ndjson(benchmark, seeded, tmp_path):
     session, n = seeded
     exporter = SchemaOrgExporter(session)
     out = tmp_path / "export.ndjson"
-    count = benchmark(exporter.export_to_ndjson, out, [File, Category])
+    count = _bench_cold(benchmark, session, exporter.export_to_ndjson, out, [File, Category])
     assert count == n * 2
 
 
@@ -155,7 +185,7 @@ def test_bench_export_with_graph(benchmark, seeded, tmp_path):
     session, n = seeded
     exporter = SchemaOrgExporter(session)
     out = tmp_path / "export_graph.json"
-    count = benchmark(exporter.export_with_graph, out, [File, Category], False)
+    count = _bench_cold(benchmark, session, exporter.export_with_graph, out, [File, Category], False)
     assert count == n * 2
 
 
@@ -241,5 +271,5 @@ def test_bench_get_graph_document_with_relations(benchmark, seeded_with_relation
     """Measures get_graph_document overhead when file-category relationships are populated."""
     session, n = seeded_with_relations
     exporter = SchemaOrgExporter(session)
-    result = benchmark(exporter.get_graph_document, [File, Category])
+    result = _bench_cold(benchmark, session, exporter.get_graph_document, [File, Category])
     assert len(result["@graph"]) == n * 2
