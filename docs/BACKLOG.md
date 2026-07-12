@@ -84,7 +84,25 @@ git filter-repo --invert-paths \
 - **Migration:** new `src/storage/person_migration.py` (filesystem-walk driven, dry-run default, collision-safe, manifest-backed rollback, no re-OCR) wired to `organize-files migrate-person [--apply] [--rollback]`.
 - **Tests/docs:** `test_content_organizer.py` assertions updated; new tests for filename mapping, graph queries, `PersonViewGenerator`, and `person_migration`; `CLAUDE.md` Classification Priority + Output Folders updated. Full suite green (pre-existing `jsonschema`-missing failures unrelated). Plan step-7 grep confirms no filing-category `person` label remains (only entity/schema.org/vision-vocab usages).
 
-**Operational note:** the on-disk `~/Documents/Person/` migration (`migrate-person --apply`) and view regeneration (`person-view --apply`) have not been run against real data yet — code is landed and tested, but the actual ~38-file migration is left for the user to run (dry-run first) since it mutates the real Documents tree.
+**Operational note:** `migrate-person --apply` was run against real data (2026-07-12): 33 files moved into `Personal/{subcat}/`, `~/Documents/Person/` emptied of real files. `person-view --apply` (symlink regen) is the only remaining on-disk step and is left for the user to run.
+
+### Person-view population — `index-people` graph edges + filename fallback — DONE (2026-07-12)
+
+**Status:** ✅ Done (2026-07-12). Follows the Option C migration above.
+**Priority:** P3 (makes the `Person/{Name}/` symlink view actually populate)
+**Source:** post-migration session, 2026-07-12
+
+**Why not just re-run `content`:** re-running `organize-files content` over `~/Documents/Personal` to create `file→person` edges was rejected — the classifier re-derives from content and (dry-run confirmed) would relocate **6 of 33** files to worse spots (resume `.webp` → `Financial`/`Legal`, DUI PDFs → `Property`/`Uncategorized`), degrading the migration's trustworthy folder-based placement. Only 15/33 files even have a detected person.
+
+**What shipped instead:** `organize-files index-people [--manifest] [--person-root] [--apply]` (dry-run default) in `src/storage/person_migration.py`. Derives person attribution from the migration manifest's `src` (the user's original `Person/{Name}/` filing) and writes `File` rows + person edges at each file's **current** `Personal/` path — no file moves, no re-OCR/CLIP. Idempotent (`add_file` upserts, `add_file_to_person` no-ops duplicate edges).
+
+**Attribution review (7 originally-unattributed files):** only one had a recoverable person without OCR — `RESUME1-ChynaStrange.pdf` (**Chyna Strange**, name in the CamelCase filename). The other six are false-positive traps: `Resume-Blue`/`Resume-Orange` (template colors), `MarketingTemplate`/`PAS-PartTime` (generic/program names), a wage-calculator `.xlsx`, and `unnamed (1).jpg`. Added a conservative filename fallback to `build_person_index` (tried only when no name dir matches): gated to resume/CV filenames, requires two adjacent proper-case tokens (CamelCase-aware), stopword-filtered (resume/template/color). Extracts Chyna Strange, rejects all six false positives. A 9-case parametrized test pins the rejections; name-dir attribution still takes precedence.
+
+**Also fixed this session** (correctness surfaced by the first real runs):
+- `migrate-person` and `person-view` skip OS junk (`.DS_Store`/`Thumbs.db`/AppleDouble) via a single shared `shared.file_ops.is_os_junk_file`, so leftover junk under `Person/` doesn't trip the view's real-file abort guard.
+- `person-view` excludes graph rows whose `current_path` no longer exists from the dry-run count and reports them (was overstating symlinks that apply would never create; `_write_view` already skipped them). 8 stale rows (files deleted in the P1 PII scrub above) are correctly skipped, not turned into dangling links.
+
+**Result on the real tree:** attribution 27/33 (Alyshia Ledlie 23, Isabel Budenz 2, Chyna Strange 1, Kenneth Reitz 1); `index-people --apply` wrote 27 edges; `person-view` dry-run now reports 27 symlinks across 5 people. Remaining 6 files have no person identifiable without OCR (deliberately avoided). Full suite: 858 passed, 2 skipped.
 
 ### Reconcile `person` vs `personal` category convention
 
