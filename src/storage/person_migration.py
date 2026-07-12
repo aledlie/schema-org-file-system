@@ -88,15 +88,24 @@ DB_PERSON_SUBCAT_TO_PERSONAL_SUBCAT: Dict[str, str] = {
     "family": SUBCAT_OTHER,
 }
 
-# On-disk subfolder name (immediately under the walk root) -> `personal`
-# subcategory, used only when no usable DB hint exists for a file. Any
-# subfolder not in this table is either a person's NAME dir (-> contacts,
-# see _looks_like_person_name_dir) or unrecognized (-> other, flagged).
+# On-disk doc-class folder name (matched at ANY depth in a file's path) ->
+# `personal` subcategory, used when no usable DB hint exists. The DEEPEST
+# matching ancestor wins, so an explicit doc-class folder (e.g. Resumes,
+# Journal) beats the enclosing person NAME dir's contacts default. A path with
+# no doc-class folder falls to _looks_like_person_name_dir (-> contacts) or,
+# failing that, to other (flagged).
 SUBFOLDER_NAME_TO_SUBCAT: Dict[str, str] = {
     "Identity": SUBCAT_IDENTIFICATION,
+    "Records-IDs": SUBCAT_IDENTIFICATION,
     "Employment": SUBCAT_EMPLOYMENT,
-    "Resumes": SUBCAT_EMPLOYMENT,
+    # Resumes/CVs route to contacts, not employment, per the plan's mapping
+    # table ("avoids lossy merge into employment") and to match the production
+    # classifier's `personal/contacts` subcategory (resume/cv/curriculum vitae).
+    "Resumes": SUBCAT_CONTACTS,
     "Events": SUBCAT_OTHER,
+    "Journal": SUBCAT_OTHER,
+    "Personal": SUBCAT_OTHER,
+    "DUI Docs": SUBCAT_OTHER,
 }
 
 # Destination folder (relative to documents_root) for each `personal` subcat.
@@ -200,10 +209,15 @@ def _determine_subcat(
         # File sits directly at the walk root -- no subfolder name to key off.
         return SUBCAT_OTHER, SUBCAT_SOURCE_FALLBACK, True
 
-    subfolder = relative_parts[0]
-    if subfolder in SUBFOLDER_NAME_TO_SUBCAT:
-        return SUBFOLDER_NAME_TO_SUBCAT[subfolder], SUBCAT_SOURCE_SUBFOLDER, False
-    if _looks_like_person_name_dir(subfolder):
+    # Ancestor folders, excluding the filename itself, deepest-first so the most
+    # specific doc-class folder wins (e.g. ".../Alyshia Ledlie/Resumes/x.pdf"
+    # keys off Resumes, not the enclosing name dir).
+    folder_parts = relative_parts[:-1]
+    for subfolder in reversed(folder_parts):
+        if subfolder in SUBFOLDER_NAME_TO_SUBCAT:
+            return SUBFOLDER_NAME_TO_SUBCAT[subfolder], SUBCAT_SOURCE_SUBFOLDER, False
+
+    if any(_looks_like_person_name_dir(subfolder) for subfolder in folder_parts):
         return SUBCAT_CONTACTS, SUBCAT_SOURCE_SUBFOLDER, False
 
     return SUBCAT_OTHER, SUBCAT_SOURCE_FALLBACK, True

@@ -111,6 +111,50 @@ class TestBuildMigrationPlan:
         entries = build_migration_plan(person_tree, documents_root)
         assert len(entries) == 4
 
+    def test_nested_docclass_folder_beats_name_dir(
+        self, tmp_path: Path, documents_root: Path
+    ) -> None:
+        # A doc-class folder nested under a person NAME dir must win over the
+        # name dir's contacts default (deepest-match wins).
+        person_root = tmp_path / "Documents" / "Person"
+        cases = {
+            # Employment folder under a name dir beats the contacts default.
+            "Alyshia Ledlie/Employment/offer.pdf": SUBCAT_EMPLOYMENT,
+            # Journal/Personal reclassify out of the coarse contacts default.
+            "Alyshia Ledlie/Personal/Journal/dream.docx": SUBCAT_OTHER,
+            "Alyshia Ledlie/Personal/report.pdf": SUBCAT_OTHER,
+            # Resumes stay in contacts (plan: resumes/CVs -> contacts).
+            "Alyshia Ledlie/Resumes/cv.pdf": SUBCAT_CONTACTS,
+            # A loose file directly under the name dir keeps the contacts default.
+            "Alyshia Ledlie/loose_contact.pdf": SUBCAT_CONTACTS,
+        }
+        for rel, _ in cases.items():
+            f = person_root / rel
+            f.parent.mkdir(parents=True, exist_ok=True)
+            f.write_text("x")
+
+        entries = build_migration_plan(person_root, documents_root)
+        by_name = {Path(e.src).name: e for e in entries}
+        for rel, expected in cases.items():
+            name = Path(rel).name
+            assert by_name[name].subcat == expected, rel
+            assert by_name[name].subcat_source == SUBCAT_SOURCE_SUBFOLDER
+
+    def test_docclass_ancestor_wins_over_nested_name_dir(
+        self, tmp_path: Path, documents_root: Path
+    ) -> None:
+        # ".../Identity/Alyshia Ledlie/passport.jpg" is identification — the
+        # name dir nested *under* a doc-class folder must not hijack it.
+        person_root = tmp_path / "Documents" / "Person"
+        f = person_root / "Identity" / "Alyshia Ledlie" / "passport.jpg"
+        f.parent.mkdir(parents=True)
+        f.write_text("x")
+
+        entries = build_migration_plan(person_root, documents_root)
+        entry = next(e for e in entries if Path(e.src).name == "passport.jpg")
+        assert entry.subcat == SUBCAT_IDENTIFICATION
+        assert entry.subcat_source == SUBCAT_SOURCE_SUBFOLDER
+
     def test_os_junk_files_are_excluded(
         self, tmp_path: Path, documents_root: Path
     ) -> None:
