@@ -7,6 +7,7 @@ branch: relationship ordering, parent/child taxonomy, multi vs single location,
 image + GPS fields, empty-field fallbacks, and 2-char vs long country codes.
 """
 
+import json
 import sys
 from pathlib import Path
 
@@ -207,3 +208,50 @@ def test_core_export_file_roundtrip(rich_session, tmp_path):
     core_doc = SchemaOrgExporter(rich_session, use_core=True).get_graph_document(_ENTITIES)
     assert _by_id(core_doc["@graph"]) == _by_id(orm_doc["@graph"])
     assert core_doc["@context"] == orm_doc["@context"]
+
+
+def _strip_ctx(records):
+    return [{k: v for k, v in r.items() if k != "@context"} for r in records]
+
+
+def test_streaming_writers_parse_equal_to_records(rich_session, tmp_path):
+    """Streamed files (pretty/compact array + @graph) parse back to the same records."""
+    exp = SchemaOrgExporter(rich_session)  # core default
+    records = exp._collect_records(_ENTITIES)
+
+    for pretty in (True, False):
+        out = tmp_path / f"array_{pretty}.json"
+        n = exp.export_to_file(out, _ENTITIES, pretty=pretty)
+        raw = out.read_text()
+        assert n == len(records)
+        assert _by_id(json.loads(raw)) == _by_id(records)
+        # format contract: pretty is multi-line, compact is single-line
+        assert ("\n" in raw) is pretty
+
+        gout = tmp_path / f"graph_{pretty}.json"
+        exp.export_with_graph(gout, _ENTITIES, pretty=pretty)
+        doc = json.loads(gout.read_text())
+        assert doc["@context"] == "https://schema.org"
+        assert _by_id(doc["@graph"]) == _by_id(_strip_ctx(records))
+
+
+def test_filtered_file_export_core_matches_orm(rich_session, tmp_path):
+    """export_entities_filtered(File, subset): Core (scoped refs) == ORM output."""
+    file_ids = [r.id for r in rich_session.query(File).all()]
+    subset = file_ids[:1]  # the rich file with categories/companies/people/locations
+
+    core_out = tmp_path / "core.json"
+    orm_out = tmp_path / "orm.json"
+    n_core = SchemaOrgExporter(rich_session, use_core=True).export_entities_filtered(
+        core_out, File, subset
+    )
+    SchemaOrgExporter(rich_session, use_core=False).export_entities_filtered(orm_out, File, subset)
+    assert n_core == 1
+    assert _by_id(json.loads(core_out.read_text())) == _by_id(json.loads(orm_out.read_text()))
+
+
+def test_filtered_empty_ids_yields_empty_array(rich_session, tmp_path):
+    out = tmp_path / "empty.json"
+    n = SchemaOrgExporter(rich_session).export_entities_filtered(out, File, [])
+    assert n == 0
+    assert json.loads(out.read_text()) == []

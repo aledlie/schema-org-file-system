@@ -31,10 +31,15 @@ git filter-repo --invert-paths \
 
 **Prototype caveat — now RESOLVED:** the original prototype covered only the *no-relation File* path. The shipped production version handles the relationship joins/aggregation for categories/companies/people/locations **and** File image/GPS fields (plus Category parent/subcategory), with full ORM parity. As predicted, relationship loading adds cost — measured **3.2× faster** than ORM (vs the 12× column-only microbenchmark ceiling): relationships add cost but stay **far below per-object ORM hydration**.
 
-**Residual caveats:**
+**Follow-up perf work — DONE (2026-07-12):**
+- **Streaming exports:** `export_to_file`/`export_to_ndjson`/`export_with_graph`/`export_entities_filtered` write incrementally via `_stream_array` + a lazy `_iter_records` generator; the File path selects **columns** (lightweight `Row`s, no ORM File construction) and fetches with `yield_per`. Measured **9.4× less memory** — flat ~5.8 MB regardless of file count vs 54 MB that scaled with N (removes the 265k-export OOM risk). Column-select also lifted speed further (`get_graph_document[1k]` 22.8→16.3ms).
+- **Subset-scoped refs:** `_load_file_refs(file_ids=…)` scopes the association query + loads only referenced targets for filtered exports; full exports load targets unfiltered (an `IN()` over every referenced id would exceed SQLite's bound-param limit).
+- **Filtered export via Core:** `export_entities_filtered` now routes File/Company/Person/Location through the Core path (File with subset-scoped refs). Parity locked by new tests in `test_core_export_parity.py`.
+
+**Residual caveats (still open):**
 - Relationship-order parity depends on association rows being read in natural (insertion) order so the first category becomes `mainEntityOfPage`. Guarded by the parity test — do **not** add `ORDER BY` to `_load_file_refs` without re-verifying parity.
-- `export_entities_filtered` still uses the ORM path (not Core).
-- Unknown entity types (outside File/Category/Company/Person/Location) fall back to per-object ORM serialization.
+- `export_entities_filtered` for **Category** and unknown entity types still uses the ORM path (Category needs parent/subcategory refs; ORM output is identical).
+- Categories are loaded fully in `_iter_core_category_records` (a first pass resolves parent/subcategory refs) — fine at current category counts, not stream-safe if categories ever reach file-scale.
 - `to_schema_org()` methods are thin delegators to the shared builders — edit the builders, not the methods, or the two paths diverge.
 
 ### Test set class imbalance in model evaluation
