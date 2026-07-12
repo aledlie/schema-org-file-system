@@ -2,8 +2,17 @@
 ## Schema.org File Organization System
 
 **Date:** 2025-12-10
-**Status:** Planning Phase
+**Status:** ✅ Largely COMPLETE (archived) — core test suite and the God Script #1 modular split landed; a few planned modules/tests were superseded or never built (see per-item marks below)
 **Priority:** High (Code Quality & Maintainability)
+
+> **Completion note (2026-07-12):** The Part 1 test suite and Part 2 refactor of
+> `file_organizer_content_based.py` into `src/{classifiers,analyzers,organizers,pipeline}/`
+> shipped. Divergences from this plan: `entity_detector.py`, `category_rules.py`,
+> `workflow.py`, `mime_classifier.py`, `name_organizer.py`, `src/ml/`, and `src/feedback/`
+> were never split out; `test_uri_utils.py`, `test_cli.py`, and `test_health_check.py` were
+> not written (`test_storage_models.py` landed at `tests/unit/`); `test_validator.py` lives at `tests/` not
+> `tests/unit/`; and `file_organizer_content_based.py` was **not** reduced to a thin wrapper
+> (still ~4.3k LOC). Checklist items below are marked accordingly.
 
 ---
 
@@ -471,67 +480,67 @@ class ContentBasedFileOrganizer:
 ### Phase 1: Foundation (Week 1-2)
 
 **Week 1: Storage Layer Tests**
-- [ ] Create `tests/conftest.py` with fixtures
-- [ ] Write `tests/integration/test_storage_models.py` (P0-4)
-- [ ] Write `tests/integration/test_storage_graph.py` (P0-1)
-- [ ] Write `tests/unit/test_uri_utils.py` (P1-3)
-- [ ] Achieve 80%+ coverage on storage layer
+- [x] Create `tests/conftest.py` with fixtures — ✅ COMPLETE
+- [x] Write `tests/integration/test_storage_models.py` (P0-4) — ✅ COMPLETE (landed at `tests/unit/test_storage_models.py`)
+- [x] Write `tests/integration/test_storage_graph.py` (P0-1) — ✅ COMPLETE
+- [ ] Write `tests/unit/test_uri_utils.py` (P1-3) — not written
+- [ ] Achieve 80%+ coverage on storage layer — not verified
 
 **Week 2: Core Generators Tests**
-- [ ] Enhance `tests/unit/test_generators.py` (P0-2)
-- [ ] Write `tests/unit/test_enrichment.py` (P0-3)
-- [ ] Write `tests/unit/test_base.py` (P1-1)
-- [ ] Achieve 85%+ coverage on generators
+- [x] Enhance `tests/unit/test_generators.py` (P0-2) — ✅ COMPLETE
+- [x] Write `tests/unit/test_enrichment.py` (P0-3) — ✅ COMPLETE
+- [x] Write `tests/unit/test_base.py` (P1-1) — ✅ COMPLETE
+- [ ] Achieve 85%+ coverage on generators — not verified
 
 ### Phase 2: Refactor God Script #1 (Week 3-4)
 
 **Week 3: Extract Classifiers & Analyzers**
-- [ ] Create `src/classifiers/` module
-- [ ] Extract `ContentClassifier` → `src/classifiers/content_classifier.py`
-- [ ] Extract entity detection → `src/classifiers/entity_detector.py`
-- [ ] Create `src/analyzers/` module
-- [ ] Extract `ImageMetadataParser` → `src/analyzers/image_metadata.py`
-- [ ] Extract `ImageContentAnalyzer` → `src/analyzers/image_content.py`
-- [ ] Write unit tests for extracted modules
+- [x] Create `src/classifiers/` module — ✅ COMPLETE
+- [x] Extract `ContentClassifier` → `src/classifiers/content_classifier.py` — ✅ COMPLETE
+- [ ] Extract entity detection → `src/classifiers/entity_detector.py` — not split out (kept in content classifier)
+- [x] Create `src/analyzers/` module — ✅ COMPLETE
+- [x] Extract `ImageMetadataParser` → `src/analyzers/image_metadata.py` — ✅ COMPLETE
+- [x] Extract `ImageContentAnalyzer` → `src/analyzers/image_content.py` — ✅ COMPLETE (landed as `image_analyzer.py`; OCR as `text_extractor.py`)
+- [x] Write unit tests for extracted modules — ✅ COMPLETE
 
 **Week 4: Extract Organizer & Pipeline**
-- [ ] Create `src/organizers/` module
-- [ ] Create `src/organizers/base_organizer.py` (abstract base)
-- [ ] Refactor `ContentBasedFileOrganizer` → `src/organizers/content_organizer.py`
-- [ ] Create `src/pipeline/` module
-- [ ] Extract workflow → `src/pipeline/workflow.py`
-- [ ] Update `scripts/file_organizer_content_based.py` to thin wrapper
-- [ ] Write integration tests for organizer
+- [x] Create `src/organizers/` module — ✅ COMPLETE
+- [x] Create `src/organizers/base_organizer.py` (abstract base) — ✅ COMPLETE
+- [x] Refactor `ContentBasedFileOrganizer` → `src/organizers/content_organizer.py` — ✅ COMPLETE
+- [x] Create `src/pipeline/` module — ✅ COMPLETE
+- [ ] Extract workflow → `src/pipeline/workflow.py` — landed as `file_processor.py` + `batch_processor.py` instead
+- [ ] Update `scripts/file_organizer_content_based.py` to thin wrapper — not done (still ~4.3k LOC)
+- [x] Write integration tests for organizer — ✅ COMPLETE (`tests/unit/test_content_organizer.py`)
 
 ### Phase 3: Additional Tests (Week 5-6)
 
 **Week 5: Validator & Migration Tests**
-- [ ] Enhance `tests/unit/test_validator.py` (P1-2)
-- [ ] Write `tests/integration/test_storage_migration.py` (P1-4)
-- [ ] Write `tests/unit/test_cost_calculator.py` (P1-5)
-- [ ] Achieve 75%+ overall coverage
+- [x] Enhance `tests/unit/test_validator.py` (P1-2) — ✅ COMPLETE (lives at `tests/test_validator.py`)
+- [x] Write `tests/integration/test_storage_migration.py` (P1-4) — ✅ COMPLETE
+- [x] Write `tests/unit/test_cost_calculator.py` (P1-5) — ✅ COMPLETE
+- [ ] Achieve 75%+ overall coverage — not verified
 
 **Week 6: CLI & E2E Tests**
-- [ ] Write `tests/integration/test_cli.py` (P2-1)
-- [ ] Write `tests/e2e/test_content_organizer.py`
-- [ ] Write `tests/unit/test_health_check.py` (P2-2)
-- [ ] Achieve 80%+ overall coverage
+- [ ] Write `tests/integration/test_cli.py` (P2-1) — not written
+- [x] Write `tests/e2e/test_content_organizer.py` — ✅ COMPLETE (as `tests/unit/test_content_organizer.py`; Playwright E2E suite under `tests/e2e/`)
+- [ ] Write `tests/unit/test_health_check.py` (P2-2) — not written
+- [ ] Achieve 80%+ overall coverage — not verified
 
 ### Phase 4: Refactor Remaining Scripts (Week 7-8)
 
 **Week 7: Base Organizers**
-- [ ] Extract category config from `file_organizer.py`
-- [ ] Create `src/organizers/category_config.py`
-- [ ] Create `src/organizers/mime_classifier.py`
-- [ ] Create `src/organizers/base_organizer.py`
-- [ ] Move `FileOrganizerByName` → `src/organizers/name_organizer.py`
+- [ ] Extract category config from `file_organizer.py` — not split out
+- [ ] Create `src/organizers/category_config.py` — not created
+- [ ] Create `src/organizers/mime_classifier.py` — not created (MIME mapping kept inline)
+- [x] Create `src/organizers/base_organizer.py` — ✅ COMPLETE
+- [ ] Move `FileOrganizerByName` → `src/organizers/name_organizer.py` — not moved
 
 **Week 8: Polish & Documentation**
-- [ ] Update CLI to use refactored modules
-- [ ] Update all docstrings
-- [ ] Generate API documentation
-- [ ] Update CLAUDE.md with new architecture
-- [ ] Final test coverage push (85%+ goal)
+- [x] Update CLI to use refactored modules — ✅ COMPLETE (`src/cli.py` drives `src/organizers`)
+- [ ] Update all docstrings — partial
+- [ ] Generate API documentation — not done
+- [x] Update CLAUDE.md with new architecture — ✅ COMPLETE (Project Structure reflects `src/{classifiers,analyzers,organizers,pipeline}/`)
+- [ ] Final test coverage push (85%+ goal) — not verified
 
 ---
 

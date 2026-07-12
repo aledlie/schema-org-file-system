@@ -359,7 +359,7 @@ open htmlcov/index.html
 ### This Week
 1. ✅ Write storage layer tests (above)
 2. ✅ Test `src/storage/models.py` - ORM models
-3. ✅ Test `src/uri_utils.py` - URI generation
+3. ✅ Test URI generation - `tests/unit/test_uri_utils.py` (IRI/canonical-ID contract on `src/storage/models.py`; no standalone `src/uri_utils.py` exists)
 4. ✅ Achieve 80%+ coverage on storage
 
 ### Next Week

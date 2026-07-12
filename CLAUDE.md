@@ -24,6 +24,9 @@ organize-files health                    # Should report 9/9 features
 | `organize-files type` | Extension-based organization |
 | `organize-files health` | Check system dependencies |
 | `organize-files migrate-ids` | Run database migration |
+| `organize-files migrate-person` | Migrate `Person/` files → `Personal/{subcat}/` (dry-run default; `--apply`, `--rollback`) |
+| `organize-files person-view` | Regenerate `Person/{Name}/` symlink view from graph edges (`--apply`) |
+| `organize-files index-people` | Attach `person→file` graph edges for migrated files, no moves (`--apply`) |
 | `organize-files update-site` | Update dashboard data |
 | `organize-files timeline` | Generate timeline visualization data |
 | `organize-files preprocess` | ML data preprocessing (`--input`, `--output`) |
@@ -89,7 +92,7 @@ mypy src/ scripts/            # type check
 ## Classification Priority
 
 1. **Organization Detection** - client, vendor, invoice, company names
-2. **Personal Documents** - resume/CV/vCard (`contacts`), employment, identification, certificates (OCR-enhanced). Person attribution is a graph relationship (`GraphStore.add_file_to_person`), not a filing category — see `PERSON_TAXONOMY_OPTION_C_PLAN.md`.
+2. **Personal Documents** - resume/CV/vCard (`contacts`), employment, identification, certificates (OCR-enhanced). Person attribution is a graph relationship (`GraphStore.add_file_to_person`), not a filing category — see `docs/changelog/2.1.0/PERSON_TAXONOMY_OPTION_C_PLAN.md`.
 3. **Legal/Contract** - contracts, agreements, terms
 4. **Research Paper** - arXiv/SSRN/DOI prefixes route to `Research/{Publisher}/` with `schema_type=ScholarlyArticle`
 5. **E-commerce/Shopping** - product listings, carts
@@ -104,7 +107,7 @@ mypy src/ scripts/            # type check
 ```
 ~/Documents/
 ├── Organization/{CompanyName}/    # Vendor/partner files
-├── Personal/{Contacts,Employment,Identification,Certificates,Other}/  # Doc-class filing
+├── Personal/{Contacts,Employment,Identification,Certificates,Journal,Events,Legal,Records,Other}/  # Doc-class filing
 ├── Person/{PersonName}/           # Derived symlink view (regenerated from graph edges,
 │                                  # not a filing target) — organize-files person-view
 ├── GameAssets/                    # Sprites, textures, models
@@ -152,9 +155,11 @@ FastAPI app at `src/api/schema_org_api.py`. Key endpoints:
 |----------|-------------|
 | `GET /api/{entity}/{id}/schema-org` | Single entity as JSON-LD |
 | `GET /api/{entity}/schema-org/bulk` | Filtered list as `{"@context":…,"@graph":[…]}` |
+| `GET /api/{companies\|people\|locations}/schema-org/by-name/{name}` | Lookup by name |
 | `GET /api/schema-org/export` | Full `@graph` document, filterable by entity type |
 | `GET /api/schema-org/graph` | Full graph, all entity types |
 | `GET /schema/context` | Standalone JSON-LD `@context` document |
+| `GET /health` | Service health check |
 
 Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 
@@ -171,6 +176,7 @@ Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 | Generator API | `generators.py` has no fluent builders — build schemas via `set_property(name, value, PropertyType)` or the `add_person`/`add_organization`/`set_dates` helpers. |
 | Golden snapshot tests | `tests/unit/golden/generate_schema/*.json` are recorded baselines for `generate_schema()` output — do not hand-edit; re-record with `UPDATE_GOLDEN=1 pytest tests/unit/test_generate_schema_golden.py` |
 | Storage timestamps | Use `from ._time import utcnow` (naive UTC) instead of deprecated `datetime.utcnow()`; DateTime columns are timezone-naive, so do not introduce tz-aware datetimes without a column migration |
+| Pruning person edges | No CLI/`GraphStore` method deletes `file→person` edges — prune directly via ORM (`file_people.delete().where(...)` + delete the orphaned `Person` row), backing up `results/file_organization.db` first. The `get_all_people_with_files` denylist is leaky (false-positive "people" like event/org names create spurious `Person/{Name}/` folders on `person-view --apply`), and dead-path edges linger as cruft. See [`docs/BACKLOG.md` → Person-graph edge hygiene](docs/BACKLOG.md#person-graph-edge-hygiene). |
 | Core-query export | `SchemaOrgExporter` defaults to `use_core=True`, serializing via the shared `build_*_jsonld` pure functions in `models.py` — each `to_schema_org()` is a thin delegator, so **edit the builders, not the methods**. Exports **stream** (`_stream_array` + lazy `_iter_records`; File path column-selects + `yield_per`) — don't reintroduce a full `records` list or `json.dumps` of the whole document. Relationship-order parity relies on natural association-row order — don't add `ORDER BY` to `_load_file_refs`. Parity + streaming locked by `tests/integration/test_core_export_parity.py`. |
 | Parallel agents — worktree rule | **Never run background/parallel Claude agents in the primary checkout.** Each agent must operate in its own git worktree (`EnterWorktree` / `worktree-agent-*` branches). Concurrent agents in the shared checkout silently clobber each other's changes (branch switch, conflicting commits). A `pre-commit` hook warns when multiple Claude sessions share the same directory. |
 | easyocr MPS (Apple Silicon) | easyocr has no usable MPS backend; the Reader always loads on CPU on macOS arm64. CUDA-only guard in `ocr_easyocr._use_gpu()` is intentional. Call `prewarm_reader()` before a batch loop to amortize model-load latency; call `clear_reader()` to reclaim Reader memory between batches or in tests. |
@@ -180,7 +186,7 @@ Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 ## Testing
 
 ```bash
-pytest tests/unit/           # ~685 unit tests
+pytest tests/unit/           # ~728 unit tests
 pytest tests/integration/    # schema.org export pipeline
 pytest tests/performance/ --benchmark-only -m "not slow"   # benchmarks (skip 10k)
 pytest tests/e2e/            # Playwright E2E

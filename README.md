@@ -8,7 +8,7 @@ AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and en
 
 Scans directories, classifies files by content, organizes them into a semantic folder hierarchy, and builds a Schema.org-typed knowledge graph that is queryable over REST.
 
-- **Content classification** — layered priority pipeline: organization → person → legal → research paper → e-commerce → software UI → game assets → filepath → CLIP/OCR content analysis → MIME fallback (see [Classification Priority](#classification-priority)).
+- **Content classification** — layered priority pipeline: organization → personal (doc-class) → legal → research paper → e-commerce → software UI → game assets → filepath → CLIP/OCR content analysis → MIME fallback (see [Classification Priority](#classification-priority)).
 - **CLIP + OCR vision** — unified `classify_with_ocr_fallback()` (CLIP ViT-B-32 + cached embeddings) with OCR fallback for low-confidence predictions.
 - **Image/screenshot renaming** — `rename_images.py --profile {photo,screenshot}` selects vocabulary and in-place vs. folder mode.
 - **Schema.org graph store** — SQLAlchemy ORM with canonical IDs; every entity exposes `to_schema_org()`, plus bulk JSON/NDJSON/`@graph` export and JSON-LD `@context` generation.
@@ -55,7 +55,10 @@ organize-files health  # Should report 9/9 features operational
 | `organize-files update-site` | Update dashboard data |
 | `organize-files timeline` | Generate timeline visualization data |
 | `organize-files preprocess` | Data preprocessing pipeline for ML model training (`--input`, `--output`) |
-| `organize-files evaluate` | Run evaluation metrics on test dataset (`--test-data`, `--model`) |
+| `organize-files evaluate` | Run evaluation metrics on test dataset (`--test-data`, `--model`, `--classifier {baseline,content}`) |
+| `organize-files migrate-person` | Migrate on-disk `Person/` files into `Personal/{subcat}/` (dry-run default; `--apply`, `--rollback`) |
+| `organize-files person-view` | Regenerate `Person/{Name}/` as a derived symlink view from graph edges (`--apply`) |
+| `organize-files index-people` | Attach `person→file` graph edges for migrated files, no moves (`--apply`) |
 
 ## REST API
 
@@ -99,14 +102,15 @@ flowchart LR
 ## Classification Priority
 
 1. **Organization** - client, vendor, invoice, company names
-2. **Person** - resume, contact, signatures (OCR-enhanced)
+2. **Personal Documents** - resume/CV/vCard (`contacts`), employment, identification, certificates (OCR-enhanced). Person attribution is a graph relationship (`add_file_to_person`), not a filing category.
 3. **Legal/Contract** - contracts, agreements, terms
-4. **E-commerce** - product listings, shopping carts
-5. **Software UI** - app interfaces, dashboards
-6. **Game Assets** - 200+ patterns, sprites, textures, audio
-7. **Filepath** - directory structure patterns
-8. **Content Analysis** - OCR text + CLIP vision
-9. **MIME Type** - file extension fallback
+4. **Research Paper** - arXiv/SSRN/DOI prefixes route to `Research/{Publisher}/` (`schema_type=ScholarlyArticle`)
+5. **E-commerce** - product listings, shopping carts
+6. **Software UI** - app interfaces, dashboards
+7. **Game Assets** - 200+ patterns, sprites, textures, audio
+8. **Filepath** - directory structure patterns
+9. **Content Analysis** - OCR text + CLIP vision
+10. **MIME Type** - file extension fallback
 
 ## Project Structure
 
@@ -122,6 +126,8 @@ flowchart LR
 │       ├── graph_store.py           # GraphStore + canonical IDs
 │       ├── models.py                # ORM models with to_schema_org()
 │       ├── migration.py             # ID generation migration
+│       ├── person_migration.py      # Migrate Person/ files → Personal/{subcat}/
+│       ├── person_view_generator.py # Derived Person/{Name}/ symlink view
 │       ├── kv_store.py              # Key-value storage layer
 │       ├── schema_org_exporter.py   # Bulk export (JSON / NDJSON / @graph)
 │       ├── schema_org_context.py    # JSON-LD @context generation
@@ -129,7 +135,7 @@ flowchart LR
 │       └── schema_org_base.py       # Shared base types
 ├── scripts/                         # Organizer scripts
 ├── tests/
-│   ├── unit/                        # 755 unit tests
+│   ├── unit/                        # ~728 unit tests
 │   ├── integration/                 # Export pipeline integration tests
 │   ├── performance/                 # pytest-benchmark suite
 │   └── e2e/                         # Playwright + OpenTelemetry
@@ -142,7 +148,8 @@ flowchart LR
 ```
 ~/Documents/
 ├── Organization/{Company}/    # Vendor/partner files
-├── Person/{Name}/             # Person-related files
+├── Personal/{Contacts,Employment,Identification,Certificates,Journal,Events,Legal,Records,Other}/  # Doc-class filing
+├── Person/{Name}/             # Derived symlink view, regenerated from graph edges (organize-files person-view)
 ├── GameAssets/                # Sprites, textures, models
 ├── Financial/                 # Invoices, receipts
 ├── Technical/                 # Code, configs

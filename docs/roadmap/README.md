@@ -11,8 +11,8 @@ Source: `REFACTORING_INDEX.md` § Future Enhancements (2026-03-24)
 ### Caching
 Cache MIME type lookups and builder function results to avoid redundant computation during large batch exports. `MimeTypeMapper` already does O(1) dict lookup; caching builder outputs by input hash would help repeated entity exports.
 
-### Streaming exports
-Replace in-memory list accumulation in `SchemaOrgExporter` with a generator pattern so large exports don't blow up RAM. Priority once entity count exceeds ~100k.
+### Streaming exports — ✅ COMPLETE
+Replaced in-memory list accumulation in `SchemaOrgExporter` with a generator pattern (`_stream_array` + lazy `_iter_records`; File path column-select + `yield_per`) so large exports don't blow up RAM. Parity + streaming locked by `tests/integration/test_core_export_parity.py`.
 
 ### JSON-LD schema validation on export
 Validate exported JSON-LD against the schema.org spec on write (e.g., via `pyld` or `rdflib`). Currently only Pydantic response model validation is in place (`e989a88`).
