@@ -135,7 +135,7 @@ flowchart LR
 │       └── schema_org_base.py       # Shared base types
 ├── scripts/                         # Organizer scripts
 ├── tests/
-│   ├── unit/                        # ~728 unit tests
+│   ├── unit/                        # ~762 unit tests
 │   ├── integration/                 # Export pipeline integration tests
 │   ├── performance/                 # pytest-benchmark suite
 │   └── e2e/                         # Playwright + OpenTelemetry

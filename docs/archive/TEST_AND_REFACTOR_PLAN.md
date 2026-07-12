@@ -530,8 +530,8 @@ class ContentBasedFileOrganizer:
 ### Phase 4: Refactor Remaining Scripts (Week 7-8)
 
 **Week 7: Base Organizers**
-- [ ] Extract category config from `file_organizer.py` — not split out
-- [ ] Create `src/organizers/category_config.py` — not created
+- [x] Extract category config from `file_organizer.py` — ✅ COMPLETE (`CATEGORY_PATHS` in `src/organizers/category_config.py`; script imports it)
+- [x] Create `src/organizers/category_config.py` — ✅ COMPLETE
 - [ ] Create `src/organizers/mime_classifier.py` — not created (MIME mapping kept inline)
 - [x] Create `src/organizers/base_organizer.py` — ✅ COMPLETE
 - [ ] Move `FileOrganizerByName` → `src/organizers/name_organizer.py` — not moved

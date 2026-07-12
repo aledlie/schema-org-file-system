@@ -51,7 +51,7 @@ mypy src/ scripts/            # type check
 │   ├── cli.py              # Unified CLI entry point
 │   ├── generators.py       # Schema.org metadata generation
 │   ├── error_tracking.py   # Sentry integration
-│   ├── classifiers/        # Content classification logic
+│   ├── classifiers/        # content_classifier + entity_detector (company/person extraction)
 │   ├── organizers/         # File organizer implementations (base, content)
 │   ├── pipeline/           # Batch processing pipeline (batch_processor, file_processor)
 │   ├── analyzers/          # Image/content analyzers
@@ -186,7 +186,7 @@ Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 ## Testing
 
 ```bash
-pytest tests/unit/           # ~728 unit tests
+pytest tests/unit/           # ~762 unit tests
 pytest tests/integration/    # schema.org export pipeline
 pytest tests/performance/ --benchmark-only -m "not slow"   # benchmarks (skip 10k)
 pytest tests/e2e/            # Playwright E2E
