@@ -110,13 +110,18 @@ class ContentClassifier:
                     'resume', 'cv', 'cover letter', 'curriculum vitae', 'employment',
                     'personal', 'identification', 'passport', 'driver license', 'ssn',
                     'birth certificate', 'marriage', 'divorce', 'diploma', 'transcript',
-                    'reference', 'recommendation', 'vcard', 'contact'
+                    'reference', 'recommendation', 'vcard', 'contact',
+                    'journal', 'diary', 'event', 'wedding', 'citation'
                 ],
                 'subcategories': {
                     'employment': ['resume', 'cv', 'cover letter', 'employment', 'reference'],
                     'identification': ['passport', 'driver license', 'ssn', 'id'],
                     'certificates': ['birth certificate', 'marriage', 'divorce', 'diploma'],
                     'contacts': ['resume', 'cv', 'vcard', 'contact', 'curriculum vitae'],
+                    'journal': ['journal', 'diary', 'dream', 'reflection', 'memoir'],
+                    'events': ['event', 'party', 'wedding', 'invitation', 'rsvp'],
+                    'legal': ['dui', 'court', 'citation', 'traffic ticket', 'hearing', 'dmv'],
+                    'records': ['personal record', 'records'],
                     'other': []
                 }
             },

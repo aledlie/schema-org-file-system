@@ -309,17 +309,17 @@ class TestClassifyByFilenamePatterns:
         assert result[0] == 'personal'
         assert result[1] == 'other'
 
-    def test_event_document_maps_to_personal_other(self, organizer: ContentOrganizer) -> None:
+    def test_event_document_maps_to_personal_events(self, organizer: ContentOrganizer) -> None:
         result = organizer.classify_by_filename_patterns(Path("/docs/Oct25Event.docx"))
         assert result is not None
         assert result[0] == 'personal'
-        assert result[1] == 'other'
+        assert result[1] == 'events'
 
-    def test_journal_entry_maps_to_personal_other(self, organizer: ContentOrganizer) -> None:
+    def test_journal_entry_maps_to_personal_journal(self, organizer: ContentOrganizer) -> None:
         result = organizer.classify_by_filename_patterns(Path("/docs/dream_journal.docx"))
         assert result is not None
         assert result[0] == 'personal'
-        assert result[1] == 'other'
+        assert result[1] == 'journal'
 
     def test_cover_letter_maps_to_personal_contacts(self, organizer: ContentOrganizer) -> None:
         result = organizer.classify_by_filename_patterns(Path("/docs/cover_letter.pdf"))

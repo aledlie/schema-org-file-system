@@ -217,6 +217,10 @@ class ContentOrganizer(BaseOrganizer):
                 'employment': 'Personal/Employment',
                 'identification': 'Personal/Identification',
                 'certificates': 'Personal/Certificates',
+                'journal': 'Personal/Journal',
+                'events': 'Personal/Events',
+                'legal': 'Personal/Legal',
+                'records': 'Personal/Records',
                 'other': 'Personal/Other',
             },
             'medical': {

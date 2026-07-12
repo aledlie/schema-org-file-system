@@ -59,6 +59,10 @@ PERSON_CATEGORY_NAME = "person"
 SUBCAT_CONTACTS = "contacts"
 SUBCAT_EMPLOYMENT = "employment"
 SUBCAT_IDENTIFICATION = "identification"
+SUBCAT_JOURNAL = "journal"
+SUBCAT_EVENTS = "events"
+SUBCAT_LEGAL = "legal"
+SUBCAT_RECORDS = "records"
 SUBCAT_OTHER = "other"
 
 # Where a migration plan's `subcat` came from.
@@ -82,9 +86,9 @@ DB_PERSON_SUBCAT_TO_PERSONAL_SUBCAT: Dict[str, str] = {
     "references": SUBCAT_EMPLOYMENT,
     "clients": SUBCAT_OTHER,
     "travel": SUBCAT_OTHER,
-    "events": SUBCAT_OTHER,
+    "events": SUBCAT_EVENTS,
     "other": SUBCAT_OTHER,
-    "journal": SUBCAT_OTHER,
+    "journal": SUBCAT_JOURNAL,
     "family": SUBCAT_OTHER,
 }
 
@@ -102,10 +106,10 @@ SUBFOLDER_NAME_TO_SUBCAT: Dict[str, str] = {
     # table ("avoids lossy merge into employment") and to match the production
     # classifier's `personal/contacts` subcategory (resume/cv/curriculum vitae).
     "Resumes": SUBCAT_CONTACTS,
-    "Events": SUBCAT_OTHER,
-    "Journal": SUBCAT_OTHER,
-    "Personal": SUBCAT_OTHER,
-    "DUI Docs": SUBCAT_OTHER,
+    "Events": SUBCAT_EVENTS,
+    "Journal": SUBCAT_JOURNAL,
+    "Personal": SUBCAT_RECORDS,
+    "DUI Docs": SUBCAT_LEGAL,
 }
 
 # Destination folder (relative to documents_root) for each `personal` subcat.
@@ -114,6 +118,10 @@ PERSONAL_SUBCAT_FOLDER: Dict[str, str] = {
     SUBCAT_CONTACTS: "Personal/Contacts",
     SUBCAT_EMPLOYMENT: "Personal/Employment",
     SUBCAT_IDENTIFICATION: "Personal/Identification",
+    SUBCAT_JOURNAL: "Personal/Journal",
+    SUBCAT_EVENTS: "Personal/Events",
+    SUBCAT_LEGAL: "Personal/Legal",
+    SUBCAT_RECORDS: "Personal/Records",
     SUBCAT_OTHER: "Personal/Other",
 }
 

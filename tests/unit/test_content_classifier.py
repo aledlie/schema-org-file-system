@@ -61,6 +61,28 @@ class TestClassifyContent:
         cat, subcat, company, people = clf.classify_content(text, detected_language=None)
         assert cat == "legal"
 
+    def test_personal_journal_subcategory(self, clf: ContentClassifier) -> None:
+        text = "Dear diary, today I wrote a journal reflection about a dream I had."
+        cat, subcat, company, people = clf.classify_content(text)
+        assert cat == "personal"
+        assert subcat == "journal"
+
+    def test_personal_events_subcategory(self, clf: ContentClassifier) -> None:
+        # Avoid "party"/"event" wording that collides with the top-level legal
+        # category ("party to a contract"); wedding/invitation/rsvp are unambiguous.
+        text = "Save the date for our wedding. Wedding invitation and rsvp details enclosed."
+        cat, subcat, company, people = clf.classify_content(text)
+        assert cat == "personal"
+        assert subcat == "events"
+
+    def test_personal_legal_subcategory(self, clf: ContentClassifier) -> None:
+        # "court"/"citation" alone score top-level legal; a DUI/DMV personal
+        # record stays under personal.
+        text = "DUI driving under influence dmv drivers license suspension personal record."
+        cat, subcat, company, people = clf.classify_content(text)
+        assert cat == "personal"
+        assert subcat == "legal"
+
 class TestExtractCompanyNames:
     def test_extracts_llc(self, clf: ContentClassifier) -> None:
         text = "We signed a deal with Acme Solutions LLC today."

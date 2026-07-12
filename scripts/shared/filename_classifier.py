@@ -1568,7 +1568,7 @@ def classify_by_filename_patterns(
         for month in month_patterns:
             if month in stem and re.search(r"\d{1,2}", stem):
                 print("  ✓ Filename pattern: Event document")
-                return ("personal", "other", None, [])
+                return ("personal", "events", None, [])
 
     # =========================================================
     # JOURNAL ENTRIES: Dream, Diary, Thoughts, Reflections
@@ -1587,7 +1587,7 @@ def classify_by_filename_patterns(
     if ext in {".docx", ".doc", ".txt", ".md"}:
         if any(kw in stem for kw in journal_keywords):
             print("  ✓ Filename pattern: Journal entry")
-            return ("personal", "other", None, [])
+            return ("personal", "journal", None, [])
 
     # =========================================================
     # PERSONAL DOCUMENTS: Short name + version (Sumedh3.docx)
@@ -1601,7 +1601,7 @@ def classify_by_filename_patterns(
         # PascalCase event names (ZoukSocial, DanceNight)
         if re.match(r"^([A-Z][a-z]+){2,}$", original_stem):
             print("  ✓ Filename pattern: Event document")
-            return ("personal", "other", None, [])
+            return ("personal", "events", None, [])
 
     # =========================================================
     # PITCH/PROPOSAL FILES: Pitch, Proposal with version

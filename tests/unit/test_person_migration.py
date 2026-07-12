@@ -23,8 +23,12 @@ from src.storage.person_migration import (
     PERSONAL_SUBCAT_FOLDER,
     SUBCAT_CONTACTS,
     SUBCAT_EMPLOYMENT,
+    SUBCAT_EVENTS,
     SUBCAT_IDENTIFICATION,
+    SUBCAT_JOURNAL,
+    SUBCAT_LEGAL,
     SUBCAT_OTHER,
+    SUBCAT_RECORDS,
     SUBCAT_SOURCE_FALLBACK,
     SUBCAT_SOURCE_SUBFOLDER,
     build_migration_plan,
@@ -120,9 +124,11 @@ class TestBuildMigrationPlan:
         cases = {
             # Employment folder under a name dir beats the contacts default.
             "Alyshia Ledlie/Employment/offer.pdf": SUBCAT_EMPLOYMENT,
-            # Journal/Personal reclassify out of the coarse contacts default.
-            "Alyshia Ledlie/Personal/Journal/dream.docx": SUBCAT_OTHER,
-            "Alyshia Ledlie/Personal/report.pdf": SUBCAT_OTHER,
+            # Journal/Personal get their own dedicated subcats (deepest wins).
+            "Alyshia Ledlie/Personal/Journal/dream.docx": SUBCAT_JOURNAL,
+            "Alyshia Ledlie/Personal/report.pdf": SUBCAT_RECORDS,
+            "Alyshia Ledlie/Events/party.pdf": SUBCAT_EVENTS,
+            "Alyshia Ledlie/DUI Docs/citation.pdf": SUBCAT_LEGAL,
             # Resumes stay in contacts (plan: resumes/CVs -> contacts).
             "Alyshia Ledlie/Resumes/cv.pdf": SUBCAT_CONTACTS,
             # A loose file directly under the name dir keeps the contacts default.
