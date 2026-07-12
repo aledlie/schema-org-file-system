@@ -1,0 +1,20 @@
+{
+  "name": "claude-dev-environment",
+  "version": "1.0.0",
+  "description": "Claude Code hooks and scripts for this project",
+  "private": true,
+  "scripts": {
+    "validate": "node scripts/env/validate-config.js",
+    "check-env": "node scripts/env/check-environment.js",
+    "status": "bash scripts/env/status.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0",
+    "ajv": "^8.12.0",
+    "ts-node": "^10.9.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
