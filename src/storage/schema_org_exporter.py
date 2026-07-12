@@ -9,7 +9,7 @@ Supports three output formats:
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Sequence, Type, Union
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Type, Union
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload, joinedload
@@ -80,10 +80,10 @@ class SchemaOrgExporter:
         Returns:
             Total number of entities written.
         """
-        records = self._collect_records(entity_classes)
-        indent = 2 if pretty else None
-        Path(output_path).write_text(json.dumps(records, indent=indent), encoding="utf-8")
-        return len(records)
+        with open(output_path, "w", encoding="utf-8") as fh:
+            return self._stream_array(
+                fh, self._iter_records(entity_classes), pretty=pretty, indent_level=1
+            )
 
     def export_to_ndjson(
         self,
@@ -92,7 +92,8 @@ class SchemaOrgExporter:
     ) -> int:
         """Export entities to a newline-delimited JSON file.
 
-        Each entity is serialized to a single line. Suitable for streaming
+        Each entity is serialized to a single line and written as it is produced,
+        so memory stays flat regardless of export size. Suitable for streaming
         and large-scale processing.
 
         Args:
@@ -102,10 +103,13 @@ class SchemaOrgExporter:
         Returns:
             Total number of entities written.
         """
-        records = self._collect_records(entity_classes)
-        lines = [json.dumps(r, separators=(",", ":")) for r in records]
-        Path(output_path).write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
-        return len(records)
+        count = 0
+        with open(output_path, "w", encoding="utf-8") as fh:
+            for rec in self._iter_records(entity_classes):
+                fh.write(json.dumps(rec, separators=(",", ":")))
+                fh.write("\n")
+                count += 1
+        return count
 
     def export_with_graph(
         self,
@@ -133,20 +137,23 @@ class SchemaOrgExporter:
         Returns:
             Total number of entities written.
         """
-        records = self._collect_records(entity_classes)
-        # Hoist @context to document level; strip per-entity copies
-        graph_nodes = []
-        for rec in records:
-            node = {k: v for k, v in rec.items() if k != "@context"}
-            graph_nodes.append(node)
-
-        document: Dict[str, Any] = {
-            "@context": SCHEMA_ORG_CONTEXT,
-            "@graph": graph_nodes,
-        }
-        indent = 2 if pretty else None
-        Path(output_path).write_text(json.dumps(document, indent=indent), encoding="utf-8")
-        return len(records)
+        context = json.dumps(SCHEMA_ORG_CONTEXT)
+        with open(output_path, "w", encoding="utf-8") as fh:
+            if pretty:
+                fh.write('{\n  "@context": ' + context + ',\n  "@graph": ')
+                count = self._stream_array(
+                    fh, self._iter_records(entity_classes),
+                    pretty=True, indent_level=2, strip_context=True,
+                )
+                fh.write("\n}")
+            else:
+                fh.write('{"@context":' + context + ',"@graph":')
+                count = self._stream_array(
+                    fh, self._iter_records(entity_classes),
+                    pretty=False, indent_level=2, strip_context=True,
+                )
+                fh.write("}")
+        return count
 
     def get_graph_document(
         self,
@@ -191,12 +198,11 @@ class SchemaOrgExporter:
         Returns:
             Number of entities written.
         """
-        pk_col = entity_class.__mapper__.primary_key[0]
-        rows = self._session.query(entity_class).filter(pk_col.in_(entity_ids)).all()
-        records = [r.to_schema_org() for r in rows]
-        indent = 2 if pretty else None
-        Path(output_path).write_text(json.dumps(records, indent=indent), encoding="utf-8")
-        return len(records)
+        with open(output_path, "w", encoding="utf-8") as fh:
+            return self._stream_array(
+                fh, self._iter_filtered_records(entity_class, entity_ids),
+                pretty=pretty, indent_level=1,
+            )
 
     # ------------------------------------------------------------------
     # Internal helpers
