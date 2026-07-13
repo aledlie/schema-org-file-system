@@ -81,3 +81,8 @@ test-results/
 # Repomix
 repomix-output.xml
 docs/repomix/
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/

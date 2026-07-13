@@ -17,6 +17,7 @@ from src.storage.graph_store import GraphStore
 from src.storage.models import (
     Company,
     CostRecord,
+    FileRelationship,
     FileStatus,
     Location,
     OrganizationSession,
@@ -261,6 +262,38 @@ class TestRelationshipOperations:
 
         assert second_id == first_id
         assert second_conf == 0.8
+
+    def test_add_relationship_persists_extra_data(self, store: GraphStore):
+        a = _add_file(store, "/tmp/a.pdf")
+        b = _add_file(store, "/tmp/b.pdf")
+
+        with session_scope(store) as session:
+            store.add_relationship(
+                a, b, RelationshipType.DERIVED,
+                extra_data={"tool": "ocr", "score": 0.7}, session=session,
+            )
+
+        with session_scope(store) as session:
+            rel = session.query(FileRelationship).one()
+            assert rel.extra_data == {"tool": "ocr", "score": 0.7}
+
+    def test_upsert_without_extra_data_preserves_existing(self, store: GraphStore):
+        a = _add_file(store, "/tmp/a.pdf")
+        b = _add_file(store, "/tmp/b.pdf")
+
+        with session_scope(store) as session:
+            store.add_relationship(
+                a, b, RelationshipType.DERIVED,
+                extra_data={"tool": "ocr"}, session=session,
+            )
+            store.add_relationship(
+                a, b, RelationshipType.DERIVED, confidence=0.9, session=session,
+            )
+
+        with session_scope(store) as session:
+            rel = session.query(FileRelationship).one()
+            assert rel.extra_data == {"tool": "ocr"}
+            assert rel.confidence == 0.9
 
     def test_find_related_files_traverses_both_directions(self, store: GraphStore):
         a = _add_file(store, "/tmp/a.pdf")

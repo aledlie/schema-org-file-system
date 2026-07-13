@@ -944,7 +944,7 @@ class GraphStore:
         target_file_id: str,
         relationship_type: RelationshipType,
         confidence: float = 1.0,
-        metadata: Dict = None,
+        extra_data: Dict = None,
         session: Session = None
     ) -> FileRelationship:
         """
@@ -955,7 +955,8 @@ class GraphStore:
             target_file_id: Target file ID
             relationship_type: Type of relationship
             confidence: Relationship confidence
-            metadata: Additional metadata
+            extra_data: Additional relationship-specific data (JSON). On an
+                existing relationship, only overwritten when provided.
 
         Returns:
             Created relationship
@@ -975,7 +976,8 @@ class GraphStore:
 
             if existing:
                 existing.confidence = confidence
-                existing.metadata = metadata
+                if extra_data is not None:
+                    existing.extra_data = extra_data
                 session.commit()
                 return existing
 
@@ -984,7 +986,7 @@ class GraphStore:
                 target_file_id=target_file_id,
                 relationship_type=relationship_type,
                 confidence=confidence,
-                metadata=metadata
+                extra_data=extra_data
             )
             session.add(relationship)
             session.commit()
