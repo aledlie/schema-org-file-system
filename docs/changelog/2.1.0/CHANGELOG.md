@@ -24,6 +24,10 @@
 - **Screenshot OCR keyword threshold 0.30 → 0.10** — `_SCREENSHOT_OCR_KEYWORD_THRESHOLD` moved to `scripts/file_organizer_content_based.py`; 0.30 silently rejected valid scores. Do not raise without verifying eval impact (`3182630`)
 - **Oversized-image handling** — `CLIPClassifier` encode paths catch Pillow's `DecompressionBombError` (>178M-pixel decompression-bomb guard) and thumbnail down to `_CLIP_INPUT_SIZE` instead of skipping; large maps/renders now classify rather than silently drop (`3182630`)
 
+### Fixed
+
+- **`add_relationship` silently drops its `metadata` parameter** — `GraphStore.add_relationship` assigned to the SQLAlchemy-reserved `metadata` attribute instead of the model's `extra_data` column, so relationship metadata was never persisted. The parameter is renamed to `extra_data` and wired to the model's `extra_data` JSON column in both create and update paths; the upsert path only overwrites stored `extra_data` when a new value is provided. Round-trip + upsert-preservation tests added in `tests/unit/test_graph_store_operations.py::TestRelationshipOperations`.
+
 ### Removed
 
 - **`person` category routing branches** — Deleted the `category=="person"` destination branches and the standalone `"person"` folder map in both organizers (`get_destination_path`); person-labeled files now route through the `personal` folder map while person names continue flowing to the graph unchanged (`44a29c2`)
