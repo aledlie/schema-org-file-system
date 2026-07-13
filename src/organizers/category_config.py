@@ -94,6 +94,7 @@ CONTENT_CATEGORY_PATHS: Dict[str, Any] = {
     "legal": {
         "contracts": "Legal/Contracts",
         "real_estate": "Legal/RealEstate",
+        "litigation": "Legal/Litigation",
         "corporate": "Legal/Corporate",
         "other": "Legal/Other",
     },

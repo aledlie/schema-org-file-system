@@ -37,6 +37,11 @@ class ContentClassifier:
                 'subcategories': {
                     'contracts': ['contract', 'agreement', 'terms', 'subscription', 'saas'],
                     'real_estate': ['lease', 'deed', 'property', 'real estate', 'mortgage'],
+                    'litigation': [
+                        'court', 'hearing', 'docket', 'plaintiff', 'defendant',
+                        'petitioner', 'respondent', 'cause no', 'judgment',
+                        'motion to', 'motion for',
+                    ],
                     'corporate': ['llc', 'corporation', 'operating agreement', 'bylaws', 'articles', 'formation'],
                     'other': []
                 }
@@ -345,8 +350,12 @@ class ContentClassifier:
                     primary_company = person_company_relationships[person]
                     break
 
-        # Score each category. Subcategory match is keyword-independent, so
-        # compute it once per category and reuse across all keyword hits.
+        # Score each category by its keyword counts. Subcategories score on
+        # their OWN keyword counts, independent of the category score, so the
+        # winning subcategory is the one whose vocabulary dominates the text —
+        # not the first-listed subcategory with any hit (the old behavior gave
+        # every matched subcategory an identical copy of the category total,
+        # making max() a dict-insertion-order tie-break).
         scores: dict[str, int] = defaultdict(int)
         category_subcats: dict[str, dict[str, int]] = {}
 
@@ -356,27 +365,16 @@ class ContentClassifier:
             if not any(kw in combined for kw in keywords):
                 continue
 
-            subcat_map = self._subcats_lower[category]
-            matched_subcats: list[str] | None = None
-
             for keyword in keywords:
-                count = combined.count(keyword)
-                if count == 0:
-                    continue
-                scores[category] += count
+                scores[category] += combined.count(keyword)
 
-                if matched_subcats is None:
-                    matched_subcats = [
-                        sc for sc, sc_kws in subcat_map.items()
-                        if any(sk in combined for sk in sc_kws)
-                    ]
-                    if matched_subcats:
-                        category_subcats[category] = defaultdict(int)
-
-                if matched_subcats:
-                    bucket = category_subcats[category]
-                    for sc in matched_subcats:
-                        bucket[sc] += count
+            subcat_scores = {
+                sc: sum(combined.count(sk) for sk in sc_kws)
+                for sc, sc_kws in self._subcats_lower[category].items()
+                if any(sk in combined for sk in sc_kws)
+            }
+            if subcat_scores:
+                category_subcats[category] = subcat_scores
 
         if not scores:
             return ('uncategorized', 'other', primary_company, people_names)

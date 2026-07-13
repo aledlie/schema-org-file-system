@@ -1411,3 +1411,11 @@ class TestGetDestinationPathNesting:
             subcategory="photos_screenshots_browser",
         )
         assert "Screenshots/Browser" in str(result)
+
+    def test_legal_litigation_path(self, organizer: ContentOrganizer) -> None:
+        result = organizer.get_destination_path(
+            file_path=Path("/docs/notice_of_setting.pdf"),
+            category="legal",
+            subcategory="litigation",
+        )
+        assert "Legal/Litigation" in str(result)

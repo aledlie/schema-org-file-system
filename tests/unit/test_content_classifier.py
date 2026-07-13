@@ -83,6 +83,32 @@ class TestClassifyContent:
         assert cat == "personal"
         assert subcat == "legal"
 
+    def test_court_notice_routes_to_legal_litigation(self, clf: ContentClassifier) -> None:
+        # Regression: court filings had no litigation home in the legal
+        # category and fell into whichever subcategory matched first.
+        text = (
+            "Notice of court setting. Cause No 24-1234. The court will hold a "
+            "hearing before the presiding judge. Plaintiff and defendant shall "
+            "appear at the court at the date set by the court clerk."
+        )
+        cat, subcat, company, people = clf.classify_content(text)
+        assert cat == "legal"
+        assert subcat == "litigation"
+
+    def test_subcategory_scored_by_own_keywords(self, clf: ContentClassifier) -> None:
+        # Regression: subcategory buckets used to receive identical copies of
+        # the category total, so max() was an insertion-order tie-break and
+        # 'contracts' (listed first) beat 'real_estate' whenever both matched.
+        # A lease-dominated agreement must score real_estate > contracts.
+        text = (
+            "This lease agreement concerns the lease of the property at 12 Oak. "
+            "The lease term begins June 1; the lease renews annually per the "
+            "property schedule."
+        )
+        cat, subcat, company, people = clf.classify_content(text)
+        assert cat == "legal"
+        assert subcat == "real_estate"
+
 class TestExtractCompanyNames:
     def test_extracts_llc(self, clf: ContentClassifier) -> None:
         text = "We signed a deal with Acme Solutions LLC today."
