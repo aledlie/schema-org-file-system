@@ -152,6 +152,26 @@ def extract_text_easyocr(image_path: Path, max_chars: int = 500) -> str | None:
         return None
 
 
+def extract_lines_easyocr(image_path: Path, max_lines: int = 20) -> list[str] | None:
+    """Extract text as reading-order lines (paragraph-grouped) via easyocr.
+
+    Unlike extract_text_easyocr, line structure is preserved — used for
+    title-snippet naming. Returns None if easyocr is unavailable, the image
+    cannot be read, or no text is found.
+    """
+    if not EASYOCR_AVAILABLE:
+        return None
+    try:
+        reader = _get_reader()
+        raw = reader.readtext(str(image_path), detail=0, paragraph=True)
+        lines = [" ".join(segment.split()) for segment in raw]
+        lines = [line for line in lines if line]
+        return lines[:max_lines] or None
+    except Exception as e:
+        logger.warning("easyocr failed on %s: %s", image_path, e)
+        return None
+
+
 def extract_text_easyocr_with_confidence(
     image_path: Path,
     max_chars: int = 0,

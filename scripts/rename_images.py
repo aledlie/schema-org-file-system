@@ -33,8 +33,12 @@ from shared.constants import (
 )
 from shared.file_ops import resolve_collision
 from shared.file_organizer import FileOrganizer
-from shared.filename_utils import is_generic_filename
-from shared.ocr_classifier import extract_ocr_text, extract_screenshot_text
+from shared.filename_utils import is_generic_filename, title_snippet_from_lines
+from shared.ocr_classifier import (
+    extract_ocr_text,
+    extract_screenshot_lines,
+    extract_screenshot_text,
+)
 from shared.status import ProcessingStatus, create_result_dict
 
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -446,6 +450,14 @@ class ImageAnalyzer:
                 result["detected_text"] = detected_num
                 if category == "a number or digit icon":
                     content_label = f"{category}_{detected_num}"
+
+            # Prefer a title-like OCR line ("Screenshot_Order_Confirmation.png")
+            # over the generic CLIP label; fall through to CLIP naming when no
+            # line qualifies.
+            snippet = title_snippet_from_lines(extract_screenshot_lines(image_path))
+            if snippet:
+                result["new_name"] = f"Screenshot_{snippet}{image_path.suffix.lower()}"
+                return result
 
         result["new_name"] = generate_clip_filename(
             image_path, content_label, self._metadata_parser

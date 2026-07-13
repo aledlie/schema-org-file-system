@@ -196,3 +196,110 @@ class TestExtractOcrWithConfidence:
             assert result.word_count > 0
             assert isinstance(result.text, str)
             # language and orientation may be None for simple images
+
+
+# ---------------------------------------------------------------------------
+# title_snippet_from_lines
+# ---------------------------------------------------------------------------
+
+
+class TestTitleSnippetFromLines:
+    def test_none_input(self) -> None:
+        from shared.filename_utils import title_snippet_from_lines
+
+        assert title_snippet_from_lines(None) is None
+        assert title_snippet_from_lines([]) is None
+
+    def test_picks_first_title_sized_line(self) -> None:
+        from shared.filename_utils import title_snippet_from_lines
+
+        lines = ["Order Confirmation - Amazon", "Thank you for your order"]
+        assert title_snippet_from_lines(lines) == "Order_Confirmation_-_Amazon"
+
+    def test_skips_short_ui_chrome(self) -> None:
+        from shared.filename_utils import title_snippet_from_lines
+
+        # "File Edit" style menu fragments are <= 10 chars and skipped
+        lines = ["File Edit", "View Help", "Invoice from Acme Corp"]
+        assert title_snippet_from_lines(lines) == "Invoice_from_Acme_Corp"
+
+    def test_skips_long_body_text(self) -> None:
+        from shared.filename_utils import title_snippet_from_lines
+
+        long_line = "This is a very long body paragraph that clearly is not a window title"
+        assert title_snippet_from_lines([long_line]) is None
+
+    def test_only_first_three_lines_considered(self) -> None:
+        from shared.filename_utils import title_snippet_from_lines
+
+        lines = ["a", "b", "c", "A perfectly good title line"]
+        assert title_snippet_from_lines(lines) is None
+
+    def test_sanitizes_special_characters(self) -> None:
+        from shared.filename_utils import title_snippet_from_lines
+
+        assert title_snippet_from_lines(["Re: [URGENT] Q4 report!"]) == "Re_URGENT_Q4_report"
+
+    def test_caps_length_at_40(self) -> None:
+        from shared.filename_utils import title_snippet_from_lines
+
+        line = "abcdefghij " * 4  # 43 chars stripped -> within (10, 50), caps to 40
+        result = title_snippet_from_lines([line.strip()])
+        assert result is not None
+        assert len(result) <= 40
+
+    def test_punctuation_only_line_rejected(self) -> None:
+        from shared.filename_utils import title_snippet_from_lines
+
+        assert title_snippet_from_lines(["--- ~~~ !!! ??? ***"]) is None
+
+
+# ---------------------------------------------------------------------------
+# extract_screenshot_lines
+# ---------------------------------------------------------------------------
+
+
+class TestExtractScreenshotLines:
+    def test_returns_none_or_lines_for_valid_image(self, sample_image_file: Path) -> None:
+        from shared.ocr_classifier import extract_screenshot_lines
+
+        result = extract_screenshot_lines(sample_image_file)
+        assert result is None or (
+            isinstance(result, list) and all(isinstance(x, str) and x for x in result)
+        )
+
+    def test_doctr_fallback_splits_render_lines(self, sample_image_file: Path) -> None:
+        from unittest.mock import MagicMock, patch
+
+        import shared.ocr_classifier as oc
+
+        fake_result = MagicMock()
+        fake_result.render.return_value = "Title  Line\n\n  body   text here \n"
+        with patch.object(oc, "EASYOCR_AVAILABLE", False), \
+             patch.object(oc, "_run_image_ocr", return_value=fake_result):
+            lines = oc.extract_screenshot_lines(sample_image_file)
+
+        assert lines == ["Title Line", "body text here"]
+
+    def test_easyocr_preferred_when_available(self, sample_image_file: Path) -> None:
+        from unittest.mock import patch
+
+        import shared.ocr_classifier as oc
+
+        with patch.object(oc, "EASYOCR_AVAILABLE", True), \
+             patch.object(oc, "extract_lines_easyocr", return_value=["From Easy"]) as easy, \
+             patch.object(oc, "_run_image_ocr") as doctr:
+            lines = oc.extract_screenshot_lines(sample_image_file)
+
+        assert lines == ["From Easy"]
+        easy.assert_called_once()
+        doctr.assert_not_called()
+
+    def test_returns_none_when_no_backend_produces_text(self, sample_image_file: Path) -> None:
+        from unittest.mock import patch
+
+        import shared.ocr_classifier as oc
+
+        with patch.object(oc, "EASYOCR_AVAILABLE", False), \
+             patch.object(oc, "_run_image_ocr", return_value=None):
+            assert oc.extract_screenshot_lines(sample_image_file) is None

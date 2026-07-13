@@ -905,6 +905,42 @@ class TestRunClipSignal:
         ), patch(f"{MODULE}.get_clip_classifier", return_value=clip):
             assert org._run_clip_signal(Path("/pics/img.png")) == (None, 0.0)
 
+    def test_stashes_label_for_description(self, organizer: ContentOrganizer) -> None:
+        org = self._vision_organizer(organizer)
+        clip = MagicMock()
+        clip.classify_raw.return_value = [(NATURE_PROMPT, 0.5)]
+        with patch(f"{MODULE}.ENHANCED_CLIP_AVAILABLE", True), patch(
+            f"{MODULE}.CLIP_CACHE_AVAILABLE", False
+        ), patch(f"{MODULE}.get_clip_classifier", return_value=clip):
+            org._run_clip_signal(Path("/pics/img.png"))
+        label, score = org._last_file_state["clip_description"]
+        assert label == "a landscape or nature scene"
+        assert score == pytest.approx(0.5)
+
+    def test_stashes_label_even_below_threshold(self, organizer: ContentOrganizer) -> None:
+        """A weak CLIP signal is rejected for classification but still feeds
+        the schema.org description (which states its confidence)."""
+        org = self._vision_organizer(organizer)
+        clip = MagicMock()
+        clip.classify_raw.return_value = [(NATURE_PROMPT, 0.2)]
+        with patch(f"{MODULE}.ENHANCED_CLIP_AVAILABLE", True), patch(
+            f"{MODULE}.CLIP_CACHE_AVAILABLE", False
+        ), patch(f"{MODULE}.CLIP_ENHANCE_THRESHOLD", 0.3), patch(
+            f"{MODULE}.get_clip_classifier", return_value=clip
+        ):
+            assert org._run_clip_signal(Path("/pics/img.png")) == (None, 0.0)
+        assert org._last_file_state["clip_description"][0] == "a landscape or nature scene"
+
+    def test_error_leaves_no_description_stash(self, organizer: ContentOrganizer) -> None:
+        org = self._vision_organizer(organizer)
+        clip = MagicMock()
+        clip.classify_raw.side_effect = RuntimeError("model load failed")
+        with patch(f"{MODULE}.ENHANCED_CLIP_AVAILABLE", True), patch(
+            f"{MODULE}.CLIP_CACHE_AVAILABLE", False
+        ), patch(f"{MODULE}.get_clip_classifier", return_value=clip):
+            org._run_clip_signal(Path("/pics/img.png"))
+        assert "clip_description" not in org._last_file_state
+
     def test_per_file_results_cached(self, organizer: ContentOrganizer) -> None:
         org = self._vision_organizer(organizer)
         clip = MagicMock()

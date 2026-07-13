@@ -48,3 +48,30 @@ def is_generic_filename(filename: str) -> bool:
     """Return True if *filename* is a generic/non-human-readable name."""
     stem = Path(filename).stem.lower()
     return any(p.match(stem) for p in _GENERIC_FILENAME_PATTERNS)
+
+
+# Title-snippet selection (ported from the retired image_renamer_metadata.py):
+# scan the first few OCR lines for one sized like a window/page title.
+_TITLE_SNIPPET_WINDOW = 3     # only the first N lines can hold a title
+_TITLE_SNIPPET_MIN_CHARS = 10  # exclusive — shorter lines are UI fragments
+_TITLE_SNIPPET_MAX_CHARS = 50  # exclusive — longer lines are body text
+_TITLE_SNIPPET_CAP = 40        # hard cap after sanitization
+
+
+def title_snippet_from_lines(lines: list[str] | None) -> str | None:
+    """Pick a filename-safe title snippet from reading-order OCR lines.
+
+    Returns the first of the top ``_TITLE_SNIPPET_WINDOW`` lines whose length
+    is strictly between the min/max bounds, stripped to word characters,
+    spaces, and hyphens, whitespace collapsed to underscores, capped at
+    ``_TITLE_SNIPPET_CAP`` chars. Returns None when no line qualifies.
+    """
+    if not lines:
+        return None
+    for line in lines[:_TITLE_SNIPPET_WINDOW]:
+        if _TITLE_SNIPPET_MIN_CHARS < len(line) < _TITLE_SNIPPET_MAX_CHARS:
+            clean = re.sub(r"[^\w\s-]", "", line)
+            clean = re.sub(r"\s+", "_", clean.strip())
+            if re.search(r"\w", clean):
+                return clean[:_TITLE_SNIPPET_CAP]
+    return None

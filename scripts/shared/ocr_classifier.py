@@ -12,6 +12,7 @@ from typing import Optional
 
 from shared.ocr_easyocr import (
     EASYOCR_AVAILABLE,
+    extract_lines_easyocr,
     extract_text_easyocr,
     extract_text_easyocr_with_confidence,
 )
@@ -316,6 +317,28 @@ def extract_screenshot_text(image_path: Path, max_chars: int = 500) -> str | Non
         if text:
             return text
     return extract_ocr_text(image_path, max_chars=max_chars)
+
+
+def extract_screenshot_lines(image_path: Path, max_lines: int = 20) -> list[str] | None:
+    """Extract OCR text as reading-order lines, preserving line structure.
+
+    Backend preference mirrors extract_screenshot_text (easyocr first, docTR
+    fallback); used for title-snippet naming. extract_screenshot_text's
+    flattened output is intentionally untouched — digit detection and keyword
+    classification depend on it.
+
+    Returns None if no backend produces text.
+    """
+    if EASYOCR_AVAILABLE:
+        lines = extract_lines_easyocr(image_path, max_lines=max_lines)
+        if lines:
+            return lines
+    result = _run_image_ocr(image_path)
+    if result is None:
+        return None
+    lines = [" ".join(line.split()) for line in result.render().split("\n")]
+    lines = [line for line in lines if line]
+    return lines[:max_lines] or None
 
 
 def extract_ocr_text_pdf(

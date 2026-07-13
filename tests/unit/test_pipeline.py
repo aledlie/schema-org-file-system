@@ -378,3 +378,27 @@ class TestPersistLocationEdge:
         kwargs = store.add_file_to_location.call_args.kwargs
         assert kwargs["location_name"] == "Marfa"
         assert kwargs["latitude"] is None
+
+
+# ---------------------------------------------------------------------------
+# _content_description
+# ---------------------------------------------------------------------------
+
+class TestContentDescription:
+    def test_filename_fallback_without_organizer(self, tmp_path: Path) -> None:
+        fp = _make_file_processor(tmp_path)
+        assert fp._content_description(tmp_path / "report.pdf") == "report.pdf"
+
+    def test_filename_fallback_without_clip_state(self, tmp_path: Path) -> None:
+        fp = _make_file_processor(tmp_path)
+        fp._organizer = MagicMock(_last_file_state={})
+        assert fp._content_description(tmp_path / "report.pdf") == "report.pdf"
+
+    def test_composes_clip_label_and_confidence(self, tmp_path: Path) -> None:
+        fp = _make_file_processor(tmp_path)
+        fp._organizer = MagicMock(
+            _last_file_state={"clip_description": ("food or a meal", 0.914)}
+        )
+        assert fp._content_description(tmp_path / "img.jpg") == (
+            "Content: food or a meal (91% confident)"
+        )
