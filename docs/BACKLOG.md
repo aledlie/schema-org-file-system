@@ -120,11 +120,11 @@ The try/except OCR dependency probe (pypdf/PIL/HEIC registration) exists in two 
 
 Image EXIF/GPS extraction in `scripts/image_renamer_metadata.py` parallels `src/analyzers/image_metadata.py`.
 
-**Status:** Open
+**Status:** Done — resolved 2026-07-13 (salvage-review session, commits `924d9ab`, `378de0c`)
 **Priority:** P3
 **Source:** scripts↔src code-duplication audit, 2026-07-13
 
-`scripts/image_renamer_metadata.py:79-127` implements `extract_exif_data`, `extract_datetime`, and `extract_gps_coordinates` in parallel to the canonical `src/analyzers/image_metadata.py:65-106` (note: `image_metadata.py`, not `image_analyzer.py`). The implementations have already drifted (differing signatures and return types). Action: port any script-only behavior into `src/analyzers/image_metadata.py` and make the renamer import it.
+Resolution inverted the original premise: the canonical `src/analyzers/image_metadata.py` was already the stronger implementation, but a 28-agent adversarial salvage review plus real-file verification found the script's piexif path was the *only working* GPS extraction on modern Pillow. Ported/fixed in core: `_convert_to_degrees` now handles float/IFDRational components (was silently returning None for every PIL-parsed GPS tag), piexif fallback when PIL EXIF is empty or GPSInfo is a bare IFD offset, county fallback in reverse geocoding, and `_persist_to_graph_store` now accepts the `get_metadata_summary()` shape so EXIF locations create `file→location` edges. Remaining salvageable functionality from the script chain is tracked in "Dead-script salvage — remaining portable capabilities" below.
 
 ### `regenerate_schemas.py` mirrors the src generator import list
 
@@ -156,5 +156,20 @@ Migration context: the goldens originally pinned `scripts/file_organizer.py`'s `
 
 1. **ImageObject lost `width`/`height`.** The legacy branch read PIL dimensions (`set_dimensions`); the live one doesn't. Dimensions may still reach the graph via the image-metadata path, but they're gone from the per-file JSON-LD.
 2. **The type collapse.** VideoObject, AudioObject, SoftwareSourceCode, Dataset, Person, and Organization all fall to a bare `DocumentGenerator()` fallback that emits `@type: DigitalDocument` with only `name` + `description` (the legacy fallback at least had `encodingFormat`/`contentSize`/`url`). This is not hypothetical: `content_organizer.py:1054` still emits VideoObject/AudioObject and `category_config.py` maps whole subcategories to Organization — and `_persist_to_graph_store` stores `schema.get("@type")`, so **videos organized today are recorded in the graph as DigitalDocument**. The vCard parsing (`worksFor`, PostalAddress, name parts) also has no live equivalent; if it is restored, the deleted `_enrich_person_from_vcard`/`_enrich_organization_from_file` implementations and their tests are recoverable from git history (pre-2026-07-13).
+
+### Dead-script salvage — remaining portable capabilities
+
+Verified-genuine gaps from the 2026-07-13 salvage review of the orphaned `add_content_descriptions.py` / `analyze_renamed_files.py` / `image_renamer_metadata.py` chain (28-agent adversarial workflow: 3 inventory readers, per-capability refutation against `src/` + `scripts/shared/`, synthesis). The GPS/EXIF portion already landed (see the metadata-extraction item above); these two remain.
+
+**Status:** Open
+**Priority:** P3
+**Source:** dead-script salvage review, 2026-07-13
+
+1. **Classifier-derived schema.org `description`** (effort: small). All ~30k records in `_site/metadata.json` have `description == filename`, and `build_file_jsonld` drops the property entirely. Port `analyze_renamed_files.py`'s description synthesis, scoped to the CLIP half only: stash the winning CLIP label+score into `_last_file_state` (existing pattern in `content_organizer._run_clip_signal`), compose `"Content: {label} ({confidence:.0%} confident)"` in `FileProcessor.generate_schema`, keep the filename fallback for non-CLIP paths. Do NOT port the "Text detected: …" OCR half — it duplicates the existing `abstract` property (`file_processor.py` 1000-char preview). Consumers exist today: `SchemaRegistry` search matches on description (`src/integration.py:373`), graph store persists `schema_data`, the dashboard renders it. Re-record goldens after (`UPDATE_GOLDEN=1`). Pairs with the fidelity-losses item above — land them together to trip the snapshots once.
+2. **Screenshot OCR title-snippet naming** (effort: small, eval-gated). `image_renamer_metadata.py`'s heuristic — first of the top 3 OCR lines with 10<len<50, sanitized, 40-char cap — produces `Screenshot_Order_Confirmation_Amazon.png` where the live renamer gives `20250425_a_web_browser_screenshot.png`, feeding the filename-pattern classifier tier better input. Requires a line-preserving `extract_screenshot_lines()` in `scripts/shared/ocr_classifier.py` (docTR `render()` keeps newlines; easyocr needs line reconstruction from boxes; the existing `extract_screenshot_text` flattening must not change — digit detection depends on it), a snippet filter feeding `generate_filename`, and fallback to CLIP-label naming when no line qualifies. **Gate on the eval suite before shipping** — the 3-line window can grab UI chrome (repo policy: eval-gated naming changes, cf. the screenshot OCR threshold gotcha). Do NOT port its EXIF-datetime fallback (`generate_filename` already date-stamps).
+
+Script dispositions once these land: `add_content_descriptions.py` delete outright (all capabilities rejected — its `uncertain` filename token would actively misroute via `filename_classifier.py`; `CONTENT_ABBREVIATIONS` already lives in `shared/constants.py`); `analyze_renamed_files.py` delete after item 1; `image_renamer_metadata.py` delete after item 2. Also rejected by the review: OCR-keyword filename enrichment (reading-order-naive — grabs UI chrome; KIE + entity_detector already extract the valuable signals), filename-token sanitizer (no live path embeds free text in filenames), GPS location in generated filenames (content-naming was the chosen policy).
+
+Independent small follow-up surfaced by the review: the `file→category` graph edge has a dormant `confidence` column — populating it would be the durable home for low-confidence flagging (vs the rejected filename-token approach) and pairs with the edge-hygiene items.
 
 
