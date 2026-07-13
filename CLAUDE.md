@@ -101,13 +101,14 @@ mypy src/ scripts/            # type check
 1. **Organization Detection** - client, vendor, invoice, company names
 2. **Personal Documents** - resume/CV/vCard (`contacts`), employment, identification, certificates (OCR-enhanced). Person attribution is a graph relationship (`GraphStore.add_file_to_person`), not a filing category — see `docs/changelog/2.1.0/PERSON_TAXONOMY_OPTION_C_PLAN.md`.
 3. **Legal/Contract** - contracts, agreements, terms
-4. **Research Paper** - arXiv/SSRN/DOI prefixes route to `Research/{Publisher}/` with `schema_type=ScholarlyArticle`
-5. **E-commerce/Shopping** - product listings, carts
-6. **Software UI** - app interfaces, dashboards
-7. **Game Assets** - 200+ patterns, sprites, textures, audio
-8. **Filepath Matching** - directory structure patterns (includes `parent_folder=Games` fallback)
-9. **Content Analysis** - OCR text and CLIP vision
-10. **MIME Type Fallback** - file extension
+4. **Financial Documents** - invoice/billing/statement/receipt filenames → `Financial/{Invoices,Statements,Other}`; checked before the event-date heuristic so "May 2026 Billing Statement.pdf" files as financial, not an event (month+day adjacency required for events; a bare year does not qualify)
+5. **Research Paper** - arXiv/SSRN/DOI prefixes route to `Research/{Publisher}/` with `schema_type=ScholarlyArticle`
+6. **E-commerce/Shopping** - product listings, carts
+7. **Software UI** - app interfaces, dashboards
+8. **Game Assets** - 200+ patterns, sprites, textures, audio
+9. **Filepath Matching** - directory structure patterns (includes `parent_folder=Games` fallback)
+10. **Content Analysis** - OCR text and CLIP vision
+11. **MIME Type Fallback** - file extension
 
 ## Output Folders
 
