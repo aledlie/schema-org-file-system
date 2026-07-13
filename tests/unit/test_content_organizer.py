@@ -7,7 +7,18 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from src.organizers.base_organizer import BaseOrganizer
-from src.organizers.content_organizer import ContentOrganizer
+from src.organizers.category_config import CONTENT_CATEGORY_PATHS
+from src.organizers.content_organizer import (
+    _SIGNAL_AGREEMENT_BOOST,
+    _TEXT_LENGTH_FULL_CHARS,
+    _TEXT_MIN_CHARS,
+    _TEXT_SIGNAL_PRIOR,
+    RESEARCH_CATEGORY,
+    SCHOLARLY_ARTICLE_SCHEMA_TYPE,
+    ContentOrganizer,
+)
+
+MODULE = "src.organizers.content_organizer"
 
 
 @pytest.fixture()
@@ -468,3 +479,849 @@ class TestOcrConfidenceGating:
         # OCR metadata cached for downstream persistence
         assert org._last_file_ocr_confidence == 0.9
         assert org._last_file_detected_language == "en"
+
+
+# ------------------------------------------------------------------ #
+# __init__ taxonomy wiring                                             #
+# ------------------------------------------------------------------ #
+
+class TestInitTaxonomy:
+    def test_screenshots_extended_from_ocr_keywords(self, organizer: ContentOrganizer) -> None:
+        # SCREENSHOT_KEYWORDS keys not already in the taxonomy get a derived folder.
+        screenshots = organizer.category_paths["media"]["photos"]["screenshots"]
+        assert screenshots["terminal_session"] == "Media/Photos/Screenshots/TerminalSession"
+
+    def test_shared_taxonomy_not_mutated(self, organizer: ContentOrganizer) -> None:
+        # The instance deepcopies CONTENT_CATEGORY_PATHS; extending screenshots
+        # must not leak into the shared module-level dict.
+        shared_screenshots = CONTENT_CATEGORY_PATHS["media"]["photos"]["screenshots"]
+        assert "terminal_session" not in shared_screenshots
+
+    def test_classifier_patterns_extend_screenshots(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        mock_classifier.patterns = {"jira": ["board", "sprint"]}
+        org = ContentOrganizer(base_path=tmp_path, content_classifier=mock_classifier)
+        screenshots = org.category_paths["media"]["photos"]["screenshots"]
+        assert screenshots["jira"] == "Media/Photos/Screenshots/Jira"
+
+
+# ------------------------------------------------------------------ #
+# extract_project_name                                                 #
+# ------------------------------------------------------------------ #
+
+class TestExtractProjectName:
+    def test_finds_project_dir(self, organizer: ContentOrganizer) -> None:
+        result = organizer.extract_project_name(Path("code/myproject/src/main.py"))
+        assert result == "myproject"
+
+    def test_all_generic_dirs_returns_none(self, organizer: ContentOrganizer) -> None:
+        result = organizer.extract_project_name(Path("src/tests/main.py"))
+        assert result is None
+
+    def test_skips_hidden_dirs(self, organizer: ContentOrganizer) -> None:
+        result = organizer.extract_project_name(Path(".config/myapp/settings.py"))
+        assert result == "myapp"
+
+    def test_project_name_appended_to_filepath_category(
+        self, organizer: ContentOrganizer
+    ) -> None:
+        result = organizer.classify_by_filepath(Path("repos/MyProject/src/script.py"))
+        assert result == "Technical/Python/MyProject"
+
+
+# ------------------------------------------------------------------ #
+# classify_by_organization                                             #
+# ------------------------------------------------------------------ #
+
+class TestClassifyByOrganization:
+    VENDOR_TEXT = (
+        "Invoice #1234 issued under purchase order PO-99. "
+        "Payment terms: net 30. Please remit to the address on file."
+    )
+
+    def test_short_text_returns_none(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        assert organizer.classify_by_organization("invoice", "doc.pdf") is None
+        mock_classifier.extract_company_names.assert_not_called()
+
+    def test_vendor_keywords_with_company(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        mock_classifier.extract_company_names.return_value = ["Acme Corp"]
+        result = organizer.classify_by_organization(self.VENDOR_TEXT, "invoice.pdf")
+        assert result == ("organization", "vendors", "Acme Corp")
+
+    def test_no_company_name_returns_none(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        mock_classifier.extract_company_names.return_value = []
+        result = organizer.classify_by_organization(self.VENDOR_TEXT, "invoice.pdf")
+        assert result is None
+
+    def test_single_keyword_not_enough(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        mock_classifier.extract_company_names.return_value = ["Acme Corp"]
+        text = "This invoice covers consulting delivered during the spring engagement window."
+        result = organizer.classify_by_organization(text, "doc.pdf")
+        assert result is None
+
+
+# ------------------------------------------------------------------ #
+# classify_by_person                                                   #
+# ------------------------------------------------------------------ #
+
+class TestClassifyByPerson:
+    def test_short_text_returns_none(self, organizer: ContentOrganizer) -> None:
+        assert organizer.classify_by_person("contact", "card.pdf") is None
+
+    def test_resume_filename_routes_to_contacts(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        mock_classifier.extract_people_names.return_value = ["Jane Doe"]
+        text = "Experienced engineer with ten years of distributed systems background."
+        result = organizer.classify_by_person(text, "Jane_Doe_Resume.pdf")
+        assert result == ("personal", "contacts", ["Jane Doe"])
+
+    def test_employee_keywords_map_to_employment(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        # Option C: person/employees is retired; employee docs file under
+        # personal/employment.
+        mock_classifier.extract_people_names.return_value = ["John Smith"]
+        text = (
+            "Employee: John Smith. Hire date: 2024-01-15. "
+            "Position: Senior Analyst reporting to operations."
+        )
+        with patch(f"{MODULE}._has_human_name_signal", return_value=True):
+            result = organizer.classify_by_person(text, "record.pdf")
+        assert result == ("personal", "employment", ["John Smith"])
+
+    def test_no_human_name_signal_returns_none(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        mock_classifier.extract_people_names.return_value = ["Spurious Match"]
+        text = (
+            "Employee: John Smith. Hire date: 2024-01-15. "
+            "Position: Senior Analyst reporting to operations."
+        )
+        with patch(f"{MODULE}._has_human_name_signal", return_value=False):
+            result = organizer.classify_by_person(text, "record.pdf")
+        assert result is None
+
+    def test_no_people_extracted_returns_none(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        mock_classifier.extract_people_names.return_value = []
+        text = (
+            "Employee: (redacted). Hire date: 2024-01-15. "
+            "Position: Senior Analyst reporting to operations."
+        )
+        with patch(f"{MODULE}._has_human_name_signal", return_value=True):
+            result = organizer.classify_by_person(text, "record.pdf")
+        assert result is None
+
+
+# ------------------------------------------------------------------ #
+# classify_media_file                                                  #
+# ------------------------------------------------------------------ #
+
+class TestClassifyMediaFile:
+    def test_screen_recording_video(self, organizer: ContentOrganizer) -> None:
+        result = organizer.classify_media_file(Path("/vids/screen_recording.mp4"))
+        assert result == ("media", "videos", "screencasts")
+
+    def test_export_video(self, organizer: ContentOrganizer) -> None:
+        result = organizer.classify_media_file(Path("/vids/final_cut.mov"))
+        assert result == ("media", "videos", "exports")
+
+    def test_default_video_is_recording(self, organizer: ContentOrganizer) -> None:
+        result = organizer.classify_media_file(Path("/vids/birthday.mp4"))
+        assert result == ("media", "videos", "recordings")
+
+    def test_podcast_audio(self, organizer: ContentOrganizer) -> None:
+        result = organizer.classify_media_file(Path("/audio/podcast_ep1.mp3"))
+        assert result == ("media", "audio", "podcasts")
+
+    def test_music_audio(self, organizer: ContentOrganizer) -> None:
+        result = organizer.classify_media_file(Path("/audio/album_01.m4a"))
+        assert result == ("media", "audio", "music")
+
+    def test_default_audio_is_recording(self, organizer: ContentOrganizer) -> None:
+        result = organizer.classify_media_file(Path("/audio/untitled.m4a"))
+        assert result == ("media", "audio", "recordings")
+
+    def test_screenshot_photo_defers_to_later_tiers(self, organizer: ContentOrganizer) -> None:
+        # Screenshots fall through so Priority 4.5 OCR/CLIP can sub-classify.
+        result = organizer.classify_media_file(Path("/pics/Screenshot 2026-01-01.png"))
+        assert result is None
+
+    def test_receipt_photo_is_document(self, organizer: ContentOrganizer) -> None:
+        result = organizer.classify_media_file(Path("/pics/receipt_2024.jpg"))
+        assert result == ("media", "photos", "documents")
+
+    def test_gps_metadata_routes_to_travel(self, organizer: ContentOrganizer) -> None:
+        result = organizer.classify_media_file(
+            Path("/pics/img_100.png"), {"gps_coordinates": (30.27, -97.74)}
+        )
+        assert result == ("media", "photos", "travel")
+
+    def test_camera_datetime_routes_to_other(self, organizer: ContentOrganizer) -> None:
+        result = organizer.classify_media_file(
+            Path("/pics/img_100.png"), {"datetime": object()}
+        )
+        assert result == ("media", "photos", "other")
+
+    def test_bare_jpg_defaults_to_other(self, organizer: ContentOrganizer) -> None:
+        result = organizer.classify_media_file(Path("/pics/img_100.jpg"))
+        assert result == ("media", "photos", "other")
+
+    def test_bare_png_falls_through(self, organizer: ContentOrganizer) -> None:
+        result = organizer.classify_media_file(Path("/pics/img_100.png"))
+        assert result is None
+
+    def test_non_media_returns_none(self, organizer: ContentOrganizer) -> None:
+        result = organizer.classify_media_file(Path("/docs/notes.txt"))
+        assert result is None
+
+
+# ------------------------------------------------------------------ #
+# _map_clip_label                                                      #
+# ------------------------------------------------------------------ #
+
+class TestMapClipLabel:
+    def test_known_label_maps(self, organizer: ContentOrganizer) -> None:
+        assert organizer._map_clip_label("food or a meal") == ("media", "photos_lifestyle")
+
+    def test_unknown_label_returns_none(self, organizer: ContentOrganizer) -> None:
+        assert organizer._map_clip_label("a completely unknown label") is None
+
+    def test_geographic_label_with_gps_upgrades_to_travel(
+        self, organizer: ContentOrganizer
+    ) -> None:
+        result = organizer._map_clip_label(
+            "a landscape or nature scene", {"gps_coordinates": (30.27, -97.74)}
+        )
+        assert result == ("media", "photos_travel")
+
+    def test_geographic_label_without_gps_keeps_mapping(
+        self, organizer: ContentOrganizer
+    ) -> None:
+        result = organizer._map_clip_label("a landscape or nature scene")
+        assert result == ("media", "photos_nature")
+
+
+# ------------------------------------------------------------------ #
+# _merge_clip_text_scores                                               #
+# ------------------------------------------------------------------ #
+
+class TestMergeClipTextScores:
+    def test_clip_only(self, organizer: ContentOrganizer) -> None:
+        merged = organizer._merge_clip_text_scores(("media", "photos_nature"), 0.5, None, 0)
+        assert merged is not None
+        winner, score, src = merged
+        assert winner == ("media", "photos_nature")
+        assert score == pytest.approx(0.5)
+        assert "CLIP" in src
+
+    def test_text_only_full_length(self, organizer: ContentOrganizer) -> None:
+        merged = organizer._merge_clip_text_scores(
+            None, 0.0, ("financial", "invoices"), _TEXT_LENGTH_FULL_CHARS
+        )
+        assert merged is not None
+        winner, score, src = merged
+        assert winner == ("financial", "invoices")
+        assert score == pytest.approx(_TEXT_SIGNAL_PRIOR)
+        assert "text" in src
+
+    def test_text_score_scales_with_length(self, organizer: ContentOrganizer) -> None:
+        half = _TEXT_LENGTH_FULL_CHARS // 2
+        merged = organizer._merge_clip_text_scores(None, 0.0, ("financial", "invoices"), half)
+        assert merged is not None
+        _, score, _ = merged
+        assert score == pytest.approx(_TEXT_SIGNAL_PRIOR * 0.5)
+
+    def test_text_below_min_chars_ignored(self, organizer: ContentOrganizer) -> None:
+        merged = organizer._merge_clip_text_scores(
+            None, 0.0, ("financial", "invoices"), _TEXT_MIN_CHARS - 1
+        )
+        assert merged is None
+
+    def test_agreement_boost(self, organizer: ContentOrganizer) -> None:
+        merged = organizer._merge_clip_text_scores(
+            ("financial", "invoices"), 0.5, ("financial", "invoices"), _TEXT_LENGTH_FULL_CHARS
+        )
+        assert merged is not None
+        winner, score, src = merged
+        assert winner == ("financial", "invoices")
+        assert score == pytest.approx(0.5 + _TEXT_SIGNAL_PRIOR + _SIGNAL_AGREEMENT_BOOST)
+        assert "agree" in src
+
+    def test_long_text_beats_weak_clip(self, organizer: ContentOrganizer) -> None:
+        merged = organizer._merge_clip_text_scores(
+            ("media", "photos_nature"), 0.5, ("financial", "invoices"), _TEXT_LENGTH_FULL_CHARS
+        )
+        assert merged is not None
+        winner, _, _ = merged
+        assert winner == ("financial", "invoices")
+
+    def test_no_signals_returns_none(self, organizer: ContentOrganizer) -> None:
+        assert organizer._merge_clip_text_scores(None, 0.0, None, 0) is None
+
+
+# ------------------------------------------------------------------ #
+# _run_clip_signal                                                      #
+# ------------------------------------------------------------------ #
+
+NATURE_PROMPT = "a photo of a landscape or nature scene"
+
+
+class TestRunClipSignal:
+    def _vision_organizer(self, organizer: ContentOrganizer) -> ContentOrganizer:
+        organizer.image_analyzer = MagicMock()
+        organizer.image_analyzer.vision_available = True
+        return organizer
+
+    def test_vision_unavailable_returns_none(self, organizer: ContentOrganizer) -> None:
+        assert organizer.image_analyzer is None
+        assert organizer._run_clip_signal(Path("/pics/img.png")) == (None, 0.0)
+
+    def test_maps_top_prompt_to_candidate(self, organizer: ContentOrganizer) -> None:
+        org = self._vision_organizer(organizer)
+        clip = MagicMock()
+        clip.classify_raw.return_value = [(NATURE_PROMPT, 0.5)]
+        with patch(f"{MODULE}.ENHANCED_CLIP_AVAILABLE", True), patch(
+            f"{MODULE}.CLIP_CACHE_AVAILABLE", False
+        ), patch(f"{MODULE}.get_clip_classifier", return_value=clip):
+            candidate, score = org._run_clip_signal(Path("/pics/img.png"))
+        assert candidate == ("media", "photos_nature")
+        assert score == pytest.approx(0.5)
+
+    def test_below_threshold_returns_none(self, organizer: ContentOrganizer) -> None:
+        org = self._vision_organizer(organizer)
+        clip = MagicMock()
+        clip.classify_raw.return_value = [(NATURE_PROMPT, 0.2)]
+        with patch(f"{MODULE}.ENHANCED_CLIP_AVAILABLE", True), patch(
+            f"{MODULE}.CLIP_CACHE_AVAILABLE", False
+        ), patch(f"{MODULE}.CLIP_ENHANCE_THRESHOLD", 0.3), patch(
+            f"{MODULE}.get_clip_classifier", return_value=clip
+        ):
+            assert org._run_clip_signal(Path("/pics/img.png")) == (None, 0.0)
+
+    def test_classifier_error_swallowed(self, organizer: ContentOrganizer) -> None:
+        org = self._vision_organizer(organizer)
+        clip = MagicMock()
+        clip.classify_raw.side_effect = RuntimeError("model load failed")
+        with patch(f"{MODULE}.ENHANCED_CLIP_AVAILABLE", True), patch(
+            f"{MODULE}.CLIP_CACHE_AVAILABLE", False
+        ), patch(f"{MODULE}.get_clip_classifier", return_value=clip):
+            assert org._run_clip_signal(Path("/pics/img.png")) == (None, 0.0)
+
+    def test_per_file_results_cached(self, organizer: ContentOrganizer) -> None:
+        org = self._vision_organizer(organizer)
+        clip = MagicMock()
+        clip.classify_raw.return_value = [(NATURE_PROMPT, 0.5)]
+        with patch(f"{MODULE}.ENHANCED_CLIP_AVAILABLE", True), patch(
+            f"{MODULE}.CLIP_CACHE_AVAILABLE", False
+        ), patch(f"{MODULE}.get_clip_classifier", return_value=clip):
+            org._run_clip_signal(Path("/pics/img.png"))
+            org._run_clip_signal(Path("/pics/img.png"))
+        assert clip.classify_raw.call_count == 1
+
+
+# ------------------------------------------------------------------ #
+# _cross_check_with_clip                                                #
+# ------------------------------------------------------------------ #
+
+class TestCrossCheckWithClip:
+    def test_no_clip_signal_keeps_original(self, organizer: ContentOrganizer) -> None:
+        organizer._run_clip_signal = MagicMock(return_value=(None, 0.0))
+        result = organizer._cross_check_with_clip(
+            Path("/pics/img.png"), None, "financial", "invoices", 100
+        )
+        assert result == ("financial", "invoices")
+
+    def test_clip_outscores_sparse_text(self, organizer: ContentOrganizer) -> None:
+        organizer._run_clip_signal = MagicMock(return_value=(("media", "photos_nature"), 0.9))
+        result = organizer._cross_check_with_clip(
+            Path("/pics/img.png"), None, "financial", "invoices", 0
+        )
+        assert result == ("media", "photos_nature")
+
+    def test_long_text_survives_weak_clip(self, organizer: ContentOrganizer) -> None:
+        organizer._run_clip_signal = MagicMock(return_value=(("media", "photos_nature"), 0.2))
+        result = organizer._cross_check_with_clip(
+            Path("/pics/img.png"), None, "financial", "invoices", _TEXT_LENGTH_FULL_CHARS
+        )
+        assert result == ("financial", "invoices")
+
+
+# ------------------------------------------------------------------ #
+# enhance_weak_image_classification                                     #
+# ------------------------------------------------------------------ #
+
+class TestEnhanceWeakImageClassification:
+    def test_ocr_text_decides_when_clip_silent(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        organizer._run_clip_signal = MagicMock(return_value=(None, 0.0))
+        organizer.ocr_available = True
+        organizer.extract_text_from_image = MagicMock(return_value="x" * 200)
+        mock_classifier.classify_content.return_value = ("financial", "invoices", None, [])
+        result = organizer.enhance_weak_image_classification(Path("/pics/statement.png"))
+        assert result == ("financial", "invoices")
+
+    def test_clip_decides_when_ocr_unavailable(self, organizer: ContentOrganizer) -> None:
+        organizer._run_clip_signal = MagicMock(return_value=(("media", "photos_nature"), 0.5))
+        organizer.ocr_available = False
+        result = organizer.enhance_weak_image_classification(Path("/pics/img.png"))
+        assert result == ("media", "photos_nature")
+
+    def test_uncategorized_text_yields_none(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        organizer._run_clip_signal = MagicMock(return_value=(None, 0.0))
+        organizer.ocr_available = True
+        organizer.extract_text_from_image = MagicMock(return_value="x" * 200)
+        mock_classifier.classify_content.return_value = ("uncategorized", "other", None, [])
+        assert organizer.enhance_weak_image_classification(Path("/pics/img.png")) is None
+
+    def test_ocr_error_swallowed(self, organizer: ContentOrganizer) -> None:
+        organizer._run_clip_signal = MagicMock(return_value=(None, 0.0))
+        organizer.ocr_available = True
+        organizer.extract_text_from_image = MagicMock(side_effect=RuntimeError("ocr died"))
+        assert organizer.enhance_weak_image_classification(Path("/pics/img.png")) is None
+
+
+# ------------------------------------------------------------------ #
+# extract_text dispatch                                                 #
+# ------------------------------------------------------------------ #
+
+class TestExtractTextDispatch:
+    def _wired_organizer(self, organizer: ContentOrganizer, mime: str | None) -> ContentOrganizer:
+        organizer.enricher = MagicMock()
+        organizer.enricher.detect_mime_type.return_value = mime
+        organizer.text_extractor = MagicMock()
+        organizer.ocr_available = True
+        return organizer
+
+    def test_image_reuses_cached_ocr_text(self, organizer: ContentOrganizer) -> None:
+        org = self._wired_organizer(organizer, "image/png")
+        org._last_file_ocr_text = "cached ocr text"
+        assert org.extract_text(Path("/pics/img.png")) == "cached ocr text"
+        org.text_extractor.extract_text_from_image.assert_not_called()
+
+    def test_image_without_cache_calls_extractor(self, organizer: ContentOrganizer) -> None:
+        org = self._wired_organizer(organizer, "image/png")
+        org.text_extractor.extract_text_from_image.return_value = "fresh"
+        assert org.extract_text(Path("/pics/img.png")) == "fresh"
+
+    def test_image_without_ocr_returns_empty(self, organizer: ContentOrganizer) -> None:
+        org = self._wired_organizer(organizer, "image/png")
+        org.ocr_available = False
+        assert org.extract_text(Path("/pics/img.png")) == ""
+        org.text_extractor.extract_text_from_image.assert_not_called()
+
+    def test_pdf_routes_to_pdf_extractor(self, organizer: ContentOrganizer) -> None:
+        org = self._wired_organizer(organizer, "application/pdf")
+        org.text_extractor.extract_text_from_pdf.return_value = "pdf text"
+        assert org.extract_text(Path("/docs/report.pdf")) == "pdf text"
+
+    def test_pdf_without_ocr_returns_empty(self, organizer: ContentOrganizer) -> None:
+        org = self._wired_organizer(organizer, "application/pdf")
+        org.ocr_available = False
+        assert org.extract_text(Path("/docs/report.pdf")) == ""
+
+    def test_docx_routes_by_extension(self, organizer: ContentOrganizer) -> None:
+        org = self._wired_organizer(organizer, None)
+        org.text_extractor.extract_text_from_docx.return_value = "docx text"
+        assert org.extract_text(Path("/docs/letter.docx")) == "docx text"
+
+    def test_xlsx_routes_by_extension(self, organizer: ContentOrganizer) -> None:
+        org = self._wired_organizer(organizer, None)
+        org.text_extractor.extract_text_from_xlsx.return_value = "sheet text"
+        assert org.extract_text(Path("/docs/budget.xlsx")) == "sheet text"
+
+    def test_other_types_use_generic_extractor(self, organizer: ContentOrganizer) -> None:
+        org = self._wired_organizer(organizer, "text/plain")
+        org.text_extractor.extract_text.return_value = "plain text"
+        path = Path("/docs/notes.txt")
+        assert org.extract_text(path) == "plain text"
+        org.text_extractor.extract_text.assert_called_once_with(path, "text/plain")
+
+    def test_no_extractor_returns_empty(self, organizer: ContentOrganizer) -> None:
+        org = self._wired_organizer(organizer, "text/plain")
+        org.text_extractor = None
+        assert org.extract_text(Path("/docs/notes.txt")) == ""
+
+
+# ------------------------------------------------------------------ #
+# detect_file_category priority routing                                 #
+# ------------------------------------------------------------------ #
+
+class TestDetectFileCategoryPriorities:
+    def _stubbed_organizer(
+        self, tmp_path: Path, mock_classifier: MagicMock, mime: str | None
+    ) -> ContentOrganizer:
+        org = ContentOrganizer(base_path=tmp_path, content_classifier=mock_classifier)
+        org.enricher = MagicMock()
+        org.enricher.detect_mime_type.return_value = mime
+        org.ocr_available = False
+        org.extract_text = MagicMock(return_value="")
+        return org
+
+    def test_renamed_screenshot_routes_by_content_label(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        # Priority 0a: display_path carries the renamer's descriptive name;
+        # longest key wins so "terminal_session" beats "terminal".
+        org = self._stubbed_organizer(tmp_path, mock_classifier, "image/png")
+        result = org.detect_file_category(
+            Path("/pics/Screenshot 2026-03-20 at 10.00.png"),
+            display_path=Path("/pics/20260320_terminal_session_notes.png"),
+        )
+        assert result[0] == "media"
+        assert result[1] == "photos_screenshots_terminal_session"
+
+    def test_skip_category_short_circuits(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        org = self._stubbed_organizer(tmp_path, mock_classifier, None)
+        org.classify_by_filename_patterns = MagicMock(
+            return_value=("skip", "duplicate", None, [])
+        )
+        cat, subcat, *_ = org.detect_file_category(Path("/docs/report_20241201_123456.pdf"))
+        assert (cat, subcat) == ("skip", "duplicate")
+
+    def test_research_category_upgrades_schema_type(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        org = self._stubbed_organizer(tmp_path, mock_classifier, "application/pdf")
+        org.classify_by_filename_patterns = MagicMock(
+            return_value=(RESEARCH_CATEGORY, "papers", None, [])
+        )
+        cat, _, schema_type, *_ = org.detect_file_category(Path("/docs/arxiv_2401.12345.pdf"))
+        assert cat == RESEARCH_CATEGORY
+        assert schema_type == SCHOLARLY_ARTICLE_SCHEMA_TYPE
+
+    def test_weak_filename_image_result_enhanced(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        # Point A: a filename-pattern photos_other on an image runs enhancement.
+        org = self._stubbed_organizer(tmp_path, mock_classifier, "image/jpeg")
+        org.classify_by_filename_patterns = MagicMock(
+            return_value=("media", "photos_other", None, [])
+        )
+        org.enhance_weak_image_classification = MagicMock(
+            return_value=("technical", "data_visualization")
+        )
+        cat, subcat, *_ = org.detect_file_category(Path("/pics/IMG_1234.jpg"))
+        assert (cat, subcat) == ("technical", "data_visualization")
+
+    def test_game_asset_wins_over_filepath(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        org = self._stubbed_organizer(tmp_path, mock_classifier, "audio/ogg")
+        # Bypass the filename-pattern tier — this test pins the game-asset vs
+        # filepath ordering below it.
+        org.classify_by_filename_patterns = MagicMock(return_value=None)
+        org.classify_by_filepath = MagicMock(return_value="Technical/Whatever")
+        cat, subcat, *_ = org.detect_file_category(Path("dungeon.ogg"))
+        assert (cat, subcat) == ("game_assets", "music")
+        org.classify_by_filepath.assert_not_called()
+
+    def test_filepath_marker_returned(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        org = self._stubbed_organizer(tmp_path, mock_classifier, None)
+        cat, subcat, *_ = org.detect_file_category(Path("notes.md"))
+        assert cat == "filepath"
+        assert subcat == "Technical/Documentation"
+
+    def test_media_subcategory_flattened(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        # Priority 4 formats (media, type, subcat) as "type_subcat".
+        org = self._stubbed_organizer(tmp_path, mock_classifier, "audio/mp4")
+        # Bypass the filename-pattern tier so the media tier (Priority 4) runs.
+        org.classify_by_filename_patterns = MagicMock(return_value=None)
+        cat, subcat, schema_type, *_ = org.detect_file_category(Path("album_01.m4a"))
+        assert (cat, subcat) == ("media", "audio_music")
+        assert schema_type == "AudioObject"
+
+
+# ------------------------------------------------------------------ #
+# _classify_screenshot_ocr (Priority 4.5)                               #
+# ------------------------------------------------------------------ #
+
+class TestClassifyScreenshotOcr:
+    SCREENSHOT = Path("/pics/Screenshot 2026-01-01 at 09.00.png")
+
+    def test_non_screenshot_returns_none(self, organizer: ContentOrganizer) -> None:
+        result = organizer._classify_screenshot_ocr(
+            Path("/pics/vacation.png"), "ImageObject", {}
+        )
+        assert result is None
+
+    def test_structured_renamed_screenshot_excluded(self, organizer: ContentOrganizer) -> None:
+        # Already-classified names ("browser_*") bypass this tier even though
+        # "screenshot" appears in the stem.
+        result = organizer._classify_screenshot_ocr(
+            Path("/pics/browser_screenshot_1.png"), "ImageObject", {}
+        )
+        assert result is None
+
+    def test_ocr_subclass_accepted(self, organizer: ContentOrganizer) -> None:
+        ocr = MagicMock(return_value=("dashboard", 0.25, {}, "cpu usage graphs"))
+        with patch(f"{MODULE}._shared_classify_by_ocr", ocr):
+            result = organizer._classify_screenshot_ocr(self.SCREENSHOT, "ImageObject", {})
+        assert result is not None
+        assert result[0] == "media"
+        assert result[1] == "photos_screenshots_dashboard"
+        # OCR text cached for downstream reuse
+        assert organizer._last_file_ocr_text == "cpu usage graphs"
+
+    def test_low_confidence_ocr_falls_back(self, organizer: ContentOrganizer) -> None:
+        ocr = MagicMock(return_value=("dashboard", 0.05, {}, "noise"))
+        organizer.enhance_weak_image_classification = MagicMock(return_value=None)
+        with patch(f"{MODULE}._shared_classify_by_ocr", ocr):
+            result = organizer._classify_screenshot_ocr(self.SCREENSHOT, "ImageObject", {})
+        assert result is not None
+        assert result[1] == "photos_screenshots_other"
+
+    def test_ocr_non_screenshot_category_reclassifies(
+        self, organizer: ContentOrganizer
+    ) -> None:
+        ocr = MagicMock(return_value=("financial_invoices", 0.5, {}, "invoice total due"))
+        with patch(f"{MODULE}._shared_classify_by_ocr", ocr):
+            result = organizer._classify_screenshot_ocr(self.SCREENSHOT, "ImageObject", {})
+        assert result is not None
+        assert result[0] == "financial"
+        assert result[1] == "financial_invoices"
+
+    def test_clip_reclassifies_non_media(self, organizer: ContentOrganizer) -> None:
+        organizer.enhance_weak_image_classification = MagicMock(
+            return_value=("game_assets", "sprites")
+        )
+        with patch(f"{MODULE}._shared_classify_by_ocr", MagicMock(return_value=None)):
+            result = organizer._classify_screenshot_ocr(self.SCREENSHOT, "ImageObject", {})
+        assert result is not None
+        assert (result[0], result[1]) == ("game_assets", "sprites")
+
+    def test_clip_screenshot_subcategory_accepted(self, organizer: ContentOrganizer) -> None:
+        organizer.enhance_weak_image_classification = MagicMock(
+            return_value=("media", "photos_screenshots_terminal")
+        )
+        with patch(f"{MODULE}._shared_classify_by_ocr", MagicMock(return_value=None)):
+            result = organizer._classify_screenshot_ocr(self.SCREENSHOT, "ImageObject", {})
+        assert result is not None
+        assert (result[0], result[1]) == ("media", "photos_screenshots_terminal")
+
+    def test_unhelpful_clip_falls_back_to_other(self, organizer: ContentOrganizer) -> None:
+        # A generic media guess (not a screenshot subfolder) is not a
+        # reclassification — keep the generic screenshots folder.
+        organizer.enhance_weak_image_classification = MagicMock(
+            return_value=("media", "photos_nature")
+        )
+        with patch(f"{MODULE}._shared_classify_by_ocr", MagicMock(return_value=None)):
+            result = organizer._classify_screenshot_ocr(self.SCREENSHOT, "ImageObject", {})
+        assert result is not None
+        assert (result[0], result[1]) == ("media", "photos_screenshots_other")
+
+
+# ------------------------------------------------------------------ #
+# _classify_photo_composition (Priority 5)                              #
+# ------------------------------------------------------------------ #
+
+class TestClassifyPhotoComposition:
+    def _vision_organizer(
+        self, organizer: ContentOrganizer, has_people: bool, is_property: bool
+    ) -> ContentOrganizer:
+        organizer.image_analyzer = MagicMock()
+        organizer.image_analyzer.vision_available = True
+        organizer.image_analyzer.analyze_for_organization.return_value = (
+            has_people,
+            is_property,
+            {},
+        )
+        return organizer
+
+    def test_vision_unavailable_returns_none(self, organizer: ContentOrganizer) -> None:
+        assert organizer._classify_photo_composition(
+            Path("/pics/img.jpg"), "ImageObject", {}
+        ) is None
+
+    def test_non_image_returns_none(self, organizer: ContentOrganizer) -> None:
+        org = self._vision_organizer(organizer, True, False)
+        assert org._classify_photo_composition(
+            Path("/docs/report.pdf"), "DigitalDocument", {}
+        ) is None
+
+    def test_people_route_to_social(self, organizer: ContentOrganizer) -> None:
+        org = self._vision_organizer(organizer, True, False)
+        result = org._classify_photo_composition(Path("/pics/img.jpg"), "ImageObject", {})
+        assert result is not None
+        assert (result[0], result[1]) == ("media", "photos_social")
+
+    def test_interior_routes_to_property_management(
+        self, organizer: ContentOrganizer
+    ) -> None:
+        org = self._vision_organizer(organizer, False, True)
+        result = org._classify_photo_composition(Path("/pics/img.jpg"), "ImageObject", {})
+        assert result is not None
+        assert (result[0], result[1]) == ("property_management", "other")
+
+    def test_no_composition_match_returns_none(self, organizer: ContentOrganizer) -> None:
+        org = self._vision_organizer(organizer, False, False)
+        assert org._classify_photo_composition(
+            Path("/pics/img.jpg"), "ImageObject", {}
+        ) is None
+
+
+# ------------------------------------------------------------------ #
+# _classify_by_content_and_kie (Priority 6)                             #
+# ------------------------------------------------------------------ #
+
+class TestClassifyByContentAndKie:
+    def test_kie_classification_preferred(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        organizer.extract_text = MagicMock(return_value="x" * 100)
+        organizer._last_file_state["kie_result"] = {"total": "42.00"}
+        mock_classifier.classify_with_kie.return_value = ("financial", "invoices", "Acme", [])
+        result = organizer._classify_by_content_and_kie(
+            Path("/docs/inv.pdf"), "DigitalDocument", {}
+        )
+        assert (result[0], result[1]) == ("financial", "invoices")
+        assert result[4] == "Acme"
+        mock_classifier.classify_content.assert_not_called()
+
+    def test_falls_back_to_content_classifier(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        organizer.extract_text = MagicMock(return_value="x" * 100)
+        mock_classifier.classify_content.return_value = ("legal", "contracts", None, [])
+        result = organizer._classify_by_content_and_kie(
+            Path("/docs/nda.pdf"), "DigitalDocument", {}
+        )
+        assert (result[0], result[1]) == ("legal", "contracts")
+        assert result[3] == "x" * 100  # extracted text propagated
+
+    def test_no_text_classifies_by_filename(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        organizer.extract_text = MagicMock(return_value="")
+        mock_classifier.classify_content.return_value = ("financial", "invoices", None, [])
+        organizer._classify_by_content_and_kie(Path("/docs/invoice.pdf"), "DigitalDocument", {})
+        args = mock_classifier.classify_content.call_args[0]
+        assert args == ("", "invoice.pdf")
+
+    def test_uncategorized_image_enhanced_as_last_resort(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        # Point C: uncategorized images get one more CLIP+OCR attempt.
+        organizer.extract_text = MagicMock(return_value="x" * 100)
+        mock_classifier.classify_content.return_value = ("uncategorized", "other", None, [])
+        organizer.enhance_weak_image_classification = MagicMock(
+            return_value=("technical", "data_visualization")
+        )
+        result = organizer._classify_by_content_and_kie(
+            Path("/pics/chart.png"), "ImageObject", {}
+        )
+        assert (result[0], result[1]) == ("technical", "data_visualization")
+        assert result[3] == "x" * 100
+
+
+# ------------------------------------------------------------------ #
+# get_destination_path — entity nesting and collision handling          #
+# ------------------------------------------------------------------ #
+
+class TestGetDestinationPathNesting:
+    def test_meeting_notes_nested_under_company(
+        self, organizer: ContentOrganizer
+    ) -> None:
+        result = organizer.get_destination_path(
+            file_path=Path("/docs/notes.pdf"),
+            category="organization",
+            subcategory="meeting_notes",
+            company_name="Acme Corp",
+        )
+        assert "Acme Corp/Meeting Notes" in str(result)
+
+    def test_clients_nested_under_clients_folder(
+        self, organizer: ContentOrganizer
+    ) -> None:
+        result = organizer.get_destination_path(
+            file_path=Path("/docs/sow.pdf"),
+            category="organization",
+            subcategory="clients",
+            company_name="Acme Corp",
+        )
+        assert "Clients" in str(result)
+        assert "Acme Corp" in str(result)
+
+    def test_invalid_company_name_omitted(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        mock_classifier.sanitize_company_name.side_effect = lambda name: ""
+        result = organizer.get_destination_path(
+            file_path=Path("/docs/invoice.pdf"),
+            category="organization",
+            subcategory="vendors",
+            company_name="please remit payment to",
+        )
+        assert "please remit payment to" not in str(result)
+
+    def test_legacy_business_clients_nested(self, organizer: ContentOrganizer) -> None:
+        result = organizer.get_destination_path(
+            file_path=Path("/docs/proposal.pdf"),
+            category="business",
+            subcategory="clients",
+            company_name="Acme Corp",
+        )
+        assert "Acme Corp" in str(result)
+
+    def test_location_organization(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        org = ContentOrganizer(
+            base_path=tmp_path,
+            content_classifier=mock_classifier,
+            organize_by_location=True,
+        )
+        result = org.get_destination_path(
+            file_path=Path("/pics/img.jpg"),
+            category="media",
+            subcategory="photos_other",
+            image_metadata={"location_name": "Austin, TX, USA"},
+        )
+        assert "Photos/Locations/Austin" in str(result)
+
+    def test_duplicate_filename_gets_timestamp_suffix(
+        self, organizer: ContentOrganizer, tmp_path: Path
+    ) -> None:
+        first = organizer.get_destination_path(
+            file_path=Path("/src/report.pdf"),
+            category="financial",
+            subcategory="invoices",
+        )
+        first.write_bytes(b"existing")
+        second = organizer.get_destination_path(
+            file_path=Path("/src/report.pdf"),
+            category="financial",
+            subcategory="invoices",
+        )
+        assert second != first
+        assert second.parent == first.parent
+        assert second.name.startswith("report_")
+        assert second.suffix == ".pdf"
+
+    def test_three_level_media_nesting(self, organizer: ContentOrganizer) -> None:
+        result = organizer.get_destination_path(
+            file_path=Path("/pics/shot.png"),
+            category="media",
+            subcategory="photos_screenshots_browser",
+        )
+        assert "Screenshots/Browser" in str(result)
