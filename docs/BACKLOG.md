@@ -74,17 +74,17 @@ Test design approach: Stub the expensive classifiers (`CLIPClassifier.encode`, `
 **Priority:** P3
 **Source:** scripts↔src code-duplication audit, 2026-07-13
 
-`scripts/file_organizer_by_type.py:88-100` (wired into the CLI as `organize-files type`) and `scripts/file_organizer.py:556-573` (legacy, not CLI-wired) carry line-for-line copies of the skip rules. Both copies lack the browser save-page sidecar-folder rule (`SIDECAR_DIR_SUFFIXES`) that was added to the canonical version, so `organize-files type` still descends into `*_files/` asset folders. Action: extract the skip logic to a single shared home (e.g. `scripts/shared/file_ops.py` or a base organizer) and have all three call sites reuse it.
+`scripts/file_organizer_by_type.py:88-100` (wired into the CLI as `organize-files type`) carries a line-for-line copy of the skip rules (a second copy in the legacy `scripts/file_organizer.py` was deleted 2026-07-13). The copy lacks the browser save-page sidecar-folder rule (`SIDECAR_DIR_SUFFIXES`) that was added to the canonical version, so `organize-files type` still descends into `*_files/` asset folders. Action: extract the skip logic to a single shared home (e.g. `scripts/shared/file_ops.py` or a base organizer) and have all three call sites reuse it.
 
 ### Retire or delegate legacy `scripts/file_organizer.py`
 
 The pre-refactor standalone organizer is not referenced by the CLI and duplicates logic that now lives in `src/`.
 
-**Status:** Open
+**Status:** Done — deleted 2026-07-13 (legacy-retirement session)
 **Priority:** P3
 **Source:** scripts↔src code-duplication audit, 2026-07-13
 
-`scripts/file_organizer.py` is not wired into `src/cli.py` (only `content`, `name`, `type` organizers are). It carries its own copies of: destination-dir resolution + duplicate-filename timestamping (`:542-571` ≡ `src/organizers/content_organizer.py:1675-1700`), the skip rules (see item above), a partial canonical-ID namespace dict (`_IRI_NAMESPACES` `:41-52` mirrors two of the `NAMESPACES` UUIDs in `src/storage/models.py:61`), and the multi-directory scan loop (`:693-701` ≡ `src/pipeline/batch_processor.py:95-103`). Action: delete it, or reduce it to a thin wrapper like `scripts/file_organizer_content_based.py`; if any behavior is still unique to it, port that into `src/` first.
+Deleted along with its test suite. Unique-behavior porting before deletion: the golden snapshot tests were re-pointed at `FileProcessor.generate_schema` (the live implementation), `mime_classifier` gained a direct suite (`tests/unit/test_mime_classifier.py` — it was previously only tested through the legacy class), and the exhaustive `get_schema_type_from_mime` table moved to `test_storage_models.py`. Behavior the legacy script had that the live pipeline does NOT is tracked in the "generate_schema fidelity losses" item below.
 
 ### Filename-collision handling has three divergent implementations
 
@@ -94,7 +94,7 @@ Duplicate-destination collisions are resolved differently depending on which org
 **Priority:** P3
 **Source:** scripts↔src code-duplication audit, 2026-07-13
 
-Three implementations coexist: timestamp suffix (`src/organizers/content_organizer.py:1680-1684` and its copy in `scripts/file_organizer.py:546-553`), incrementing counter (`src/organizers/name_organizer.py:603-607`), and the existing shared utility `resolve_collision` (`scripts/shared/file_ops.py:15`). The same input file can therefore get a different collision name depending on the CLI subcommand. Action: consolidate all call sites on `resolve_collision` (or one chosen policy) so collision naming is uniform.
+Three implementations coexist: timestamp suffix (`src/organizers/content_organizer.py:1680-1684`; a copy in the legacy `scripts/file_organizer.py` was deleted 2026-07-13), incrementing counter (`src/organizers/name_organizer.py:603-607`), and the existing shared utility `resolve_collision` (`scripts/shared/file_ops.py:15`). The same input file can therefore get a different collision name depending on the CLI subcommand. Action: consolidate all call sites on `resolve_collision` (or one chosen policy) so collision naming is uniform.
 
 ### `_persist_to_graph_store` wrapper signature/docstring drift risk
 
@@ -133,5 +133,18 @@ Image EXIF/GPS extraction in `scripts/image_renamer_metadata.py` parallels `src/
 **Source:** scripts↔src code-duplication audit, 2026-07-13
 
 `scripts/regenerate_schemas.py:27-37` re-lists the seven generator classes that `src/__init__.py:13-20` already exports, importing them from `generators` via a `sys.path` insert. Harmless today; importing from the `src` package (`from src import DocumentGenerator, ...`) would remove the parallel list. Fold into any future touch of the script rather than picking up standalone.
+
+### `generate_schema` fidelity losses vs the retired legacy implementation
+
+Two divergences found while re-pointing the golden snapshot tests from the legacy `scripts/file_organizer.py` to the live `FileProcessor.generate_schema` look like losses rather than intent — investigate and either restore or bless.
+
+**Status:** Open — investigation
+**Priority:** P2
+**Source:** legacy-retirement session (golden re-record diff review), 2026-07-13
+
+Migration context: the goldens originally pinned `scripts/file_organizer.py`'s `generate_schema` (per-type generator branches). When the pipeline layer moved into `src/`, the live implementation (`src/pipeline/file_processor.py:115`) kept only three branches — ImageObject, document types (DigitalDocument/Article/ScholarlyArticle/Report), and a generic fallback. The legacy script and its tests were deleted 2026-07-13; the re-recorded goldens (`tests/unit/golden/generate_schema/`, incl. `fallback_video_object.json`) now pin the current behavior, so resolving this either way will intentionally trip a snapshot.
+
+1. **ImageObject lost `width`/`height`.** The legacy branch read PIL dimensions (`set_dimensions`); the live one doesn't. Dimensions may still reach the graph via the image-metadata path, but they're gone from the per-file JSON-LD.
+2. **The type collapse.** VideoObject, AudioObject, SoftwareSourceCode, Dataset, Person, and Organization all fall to a bare `DocumentGenerator()` fallback that emits `@type: DigitalDocument` with only `name` + `description` (the legacy fallback at least had `encodingFormat`/`contentSize`/`url`). This is not hypothetical: `content_organizer.py:1054` still emits VideoObject/AudioObject and `category_config.py` maps whole subcategories to Organization — and `_persist_to_graph_store` stores `schema.get("@type")`, so **videos organized today are recorded in the graph as DigitalDocument**. The vCard parsing (`worksFor`, PostalAddress, name parts) also has no live equivalent; if it is restored, the deleted `_enrich_person_from_vcard`/`_enrich_organization_from_file` implementations and their tests are recoverable from git history (pre-2026-07-13).
 
 
