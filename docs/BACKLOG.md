@@ -33,6 +33,18 @@ Mitigation options when picked up:
 1. Have `cmd_*` call typed entry points (e.g. `run(args)` functions on each target module) instead of argv strings, or
 2. Add a parser-contract test that round-trips every subcommand's defaults through its inner parser (cheaper; `tests/integration/test_cli.py` already covers name/type/content/evaluate — extend to the remaining forwarded commands).
 
+### `add_relationship` silently drops its `metadata` parameter
+
+`GraphStore.add_relationship` assigns to the SQLAlchemy-reserved `metadata` attribute instead of the model's `extra_data` column, so relationship metadata is never persisted.
+
+**Status:** Open
+**Priority:** P3
+**Source:** graph_store functional-test session, 2026-07-13
+
+The `FileRelationship` model stores relationship-specific data in `extra_data = Column(JSON)` (`src/storage/models.py`), but `add_relationship` writes `existing.metadata = metadata` (`src/storage/graph_store.py:978`) and `FileRelationship(..., metadata=metadata)` (`graph_store.py:987`). `metadata` is SQLAlchemy's reserved declarative attribute (`Base.metadata`), so the assignment just shadows it on the instance and the value is silently lost — no error, nothing persisted. Callers passing `metadata=` today get a no-op.
+
+*Fix:* rename the parameter (or map it) to `extra_data` in both the update and create paths, keep `metadata=` as a deprecated alias only if any caller uses it (grep found none in src/scripts), and add a round-trip test asserting `extra_data` persists — `tests/unit/test_graph_store_operations.py::TestRelationshipOperations` is the natural home.
+
 ### Wikidata SPARQL for non-person entity typing
 
 Investigate Wikidata as a type validator for entities where notability is expected.

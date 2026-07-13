@@ -11,7 +11,7 @@
 > `workflow.py`, `src/ml/`, and `src/feedback/`
 > were never split out (`entity_detector.py`, `category_config.py`, `mime_classifier.py`,
 > and `name_organizer.py` since landed, 2026-07-12);
-> `test_health_check.py` was not written (`tests/integration/test_cli.py` since landed, 2026-07-13)
+> `tests/integration/test_cli.py` and `tests/unit/test_health_check.py` since landed (2026-07-13)
 > (`test_storage_models.py` and `test_uri_utils.py` landed at `tests/unit/`); `test_validator.py` lives at `tests/` not
 > `tests/unit/`; and `file_organizer_content_based.py` **was** reduced to a thin wrapper
 > (2026-07-13: ~4.1k → ~500 LOC; `ContentBasedFileOrganizer` subclasses
@@ -527,7 +527,7 @@ class ContentBasedFileOrganizer:
 **Week 6: CLI & E2E Tests**
 - [x] Write `tests/integration/test_cli.py` (P2-1) — ✅ COMPLETE (2026-07-13: 16 tests — name/type end-to-end incl. multi-source, prune-person against a real temp DB, argv-translation checks for content/evaluate/health/migrate-ids; also fixed `organize-files type` rejecting the `--sources` flag the outer CLI always forwards)
 - [x] Write `tests/e2e/test_content_organizer.py` — ✅ COMPLETE (as `tests/unit/test_content_organizer.py`; Playwright E2E suite under `tests/e2e/`)
-- [ ] Write `tests/unit/test_health_check.py` (P2-2) — not written
+- [x] Write `tests/unit/test_health_check.py` (P2-2) — ✅ COMPLETE (2026-07-13; 24 tests: per-check import-failure handling via sys.modules blocking, lazy-check accessors, print_status output, singleton/require_feature helpers)
 - [ ] Achieve 80%+ overall coverage — not verified
 
 ### Phase 4: Refactor Remaining Scripts (Week 7-8)
