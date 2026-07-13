@@ -1,6 +1,7 @@
 """Unit tests for ContentOrganizer."""
 
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -345,11 +346,19 @@ class TestClassifyByFilenamePatterns:
 
 
 # ------------------------------------------------------------------ #
-# OCR confidence gating in detect_file_category                       #
+# OCR confidence gating (production behavior)                          #
 # ------------------------------------------------------------------ #
 
 class TestOcrConfidenceGating:
-    """detect_file_category must skip keyword classification for low-confidence OCR."""
+    """OCR confidence gating matches the production organizer.
+
+    detect_file_category routes document text through ``extract_text`` (the
+    old ``extract_rich`` hook with a PDF-wide low-confidence gate was a stale
+    src-only path). Confidence gating lives in the identification-document
+    tier: low-confidence OCR (e.g. a blurry photo) must not trigger
+    passport/ID detection. The game-asset OCR override gate is covered by
+    tests/unit/test_ocr_document_override.py.
+    """
 
     def _make_organizer(self, tmp_path: Path, mock_classifier: MagicMock) -> "ContentOrganizer":
         org = ContentOrganizer(base_path=tmp_path, content_classifier=mock_classifier)
@@ -366,65 +375,96 @@ class TestOcrConfidenceGating:
         org.image_analyzer.vision_available = False
         return org
 
-    def test_high_confidence_ocr_classifies(
+    def _make_image_organizer(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> "ContentOrganizer":
+        org = self._make_organizer(tmp_path, mock_classifier)
+        org.enricher.detect_mime_type.return_value = "image/png"
+        org.ocr_available = True
+        org.extract_text = lambda _p: ""
+        return org
+
+    def test_extracted_text_reaches_classifier(
         self, tmp_path: Path, mock_classifier: MagicMock
     ) -> None:
-        from src.analyzers.text_extractor import ExtractionResult
-
         org = self._make_organizer(tmp_path, mock_classifier)
         mock_classifier.classify_content.return_value = ("legal", "contracts", None, [])
 
         legal_text = "contract terms and conditions agreement"
-        org.extract_rich = lambda _p: ExtractionResult(
-            text=legal_text, confidence=0.85, language="en", source="ocr"
-        )
+        org.extract_text = lambda _p: legal_text
 
         fake_pdf = tmp_path / "doc.pdf"
         fake_pdf.write_bytes(b"%PDF")
 
         cat, subcat, *_ = org.detect_file_category(fake_pdf)
 
-        # classify_content called with the real text (high confidence)
+        # classify_content called with the extracted text
         mock_classifier.classify_content.assert_called_once()
         args = mock_classifier.classify_content.call_args[0]
         assert args[0] == legal_text
+        assert (cat, subcat) == ("legal", "contracts")
 
-    def test_low_confidence_ocr_skips_keyword_classification(
-        self, tmp_path: Path, mock_classifier: MagicMock
-    ) -> None:
-        from src.analyzers.text_extractor import ExtractionResult
-
-        org = self._make_organizer(tmp_path, mock_classifier)
-        mock_classifier.classify_content.return_value = ("uncategorized", "other", None, [])
-
-        legal_text = "contract terms and conditions"
-        org.extract_rich = lambda _p: ExtractionResult(
-            text=legal_text, confidence=0.15, language="en", source="ocr"
-        )
-
-        fake_pdf = tmp_path / "blurry_scan.pdf"
-        fake_pdf.write_bytes(b"%PDF")
-
-        org.detect_file_category(fake_pdf)
-
-        # classify_content must be called with empty string, not the low-confidence text
-        mock_classifier.classify_content.assert_called_once()
-        args = mock_classifier.classify_content.call_args[0]
-        assert args[0] == ""
-
-    def test_no_extract_rich_falls_back_to_extract_text(
+    def test_no_text_falls_back_to_filename(
         self, tmp_path: Path, mock_classifier: MagicMock
     ) -> None:
         org = self._make_organizer(tmp_path, mock_classifier)
         mock_classifier.classify_content.return_value = ("financial", "invoices", None, [])
 
-        org.extract_text = lambda _p: "invoice payment amount"
+        org.extract_text = lambda _p: ""
 
         fake_pdf = tmp_path / "invoice.pdf"
         fake_pdf.write_bytes(b"%PDF")
 
         org.detect_file_category(fake_pdf)
 
+        # classify_content called with empty text so filename drives the result
         mock_classifier.classify_content.assert_called_once()
         args = mock_classifier.classify_content.call_args[0]
-        assert args[0] == "invoice payment amount"
+        assert args[0] == ""
+        assert args[1] == "invoice.pdf"
+
+    def test_low_confidence_ocr_does_not_trigger_id_detection(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        org = self._make_image_organizer(tmp_path, mock_classifier)
+        mock_classifier.classify_content.return_value = ("uncategorized", "other", None, [])
+
+        fake_img = tmp_path / "blurry_photo.png"
+        fake_img.write_bytes(b"\x89PNG")
+
+        ocr = SimpleNamespace(
+            text="passport united states of america date of birth surname",
+            confidence=0.15,
+            language="en",
+        )
+        with patch(
+            "src.organizers.content_organizer.extract_ocr_with_confidence",
+            return_value=ocr,
+        ), patch("src.organizers.content_organizer.KIE_AVAILABLE", False):
+            cat, subcat, *_ = org.detect_file_category(fake_img)
+
+        assert (cat, subcat) != ("personal", "identification")
+
+    def test_high_confidence_ocr_triggers_id_detection(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        org = self._make_image_organizer(tmp_path, mock_classifier)
+
+        fake_img = tmp_path / "passport_scan.png"
+        fake_img.write_bytes(b"\x89PNG")
+
+        ocr = SimpleNamespace(
+            text="passport united states of america date of birth surname",
+            confidence=0.9,
+            language="en",
+        )
+        with patch(
+            "src.organizers.content_organizer.extract_ocr_with_confidence",
+            return_value=ocr,
+        ), patch("src.organizers.content_organizer.KIE_AVAILABLE", False):
+            cat, subcat, *_ = org.detect_file_category(fake_img)
+
+        assert (cat, subcat) == ("personal", "identification")
+        # OCR metadata cached for downstream persistence
+        assert org._last_file_ocr_confidence == 0.9
+        assert org._last_file_detected_language == "en"
