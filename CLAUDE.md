@@ -74,7 +74,7 @@ mypy src/ scripts/            # type check
 │   │   ├── clip_cache.py                # Embedding cache (.cache/clip_embeddings_v2/)
 │   │   ├── file_organizer.py            # FileOrganizer (mode=in-place|folder, drives both renamers)
 │   │   └── ...                          # file_ops, filename_utils, constants, status, confidence_gate
-│   ├── file_organizer_content_based.py  # Main AI organizer
+│   ├── file_organizer_content_based.py  # Main AI organizer (thin CLI wrapper over src/{classifiers,analyzers,organizers,pipeline})
 │   ├── rename_images.py                 # Unified CLIP renamer; --profile {photo,screenshot} selects vocab/mode
 │   ├── image_content_analyzer.py        # Image content analysis
 │   ├── redact_pii.py                    # Rasterize + OCR-redact PII from docs before adding to VCS
@@ -173,7 +173,7 @@ Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 | `scripts/shared/` import path | Scripts must run from project root so `from shared.x import y` resolves; `organize-files` CLI handles this automatically |
 | FileOrganizer modes | `rename_images.py` takes `--profile {photo,screenshot}`; mode default comes from the profile (`photo`=in-place, `screenshot`=folder) but can be overridden with `--mode` or `FILE_ORGANIZE_MODE` |
 | Unified CLIP+OCR API | `classify_with_ocr_fallback()` in `scripts/shared/clip_classification.py` is the shared entry point; returns `CLIPResult(category, confidence, all_scores)`; both renamer tools call it |
-| Screenshot OCR keyword threshold | `_SCREENSHOT_OCR_KEYWORD_THRESHOLD = 0.10` in `scripts/file_organizer_content_based.py` — do not raise without verifying eval impact (higher values silently reject valid scores). |
+| Screenshot OCR keyword threshold | `_SCREENSHOT_OCR_KEYWORD_THRESHOLD = 0.10` in `src/organizers/content_organizer.py` (re-exported by `scripts/file_organizer_content_based.py`) — do not raise without verifying eval impact (higher values silently reject valid scores). |
 | Generator API | `generators.py` has no fluent builders — build schemas via `set_property(name, value, PropertyType)` or the `add_person`/`add_organization`/`set_dates` helpers. |
 | Golden snapshot tests | `tests/unit/golden/generate_schema/*.json` are recorded baselines for `generate_schema()` output — do not hand-edit; re-record with `UPDATE_GOLDEN=1 pytest tests/unit/test_generate_schema_golden.py` |
 | Storage timestamps | Use `from ._time import utcnow` (naive UTC) instead of deprecated `datetime.utcnow()`; DateTime columns are timezone-naive, so do not introduce tz-aware datetimes without a column migration |

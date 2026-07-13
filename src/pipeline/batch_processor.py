@@ -87,8 +87,8 @@ class BatchProcessor:
         registry = getattr(organizer, "registry", None)
 
         if not ocr_available:
-            print("WARNING: OCR libraries not available")
-            print("   Install with: pip install 'python-doctr[torch]' easyocr")
+            print("⚠️  WARNING: OCR libraries not available")
+            print("   Install with: pip install python-doctr[torch] Pillow pypdf")
             print("   Content classification will be limited to filenames\n")
 
         all_files: List[Path] = []
@@ -104,7 +104,7 @@ class BatchProcessor:
 
         if limit:
             all_files = all_files[:limit]
-            print(f"\nWARNING: Processing limited to first {limit} files for testing\n")
+            print(f"\n⚠️  Processing limited to first {limit} files for testing\n")
 
         print(f"\nTotal files to process: {len(all_files)}\n")
 
@@ -135,9 +135,9 @@ class BatchProcessor:
             results.append(result)
 
             if result["status"] in ("organized", "would_organize"):
-                print(f"  -> {result['destination']}")
+                print(f"  → {result['destination']}")
             elif result["status"] == "error":
-                print(f"  Error: {result['reason']}")
+                print(f"  ✗ Error: {result['reason']}")
 
         summary: Dict[str, Any] = {
             "total_files": len(all_files),
@@ -165,7 +165,7 @@ class BatchProcessor:
         print(f"Errors: {summary['errors']}")
 
         if summary["dry_run"]:
-            print("\nWARNING: This was a DRY RUN - no files were moved")
+            print("\n⚠️  This was a DRY RUN - no files were moved")
 
         print(f"\n{_SEPARATOR}")
         print("Category Breakdown")
@@ -206,3 +206,9 @@ class BatchProcessor:
             stats = summary["registry_stats"]
             print(f"Total schemas: {stats['total_schemas']}")
             print(f"Types: {', '.join(stats['types'])}")
+
+        # Cost tracking summary
+        if getattr(self.file_processor, "cost_calculator", None):
+            cost_printer = getattr(self.file_processor, "_print_cost_summary", None)
+            if cost_printer is not None:
+                cost_printer()

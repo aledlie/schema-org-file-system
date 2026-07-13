@@ -13,8 +13,10 @@
 > and `name_organizer.py` since landed, 2026-07-12);
 > `test_cli.py` and `test_health_check.py` were not written
 > (`test_storage_models.py` and `test_uri_utils.py` landed at `tests/unit/`); `test_validator.py` lives at `tests/` not
-> `tests/unit/`; and `file_organizer_content_based.py` was **not** reduced to a thin wrapper
-> (still ~4.3k LOC). Checklist items below are marked accordingly.
+> `tests/unit/`; and `file_organizer_content_based.py` **was** reduced to a thin wrapper
+> (2026-07-13: ~4.1k → ~500 LOC; `ContentBasedFileOrganizer` subclasses
+> `ContentOrganizer` and composes `FileProcessor`/`BatchProcessor`).
+> Checklist items below are marked accordingly.
 
 ---
 
@@ -511,7 +513,7 @@ class ContentBasedFileOrganizer:
 - [x] Refactor `ContentBasedFileOrganizer` → `src/organizers/content_organizer.py` — ✅ COMPLETE
 - [x] Create `src/pipeline/` module — ✅ COMPLETE
 - [ ] Extract workflow → `src/pipeline/workflow.py` — landed as `file_processor.py` + `batch_processor.py` instead
-- [ ] Update `scripts/file_organizer_content_based.py` to thin wrapper — not done (still ~4.3k LOC)
+- [x] Update `scripts/file_organizer_content_based.py` to thin wrapper — ✅ COMPLETE (2026-07-13: ~500 LOC; classification inherited from `ContentOrganizer`, pipeline composed from `FileProcessor`/`BatchProcessor`, script keeps availability probes, re-exports for tests, and `main()`)
 - [x] Write integration tests for organizer — ✅ COMPLETE (`tests/unit/test_content_organizer.py`)
 
 ### Phase 3: Additional Tests (Week 5-6)

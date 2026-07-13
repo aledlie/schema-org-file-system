@@ -1,6 +1,7 @@
 """Unit tests for src/pipeline FileProcessor and BatchProcessor."""
 
 import json
+from collections import defaultdict
 from pathlib import Path
 from typing import Any, Dict
 from unittest.mock import MagicMock
@@ -100,46 +101,81 @@ class TestScanDirectory:
 # organize_file (dry_run mode)
 # ---------------------------------------------------------------------------
 
+def _make_mock_organizer(dest: Path) -> MagicMock:
+    """Mock organizer exposing the classification hooks FileProcessor calls."""
+    org = MagicMock()
+    org.stats = defaultdict(int)
+    org.should_skip_file.return_value = False
+    org._maybe_rename_image.side_effect = lambda p, dry_run: p
+    org.detect_file_category.return_value = (
+        "technical", "other", "DigitalDocument", "", None, [], {},
+    )
+    org.generate_schema.return_value = {"@type": "DigitalDocument"}
+    org.get_destination_path.return_value = dest
+    org._last_file_ocr_confidence = None
+    org._last_file_detected_language = None
+    org._last_file_state = {}
+    return org
+
+
 class TestOrganizeFileDryRun:
     def test_dry_run_does_not_move_file(self, tmp_path: Path) -> None:
         src = tmp_path / "test.txt"
         src.write_text("content")
         dest = tmp_path / "dest" / "test.txt"
 
-        mock_organizer = MagicMock()
-        mock_organizer.organize_file.return_value = {
-            "status": "would_organize",
-            "source": str(src),
-            "destination": str(dest),
-            "reason": None,
-            "schema": {},
-            "extracted_text_length": 0,
-            "category": "technical",
-            "subcategory": "other",
-        }
+        mock_organizer = _make_mock_organizer(dest)
+
+        fp = _make_file_processor(tmp_path)
+        fp._organizer = mock_organizer  # type: ignore[attr-defined]
+        fp.validator = MagicMock()
+        fp.validator.validate.return_value.is_valid.return_value = True
+
+        result = fp.organize_file(src, dry_run=True)
+
+        assert result["status"] == "would_organize"
+        assert result["destination"] == str(dest)
+        assert mock_organizer.stats["organized"] == 1
+        assert src.exists()
+        assert not dest.exists()
+
+    def test_organize_file_calls_classification_hooks(self, tmp_path: Path) -> None:
+        """FileProcessor owns the pipeline and calls back into the organizer
+        for classification (detect_file_category, generate_schema,
+        get_destination_path)."""
+        src = tmp_path / "doc.pdf"
+        src.write_bytes(b"%PDF")
+        dest = tmp_path / "dest" / "doc.pdf"
+
+        mock_organizer = _make_mock_organizer(dest)
+
+        fp = _make_file_processor(tmp_path)
+        fp._organizer = mock_organizer  # type: ignore[attr-defined]
+        fp.validator = MagicMock()
+        fp.validator.validate.return_value.is_valid.return_value = True
+
+        fp.organize_file(src, dry_run=True, force=False)
+
+        mock_organizer.detect_file_category.assert_called_once_with(src, display_path=None)
+        mock_organizer.generate_schema.assert_called_once_with(src, "DigitalDocument", "")
+        mock_organizer.get_destination_path.assert_called_once()
+
+    def test_organize_file_skips_system_files(self, tmp_path: Path) -> None:
+        src = tmp_path / ".DS_Store"
+        src.write_bytes(b"\x00")
+
+        mock_organizer = _make_mock_organizer(tmp_path / "dest" / ".DS_Store")
+        mock_organizer.should_skip_file.return_value = True
 
         fp = _make_file_processor(tmp_path)
         fp._organizer = mock_organizer  # type: ignore[attr-defined]
 
         result = fp.organize_file(src, dry_run=True)
 
-        assert result["status"] == "would_organize"
-        assert src.exists()
-        assert not dest.exists()
-
-    def test_organize_file_delegates_to_organizer(self, tmp_path: Path) -> None:
-        src = tmp_path / "doc.pdf"
-        src.write_bytes(b"%PDF")
-
-        mock_organizer = MagicMock()
-        mock_organizer.organize_file.return_value = {"status": "would_organize"}
-
-        fp = _make_file_processor(tmp_path)
-        fp._organizer = mock_organizer  # type: ignore[attr-defined]
-
-        fp.organize_file(src, dry_run=True, force=False)
-
-        mock_organizer.organize_file.assert_called_once_with(src, dry_run=True, force=False)
+        assert result["status"] == "skipped"
+        assert result["reason"] == "system_file"
+        assert mock_organizer.stats["skipped"] == 1
+        mock_organizer.detect_file_category.assert_not_called()
 
     def test_organize_file_raises_without_organizer(self, tmp_path: Path) -> None:
         fp = _make_file_processor(tmp_path)
