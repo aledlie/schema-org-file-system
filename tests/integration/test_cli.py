@@ -9,12 +9,14 @@ Drives ``main()`` through real argv parsing into the underlying subsystems:
   full parser path (Namespace-level behavior is covered in
   ``tests/unit/test_graph_store_prune.py``).
 - Heavyweight subcommands (``content``, ``evaluate``, ``health``,
-  ``migrate-ids``) are verified at the argv-translation boundary with the
-  target entry point stubbed — their subsystems have their own suites and
-  importing them pulls in torch/CLIP.
+  ``migrate-ids``, ``preprocess``, ``update-site``, ``timeline``) are
+  verified at the parser→run(args) boundary with the target entry point
+  stubbed — their subsystems have their own suites and importing them pulls
+  in torch/CLIP.  The stub captures the Namespace passed to run() so that
+  tests can assert that every outer CLI flag lands on the right attribute
+  without triggering real I/O.
 """
 
-import argparse
 import sys
 import types
 from pathlib import Path
@@ -26,7 +28,7 @@ for _p in (_PROJECT_ROOT, _PROJECT_ROOT / "src", _PROJECT_ROOT / "scripts"):
     if str(_p) not in sys.path:
         sys.path.insert(0, str(_p))
 
-from src.cli import _args_to_argv, main  # noqa: E402
+from src.cli import DEFAULT_COST_REPORT, main  # noqa: E402
 
 
 def run_cli(monkeypatch, *argv: str) -> None:
@@ -72,26 +74,6 @@ class TestParser:
         help_text = capsys.readouterr().out
         for command in ALL_SUBCOMMANDS:
             assert command in help_text
-
-
-class TestArgsToArgv:
-    def test_translates_flags_lists_and_values(self):
-        args = argparse.Namespace(
-            func=None,
-            command="content",
-            sources=["/a", "/b"],
-            base_path="~/Documents",
-            dry_run=True,
-            limit=5,
-            report=None,
-            no_db=False,
-        )
-        assert _args_to_argv(args) == [
-            "--sources", "/a", "/b",
-            "--base-path", "~/Documents",
-            "--dry-run",
-            "--limit", "5",
-        ]
 
 
 @pytest.fixture
@@ -152,6 +134,22 @@ class TestNameCommand:
         out = capsys.readouterr().out
         assert "alpha.txt" in out
         assert "beta.txt" in out
+
+    def test_recursive_flag_reaches_organizer(self, monkeypatch, capsys, tmp_path):
+        """--recursive was defined only by the standalone parser before; the
+        shared definition makes it reachable from organize-files."""
+        source = tmp_path / "inbox"
+        nested = source / "sub"
+        nested.mkdir(parents=True)
+        (nested / "deep.txt").write_text("deep")
+        target = tmp_path / "organized"
+
+        run_cli(
+            monkeypatch,
+            "name", "--source", str(source), "--target", str(target),
+            "--recursive", "--dry-run",
+        )
+        assert "deep.txt" in capsys.readouterr().out
 
 
 class TestTypeCommand:
@@ -241,28 +239,25 @@ class TestPrunePersonCommand:
 
 
 class TestStubbedWiring:
-    """Verify argv translation into heavyweight entry points without
-    importing their torch/CLIP dependency stacks."""
+    """Verify that the outer parser passes the correct Namespace to each
+    target's run(args) without importing the torch/CLIP dependency stacks."""
 
-    def _stub_module(self, monkeypatch, module_name: str, **attrs):
+    def _stub_run(self, monkeypatch, module_name: str, **extra_attrs):
+        """Inject a fake module that captures the args Namespace passed to run()."""
         captured = {}
 
-        def fake_main():
-            captured["argv"] = list(sys.argv)
+        def fake_run(args):
+            captured["args"] = args
 
         module = types.ModuleType(module_name)
-        module.main = fake_main
-        for key, value in attrs.items():
+        module.run = fake_run
+        for key, value in extra_attrs.items():
             setattr(module, key, value)
         monkeypatch.setitem(sys.modules, module_name, module)
         return captured
 
-    def test_content_argv_translation(self, monkeypatch):
-        captured = self._stub_module(
-            monkeypatch,
-            "file_organizer_content_based",
-            ContentBasedFileOrganizer=object,
-        )
+    def test_content_passes_namespace(self, monkeypatch):
+        captured = self._stub_run(monkeypatch, "file_organizer_content_based")
         run_cli(
             monkeypatch,
             "content",
@@ -271,23 +266,22 @@ class TestStubbedWiring:
             "--limit", "5",
             "--no-db",
         )
-        assert captured["argv"] == [
-            "organize-files content",
-            "--sources", "/x", "/y",
-            "--base-path", "~/Documents",
-            "--dry-run",
-            "--limit", "5",
-            "--db-path", "results/file_organization.db",
-            "--no-db",
-        ]
+        args = captured["args"]
+        assert args.sources == ["/x", "/y"]
+        assert args.dry_run is True
+        assert args.limit == 5
+        assert args.no_db is True
 
-    def test_evaluate_argv_translation(self, monkeypatch):
-        captured = self._stub_module(monkeypatch, "evaluate_model")
+    def test_evaluate_passes_namespace(self, monkeypatch):
+        captured = self._stub_run(monkeypatch, "evaluate_model")
         run_cli(monkeypatch, "evaluate", "--classifier", "content")
-        assert captured["argv"] == [
-            "organize-files evaluate",
-            "--classifier", "content",
-        ]
+        assert captured["args"].classifier == "content"
+
+    def test_evaluate_defaults(self, monkeypatch):
+        """Default classifier reaches evaluate_model.run() correctly."""
+        captured = self._stub_run(monkeypatch, "evaluate_model")
+        run_cli(monkeypatch, "evaluate")
+        assert captured["args"].classifier == "baseline"
 
     def test_health_calls_check_system(self, monkeypatch):
         calls = {}
@@ -315,3 +309,87 @@ class TestStubbedWiring:
         run_cli(monkeypatch, "migrate-ids", "--db-path", db_path)
         assert calls["db_path"] == db_path
         assert "Migration complete" in capsys.readouterr().out
+
+    def test_preprocess_passes_namespace(self, monkeypatch):
+        """Verify preprocess flags land on the right Namespace attributes."""
+        captured = self._stub_run(monkeypatch, "data_preprocessing")
+        run_cli(monkeypatch, "preprocess", "--input", "/data/in", "--output", "/data/out")
+        args = captured["args"]
+        assert args.input == "/data/in"
+        assert args.output == "/data/out"
+
+    def test_update_site_passes_namespace(self, monkeypatch):
+        """Verify update-site flags land on the right Namespace attributes."""
+        captured = self._stub_run(monkeypatch, "update_site_data")
+        run_cli(monkeypatch, "update-site", "--report", "/tmp/report.json")
+        assert captured["args"].report == "/tmp/report.json"
+
+    def test_update_site_defaults(self, monkeypatch):
+        """Verify update-site default Namespace reaches update_site_data.run()."""
+        captured = self._stub_run(monkeypatch, "update_site_data")
+        run_cli(monkeypatch, "update-site")
+        assert captured["args"].report is None
+
+    def test_timeline_passes_namespace(self, monkeypatch):
+        """Verify timeline flags land on the right Namespace attributes."""
+        captured = self._stub_run(monkeypatch, "generate_timeline_data")
+        run_cli(monkeypatch, "timeline")
+        # Default db_path is None (cli uses DEFAULT_DB_PATH as fallback in run())
+        assert captured["args"].db_path is None
+
+    def test_timeline_custom_db_path_reaches_run(self, monkeypatch):
+        """--db-path was parsed and then silently ignored (the old main()
+        never read argv); it now lands on the namespace run() honors."""
+        captured = self._stub_run(monkeypatch, "generate_timeline_data")
+        run_cli(monkeypatch, "timeline", "--db-path", "/tmp/custom.db")
+        assert captured["args"].db_path == "/tmp/custom.db"
+
+    def test_content_formerly_inner_only_flags(self, monkeypatch):
+        """Flags the standalone script accepted but organize-files dropped
+        (--force, --skip-health-check, --sentry-dsn, --cost-report) are now
+        reachable through the shared definition, with script defaults intact."""
+        captured = self._stub_run(monkeypatch, "file_organizer_content_based")
+        run_cli(
+            monkeypatch,
+            "content", "--force", "--skip-health-check", "--sentry-dsn", "dsn123",
+        )
+        args = captured["args"]
+        assert args.force is True
+        assert args.skip_health_check is True
+        assert args.sentry_dsn == "dsn123"
+        assert args.cost_report == DEFAULT_COST_REPORT
+        assert args.check_deps is False
+        assert args.run_migration is False
+
+    def test_evaluate_rejects_removed_model_flag(self, monkeypatch):
+        """--model never worked: the outer parser accepted it but the old
+        inner re-parse rejected it. It is gone from the shared definition."""
+        self._stub_run(monkeypatch, "evaluate_model")
+        with pytest.raises(SystemExit) as exc:
+            run_cli(monkeypatch, "evaluate", "--model", "x")
+        assert exc.value.code == 2
+
+    def test_evaluate_min_support_default_is_none(self, monkeypatch):
+        """None resolves to DEFAULT_MIN_SUPPORT inside evaluate_model.run(),
+        keeping the constant single-homed in the script."""
+        captured = self._stub_run(monkeypatch, "evaluate_model")
+        run_cli(monkeypatch, "evaluate")
+        assert captured["args"].min_support is None
+        assert captured["args"].test_data == "results/ml_data/test.json"
+        assert captured["args"].output == "results/model_evaluation.json"
+
+    def test_preprocess_requires_input(self, monkeypatch):
+        """--input is required by the shared definition, so organize-files
+        fails fast instead of deep inside the script's old re-parse."""
+        self._stub_run(monkeypatch, "data_preprocessing")
+        with pytest.raises(SystemExit) as exc:
+            run_cli(monkeypatch, "preprocess")
+        assert exc.value.code == 2
+
+    def test_update_site_dir_defaults(self, monkeypatch):
+        """results-dir/site-dir were formerly inner-parser-only; the shared
+        definition carries their script defaults."""
+        captured = self._stub_run(monkeypatch, "update_site_data")
+        run_cli(monkeypatch, "update-site")
+        assert captured["args"].results_dir == "results"
+        assert captured["args"].site_dir == "_site"
