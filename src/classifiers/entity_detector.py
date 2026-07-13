@@ -11,6 +11,44 @@ from __future__ import annotations
 
 import re
 
+# Personal titles that strongly indicate a human (vs. an org/brand name).
+_HUMAN_TITLE_RE = re.compile(
+    r"\b(?:Mr|Mrs|Ms|Miss|Dr|Prof|Sir|Madam|Hon|Rev|Esq|Atty)\.?\s+[A-Z]",
+)
+# First-person / signatory phrases that only humans write about themselves.
+_HUMAN_CONTACT_PHRASES = (
+    "date of birth",
+    "d.o.b",
+    "dob:",
+    "signed by",
+    "signature of",
+    "undersigned",
+    "to whom it may concern",
+    "i hereby",
+    "i am pleased to",
+    "social security",
+    "ssn:",
+    "driver license",
+    "driver's license",
+    "maiden name",
+    "next of kin",
+    "emergency contact",
+)
+
+
+def _has_human_name_signal(text: str) -> bool:
+    """
+    Require evidence that a document is about a human, not an org/brand.
+
+    Org-precedence rule: when none of these signals appear, defer person
+    classification so org/document-type classifiers can win on names like
+    "Morning Train" that look human but aren't.
+    """
+    if _HUMAN_TITLE_RE.search(text):
+        return True
+    text_lower = text.lower()
+    return any(phrase in text_lower for phrase in _HUMAN_CONTACT_PHRASES)
+
 
 class EntityDetector:
     """Detects Schema.org-style entities (Organization, Person) in document text."""
@@ -88,11 +126,34 @@ class EntityDetector:
             )
         ]
         self._year_prefix_re = re.compile(r'^(\d{4}(?:\s*[-–—]\s*\d{4})?)\s+(.+)$')
-        self._legal_suffix_re = re.compile(
-            r'\s+(?:Incorporated|Corporation|Limited|Company|L\.L\.C\.|L\.L\.P\.|'
-            r'LLC\.?|LLP\.?|Inc\.?|Corp\.?|Ltd\.?|Co\.?|PLC\.?|LP\.?|SA|GmbH|AG)$',
-            re.IGNORECASE,
-        )
+        # Legal suffixes stripped from the *end* of a company name.  Order
+        # matters (longer suffixes first) and each pattern is applied once in
+        # sequence, so stacked suffixes like "Foo Co. Inc." collapse to "Foo"
+        # ("Inc." strips first, then "Co." — matches the production organizer).
+        self._legal_suffix_regexes = [
+            re.compile(p, re.IGNORECASE) for p in (
+                # Full words with variations
+                r'\s+Incorporated$',
+                r'\s+Corporation$',
+                r'\s+Limited$',
+                r'\s+Company$',
+                # Abbreviations with optional period
+                r'\s+L\.L\.C\.$',
+                r'\s+L\.L\.P\.$',
+                r'\s+LLC\.?$',
+                r'\s+LLP\.?$',
+                r'\s+Inc\.?$',
+                r'\s+Corp\.?$',
+                r'\s+Ltd\.?$',
+                r'\s+Co\.?$',
+                # Other common suffixes
+                r'\s+PLC\.?$',
+                r'\s+LP\.?$',
+                r'\s+SA$',
+                r'\s+GmbH$',
+                r'\s+AG$',
+            )
+        ]
         self._folder_sanitize_re = re.compile(r'[<>:"/\\|?*]')
 
     def extract_company_names(self, text: str) -> list[str]:
@@ -324,8 +385,12 @@ class EntityDetector:
                 if extracted and len(extracted) >= 2:
                     result = extracted
 
-        # Strip one trailing legal suffix (matches original behavior)
-        return self._legal_suffix_re.sub('', result).strip()
+        # Strip legal suffixes to consolidate company variants.  One ordered
+        # pass over the suffix list, so stacked suffixes are all removed
+        # (e.g. "Foo Co. Inc." -> "Foo") — matches the production organizer.
+        for suffix_regex in self._legal_suffix_regexes:
+            result = suffix_regex.sub('', result).strip()
+        return result
 
     def sanitize_company_name(self, company_name: str) -> str | None:
         """
