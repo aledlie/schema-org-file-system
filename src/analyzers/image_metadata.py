@@ -80,21 +80,53 @@ class ImageMetadataParser:
         if not self.metadata_available:
             return {}
 
+        exif_data: Dict[str, Any] = {}
         try:
             image = Image.open(image_path)
-            exif_data: Dict[str, Any] = {}
-
             exif = image._getexif()  # type: ignore[attr-defined]
             if exif:
                 for tag_id, value in exif.items():
                     tag = TAGS.get(tag_id, tag_id)
                     exif_data[tag] = value
-
-            return exif_data
-
         except Exception as e:
             print(f"  EXIF extraction error: {e}")
+
+        if not exif_data:
+            exif_data = self._extract_exif_via_piexif(image_path)
+
+        return exif_data
+
+    def _extract_exif_via_piexif(self, image_path: Path) -> Dict[str, Any]:
+        """Fallback EXIF read via piexif, normalized to the same shape as the
+        PIL path: tag names as keys, ASCII bytes decoded to str, and the GPS
+        IFD nested under "GPSInfo" keyed by numeric GPS tag ids."""
+        if not PIEXIF_AVAILABLE:
             return {}
+
+        try:
+            exif_dict = piexif.load(str(image_path))
+        except Exception:
+            return {}
+
+        def decode(value: Any) -> Any:
+            if isinstance(value, bytes):
+                try:
+                    return value.decode("utf-8").rstrip("\x00")
+                except UnicodeDecodeError:
+                    return value
+            return value
+
+        exif_data: Dict[str, Any] = {}
+        for ifd in ("0th", "Exif"):
+            for tag_id, value in (exif_dict.get(ifd) or {}).items():
+                tag = TAGS.get(tag_id, tag_id)
+                exif_data.setdefault(tag, decode(value))
+
+        gps = exif_dict.get("GPS") or {}
+        if gps:
+            exif_data["GPSInfo"] = {tag_id: decode(value) for tag_id, value in gps.items()}
+
+        return exif_data
 
     def extract_datetime(
         self, image_path: Path, exif_data: Optional[Dict[str, Any]] = None
@@ -139,7 +171,14 @@ class ImageMetadataParser:
             return None
         if exif_data is None:
             exif_data = self.extract_exif_data(image_path)
-        return self._extract_gps_from_exif(exif_data)
+        coords = self._extract_gps_from_exif(exif_data)
+        if coords is None and not isinstance(exif_data.get("GPSInfo"), dict):
+            # PIL sometimes surfaces GPSInfo as a bare IFD offset (int) even
+            # when the file carries GPS data; retry that part via piexif.
+            fallback = self._extract_exif_via_piexif(image_path)
+            if isinstance(fallback.get("GPSInfo"), dict):
+                coords = self._extract_gps_from_exif({"GPSInfo": fallback["GPSInfo"]})
+        return coords
 
     def _extract_gps_from_exif(self, exif_data: Dict[str, Any]) -> Optional[Tuple[float, float]]:
         try:
@@ -179,7 +218,9 @@ class ImageMetadataParser:
         Convert GPS coordinates to decimal degrees.
 
         Args:
-            value: GPS coordinate in format ((deg, 1), (min, 1), (sec, 1))
+            value: (degrees, minutes, seconds) where each component is either
+                a (numerator, denominator) pair (piexif) or a number /
+                PIL IFDRational (modern Pillow).
 
         Returns:
             Decimal degrees or None
@@ -187,12 +228,16 @@ class ImageMetadataParser:
         if not value:
             return None
 
+        def part(component: Any) -> float:
+            try:
+                return float(component)  # float, int, PIL IFDRational
+            except TypeError:
+                return float(component[0]) / float(component[1])  # (num, den)
+
         try:
-            d = float(value[0][0]) / float(value[0][1])
-            m = float(value[1][0]) / float(value[1][1])
-            s = float(value[2][0]) / float(value[2][1])
+            d, m, s = (part(value[i]) for i in range(3))
             return d + (m / 60.0) + (s / 3600.0)
-        except (IndexError, TypeError, ZeroDivisionError):
+        except (IndexError, TypeError, ZeroDivisionError, ValueError):
             return None
 
     def get_location_name(self, coordinates: Tuple[float, float]) -> Optional[str]:
@@ -270,7 +315,7 @@ class ImageMetadataParser:
             summary["month"] = dt.month
             summary["date_str"] = dt.strftime("%Y-%m")
 
-        coords = self._extract_gps_from_exif(exif_data)
+        coords = self.extract_gps_coordinates(image_path, exif_data)
         if coords:
             summary["gps_coordinates"] = coords
             location = self.get_location_name(coords)

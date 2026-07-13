@@ -285,9 +285,19 @@ class FileProcessor:
                         file_id=file_id, person_name=person_name, role="mentioned", session=session
                     )
 
-            # Add location if available from image metadata
-            if image_metadata and image_metadata.get("location"):
-                location_info = image_metadata["location"]
+            # Add location if available from image metadata. Accepts either a
+            # structured "location" dict or the flat get_metadata_summary()
+            # shape ("location_name" + "gps_coordinates"), which is what
+            # ContentOrganizer actually produces.
+            location_info = (image_metadata or {}).get("location")
+            if not location_info and (image_metadata or {}).get("location_name"):
+                coords = image_metadata.get("gps_coordinates") or (None, None)
+                location_info = {
+                    "display_name": image_metadata["location_name"],
+                    "latitude": coords[0],
+                    "longitude": coords[1],
+                }
+            if location_info:
                 self.graph_store.add_file_to_location(
                     file_id=file_id,
                     location_name=location_info.get("display_name", "Unknown"),

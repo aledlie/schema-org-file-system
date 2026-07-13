@@ -152,6 +152,126 @@ class TestExtractExifData:
 
 
 # ---------------------------------------------------------------------------
+# piexif fallback
+# ---------------------------------------------------------------------------
+
+_PIEXIF_TAGS = {0x0132: "DateTime", 0x9003: "DateTimeOriginal"}
+_PIEXIF_GPSTAGS = {
+    1: "GPSLatitudeRef",
+    2: "GPSLatitude",
+    3: "GPSLongitudeRef",
+    4: "GPSLongitude",
+}
+
+
+def _piexif_stub(exif_dict: dict) -> MagicMock:
+    stub = MagicMock()
+    stub.load.return_value = exif_dict
+    return stub
+
+
+def _pil_no_exif() -> MagicMock:
+    mock_img = MagicMock()
+    mock_img._getexif.return_value = None
+    return mock_img
+
+
+class TestPiexifFallback:
+    def test_normalizes_tags_and_decodes_bytes(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        piexif_data = {
+            "0th": {0x0132: b"2023:11:26 14:30:00\x00"},
+            "Exif": {0x9003: b"2023:11:26 14:30:00"},
+            "GPS": {},
+        }
+        with patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()), \
+             patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)), \
+             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
+             patch("src.analyzers.image_metadata.TAGS", _PIEXIF_TAGS):
+            result = parser.extract_exif_data(dummy_path)
+
+        assert result["DateTime"] == "2023:11:26 14:30:00"
+        assert result["DateTimeOriginal"] == "2023:11:26 14:30:00"
+
+    def test_pil_exif_wins_when_present(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        mock_img = MagicMock()
+        mock_img._getexif.return_value = {0x0132: "2023:01:01 00:00:00"}
+        piexif_mock = _piexif_stub({"0th": {0x0132: b"1999:01:01 00:00:00"}})
+        with patch("src.analyzers.image_metadata.Image.open", return_value=mock_img), \
+             patch("src.analyzers.image_metadata.piexif", piexif_mock), \
+             patch("src.analyzers.image_metadata.TAGS", _PIEXIF_TAGS):
+            result = parser.extract_exif_data(dummy_path)
+
+        assert result == {"DateTime": "2023:01:01 00:00:00"}
+        piexif_mock.load.assert_not_called()
+
+    def test_datetime_end_to_end_via_fallback(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        piexif_data = {"Exif": {0x9003: b"2023:11:26 14:30:00"}}
+        with patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()), \
+             patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)), \
+             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
+             patch("src.analyzers.image_metadata.TAGS", _PIEXIF_TAGS):
+            dt = parser.extract_datetime(dummy_path)
+
+        assert dt == datetime(2023, 11, 26, 14, 30, 0)
+
+    def test_gps_end_to_end_via_fallback(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        piexif_data = {
+            "GPS": {
+                1: b"N",
+                2: ((37, 1), (46, 1), (294, 10)),
+                3: b"W",
+                4: ((122, 1), (25, 1), (0, 1)),
+            }
+        }
+        with patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()), \
+             patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)), \
+             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
+             patch("src.analyzers.image_metadata.GPSTAGS", _PIEXIF_GPSTAGS):
+            coords = parser.extract_gps_coordinates(dummy_path)
+
+        assert coords is not None
+        lat, lon = coords
+        assert abs(lat - (37 + 46 / 60 + 29.4 / 3600)) < 1e-6
+        assert abs(lon - -(122 + 25 / 60)) < 1e-6
+
+    def test_gps_retry_when_pil_gpsinfo_is_bare_offset(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        """PIL EXIF present (so no whole-dict fallback) but GPSInfo is an IFD
+        offset int — GPS should still resolve via the piexif retry."""
+        mock_img = MagicMock()
+        mock_img._getexif.return_value = {0x0132: "2024:05:01 10:20:30", 0x8825: 746}
+        piexif_data = {
+            "GPS": {
+                1: b"N",
+                2: ((37, 1), (46, 1), (294, 10)),
+                3: b"W",
+                4: ((122, 1), (25, 1), (0, 1)),
+            }
+        }
+        with patch("src.analyzers.image_metadata.Image.open", return_value=mock_img), \
+             patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)), \
+             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
+             patch("src.analyzers.image_metadata.TAGS", {**_PIEXIF_TAGS, 0x8825: "GPSInfo"}), \
+             patch("src.analyzers.image_metadata.GPSTAGS", _PIEXIF_GPSTAGS):
+            coords = parser.extract_gps_coordinates(dummy_path)
+
+        assert coords is not None
+        assert abs(coords[0] - (37 + 46 / 60 + 29.4 / 3600)) < 1e-6
+
+    def test_load_failure_returns_empty(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        piexif_mock = MagicMock()
+        piexif_mock.load.side_effect = ValueError("not a jpeg")
+        with patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()), \
+             patch("src.analyzers.image_metadata.piexif", piexif_mock), \
+             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True):
+            assert parser.extract_exif_data(dummy_path) == {}
+
+    def test_unavailable_returns_empty(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        with patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()), \
+             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", False):
+            assert parser.extract_exif_data(dummy_path) == {}
+
+
+# ---------------------------------------------------------------------------
 # extract_datetime
 # ---------------------------------------------------------------------------
 
@@ -274,3 +394,17 @@ class TestConvertToDegrees:
         result = parser._convert_to_degrees(value)
         assert result is not None
         assert abs(result - (37 + 46 / 60 + 29.4 / 3600)) < 1e-6
+
+    def test_plain_float_components(self, parser: ImageMetadataParser) -> None:
+        # Modern Pillow returns floats/IFDRationals, not (num, den) pairs
+        result = parser._convert_to_degrees((37.0, 46.0, 29.4))
+        assert result is not None
+        assert abs(result - (37 + 46 / 60 + 29.4 / 3600)) < 1e-6
+
+    def test_mixed_components(self, parser: ImageMetadataParser) -> None:
+        result = parser._convert_to_degrees((37.0, (46, 1), 29.4))
+        assert result is not None
+        assert abs(result - (37 + 46 / 60 + 29.4 / 3600)) < 1e-6
+
+    def test_zero_denominator_returns_none(self, parser: ImageMetadataParser) -> None:
+        assert parser._convert_to_degrees(((37, 0), (46, 1), (294, 10))) is None

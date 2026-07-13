@@ -321,3 +321,60 @@ class TestSaveReport:
             data = json.load(f)
         assert data["total_files"] == 10
         assert data["organized"] == 8
+
+
+# ---------------------------------------------------------------------------
+# _persist_to_graph_store — location edge from image metadata
+# ---------------------------------------------------------------------------
+
+class TestPersistLocationEdge:
+    def _persist(self, tmp_path: Path, image_metadata: Any) -> MagicMock:
+        graph_store = MagicMock()
+        graph_store.add_file.return_value = MagicMock(id="file-1")
+        fp = _make_file_processor(tmp_path, graph_store=graph_store)
+        src = tmp_path / "photo.jpg"
+        src.write_bytes(b"\xff\xd8")
+        fp._persist_to_graph_store(
+            file_path=src,
+            dest_path=tmp_path / "dest" / "photo.jpg",
+            category="media",
+            subcategory="photos",
+            schema={"@type": "ImageObject", "encodingFormat": "image/jpeg"},
+            extracted_text="",
+            company_name=None,
+            people_names=[],
+            image_metadata=image_metadata,
+        )
+        return graph_store
+
+    def test_metadata_summary_shape_creates_location_edge(self, tmp_path: Path) -> None:
+        """get_metadata_summary() emits location_name/gps_coordinates — the
+        shape ContentOrganizer actually passes in."""
+        store = self._persist(tmp_path, {
+            "location_name": "San Francisco, California, USA",
+            "gps_coordinates": (37.77, -122.42),
+        })
+        store.add_file_to_location.assert_called_once()
+        kwargs = store.add_file_to_location.call_args.kwargs
+        assert kwargs["location_name"] == "San Francisco, California, USA"
+        assert kwargs["latitude"] == 37.77
+        assert kwargs["longitude"] == -122.42
+
+    def test_structured_location_shape_still_supported(self, tmp_path: Path) -> None:
+        store = self._persist(tmp_path, {
+            "location": {"display_name": "NYC", "latitude": 40.7, "longitude": -74.0,
+                         "city": "New York", "state": "NY", "country": "US"},
+        })
+        kwargs = store.add_file_to_location.call_args.kwargs
+        assert kwargs["location_name"] == "NYC"
+        assert kwargs["city"] == "New York"
+
+    def test_no_location_no_edge(self, tmp_path: Path) -> None:
+        store = self._persist(tmp_path, {"datetime": None, "location_name": None})
+        store.add_file_to_location.assert_not_called()
+
+    def test_location_name_without_coordinates(self, tmp_path: Path) -> None:
+        store = self._persist(tmp_path, {"location_name": "Marfa", "gps_coordinates": None})
+        kwargs = store.add_file_to_location.call_args.kwargs
+        assert kwargs["location_name"] == "Marfa"
+        assert kwargs["latitude"] is None
