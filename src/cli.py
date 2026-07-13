@@ -83,6 +83,15 @@ def cmd_migrate(args: Any) -> None:
     print("\nMigration complete. Canonical IDs have been generated for existing records.")
 
 
+def _prune_missing_edges(graph_store: Any, apply: bool) -> None:
+    """Drop file->person edges whose file path no longer exists; print each."""
+    label = "APPLIED" if apply else "DRY RUN"
+    pruned = graph_store.prune_missing_person_edges(dry_run=not apply)
+    print(f"[{label}] Dead-path person edges pruned: {pruned['edges_removed']}")
+    for edge in pruned['edges']:
+        print(f"    {edge['person']}: {edge['path']}")
+
+
 def cmd_person_view(args: Any) -> None:
     """Regenerate the derived Person/{Name}/ symlink view from graph edges."""
     from storage.graph_store import GraphStore
@@ -90,8 +99,13 @@ def cmd_person_view(args: Any) -> None:
 
     view_root = Path(args.view_root).expanduser() if args.view_root else None
     graph_store = GraphStore(args.db_path)
-    generator = PersonViewGenerator(graph_store, view_root=view_root)
     apply = bool(args.apply)
+
+    # Prune before generating so the view is derived from the cleaned graph.
+    if args.prune_missing:
+        _prune_missing_edges(graph_store, apply)
+
+    generator = PersonViewGenerator(graph_store, view_root=view_root)
     summary = generator.generate(dry_run=not apply, apply=apply)
 
     label = "APPLIED" if apply else "DRY RUN"
@@ -146,6 +160,50 @@ def cmd_index_people(args: Any) -> None:
     if person_root is not None:
         kwargs["person_root"] = person_root
     index_person_files(**kwargs)
+
+    # Clean-up pass after indexing: drop edges whose file path is gone.
+    if args.prune_missing:
+        from storage.graph_store import GraphStore
+
+        _prune_missing_edges(GraphStore(args.db_path), bool(args.apply))
+
+
+def cmd_prune_person(args: Any) -> None:
+    """Delete people and their file->person graph edges (no file moves)."""
+    import shutil
+    from datetime import datetime
+
+    from storage.graph_store import GraphStore
+
+    apply = bool(args.apply)
+    label = "APPLIED" if apply else "DRY RUN"
+
+    if apply:
+        db_file = Path(args.db_path)
+        if db_file.exists():
+            stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            for suffix in ('', '-wal', '-shm'):
+                src = Path(str(db_file) + suffix)
+                if src.exists():
+                    shutil.copy2(src, Path(f"{db_file}.bak-{stamp}{suffix}"))
+            print(f"Backed up database to {db_file}.bak-{stamp}")
+
+    store = GraphStore(args.db_path)
+    missing = 0
+    for target in args.people:
+        key: Any = int(target) if target.isdigit() else target
+        summary = store.prune_person(key, dry_run=not apply)
+        if summary is None:
+            print(f"[{label}] {target!r}: no matching person")
+            missing += 1
+            continue
+        print(f"[{label}] {summary['name']} (id={summary['person_id']}): "
+              f"{summary['edges_removed']} edge(s) removed, person deleted")
+        for path in summary['paths']:
+            print(f"    {path}")
+
+    if missing:
+        sys.exit(1)
 
 
 def cmd_health(args: Any) -> None:
@@ -328,6 +386,9 @@ For more help on a specific command:
                                     help='Path to SQLite database')
     person_view_parser.add_argument('--apply', action='store_true',
                                     help='Write symlinks (default is dry-run)')
+    person_view_parser.add_argument('--prune-missing', action='store_true',
+                                    help='First drop file->person edges whose file path '
+                                         'no longer exists (honors --apply/dry-run)')
     person_view_parser.set_defaults(func=cmd_person_view)
 
     # Migrate legacy on-disk Person/ files into Personal/{subcat}/
@@ -369,7 +430,27 @@ For more help on a specific command:
                                      help='Path to SQLite database')
     index_people_parser.add_argument('--apply', action='store_true',
                                      help='Write graph rows/edges (default is dry-run)')
+    index_people_parser.add_argument('--prune-missing', action='store_true',
+                                     help='Afterwards drop file->person edges whose file '
+                                          'path no longer exists (honors --apply/dry-run)')
     index_people_parser.set_defaults(func=cmd_index_people)
+
+    # Prune person nodes + their file edges from the graph
+    prune_person_parser = subparsers.add_parser(
+        'prune-person',
+        help='Delete people and their file->person graph edges (no file moves)',
+        description='Remove false-positive or stale Person rows and all their '
+                    'file->person edges from the graph. Files on disk are never '
+                    'touched. Dry-run by default; --apply backs up the database '
+                    'first, then deletes.'
+    )
+    prune_person_parser.add_argument('people', nargs='+',
+                                     help='Person names or integer IDs to prune')
+    prune_person_parser.add_argument('--db-path', default='results/file_organization.db',
+                                     help='Path to SQLite database')
+    prune_person_parser.add_argument('--apply', action='store_true',
+                                     help='Delete (default is dry-run)')
+    prune_person_parser.set_defaults(func=cmd_prune_person)
 
     # Health check
     health_parser = subparsers.add_parser(

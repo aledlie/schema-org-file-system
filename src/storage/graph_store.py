@@ -667,6 +667,162 @@ class GraphStore:
             if close_session:
                 session.close()
 
+    def _find_person(self, person_id_or_name, session: Session) -> Optional[Person]:
+        """Look up a person by primary key (int) or name (str, normalized)."""
+        if isinstance(person_id_or_name, int):
+            return session.query(Person).filter(Person.id == person_id_or_name).first()
+        normalized = Person.normalize_name(person_id_or_name)
+        return session.query(Person).filter(Person.normalized_name == normalized).first()
+
+    def remove_person_edge(
+        self,
+        file_id: str,
+        person_id_or_name,
+        session: Session = None
+    ) -> bool:
+        """
+        Remove a single file->person edge, keeping both rows.
+
+        Args:
+            file_id: File primary key (SHA-256 hex)
+            person_id_or_name: Person primary key (int), or name (str,
+                matched via Person.normalize_name)
+            session: Optional existing session
+
+        Returns:
+            True if an edge existed and was removed, False otherwise
+        """
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            file = session.query(File).filter(File.id == file_id).first()
+            person = self._find_person(person_id_or_name, session)
+            if not file or not person or person not in file.people:
+                return False
+
+            file.people.remove(person)
+            person.file_count = max((person.file_count or 0) - 1, 0)
+            if close_session:
+                session.commit()
+            return True
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
+    def prune_person(
+        self,
+        person_id_or_name,
+        dry_run: bool = False,
+        session: Session = None
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Delete a person and all of its file->person edges.
+
+        Intended for false-positive "people" (org/event names misdetected as
+        people) and stale entries. Files are never touched on disk. Any other
+        person merged into this one has its merge pointer cleared.
+
+        Args:
+            person_id_or_name: Person primary key (int), or name (str,
+                matched via Person.normalize_name)
+            dry_run: When True, report what would be removed without changes
+            session: Optional existing session
+
+        Returns:
+            Summary dict with name/person_id/edges_removed/paths, or None if
+            the person isn't found
+        """
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            person = self._find_person(person_id_or_name, session)
+            if not person:
+                return None
+
+            summary = {
+                'name': person.name,
+                'person_id': person.id,
+                'edges_removed': len(person.files),
+                'paths': [f.current_path or f.original_path for f in person.files],
+            }
+            if dry_run:
+                return summary
+
+            person.files.clear()
+            session.query(Person).filter(
+                Person.merged_into_id == person.id
+            ).update({Person.merged_into_id: None})
+            session.delete(person)
+            if close_session:
+                session.commit()
+            return summary
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
+    def prune_missing_person_edges(
+        self,
+        dry_run: bool = False,
+        session: Session = None
+    ) -> Dict[str, Any]:
+        """
+        Drop file->person edges whose file no longer exists on disk.
+
+        A file's presence is checked at its current_path (falling back to
+        original_path when it was never organized). File and Person rows are
+        kept — only the edges are removed; use prune_person to delete a
+        person outright.
+
+        Args:
+            dry_run: When True, report what would be removed without changes
+            session: Optional existing session
+
+        Returns:
+            {'edges_removed': N,
+             'edges': [{'person': name, 'file_id': id, 'path': path}, ...]}
+        """
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            removed: List[Dict[str, Any]] = []
+            people = session.query(Person).options(selectinload(Person.files)).all()
+
+            for person in people:
+                for file in list(person.files):
+                    path = file.current_path or file.original_path
+                    if not path or Path(path).exists():
+                        continue
+                    removed.append({
+                        'person': person.name,
+                        'file_id': file.id,
+                        'path': path,
+                    })
+                    if not dry_run:
+                        person.files.remove(file)
+                        person.file_count = max((person.file_count or 0) - 1, 0)
+
+            if not dry_run and close_session:
+                session.commit()
+            return {'edges_removed': len(removed), 'edges': removed}
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
     # =========================================================================
     # Location Operations
     # =========================================================================
