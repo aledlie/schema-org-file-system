@@ -6,6 +6,7 @@ Provides high-level operations for managing files, categories, and their
 relationships using a graph-like structure built on SQLAlchemy.
 """
 
+import math
 import uuid
 from datetime import datetime
 from ._time import utcnow
@@ -1396,9 +1397,12 @@ class GraphStore:
         session = session or self.get_session()
 
         try:
-            # Approximate degrees per km (varies by latitude)
+            # Approximate degrees per km. Longitude degrees shrink by
+            # cos(latitude); clamp the scale near the poles where cos
+            # approaches zero and the bounding box would blow up.
             lat_delta = radius_km / KM_PER_DEGREE_LATITUDE
-            lon_delta = radius_km / (KM_PER_DEGREE_LATITUDE * abs(latitude) if latitude else KM_PER_DEGREE_LATITUDE)
+            lon_scale = max(math.cos(math.radians(latitude)), 0.01)
+            lon_delta = radius_km / (KM_PER_DEGREE_LATITUDE * lon_scale)
 
             return session.query(File)\
                 .filter(

@@ -179,7 +179,8 @@ class SystemHealthChecker:
             self.features['geocoding'] = FeatureStatus(
                 name="Geocoding (geopy)",
                 available=True,
-                version=geopy.__version__,
+                # getattr: test suites stub geopy in sys.modules without __version__
+                version=getattr(geopy, '__version__', 'unknown'),
                 impact="GPS coordinates to location names"
             )
         except ImportError:
