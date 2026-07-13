@@ -66,4 +66,72 @@ Coverage run 2026-07-13 (`pytest tests/unit tests/integration --cov=src`): overa
 
 Test design approach: Stub the expensive classifiers (`CLIPClassifier.encode`, `ocr_classifier.classify`) with deterministic mock implementations that return known scores, then drive realistic file-organization scenarios (e.g., mixed content types with classifier disagreement, OCR fallback triggering, confidence-gate rejections).
 
+### `should_skip_file` copied into CLI-wired and legacy scripts
+
+`ContentOrganizer.should_skip_file` (`src/organizers/content_organizer.py:1688-1710`) has two stale copies in `scripts/`.
+
+**Status:** Open
+**Priority:** P3
+**Source:** scripts↔src code-duplication audit, 2026-07-13
+
+`scripts/file_organizer_by_type.py:88-100` (wired into the CLI as `organize-files type`) and `scripts/file_organizer.py:556-573` (legacy, not CLI-wired) carry line-for-line copies of the skip rules. Both copies lack the browser save-page sidecar-folder rule (`SIDECAR_DIR_SUFFIXES`) that was added to the canonical version, so `organize-files type` still descends into `*_files/` asset folders. Action: extract the skip logic to a single shared home (e.g. `scripts/shared/file_ops.py` or a base organizer) and have all three call sites reuse it.
+
+### Retire or delegate legacy `scripts/file_organizer.py`
+
+The pre-refactor standalone organizer is not referenced by the CLI and duplicates logic that now lives in `src/`.
+
+**Status:** Open
+**Priority:** P3
+**Source:** scripts↔src code-duplication audit, 2026-07-13
+
+`scripts/file_organizer.py` is not wired into `src/cli.py` (only `content`, `name`, `type` organizers are). It carries its own copies of: destination-dir resolution + duplicate-filename timestamping (`:542-571` ≡ `src/organizers/content_organizer.py:1675-1700`), the skip rules (see item above), a partial canonical-ID namespace dict (`_IRI_NAMESPACES` `:41-52` mirrors two of the `NAMESPACES` UUIDs in `src/storage/models.py:61`), and the multi-directory scan loop (`:693-701` ≡ `src/pipeline/batch_processor.py:95-103`). Action: delete it, or reduce it to a thin wrapper like `scripts/file_organizer_content_based.py`; if any behavior is still unique to it, port that into `src/` first.
+
+### Filename-collision handling has three divergent implementations
+
+Duplicate-destination collisions are resolved differently depending on which organizer runs.
+
+**Status:** Open
+**Priority:** P3
+**Source:** scripts↔src code-duplication audit, 2026-07-13
+
+Three implementations coexist: timestamp suffix (`src/organizers/content_organizer.py:1680-1684` and its copy in `scripts/file_organizer.py:546-553`), incrementing counter (`src/organizers/name_organizer.py:603-607`), and the existing shared utility `resolve_collision` (`scripts/shared/file_ops.py:15`). The same input file can therefore get a different collision name depending on the CLI subcommand. Action: consolidate all call sites on `resolve_collision` (or one chosen policy) so collision naming is uniform.
+
+### `_persist_to_graph_store` wrapper signature/docstring drift risk
+
+The thin CLI wrapper repeats the full 12-parameter signature and docstring of the `src/` implementation it delegates to.
+
+**Status:** Open
+**Priority:** P4
+**Source:** scripts↔src code-duplication audit, 2026-07-13
+
+`scripts/file_organizer_content_based.py:226-261` duplicates the signature and the "This method creates:" docstring of `src/pipeline/file_processor.py:190-215` before delegating. Delegation is the intended thin-wrapper pattern, but the copied docstring/signature will silently drift when parameters change. Action: slim the wrapper docstring to a one-line "delegates to FileProcessor._persist_to_graph_store" pointer, or forward `**kwargs`.
+
+### OCR availability probe duplicated between wrapper and organizer
+
+The try/except OCR dependency probe (pypdf/PIL/HEIC registration) exists in two places.
+
+**Status:** Open
+**Priority:** P4
+**Source:** scripts↔src code-duplication audit, 2026-07-13
+
+`scripts/file_organizer_content_based.py:29-47` and `src/organizers/content_organizer.py:35-58` each run their own availability probe and compute a separate `OCR_AVAILABLE`. A dependency added to one probe but not the other makes the two flags disagree. Action: single-home the probe (e.g. expose `OCR_AVAILABLE` from `shared.ocr_classifier`) and import it in both.
+
+### Image metadata extraction in scripts/ vs src/
+
+Image EXIF/GPS extraction in `scripts/image_renamer_metadata.py` parallels `src/analyzers/image_metadata.py`.
+
+**Status:** Open
+**Priority:** P3
+**Source:** scripts↔src code-duplication audit, 2026-07-13
+
+`scripts/image_renamer_metadata.py:79-127` implements `extract_exif_data`, `extract_datetime`, and `extract_gps_coordinates` in parallel to the canonical `src/analyzers/image_metadata.py:65-106` (note: `image_metadata.py`, not `image_analyzer.py`). The implementations have already drifted (differing signatures and return types). Action: port any script-only behavior into `src/analyzers/image_metadata.py` and make the renamer import it.
+
+### `regenerate_schemas.py` mirrors the src generator import list
+
+**Status:** Open
+**Priority:** P4
+**Source:** scripts↔src code-duplication audit, 2026-07-13
+
+`scripts/regenerate_schemas.py:27-37` re-lists the seven generator classes that `src/__init__.py:13-20` already exports, importing them from `generators` via a `sys.path` insert. Harmless today; importing from the `src` package (`from src import DocumentGenerator, ...`) would remove the parallel list. Fold into any future touch of the script rather than picking up standalone.
+
 
