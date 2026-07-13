@@ -793,6 +793,12 @@ def build_file_jsonld(f, categories, companies, people, locations) -> Dict[str, 
         "name": f.filename,
     }
 
+    # description: classifier-derived, sourced from the persisted generated
+    # schema (File has no description column)
+    schema_data = f.schema_data
+    if isinstance(schema_data, dict) and schema_data.get("description"):
+        result["description"] = schema_data["description"]
+
     if f.created_at:
         result["dateCreated"] = f.created_at.isoformat()
     if f.modified_at:

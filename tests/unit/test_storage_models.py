@@ -96,6 +96,43 @@ class TestFileModel:
         """Test MIME type to schema.org type mapping, including fallbacks."""
         assert File.get_schema_type_from_mime(mime_type) == expected_type
 
+    def test_to_schema_org_description_from_schema_data(self):
+        """description is sourced from the persisted generated schema."""
+        file = File(
+            id="abc123",
+            canonical_id="urn:sha256:abc123",
+            filename="test.jpg",
+            original_path="/tmp/test.jpg",
+            mime_type="image/jpeg",
+            schema_data={
+                "description": "Content: a landscape or nature scene (84% confident)"
+            },
+        )
+
+        jsonld = file.to_schema_org()
+
+        assert jsonld["description"] == (
+            "Content: a landscape or nature scene (84% confident)"
+        )
+
+    @pytest.mark.parametrize("schema_data", [
+        None,
+        {},
+        {"description": ""},
+        {"name": "no description key"},
+        ["not-a-dict"],
+    ])
+    def test_to_schema_org_omits_description_without_schema_data(self, schema_data):
+        """No description property when schema_data lacks a usable one."""
+        file = File(
+            id="abc123",
+            filename="test.jpg",
+            original_path="/tmp/test.jpg",
+            schema_data=schema_data,
+        )
+
+        assert "description" not in file.to_schema_org()
+
 
 class TestCategoryModel:
     """Tests for Category model."""

@@ -383,6 +383,7 @@ class SchemaOrgExporter:
             F.created_at, F.modified_at, F.file_size, F.original_path,
             F.extracted_text, F.detected_language, F.image_width, F.image_height,
             F.has_faces, F.exif_datetime, F.gps_latitude, F.gps_longitude,
+            F.schema_data,
         )
 
         cats = self._load_file_refs(m.file_categories.c.category_id, m.Category, file_ids)

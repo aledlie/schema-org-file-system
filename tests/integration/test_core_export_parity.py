@@ -132,6 +132,8 @@ def rich_session():
         file_size=2048,
         extracted_text="hello " * 500,
         detected_language="en",
+        # description sourced from the generated-schema blob (no File column)
+        schema_data={"description": "Content: a chart or graph (84% confident)"},
         image_width=800,
         image_height=600,
         has_faces=True,
@@ -200,6 +202,20 @@ def test_core_matches_orm_per_entity(rich_session):
         orm = SchemaOrgExporter(rich_session, use_core=False)._collect_records([cls])
         core = SchemaOrgExporter(rich_session, use_core=True)._collect_records([cls])
         assert _by_id(core) == _by_id(orm), f"Core/ORM mismatch for {cls.__name__}"
+
+
+def test_core_file_export_emits_schema_data_description(rich_session):
+    """The streamed core path carries description from the schema_data blob.
+
+    Parity alone can't catch both paths dropping the property, so pin the
+    content: f_rich has one, the minimal files must omit it.
+    """
+    records = _by_id(SchemaOrgExporter(rich_session, use_core=True)._collect_records([File]))
+    rich = records[File.generate_canonical_id("/docs/report.png")]
+    plain = records[File.generate_canonical_id("/docs/plain.pdf")]
+
+    assert rich["description"] == "Content: a chart or graph (84% confident)"
+    assert "description" not in plain
 
 
 def test_core_export_file_roundtrip(rich_session, tmp_path):
