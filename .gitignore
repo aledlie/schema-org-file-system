@@ -86,3 +86,7 @@ docs/repomix/
 .coverage
 .coverage.*
 htmlcov/
+
+# Run artifacts (stay local; untracked 2026-07-13)
+/path.json
+/person-migrate-manifest.json
