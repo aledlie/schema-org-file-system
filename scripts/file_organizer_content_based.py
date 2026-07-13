@@ -12,7 +12,6 @@ import re
 import shutil
 import sys
 from collections import defaultdict
-from contextlib import nullcontext
 from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
@@ -32,17 +31,18 @@ from shared.filename_classifier import (  # noqa: E402
 )
 from shared.constants import SIDECAR_DIR_SUFFIXES  # noqa: E402
 
-# OCR (docTR via shared.ocr_classifier) and PDF imports
+# OCR (docTR via shared.ocr_classifier) and PDF imports.
+# pypdf and PIL are imported here (even though extraction now lives in
+# src.analyzers.text_extractor) so that OCR_AVAILABLE keeps gating the
+# pipeline on the full dependency set, matching historical behavior.
 try:
-    import pypdf
-    from PIL import Image
+    import pypdf  # noqa: F401 — availability probe
+    from PIL import Image  # noqa: F401 — availability probe
     from shared.file_ops import resolve_collision
     from shared.filename_utils import is_generic_filename
     from shared.ocr_classifier import SCREENSHOT_KEYWORDS
     from shared.ocr_classifier import classify_by_ocr as _shared_classify_by_ocr
     from shared.ocr_classifier import (
-        extract_ocr_text,
-        extract_ocr_text_pdf,
         extract_ocr_with_confidence,
         is_ocr_available,
     )
@@ -70,31 +70,29 @@ try:
 except ImportError:
     KIE_AVAILABLE = False
 
-# Word document imports
-try:
-    from docx import Document
-
-    DOCX_AVAILABLE = True
-except ImportError:
-    DOCX_AVAILABLE = False
-    print("Warning: python-docx not available. Install python-docx")
-
-# Excel imports
-try:
-    from openpyxl import load_workbook
-
-    EXCEL_AVAILABLE = True
-except ImportError:
-    EXCEL_AVAILABLE = False
-    print("Warning: openpyxl not available. Install openpyxl")
-
 # Add project root and src directory to path (portable)
 sys.path.insert(0, str(Path(__file__).parent.parent))
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
 
+from src.analyzers.image_metadata import (  # noqa: E402
+    METADATA_AVAILABLE,
+    ImageMetadataParser,
+)
+from src.analyzers.text_extractor import (  # noqa: E402
+    DOCX_AVAILABLE,
+    EXCEL_AVAILABLE,
+    TextExtractor,
+)
 from src.classifiers.content_classifier import ContentClassifier  # noqa: E402
 from src.classifiers.entity_detector import _has_human_name_signal  # noqa: E402
 from src.organizers.category_config import CONTENT_CATEGORY_PATHS  # noqa: E402
+
+if not DOCX_AVAILABLE:
+    print("Warning: python-docx not available. Install python-docx")
+if not EXCEL_AVAILABLE:
+    print("Warning: openpyxl not available. Install openpyxl")
+if not METADATA_AVAILABLE:
+    print("Warning: Metadata libraries not available. Install piexif, geopy")
 
 from rename_images import IMAGE_EXTENSIONS_WIDE, PHOTO_PROFILE, ImageAnalyzer  # noqa: E402
 
@@ -122,27 +120,6 @@ try:
 except ImportError:
     get_clip_classifier = None
     print("Warning: Vision libraries not available. Install open-clip-torch, torch, opencv-python")
-
-# Image metadata imports
-try:
-    from geopy.exc import GeocoderServiceError, GeocoderTimedOut
-    from geopy.geocoders import Nominatim
-    from PIL import Image  # noqa: F811 - re-imported for the metadata path's own availability guard
-    from PIL.ExifTags import GPSTAGS, TAGS
-
-    METADATA_AVAILABLE = True
-
-    # HEIC support
-    try:
-        from pillow_heif import register_heif_opener
-
-        register_heif_opener()
-        HEIC_AVAILABLE = True
-    except ImportError:
-        HEIC_AVAILABLE = False
-except ImportError:
-    METADATA_AVAILABLE = False
-    print("Warning: Metadata libraries not available. Install piexif, geopy")
 
 # Cost tracking imports (optional - gracefully degrade if not available)
 try:
@@ -299,256 +276,6 @@ _DOCUMENT_CONTENT_CATEGORIES = frozenset(
 )
 
 
-class ImageMetadataParser:
-    """Parses image metadata including EXIF, GPS, and timestamps."""
-
-    def __init__(self, cost_calculator: "CostROICalculator" = None):
-        """
-        Initialize the metadata parser.
-
-        Args:
-            cost_calculator: Optional cost calculator for tracking usage costs
-        """
-        self.metadata_available = METADATA_AVAILABLE
-        self.geocoder = None
-        self.cost_calculator = cost_calculator
-
-        if self.metadata_available:
-            try:
-                # Initialize geocoder with a user agent
-                self.geocoder = Nominatim(user_agent="file_organizer_v1.0", timeout=5)
-            except Exception as e:
-                print(f"Warning: Could not initialize geocoder: {e}")
-                self.geocoder = None
-
-    def extract_exif_data(self, image_path: Path) -> Dict[str, Any]:
-        """
-        Extract EXIF data from an image.
-
-        Returns:
-            Dictionary with EXIF data
-        """
-        if not self.metadata_available:
-            return {}
-
-        try:
-            image = Image.open(image_path)
-            exif_data = {}
-
-            # Get EXIF data
-            exif = image._getexif()
-            if exif:
-                for tag_id, value in exif.items():
-                    tag = TAGS.get(tag_id, tag_id)
-                    exif_data[tag] = value
-
-            return exif_data
-
-        except Exception as e:
-            print(f"  EXIF extraction error: {e}")
-            return {}
-
-    def extract_datetime(
-        self, image_path: Path, exif_data: Optional[Dict[str, Any]] = None
-    ) -> Optional[datetime]:
-        """
-        Extract the datetime when the photo was taken.
-
-        Args:
-            image_path: Path to the image file
-            exif_data: Pre-extracted EXIF data to avoid redundant Image.open() calls
-
-        Returns:
-            datetime object or None
-        """
-        if exif_data is None:
-            exif_data = self.extract_exif_data(image_path)
-
-        if not exif_data:
-            return None
-
-        # Try different datetime tags
-        datetime_tags = ["DateTimeOriginal", "DateTimeDigitized", "DateTime"]
-
-        for tag in datetime_tags:
-            if tag in exif_data:
-                try:
-                    # Parse datetime string (format: "2023:11:26 14:30:00")
-                    dt_str = str(exif_data[tag])
-                    dt = datetime.strptime(dt_str, "%Y:%m:%d %H:%M:%S")
-                    return dt
-                except (ValueError, TypeError):
-                    continue
-
-        return None
-
-    def extract_gps_coordinates(
-        self, image_path: Path, exif_data: Optional[Dict[str, Any]] = None
-    ) -> Optional[Tuple[float, float]]:
-        """
-        Extract GPS coordinates from image EXIF data.
-
-        Args:
-            image_path: Path to the image file
-            exif_data: Pre-extracted EXIF data to avoid redundant Image.open() calls
-
-        Returns:
-            Tuple of (latitude, longitude) or None
-        """
-        if not self.metadata_available:
-            return None
-
-        try:
-            if exif_data is None:
-                exif_data = self.extract_exif_data(image_path)
-
-            if not exif_data:
-                return None
-
-            # Get GPS info from pre-extracted EXIF data
-            gps_info = {}
-            gps_raw = exif_data.get("GPSInfo")
-            if gps_raw and isinstance(gps_raw, dict):
-                for gps_tag_id, value in gps_raw.items():
-                    gps_tag = GPSTAGS.get(gps_tag_id, gps_tag_id)
-                    gps_info[gps_tag] = value
-
-            if not gps_info:
-                return None
-
-            # Convert to decimal degrees
-            lat = self._convert_to_degrees(gps_info.get("GPSLatitude"))
-            lon = self._convert_to_degrees(gps_info.get("GPSLongitude"))
-
-            if lat is None or lon is None:
-                return None
-
-            # Adjust for hemisphere
-            if gps_info.get("GPSLatitudeRef") == "S":
-                lat = -lat
-            if gps_info.get("GPSLongitudeRef") == "W":
-                lon = -lon
-
-            return (lat, lon)
-
-        except Exception as e:
-            print(f"  GPS extraction error: {e}")
-            return None
-
-    def _convert_to_degrees(self, value) -> Optional[float]:
-        """
-        Convert GPS coordinates to degrees.
-
-        Args:
-            value: GPS coordinate in format ((deg, 1), (min, 1), (sec, 1))
-
-        Returns:
-            Decimal degrees or None
-        """
-        if not value:
-            return None
-
-        try:
-            d = float(value[0][0]) / float(value[0][1])
-            m = float(value[1][0]) / float(value[1][1])
-            s = float(value[2][0]) / float(value[2][1])
-
-            return d + (m / 60.0) + (s / 3600.0)
-        except (IndexError, TypeError, ZeroDivisionError):
-            return None
-
-    def get_location_name(self, coordinates: Tuple[float, float]) -> Optional[str]:
-        """
-        Get location name from GPS coordinates using reverse geocoding.
-
-        Args:
-            coordinates: Tuple of (latitude, longitude)
-
-        Returns:
-            Location name (city, state, country) or None
-        """
-        if not self.geocoder:
-            return None
-
-        with (
-            CostTracker(self.cost_calculator, "nominatim_geocoding")
-            if self.cost_calculator
-            else nullcontext()
-        ):
-            try:
-                lat, lon = coordinates
-                location = self.geocoder.reverse(f"{lat}, {lon}", exactly_one=True)
-
-                if location and location.raw.get("address"):
-                    address = location.raw["address"]
-
-                    # Try to get city, state, country
-                    parts = []
-
-                    # City
-                    city = address.get("city") or address.get("town") or address.get("village")
-                    if city:
-                        parts.append(city)
-
-                    # State/Region
-                    state = address.get("state") or address.get("region")
-                    if state:
-                        parts.append(state)
-
-                    # Country
-                    country = address.get("country")
-                    if country:
-                        parts.append(country)
-
-                    if parts:
-                        return ", ".join(parts)
-
-            except (GeocoderTimedOut, GeocoderServiceError) as e:
-                print(f"  Geocoding error: {e}")
-            except Exception as e:
-                print(f"  Location lookup error: {e}")
-
-            return None
-
-    def get_metadata_summary(self, image_path: Path) -> Dict[str, Any]:
-        """
-        Get a summary of image metadata.
-
-        Returns:
-            Dictionary with datetime, GPS coordinates, and location
-        """
-        summary = {
-            "datetime": None,
-            "gps_coordinates": None,
-            "location_name": None,
-            "year": None,
-            "month": None,
-            "date_str": None,
-        }
-
-        # Extract EXIF once, pass to both datetime and GPS extraction
-        exif_data = self.extract_exif_data(image_path)
-
-        # Extract datetime
-        dt = self.extract_datetime(image_path, exif_data=exif_data)
-        if dt:
-            summary["datetime"] = dt
-            summary["year"] = dt.year
-            summary["month"] = dt.month
-            summary["date_str"] = dt.strftime("%Y-%m")
-
-        # Extract GPS
-        coords = self.extract_gps_coordinates(image_path, exif_data=exif_data)
-        if coords:
-            summary["gps_coordinates"] = coords
-            # Get location name (with rate limiting consideration)
-            location = self.get_location_name(coords)
-            if location:
-                summary["location_name"] = location
-
-        return summary
-
-
 class ContentBasedFileOrganizer:
     """Organize files based on content analysis using OCR."""
 
@@ -591,6 +318,7 @@ class ContentBasedFileOrganizer:
         self.rename_analyzer = ImageAnalyzer(PHOTO_PROFILE)
         self.image_analyzer = ImageContentAnalyzer(cost_calculator=self.cost_calculator)
         self.metadata_parser = ImageMetadataParser(cost_calculator=self.cost_calculator)
+        self.text_extractor = TextExtractor(cost_calculator=self.cost_calculator)
         self.stats = defaultdict(int)
         self.ocr_available = OCR_AVAILABLE
         self.organize_by_date = organize_by_date
@@ -1408,7 +1136,8 @@ class ContentBasedFileOrganizer:
         """Extract text from image using docTR OCR.
 
         Reuses cached OCR text from ID detection or the image renamer
-        when available, avoiding a redundant OCR pass.
+        when available, avoiding a redundant OCR pass. The cache is
+        organizer state; the pure extraction lives in TextExtractor.
         """
         if not self.ocr_available:
             return ""
@@ -1417,142 +1146,43 @@ class ContentBasedFileOrganizer:
         if self._last_file_ocr_text:
             return self._last_file_ocr_text
 
-        with (
-            CostTracker(self.cost_calculator, "doctr_ocr")
-            if self.cost_calculator
-            else nullcontext()
-        ):
-            try:
-                result = extract_ocr_text(image_path, max_chars=0)
-                return result or ""
-            except Exception as e:
-                print(f"  OCR error: {e}")
-                return ""
+        return self.text_extractor.extract_text_from_image(image_path)
 
     def extract_text_from_pdf(self, pdf_path: Path) -> str:
         """Extract text from PDF (searchable or scanned)."""
         if not self.ocr_available:
             return ""
-
-        with (
-            CostTracker(self.cost_calculator, "pdf_extraction")
-            if self.cost_calculator
-            else nullcontext()
-        ):
-            text = ""
-
-            try:
-                # First try to extract text directly (for searchable PDFs)
-                with open(pdf_path, "rb") as f:
-                    reader = pypdf.PdfReader(f)
-                    for page in reader.pages[:10]:
-                        page_text = page.extract_text()
-                        if page_text:
-                            text += page_text + "\n"
-
-                # If we got meaningful text, return it
-                if len(text.strip()) > 100:
-                    return text.strip()
-
-                # Otherwise, try docTR OCR on the PDF
-                print("  Using docTR OCR for scanned PDF...")
-                ocr_text = extract_ocr_text_pdf(pdf_path, max_pages=5)
-                if ocr_text:
-                    text += ocr_text
-
-                return text.strip()
-            except Exception as e:
-                print(f"  PDF extraction error: {e}")
-                return ""
+        return self.text_extractor.extract_text_from_pdf(pdf_path)
 
     def extract_text_from_docx(self, docx_path: Path) -> str:
         """Extract text from Word document."""
-        if not DOCX_AVAILABLE:
-            return ""
-
-        with (
-            CostTracker(self.cost_calculator, "docx_extraction")
-            if self.cost_calculator
-            else nullcontext()
-        ):
-            try:
-                doc = Document(docx_path)
-                text = []
-                for paragraph in doc.paragraphs:
-                    if paragraph.text.strip():
-                        text.append(paragraph.text)
-
-                # Also extract text from tables
-                for table in doc.tables:
-                    for row in table.rows:
-                        for cell in row.cells:
-                            if cell.text.strip():
-                                text.append(cell.text)
-
-                return "\n".join(text)
-            except Exception as e:
-                print(f"  DOCX extraction error: {e}")
-                return ""
+        return self.text_extractor.extract_text_from_docx(docx_path)
 
     def extract_text_from_xlsx(self, xlsx_path: Path) -> str:
         """Extract text from Excel spreadsheet."""
-        if not EXCEL_AVAILABLE:
-            return ""
-
-        with (
-            CostTracker(self.cost_calculator, "xlsx_extraction")
-            if self.cost_calculator
-            else nullcontext()
-        ):
-            try:
-                workbook = load_workbook(xlsx_path, read_only=True, data_only=True)
-                text = []
-
-                # Limit to first 5 sheets
-                for sheet_name in list(workbook.sheetnames)[:5]:
-                    sheet = workbook[sheet_name]
-                    # Limit to first 100 rows
-                    for row in list(sheet.iter_rows(max_row=100, values_only=True)):
-                        row_text = " ".join([str(cell) for cell in row if cell is not None])
-                        if row_text.strip():
-                            text.append(row_text)
-
-                workbook.close()
-                return "\n".join(text)
-            except Exception as e:
-                print(f"  XLSX extraction error: {e}")
-                return ""
+        return self.text_extractor.extract_text_from_xlsx(xlsx_path)
 
     def extract_text(self, file_path: Path) -> str:
-        """Extract text from various file types."""
+        """Extract text from various file types.
+
+        MIME detection stays here (organizer owns the enricher); the image
+        branch routes through the cache-aware wrapper above, everything else
+        dispatches through the organizer methods so overrides keep working.
+        """
         mime_type = self.enricher.detect_mime_type(str(file_path))
         file_ext = file_path.suffix.lower()
 
-        # Images
         if mime_type and mime_type.startswith("image/"):
             return self.extract_text_from_image(file_path)
-
-        # PDFs
         elif mime_type == "application/pdf" or file_ext == ".pdf":
             return self.extract_text_from_pdf(file_path)
-
-        # Word documents
         elif file_ext in [".docx", ".doc"]:
             return self.extract_text_from_docx(file_path)
-
-        # Excel spreadsheets
         elif file_ext in [".xlsx", ".xls"]:
             return self.extract_text_from_xlsx(file_path)
 
-        # Text files
-        elif mime_type and mime_type.startswith("text/") or file_ext in [".txt", ".md", ".csv"]:
-            try:
-                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-                    return f.read(50000)  # First 50KB
-            except Exception:
-                return ""
-
-        return ""
+        # Text files and unknown types: pure extraction, no organizer state.
+        return self.text_extractor.extract_text(file_path, mime_type)
 
     _GEOGRAPHIC_LABELS = frozenset(
         {

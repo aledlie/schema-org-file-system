@@ -7,11 +7,10 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional, Tuple
 
-# PIL / piexif / geopy are optional
+# PIL / geopy are optional
 try:
     from PIL import Image
     from PIL.ExifTags import GPSTAGS, TAGS
-    import piexif  # noqa: F401 — imported to confirm availability
     from geopy.geocoders import Nominatim
     from geopy.exc import GeocoderServiceError, GeocoderTimedOut
 
@@ -89,14 +88,22 @@ class ImageMetadataParser:
             print(f"  EXIF extraction error: {e}")
             return {}
 
-    def extract_datetime(self, image_path: Path) -> Optional[datetime]:
+    def extract_datetime(
+        self, image_path: Path, exif_data: Optional[Dict[str, Any]] = None
+    ) -> Optional[datetime]:
         """
         Extract the datetime when the photo was taken.
+
+        Args:
+            image_path: Path to the image file
+            exif_data: Pre-extracted EXIF data to avoid redundant Image.open() calls
 
         Returns:
             datetime object or None
         """
-        return self._extract_datetime_from_exif(self.extract_exif_data(image_path))
+        if exif_data is None:
+            exif_data = self.extract_exif_data(image_path)
+        return self._extract_datetime_from_exif(exif_data)
 
     def _extract_datetime_from_exif(self, exif_data: Dict[str, Any]) -> Optional[datetime]:
         for tag in ("DateTimeOriginal", "DateTimeDigitized", "DateTime"):
@@ -107,27 +114,40 @@ class ImageMetadataParser:
                     continue
         return None
 
-    def extract_gps_coordinates(self, image_path: Path) -> Optional[Tuple[float, float]]:
+    def extract_gps_coordinates(
+        self, image_path: Path, exif_data: Optional[Dict[str, Any]] = None
+    ) -> Optional[Tuple[float, float]]:
         """
         Extract GPS coordinates from image EXIF data.
+
+        Args:
+            image_path: Path to the image file
+            exif_data: Pre-extracted EXIF data to avoid redundant Image.open() calls
 
         Returns:
             Tuple of (latitude, longitude) or None
         """
         if not self.metadata_available:
             return None
-        return self._extract_gps_from_exif(self.extract_exif_data(image_path))
+        if exif_data is None:
+            exif_data = self.extract_exif_data(image_path)
+        return self._extract_gps_from_exif(exif_data)
 
     def _extract_gps_from_exif(self, exif_data: Dict[str, Any]) -> Optional[Tuple[float, float]]:
         try:
             raw_gps = exif_data.get("GPSInfo")
-            if not raw_gps:
+            # GPSInfo can be a bare IFD offset (int) on some files; only a
+            # dict payload is usable. Non-dict values are skipped silently.
+            if not raw_gps or not isinstance(raw_gps, dict):
                 return None
 
             gps_info: Dict[str, Any] = {
                 GPSTAGS.get(tag_id, tag_id): value
                 for tag_id, value in raw_gps.items()
             }
+
+            if not gps_info:
+                return None
 
             lat = self._convert_to_degrees(gps_info.get("GPSLatitude"))
             lon = self._convert_to_degrees(gps_info.get("GPSLongitude"))
