@@ -557,20 +557,13 @@ class DataPreprocessor:
         return "\n".join(report)
 
 
-def main():
-    """Run preprocessing pipeline."""
-    import sys
-    import argparse
+def run(args) -> None:
+    """Typed entry point: run the preprocessing pipeline from a parsed namespace.
 
-    parser = argparse.ArgumentParser(description='Preprocess file organization data for ML')
-    parser.add_argument('--input', '-i', required=True, help='Path to organization report JSON')
-    parser.add_argument('--output', '-o', default='./ml_data', help='Output directory for processed data')
-    parser.add_argument('--test-ratio', type=float, default=0.2, help='Test set ratio (default: 0.2)')
-    parser.add_argument('--min-freq', type=int, default=5, help='Minimum token frequency for vocabulary')
-    parser.add_argument('--report-only', action='store_true', help='Only generate report, no export')
-
-    args = parser.parse_args()
-
+    The namespace must carry the attributes defined by
+    ``src.cli.add_preprocess_arguments`` (the single source for this command's
+    options, shared with the unified CLI).
+    """
     print("Initializing Data Preprocessor...")
     preprocessor = DataPreprocessor()
 
@@ -603,6 +596,19 @@ def main():
             print(f"  {name:15} {path} ({size:,} bytes)")
 
     print("\nPreprocessing complete!")
+
+
+def main():
+    """Standalone entry point (argument definitions shared with organize-files)."""
+    import sys
+    import argparse
+
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from src.cli import add_preprocess_arguments
+
+    parser = argparse.ArgumentParser(description='Preprocess file organization data for ML')
+    add_preprocess_arguments(parser)
+    run(parser.parse_args())
 
 
 if __name__ == "__main__":

@@ -111,21 +111,13 @@ def update_index_html(site_dir: Path, stats: dict):
     print(f"Updated {index_path}")
 
 
-def main():
-    import argparse
+def run(args) -> None:
+    """Typed entry point: refresh _site data from a parsed namespace.
 
-    parser = argparse.ArgumentParser(description='Update _site data from latest report')
-    parser.add_argument('--results-dir', '-r',
-                        default='results',
-                        help='Results directory')
-    parser.add_argument('--site-dir', '-s',
-                        default='_site',
-                        help='Site directory')
-    parser.add_argument('--report',
-                        help='Specific report file to use')
-
-    args = parser.parse_args()
-
+    The namespace must carry the attributes defined by
+    ``src.cli.add_update_site_arguments`` (the single source for this
+    command's options, shared with the unified CLI).
+    """
     base_dir = Path(__file__).parent.parent
     results_dir = base_dir / args.results_dir
     site_dir = base_dir / args.site_dir
@@ -184,6 +176,19 @@ def main():
     print(f"  metadata.json: {len(metadata):,} files")
     print(f"  index.html: Stats updated")
     print(f"  timeline_data.json: Regenerated")
+
+
+def main():
+    """Standalone entry point (argument definitions shared with organize-files)."""
+    import sys
+    import argparse
+
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from src.cli import add_update_site_arguments
+
+    parser = argparse.ArgumentParser(description='Update _site data from latest report')
+    add_update_site_arguments(parser)
+    run(parser.parse_args())
 
 
 if __name__ == "__main__":

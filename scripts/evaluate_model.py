@@ -449,35 +449,36 @@ def print_report(evaluation: Dict[str, Any]):
     print("\n" + "=" * 60)
 
 
-def main():
-    import argparse
+def run(args) -> None:
+    """Typed entry point: evaluate the classifier from a parsed namespace.
 
-    parser = argparse.ArgumentParser(description='Evaluate file categorization model')
-    parser.add_argument('--test-data', '-t',
-                        default='results/ml_data/test.json',
-                        help='Path to test.json')
-    parser.add_argument('--output', '-o',
-                        default='results/model_evaluation.json',
-                        help='Output path for results JSON')
-    parser.add_argument('--classifier', '-c',
-                        choices=['baseline', 'content'], default='baseline',
-                        help='baseline = filename heuristic; content = production '
-                             'CLIP+OCR classifier (requires test files on disk)')
-    parser.add_argument('--min-support', type=int, default=DEFAULT_MIN_SUPPORT,
-                        help='Minimum actual-sample count for a class to have its '
-                             f'per-class metrics reported (default: {DEFAULT_MIN_SUPPORT})')
+    The namespace must carry the attributes defined by
+    ``src.cli.add_evaluate_arguments`` (the single source for this command's
+    options, shared with the unified CLI). ``min_support=None`` resolves to
+    DEFAULT_MIN_SUPPORT here so the constant stays single-homed.
+    """
+    min_support = args.min_support if args.min_support is not None else DEFAULT_MIN_SUPPORT
 
-    args = parser.parse_args()
-
-    # Run evaluation
     evaluation = evaluate_model(args.test_data, args.output,
                                 classifier=args.classifier,
-                                min_support=args.min_support)
+                                min_support=min_support)
 
-    # Print report
     print_report(evaluation)
 
     print(f"\nFull results saved to: {args.output}")
+
+
+def main():
+    """Standalone entry point (argument definitions shared with organize-files)."""
+    import sys
+    import argparse
+
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from src.cli import add_evaluate_arguments
+
+    parser = argparse.ArgumentParser(description='Evaluate file categorization model')
+    add_evaluate_arguments(parser)
+    run(parser.parse_args())
 
 
 if __name__ == "__main__":

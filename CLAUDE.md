@@ -31,7 +31,7 @@ organize-files health                    # Should report 9/9 features
 | `organize-files update-site` | Update dashboard data |
 | `organize-files timeline` | Generate timeline visualization data |
 | `organize-files preprocess` | ML data preprocessing (`--input`, `--output`) |
-| `organize-files evaluate` | Run evaluation metrics (`--test-data`, `--model`, `--classifier {baseline,content}`) |
+| `organize-files evaluate` | Run evaluation metrics (`--test-data`, `--output`, `--classifier {baseline,content}`, `--min-support`) |
 
 ## Development Commands
 

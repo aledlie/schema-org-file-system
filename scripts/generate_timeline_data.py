@@ -15,9 +15,9 @@ DB_PATH = DEFAULT_DB_PATH
 OUTPUT_PATH = Path(__file__).parent.parent / "_site" / "timeline_data.json"
 
 
-def get_sessions() -> list[dict[str, Any]]:
+def get_sessions(db_path: Path | str | None = None) -> list[dict[str, Any]]:
     """Get all organization sessions with their stats."""
-    with db_connection() as conn:
+    with db_connection(db_path) as conn:
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -67,9 +67,11 @@ def get_sessions() -> list[dict[str, Any]]:
     return sessions
 
 
-def get_session_categories(session_id: str) -> list[dict[str, Any]]:
+def get_session_categories(
+    session_id: str, db_path: Path | str | None = None
+) -> list[dict[str, Any]]:
     """Get category breakdown for a specific session."""
-    with db_connection() as conn:
+    with db_connection(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute("""
             SELECT
@@ -89,9 +91,11 @@ def get_session_categories(session_id: str) -> list[dict[str, Any]]:
         return [dict(row) for row in cursor.fetchall()]
 
 
-def get_session_schema_types(session_id: str) -> list[dict[str, Any]]:
+def get_session_schema_types(
+    session_id: str, db_path: Path | str | None = None
+) -> list[dict[str, Any]]:
     """Get schema type distribution for a specific session."""
-    with db_connection() as conn:
+    with db_connection(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute("""
             SELECT
@@ -105,9 +109,11 @@ def get_session_schema_types(session_id: str) -> list[dict[str, Any]]:
         return [dict(row) for row in cursor.fetchall()]
 
 
-def get_session_extensions(session_id: str) -> list[dict[str, Any]]:
+def get_session_extensions(
+    session_id: str, db_path: Path | str | None = None
+) -> list[dict[str, Any]]:
     """Get file extension distribution for a specific session."""
-    with db_connection() as conn:
+    with db_connection(db_path) as conn:
         cursor = conn.cursor()
         cursor.execute("""
             SELECT
@@ -146,9 +152,9 @@ def calculate_session_changes(current: dict, previous: dict | None) -> dict[str,
     }
 
 
-def get_cumulative_stats() -> dict[str, Any]:
+def get_cumulative_stats(db_path: Path | str | None = None) -> dict[str, Any]:
     """Get cumulative statistics across all sessions."""
-    with db_connection() as conn:
+    with db_connection(db_path) as conn:
         cursor = conn.cursor()
 
         cursor.execute("""
@@ -184,18 +190,18 @@ def get_cumulative_stats() -> dict[str, Any]:
     return stats
 
 
-def generate_timeline_data() -> dict[str, Any]:
+def generate_timeline_data(db_path: Path | str | None = None) -> dict[str, Any]:
     """Generate complete timeline data structure."""
-    sessions = get_sessions()
+    sessions = get_sessions(db_path)
 
     # Enrich each session with detailed data
     enriched_sessions = []
     previous_session = None
 
     for session in sessions:
-        session['categories'] = get_session_categories(session['id'])
-        session['schema_types'] = get_session_schema_types(session['id'])
-        session['extensions'] = get_session_extensions(session['id'])
+        session['categories'] = get_session_categories(session['id'], db_path)
+        session['schema_types'] = get_session_schema_types(session['id'], db_path)
+        session['extensions'] = get_session_extensions(session['id'], db_path)
         session['changes'] = calculate_session_changes(session, previous_session)
 
         enriched_sessions.append(session)
@@ -203,17 +209,24 @@ def generate_timeline_data() -> dict[str, Any]:
 
     return {
         'generated_at': datetime.now().isoformat(),
-        'cumulative': get_cumulative_stats(),
+        'cumulative': get_cumulative_stats(db_path),
         'sessions': enriched_sessions,
         'session_count': len(enriched_sessions)
     }
 
 
-def main():
-    """Generate and save timeline data."""
-    print(f"Generating timeline data from {DB_PATH}...")
+def run(args) -> None:
+    """Typed entry point: generate and save timeline data from a parsed namespace.
 
-    data = generate_timeline_data()
+    The namespace must carry the attributes defined by
+    ``src.cli.add_timeline_arguments`` (the single source for this command's
+    options, shared with the unified CLI). ``db_path=None`` resolves to the
+    shared DEFAULT_DB_PATH.
+    """
+    db_path = args.db_path or DB_PATH
+    print(f"Generating timeline data from {db_path}...")
+
+    data = generate_timeline_data(db_path)
 
     OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with open(OUTPUT_PATH, 'w') as f:
@@ -222,6 +235,19 @@ def main():
     print(f"Timeline data saved to {OUTPUT_PATH}")
     print(f"  - {data['session_count']} sessions")
     print(f"  - {data['cumulative']['total_files']} total files")
+
+
+def main():
+    """Standalone entry point (argument definitions shared with organize-files)."""
+    import sys
+    import argparse
+
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from src.cli import add_timeline_arguments
+
+    parser = argparse.ArgumentParser(description='Generate timeline visualization data')
+    add_timeline_arguments(parser)
+    run(parser.parse_args())
 
 
 if __name__ == "__main__":
