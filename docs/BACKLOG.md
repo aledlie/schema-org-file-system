@@ -19,6 +19,20 @@ One remaining gap handles false-positive "people" in the symlink view.
 
    *Fix planned (2026-07-13):* layered local-only confidence gate at write time (`nameparser` shape → `probablepeople` CRF → Census gazetteer, weighted composite) with three-way routing (auto-accept / `pending_review` queue via a new `organize-files review-people` CLI / reject), `review_status`+`validation_scores` columns on `people`, and an `additionalProperty` JSON-LD sidecar. External KB validation rejected (notability gap — see the Wikidata item below). Full phased design: [`docs/plans/PERSON_NAME_VALIDATION_PLAN.md`](plans/PERSON_NAME_VALIDATION_PLAN.md).
 
+### CLI argv re-serialization fragility
+
+`src/cli.py` forwards subcommands by rebuilding `sys.argv` via `_args_to_argv` and re-parsing in the target script's `main()` (8 call sites: content, name, type, preprocess, evaluate, update-site, timeline, plus the script-side parsers).
+
+**Status:** Open
+**Priority:** P3
+**Source:** thin-wrapper refactor session, 2026-07-13 (closes TEST_AND_REFACTOR_PLAN.md's superseded `workflow.py` item)
+
+Outer/inner parser drift has already caused two real breakages — `organize-files name` and `organize-files type` both died on the `--sources` flag the outer CLI always forwards (fixed in `bac6306` and `773a20b`). Any new outer flag or dest rename can silently break a subcommand again.
+
+Mitigation options when picked up:
+1. Have `cmd_*` call typed entry points (e.g. `run(args)` functions on each target module) instead of argv strings, or
+2. Add a parser-contract test that round-trips every subcommand's defaults through its inner parser (cheaper; `tests/integration/test_cli.py` already covers name/type/content/evaluate — extend to the remaining forwarded commands).
+
 ### Wikidata SPARQL for non-person entity typing
 
 Investigate Wikidata as a type validator for entities where notability is expected.

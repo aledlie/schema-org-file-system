@@ -512,7 +512,7 @@ class ContentBasedFileOrganizer:
 - [x] Create `src/organizers/base_organizer.py` (abstract base) — ✅ COMPLETE
 - [x] Refactor `ContentBasedFileOrganizer` → `src/organizers/content_organizer.py` — ✅ COMPLETE
 - [x] Create `src/pipeline/` module — ✅ COMPLETE
-- [ ] Extract workflow → `src/pipeline/workflow.py` — landed as `file_processor.py` + `batch_processor.py` instead
+- [x] Extract workflow → `src/pipeline/workflow.py` — ✅ SUPERSEDED (orchestration landed as `file_processor.py` + `batch_processor.py`; the thin-wrapper reduction of 2026-07-13 realized the end state this item existed to enable — no `OrganizationWorkflow` class needed. The one residual concern, argv re-serialization fragility in `src/cli.py`, is tracked in `docs/BACKLOG.md`.)
 - [x] Update `scripts/file_organizer_content_based.py` to thin wrapper — ✅ COMPLETE (2026-07-13: ~500 LOC; classification inherited from `ContentOrganizer`, pipeline composed from `FileProcessor`/`BatchProcessor`, script keeps availability probes, re-exports for tests, and `main()`)
 - [x] Write integration tests for organizer — ✅ COMPLETE (`tests/unit/test_content_organizer.py`)
 
