@@ -100,82 +100,28 @@ except ImportError:
     GRAPH_STORE_AVAILABLE = False
     print("Warning: GraphStore not available. Database persistence disabled.")
 
-# Cost tracking imports (optional - gracefully degrade if not available)
+# Cost tracking imports (optional - gracefully degrade if not available).
+# CostTracker context managers live with the extraction/analysis code in
+# src/analyzers; this module only needs the calculator itself.
 try:
-    from cost_roi_calculator import CostROICalculator, CostTracker
+    from cost_roi_calculator import CostROICalculator
 
     COST_TRACKING_AVAILABLE = True
 except ImportError:
     COST_TRACKING_AVAILABLE = False
 
-    # Provide stub implementations for graceful degradation
-    class CostTracker:
-        """Stub CostTracker when cost tracking is not available."""
-
-        def __init__(self, *args, **kwargs):
-            pass
-
-        def __enter__(self):
-            return self
-
-        def __exit__(self, *args):
-            return False
-
-
-# Error tracking imports (optional - gracefully degrade if not available)
+# Error tracking imports (optional - gracefully degrade if not available).
+# Only init_sentry is used (in main()); per-operation tracking helpers were
+# never wired into the pipeline.
 try:
-    from error_tracking import (
-        ErrorLevel,
-        FileProcessingErrorTracker,
-        capture_error,
-        init_sentry,
-        track_error,
-        track_operation,
-    )
+    from error_tracking import init_sentry
 
     ERROR_TRACKING_AVAILABLE = True
 except ImportError:
     ERROR_TRACKING_AVAILABLE = False
 
-    # Stub implementations
     def init_sentry(*args, **kwargs):
         return False
-
-    def capture_error(*args, **kwargs):
-        pass
-
-    def track_operation(*args, **kwargs):
-        from contextlib import nullcontext
-
-        return nullcontext()
-
-    def track_error(*args, **kwargs):
-        def decorator(func):
-            return func
-
-        return decorator
-
-    class FileProcessingErrorTracker:
-        def __init__(self):
-            pass
-
-        def track_file(self, *args, **kwargs):
-            from contextlib import nullcontext
-
-            return nullcontext()
-
-        def print_summary(self):
-            pass
-
-        def get_stats(self):
-            return {}
-
-    class ErrorLevel:
-        FATAL = "fatal"
-        ERROR = "error"
-        WARNING = "warning"
-        INFO = "info"
-        DEBUG = "debug"
 
 
 class ContentBasedFileOrganizer(ContentOrganizer):
