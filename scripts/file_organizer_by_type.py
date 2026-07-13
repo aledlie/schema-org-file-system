@@ -248,9 +248,11 @@ def main():
         help='Base path for organized files (default: ~/Documents)'
     )
     parser.add_argument(
-        '--source',
-        default='~/Documents/Uncategorized',
-        help='Source directory to organize (default: ~/Documents/Uncategorized)'
+        '--source', '--sources',
+        dest='sources',
+        nargs='+',
+        default=['~/Documents/Uncategorized'],
+        help='Source directories to organize (default: ~/Documents/Uncategorized)'
     )
 
     args = parser.parse_args()
@@ -258,14 +260,13 @@ def main():
     # Create organizer
     organizer = FileTypeOrganizer(base_path=args.base_path)
 
-    # Organize directory
-    summary = organizer.organize_directory(
-        source_dir=args.source,
-        dry_run=args.dry_run
-    )
-
-    # Print summary
-    organizer.print_summary(summary)
+    # Organize directories
+    for source_dir in args.sources:
+        summary = organizer.organize_directory(
+            source_dir=source_dir,
+            dry_run=args.dry_run
+        )
+        organizer.print_summary(summary)
 
 
 if __name__ == '__main__':
