@@ -144,6 +144,25 @@ _PERSON_SUBCAT_TO_PERSONAL_SUBCAT = {
     "other": "other",
 }
 
+# Person-detection keyword thresholds. The generic person types need two
+# indicator hits; `contacts` needs three because its indicators ('contact',
+# 'phone:', '@', …) appear in the footer of virtually any official letter —
+# two hits is just a letterhead, three implies an actual contact-card layout.
+_PERSON_MIN_KEYWORD_HITS = 2
+_CONTACTS_MIN_KEYWORD_HITS = 3
+
+# Legal-document veto for the person keyword tier: court documents carry clerk
+# contact blocks that satisfy the generic contacts indicators and were misfiled
+# under Personal/Contacts (e.g. "NOTICE OF CT SETTING"). When at least
+# _LEGAL_SIGNAL_MIN_HITS of these appear, classify_by_person defers so content
+# analysis (which classifies these as legal) decides; person attribution still
+# lands via the people_names that classification returns.
+_LEGAL_DOCUMENT_SIGNALS = frozenset({
+    "court", "cause no", "docket", "plaintiff", "defendant",
+    "hearing", "petitioner", "respondent", "judicial",
+})
+_LEGAL_SIGNAL_MIN_HITS = 2
+
 # Content categories that indicate a *document* (as opposed to a photo, game
 # asset, or generic media). Used to let clean, high-confidence OCR text override
 # a filename-driven game-asset/media guess — e.g. "medellin_bloodwork" matches
@@ -642,10 +661,21 @@ class ContentOrganizer(BaseOrganizer):
             people = self.classifier.extract_people_names(text)
             return ('personal', 'contacts', people if people else [])
 
+        # Legal-document veto: court filings carry clerk contact info that
+        # satisfies the generic indicators below; defer to content analysis.
+        legal_hits = sum(1 for kw in _LEGAL_DOCUMENT_SIGNALS if kw in text_lower)
+        if legal_hits >= _LEGAL_SIGNAL_MIN_HITS:
+            return None
+
         # Check for person type indicators
         for person_type, keywords in person_indicators.items():
             matches = sum(1 for kw in keywords if kw in text_lower)
-            if matches >= 2:  # Require at least 2 keyword matches
+            min_hits = (
+                _CONTACTS_MIN_KEYWORD_HITS
+                if person_type == 'contacts'
+                else _PERSON_MIN_KEYWORD_HITS
+            )
+            if matches >= min_hits:
                 people = self.classifier.extract_people_names(text)
                 if people and _has_human_name_signal(text):
                     subcat = _PERSON_SUBCAT_TO_PERSONAL_SUBCAT[person_type]

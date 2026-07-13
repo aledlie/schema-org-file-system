@@ -24,6 +24,14 @@ try:
 except ImportError:
     METADATA_AVAILABLE = False
 
+# piexif reads EXIF from some JPEG/HEIC/WebP files where PIL's _getexif()
+# comes back empty; used only as a fallback.
+try:
+    import piexif
+    PIEXIF_AVAILABLE = True
+except ImportError:
+    PIEXIF_AVAILABLE = False
+
 # Cost tracking is optional
 try:
     from cost_roi_calculator import CostTracker

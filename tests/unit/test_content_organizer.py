@@ -663,6 +663,52 @@ class TestClassifyByPerson:
             result = organizer.classify_by_person(text, "record.pdf")
         assert result is None
 
+    def test_court_notice_vetoed_despite_contact_indicators(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        # Regression: "NOTICE OF CT SETTING" filed under Personal/Contacts
+        # because the clerk's contact footer matched the generic indicators.
+        # Legal signals must veto the person tier so content analysis (which
+        # classifies these as legal) decides. Text has 3 contacts hits
+        # ('contact', 'phone:', 'email:'), so this isolates the veto from the
+        # contacts threshold.
+        mock_classifier.extract_people_names.return_value = ["Alyshia Ledlie"]
+        text = (
+            "NOTICE OF COURT SETTING. Cause No 24-1234. A hearing is set. "
+            "Contact the clerk with questions. Phone: 512-555-0100. "
+            "Email: clerk@county.gov."
+        )
+        with patch(f"{MODULE}._has_human_name_signal", return_value=True):
+            result = organizer.classify_by_person(text, "NOTICE OF CT SETTING FOR 040126.pdf")
+        assert result is None
+
+    def test_two_generic_contact_hits_are_just_a_letterhead(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        # 'contact' + 'phone:' appear in the footer of virtually any official
+        # letter; two hits must not classify a document as a contact card.
+        mock_classifier.extract_people_names.return_value = ["Jane Doe"]
+        text = (
+            "Thank you for your inquiry about our spring schedule. "
+            "Contact the front office with questions. Phone: 555-0100."
+        )
+        with patch(f"{MODULE}._has_human_name_signal", return_value=True):
+            result = organizer.classify_by_person(text, "letter.pdf")
+        assert result is None
+
+    def test_contact_card_layout_still_routes_to_contacts(
+        self, organizer: ContentOrganizer, mock_classifier: MagicMock
+    ) -> None:
+        # A genuine vCard-style document clears the raised contacts threshold.
+        mock_classifier.extract_people_names.return_value = ["Jane Doe"]
+        text = (
+            "Jane Doe — contact card. Phone: 555-0100. Mobile: 555-0101. "
+            "Email: jane@example.com. Address: 123 Main St, Austin TX."
+        )
+        with patch(f"{MODULE}._has_human_name_signal", return_value=True):
+            result = organizer.classify_by_person(text, "jane_doe_contact.pdf")
+        assert result == ("personal", "contacts", ["Jane Doe"])
+
 
 # ------------------------------------------------------------------ #
 # classify_media_file                                                  #
