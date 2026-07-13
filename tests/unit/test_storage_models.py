@@ -80,6 +80,22 @@ class TestFileModel:
         assert data['status'] == 'organized'
         assert '@id' in data
 
+    @pytest.mark.parametrize("mime_type,expected_type", [
+        ("image/jpeg", "ImageObject"),
+        ("image/png", "ImageObject"),
+        ("video/mp4", "VideoObject"),
+        ("audio/mpeg", "AudioObject"),
+        ("application/pdf", "DigitalDocument"),
+        ("text/html", "WebPage"),
+        ("application/json", "SoftwareSourceCode"),
+        ("text/plain", "DigitalDocument"),
+        (None, "DigitalDocument"),
+        ("unknown/type", "DigitalDocument"),
+    ])
+    def test_get_schema_type_from_mime(self, mime_type, expected_type):
+        """Test MIME type to schema.org type mapping, including fallbacks."""
+        assert File.get_schema_type_from_mime(mime_type) == expected_type
+
 
 class TestCategoryModel:
     """Tests for Category model."""
