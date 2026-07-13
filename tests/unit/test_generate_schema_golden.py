@@ -1,40 +1,44 @@
-"""Golden-snapshot regression tests for FileOrganizer.generate_schema().
+"""Golden-snapshot regression tests for FileProcessor.generate_schema().
 
-Captures generate_schema() output for one file per schema-type branch so the
-Group A migration (replacing the deprecated generator builder methods such as
-set_basic_info/set_file_info/set_name/set_address with direct set_property
-calls) can be proven output-preserving.
+Captures generate_schema() output for one file per schema-type branch so any
+refactor of the live pipeline's schema generation can be proven
+output-preserving. Originally these goldens pinned the legacy
+``scripts/file_organizer.py`` implementation; they were re-pointed at
+``src/pipeline/file_processor.py`` (the implementation the ``organize-files
+content`` pipeline actually runs) when the legacy script was retired.
 
 Workflow:
-    # 1. Record goldens BEFORE the migration (current builder-based output):
+    # Re-record after an intentional output change:
     UPDATE_GOLDEN=1 pytest tests/unit/test_generate_schema_golden.py
-    # 2. Perform the migration, then assert output is unchanged:
+    # Assert output is unchanged:
     pytest tests/unit/test_generate_schema_golden.py
 
-The Person and Organization cases use .vcf fixtures because those exercise the
-highest-risk nested builders (set_name multi-field, set_contact_info,
-set_job_info -> worksFor, set_address -> PostalAddress).
+Branch map of FileProcessor.generate_schema:
+  1. ImageObject                      -> ImageGenerator
+  2. DigitalDocument/Article/Report   -> DocumentGenerator (+contentSize, url)
+     ScholarlyArticle                 -> same, + identifier/sameAs/publisher
+                                         from organizer._last_file_state
+  3. anything else                    -> generic DocumentGenerator fallback
+     (media/code/dataset/person/org types intentionally collapsed here when
+     the pipeline layer moved into src/ — the graph store re-derives display
+     types from MIME)
+Plus cross-cutting: set_dates, extracted_text -> abstract/text, filePath.
 """
 
 import json
 import os
-import sys
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-
-from file_organizer import FileOrganizer  # noqa: E402
+from src.pipeline.file_processor import FileProcessor
 
 GOLDEN_DIR = Path(__file__).parent / "golden" / "generate_schema"
 
 # Output fields that are time-, path-, or environment-dependent and therefore
 # not meaningful for regression comparison. They are normalized to a constant
-# before diffing. None of these are produced by the deprecated builder methods
-# under migration (@id comes from the constructor entity_id; the dates/uploadDate
-# come from file stat()), so scrubbing them hides no migration regression.
+# before diffing.
 _VOLATILE_KEYS = ("@id", "filePath", "dateCreated", "dateModified", "uploadDate")
 _PLACEHOLDER = "<normalized>"
 
@@ -62,7 +66,7 @@ def _assert_golden(name: str, actual: dict) -> None:
         pytest.skip(f"Recorded golden snapshot: {path.name}")
 
     assert path.exists(), (
-        f"Missing golden {path}. Record it (pre-migration) with:\n"
+        f"Missing golden {path}. Record it with:\n"
         f"  UPDATE_GOLDEN=1 pytest {Path(__file__).name}"
     )
     assert payload == path.read_text(), (
@@ -72,9 +76,9 @@ def _assert_golden(name: str, actual: dict) -> None:
 
 
 @pytest.fixture
-def organizer(temp_dir):
-    """FileOrganizer rooted at the per-test temp directory (from conftest)."""
-    return FileOrganizer(base_path=str(temp_dir))
+def processor(temp_dir):
+    """FileProcessor rooted at the per-test temp directory (from conftest)."""
+    return FileProcessor(base_path=temp_dir)
 
 
 def _write(temp_dir: Path, name: str, content: str) -> Path:
@@ -83,84 +87,60 @@ def _write(temp_dir: Path, name: str, content: str) -> Path:
     return path
 
 
-_PERSON_VCARD = """BEGIN:VCARD
-VERSION:3.0
-FN:John Doe
-N:Doe;John;Michael;Dr.;PhD
-EMAIL:john.doe@example.com
-TEL:+1-555-123-4567
-ORG:Acme Corp
-TITLE:Software Engineer
-URL:https://johndoe.com
-BDAY:1990-01-15
-ADR:;;123 Main St;San Francisco;CA;94102;USA
-END:VCARD"""
-
-_ORG_VCARD = """BEGIN:VCARD
-VERSION:3.0
-FN:Acme Corp
-ORG:Acme Corporation
-TEL:+1-555-999-0000
-EMAIL:info@acme.com
-URL:https://acme.com
-ADR:;;456 Business Ave;New York;NY;10001;USA
-END:VCARD"""
-
-
-def test_golden_image_object(organizer, temp_dir):
-    """ImageObject -> ImageGenerator.set_basic_info + set_dimensions."""
-    image = pytest.importorskip("PIL.Image", reason="PIL needed for dimensions")
+def test_golden_image_object(processor, temp_dir):
+    """ImageObject branch -> ImageGenerator (name/contentUrl/encodingFormat)."""
+    image = pytest.importorskip("PIL.Image", reason="PIL needed for a real PNG")
     path = temp_dir / "sample_photo.png"
     image.new("RGB", (4, 2), "white").save(path)
-    _assert_golden("image_object", organizer.generate_schema(path, "ImageObject"))
+    _assert_golden("image_object", processor.generate_schema(path, "ImageObject"))
 
 
-def test_golden_video_object(organizer, temp_dir):
-    """VideoObject -> VideoGenerator.set_basic_info (uploadDate scrubbed)."""
-    path = _write(temp_dir, "sample_clip.mp4", "fake-video-bytes")
-    _assert_golden("video_object", organizer.generate_schema(path, "VideoObject"))
-
-
-def test_golden_audio_object(organizer, temp_dir):
-    """AudioObject -> AudioGenerator.set_basic_info."""
-    path = _write(temp_dir, "sample_track.mp3", "fake-audio-bytes")
-    _assert_golden("audio_object", organizer.generate_schema(path, "AudioObject"))
-
-
-def test_golden_software_source_code(organizer, temp_dir):
-    """SoftwareSourceCode -> CodeGenerator.set_basic_info + set_property(url)."""
-    path = _write(temp_dir, "sample_module.py", "print('hello')\n")
-    _assert_golden("software_source_code",
-                   organizer.generate_schema(path, "SoftwareSourceCode"))
-
-
-def test_golden_dataset(organizer, temp_dir):
-    """Dataset -> DatasetGenerator.set_basic_info."""
-    path = _write(temp_dir, "sample_data.csv", "a,b\n1,2\n")
-    _assert_golden("dataset", organizer.generate_schema(path, "Dataset"))
-
-
-def test_golden_digital_document(organizer, temp_dir):
-    """DigitalDocument -> DocumentGenerator.set_basic_info + set_file_info."""
+def test_golden_digital_document(processor, temp_dir):
+    """Document branch -> DocumentGenerator (+url, contentSize)."""
     path = _write(temp_dir, "sample_doc.txt", "document body\n")
     _assert_golden("digital_document",
-                   organizer.generate_schema(path, "DigitalDocument"))
+                   processor.generate_schema(path, "DigitalDocument"))
 
 
-def test_golden_organization(organizer, temp_dir):
-    """Organization -> set_basic_info + vCard set_contact_info/set_address."""
-    path = _write(temp_dir, "acme_corp.vcf", _ORG_VCARD)
-    _assert_golden("organization", organizer.generate_schema(path, "Organization"))
+def test_golden_scholarly_article(processor, temp_dir):
+    """ScholarlyArticle branch -> document + identifier/sameAs/publisher from
+    the organizer's per-file research state."""
+    processor._organizer = SimpleNamespace(
+        _last_file_state={
+            "research": (
+                "arxiv",
+                "arXiv:2401.12345",
+                "arXiv",
+                "https://arxiv.org/abs/2401.12345",
+            )
+        }
+    )
+    path = _write(temp_dir, "2401.12345v1.pdf", "fake-paper-bytes")
+    _assert_golden("scholarly_article",
+                   processor.generate_schema(path, "ScholarlyArticle"))
 
 
-def test_golden_person(organizer, temp_dir):
-    """Person -> set_name (multi) + set_contact_info + set_job_info + set_address."""
-    path = _write(temp_dir, "john_doe.vcf", _PERSON_VCARD)
-    _assert_golden("person", organizer.generate_schema(path, "Person"))
+def test_golden_fallback_video_object(processor, temp_dir):
+    """Non-image, non-document types (VideoObject here) collapse to the
+    generic DocumentGenerator fallback — pins that intentional divergence
+    from the legacy per-type generators."""
+    path = _write(temp_dir, "sample_clip.mp4", "fake-video-bytes")
+    _assert_golden("fallback_video_object",
+                   processor.generate_schema(path, "VideoObject"))
 
 
-def test_golden_fallback_document(organizer, temp_dir):
-    """Unknown schema_type -> else branch (Document set_basic_info + set_file_info)."""
+def test_golden_fallback_document(processor, temp_dir):
+    """Unknown schema_type -> same generic fallback branch."""
     path = _write(temp_dir, "sample_other.bin", "opaque-bytes")
     _assert_golden("fallback_document",
-                   organizer.generate_schema(path, "CreativeWork"))
+                   processor.generate_schema(path, "CreativeWork"))
+
+
+def test_golden_document_with_extracted_text(processor, temp_dir):
+    """extracted_text -> abstract (1000-char preview) + text (5000-char cap)."""
+    path = _write(temp_dir, "sample_scan.txt", "scanned body\n")
+    long_text = "lorem ipsum " * 100  # 1200 chars: exercises the "..." preview
+    _assert_golden(
+        "document_with_extracted_text",
+        processor.generate_schema(path, "DigitalDocument", extracted_text=long_text),
+    )

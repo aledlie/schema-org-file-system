@@ -5,10 +5,8 @@
   "contentUrl": "https://localhost/files/sample_photo.png",
   "dateCreated": "<normalized>",
   "dateModified": "<normalized>",
-  "description": "ImageObject: sample_photo.png",
+  "description": "sample_photo.png",
   "encodingFormat": "image/png",
   "filePath": "<normalized>",
-  "height": 2,
-  "name": "sample_photo.png",
-  "width": 4
+  "name": "sample_photo.png"
 }

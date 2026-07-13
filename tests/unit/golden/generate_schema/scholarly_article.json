@@ -1,0 +1,19 @@
+{
+  "@context": "https://schema.org",
+  "@id": "<normalized>",
+  "@type": "ScholarlyArticle",
+  "contentSize": "16B",
+  "dateCreated": "<normalized>",
+  "dateModified": "<normalized>",
+  "description": "2401.12345v1.pdf",
+  "encodingFormat": "application/pdf",
+  "filePath": "<normalized>",
+  "identifier": "arXiv:2401.12345",
+  "name": "2401.12345v1.pdf",
+  "publisher": {
+    "@type": "Organization",
+    "name": "arXiv"
+  },
+  "sameAs": "https://arxiv.org/abs/2401.12345",
+  "url": "https://localhost/files/2401.12345v1.pdf"
+}

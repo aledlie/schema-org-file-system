@@ -1,11 +1,10 @@
 {
   "@context": "https://schema.org",
   "@id": "<normalized>",
-  "@type": "Dataset",
+  "@type": "DigitalDocument",
   "dateCreated": "<normalized>",
   "dateModified": "<normalized>",
-  "description": "Dataset: sample_data.csv",
+  "description": "sample_clip.mp4",
   "filePath": "<normalized>",
-  "name": "sample_data.csv",
-  "url": "https://localhost/files/sample_data.csv"
+  "name": "sample_clip.mp4"
 }
