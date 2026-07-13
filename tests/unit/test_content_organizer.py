@@ -569,6 +569,22 @@ class TestExtractProjectName:
         result = organizer.classify_by_filepath(Path("repos/MyProject/src/script.py"))
         assert result == "Technical/Python/MyProject"
 
+    def test_skips_home_directory_name(self, organizer: ContentOrganizer) -> None:
+        """Files straight out of ~/Downloads must not use the username as project name."""
+        from pathlib import Path as _Path
+        home_name = _Path.home().name
+        # Simulate ~/Downloads/index.html → parts include username before 'Downloads'
+        path = _Path("/Users") / home_name / "Downloads" / "index.html"
+        result = organizer.extract_project_name(path)
+        # 'Downloads' and 'Users' are both in skip_dirs / user_container guard;
+        # no valid project segment remains.
+        assert result is None
+
+    def test_skips_other_user_directories(self, organizer: ContentOrganizer) -> None:
+        """Segments that are direct children of /Users or /home are also skipped."""
+        result = organizer.extract_project_name(Path("/Users/otheruser/Downloads/report.pdf"))
+        assert result is None
+
 
 # ------------------------------------------------------------------ #
 # classify_by_organization                                             #

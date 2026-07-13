@@ -31,10 +31,8 @@ try:
     from PIL import Image  # noqa: F401 — availability probe
     from shared.file_ops import resolve_collision  # noqa: F401 — availability probe
     from shared.filename_utils import is_generic_filename  # noqa: F401 — availability probe
-    from shared.ocr_classifier import is_ocr_available
+    from shared.ocr_classifier import OCR_AVAILABLE  # shared module-level flag; avoids duplicate probe
     from shared.status import ProcessingStatus  # noqa: F401 — availability probe
-
-    OCR_AVAILABLE = is_ocr_available()
 
     # HEIC support
     try:
@@ -238,17 +236,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         detected_language: Optional[str] = None,
         kie_result=None,
     ) -> None:
-        """
-        Persist file and its relationships to the graph store with canonical IDs.
-
-        This method creates:
-        - File record with canonical_id (urn:sha256:{hash})
-        - Category record with canonical_id (UUID v5 from name)
-        - Company record with canonical_id (UUID v5 from name)
-        - Person records with canonical_id (UUID v5 from name)
-        - Location record with canonical_id (UUID v5 from name)
-        - Relationships between file and entities
-        """
+        """Delegates to FileProcessor._persist_to_graph_store — see that method for parameter docs."""
         self._file_processor._persist_to_graph_store(
             file_path=file_path,
             dest_path=dest_path,
@@ -344,80 +332,13 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         self._file_processor.save_report(summary, output_path)
 
 
-def main():
-    """Main entry point."""
-    import argparse
+def run(args) -> None:
+    """Typed entry point: organize by content from a parsed namespace.
 
-    parser = argparse.ArgumentParser(
-        description="Organize files by content using OCR and Schema.org metadata"
-    )
-    parser.add_argument(
-        "--dry-run", action="store_true", help="Simulate organization without moving files"
-    )
-    parser.add_argument(
-        "--base-path",
-        default="~/Documents",
-        help="Base path for organized files (default: ~/Documents)",
-    )
-    parser.add_argument(
-        "--sources",
-        nargs="+",
-        default=["~/Desktop", "~/Downloads"],
-        help="Source directories to organize (default: ~/Desktop ~/Downloads)",
-    )
-    parser.add_argument("--report", help="Path to save detailed JSON report")
-    parser.add_argument("--limit", type=int, help="Limit number of files to process (for testing)")
-    parser.add_argument(
-        "--no-cost-tracking", action="store_true", help="Disable cost and ROI tracking"
-    )
-    parser.add_argument(
-        "--cost-report",
-        nargs="?",
-        const="results/cost_report.json",
-        default="results/cost_report.json",
-        help=(
-            "Path to save cost/ROI report (default: results/cost_report.json, "
-            "use --no-cost-tracking to disable)"
-        ),
-    )
-    parser.add_argument(
-        "--check-deps",
-        action="store_true",
-        help="Run system health check and show feature availability",
-    )
-    parser.add_argument(
-        "--skip-health-check", action="store_true", help="Skip startup health check"
-    )
-    parser.add_argument(
-        "--sentry-dsn", help="Sentry DSN for error tracking (or set SENTRY_DSN env var)"
-    )
-    parser.add_argument("--no-sentry", action="store_true", help="Disable Sentry error tracking")
-    parser.add_argument(
-        "--db-path",
-        default="results/file_organization.db",
-        help=(
-            "Path to SQLite database for persistent storage "
-            "(default: results/file_organization.db)"
-        ),
-    )
-    parser.add_argument(
-        "--no-db",
-        action="store_true",
-        help="Disable database persistence (use in-memory registry only)",
-    )
-    parser.add_argument(
-        "--run-migration",
-        action="store_true",
-        help="Run database migration to add canonical_id columns to existing records",
-    )
-    parser.add_argument(
-        "--force",
-        action="store_true",
-        help="Force re-organization of all files, even if already in correct location",
-    )
-
-    args = parser.parse_args()
-
+    The namespace must carry the attributes defined by
+    ``src.cli.add_content_arguments`` (the single source for this command's
+    options, shared with the unified CLI).
+    """
     # Initialize Sentry error tracking (before any other operations)
     if not args.no_sentry and ERROR_TRACKING_AVAILABLE:
         # Priority: CLI arg > FILE_SYSTEM_SENTRY_DSN > SENTRY_DSN
@@ -496,6 +417,19 @@ def main():
                 print("\n✓ Updated _site directory with latest HTML files")
             except subprocess.CalledProcessError:
                 print("\n⚠ Failed to update _site directory")
+
+
+def main():
+    """Standalone entry point (argument definitions shared with organize-files)."""
+    import argparse
+
+    from src.cli import add_content_arguments
+
+    parser = argparse.ArgumentParser(
+        description="Organize files by content using OCR and Schema.org metadata"
+    )
+    add_content_arguments(parser)
+    run(parser.parse_args())
 
 
 if __name__ == "__main__":

@@ -20,6 +20,7 @@ from src.classifiers.entity_detector import _has_human_name_signal
 from src.organizers.base_organizer import BaseOrganizer
 from src.organizers.category_config import CONTENT_CATEGORY_PATHS
 from shared.constants import GAME_SPRITE_KEYWORDS, SIDECAR_DIR_SUFFIXES
+from shared.file_ops import resolve_collision
 from shared.filename_classifier import (
     RESEARCH_CATEGORY,
     SCHOLARLY_ARTICLE_SCHEMA_TYPE,
@@ -35,14 +36,10 @@ from shared.filename_classifier import (
 try:
     import pypdf  # noqa: F401 — availability probe
     from PIL import Image  # noqa: F401 — availability probe
+    from shared.ocr_classifier import OCR_AVAILABLE  # shared module-level flag; avoids duplicate probe
     from shared.ocr_classifier import SCREENSHOT_KEYWORDS
     from shared.ocr_classifier import classify_by_ocr as _shared_classify_by_ocr
-    from shared.ocr_classifier import (
-        extract_ocr_with_confidence,
-        is_ocr_available,
-    )
-
-    OCR_AVAILABLE = is_ocr_available()
+    from shared.ocr_classifier import extract_ocr_with_confidence
 
     # HEIC support
     try:
@@ -457,6 +454,14 @@ class ContentOrganizer(BaseOrganizer):
             'code', 'projects', 'dev', 'work', 'repos', 'git',
         }
 
+        # Also skip the running user's home-directory name so that files
+        # organized straight out of ~/Downloads don't produce paths like
+        # Technical/Python/alyshialedlie/file.py.
+        home_name = Path.home().name.lower()
+        # Set of dir-name parents that introduce a per-user directory:
+        # /Users/<name>  or  /home/<name>  on Linux.
+        user_container_dirs = {'users', 'home'}
+
         # Get all parent directories
         parts = file_path.parts
 
@@ -472,8 +477,19 @@ class ContentOrganizer(BaseOrganizer):
             if dir_name.startswith('.'):
                 continue
 
-            # Found a likely project directory
-            # Return with original case preserved
+            # Skip filesystem root and empty segments
+            if parts[i] in ('/', '\\', ''):
+                continue
+
+            # Skip the user's own home-directory segment (e.g. "alyshialedlie")
+            if dir_name == home_name:
+                continue
+
+            # Skip any direct child of /Users or /home (other user directories)
+            if i > 0 and parts[i - 1].lower() in user_container_dirs:
+                continue
+
+            # Found a likely project directory — return with original case preserved
             return parts[i]
 
         return None
@@ -1709,36 +1725,14 @@ class ContentOrganizer(BaseOrganizer):
         dest_dir = self.base_path / relative_path
         dest_dir.mkdir(parents=True, exist_ok=True)
 
-        # Handle duplicate filenames
+        # Handle duplicate filenames — delegate to the shared incrementing counter
         dest_path = dest_dir / file_path.name
         if dest_path.exists() and dest_path != file_path:
-            stem = file_path.stem
-            suffix = file_path.suffix
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            dest_path = dest_dir / f"{stem}_{timestamp}{suffix}"
+            dest_path = resolve_collision(dest_path)
 
         return dest_path
 
     def should_skip_file(self, file_path: Path) -> bool:
-        """Check if file should be skipped."""
-        skip_files = {'.DS_Store', '.localized', 'Thumbs.db', 'desktop.ini'}
-        skip_dirs = {'__pycache__', '.git', 'node_modules', '.venv', 'venv'}
-
-        if file_path.name.startswith('.') and file_path.name not in {'.gitignore', '.env.example'}:
-            return True
-
-        if file_path.name in skip_files:
-            return True
-
-        if any(skip_dir in file_path.parts for skip_dir in skip_dirs):
-            return True
-
-        # Skip browser "Save Page As" sidecar folders (e.g. "foo_files/"): the
-        # file lives under a parent dir whose name ends with a known suffix.
-        if any(
-            part.lower().endswith(SIDECAR_DIR_SUFFIXES)
-            for part in file_path.parent.parts
-        ):
-            return True
-
-        return False
+        """Check if file should be skipped (delegates to shared.file_ops.should_skip_file)."""
+        from shared.file_ops import should_skip_file as _shared_should_skip_file
+        return _shared_should_skip_file(file_path)

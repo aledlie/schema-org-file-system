@@ -12,6 +12,11 @@ import shutil
 import argparse
 from pathlib import Path
 from datetime import datetime
+
+# shared/ lives in scripts/ — add to path so shared.file_ops resolves.
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
+
+from shared.file_ops import resolve_collision  # noqa: E402
 import json
 from typing import Dict, List, Optional, Tuple
 
@@ -595,16 +600,9 @@ class FileNameOrganizer:
             # Create destination directory
             destination.parent.mkdir(parents=True, exist_ok=True)
 
-            # Handle duplicates
+            # Handle duplicates — delegate to the shared incrementing counter
             if destination.exists():
-                # Add suffix to filename
-                stem = destination.stem
-                suffix = destination.suffix
-                counter = 1
-                while destination.exists():
-                    new_name = f"{stem}_{counter}{suffix}"
-                    destination = destination.parent / new_name
-                    counter += 1
+                destination = resolve_collision(destination)
 
             if self.dry_run:
                 print(f"  [DRY RUN] Would move to: {destination}")
@@ -736,7 +734,31 @@ class FileNameOrganizer:
         print(f"Report saved: {report_file}")
 
 
+def run(args) -> None:
+    """Typed entry point: organize by name patterns from a parsed namespace.
+
+    The namespace must carry the attributes defined by
+    ``src.cli.add_name_arguments`` (the single source for this command's
+    options, shared with the unified CLI).
+    """
+    organizer = FileNameOrganizer(
+        base_path=args.base_path,
+        dry_run=args.dry_run
+    )
+
+    for source_dir in args.sources:
+        organizer.organize_directory(
+            source_dir=source_dir,
+            recursive=args.recursive,
+            limit=args.limit
+        )
+
+
 def main():
+    """Standalone entry point (argument definitions shared with organize-files)."""
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    from src.cli import add_name_arguments
+
     parser = argparse.ArgumentParser(
         description='Organize files by name and path patterns only',
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -755,54 +777,8 @@ Examples:
   organize-files name --base-path ~/MyFiles --source ~/Downloads
         '''
     )
-
-    parser.add_argument(
-        '--source', '--sources',
-        dest='sources',
-        nargs='+',
-        required=True,
-        help='Source directories to organize'
-    )
-
-    parser.add_argument(
-        '--base-path',
-        default='~/Documents',
-        help='Base directory for organized files (default: ~/Documents)'
-    )
-
-    parser.add_argument(
-        '--recursive',
-        action='store_true',
-        help='Process subdirectories recursively'
-    )
-
-    parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Preview changes without moving files'
-    )
-
-    parser.add_argument(
-        '--limit',
-        type=int,
-        help='Limit number of files to process'
-    )
-
-    args = parser.parse_args()
-
-    # Create organizer
-    organizer = FileNameOrganizer(
-        base_path=args.base_path,
-        dry_run=args.dry_run
-    )
-
-    # Organize directories
-    for source_dir in args.sources:
-        organizer.organize_directory(
-            source_dir=source_dir,
-            recursive=args.recursive,
-            limit=args.limit
-        )
+    add_name_arguments(parser)
+    run(parser.parse_args())
 
 
 if __name__ == '__main__':

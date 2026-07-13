@@ -6,9 +6,16 @@ Organizes files by type without OCR.
 
 import os
 import shutil
+import sys
 from pathlib import Path
 from collections import defaultdict
-from datetime import datetime
+
+# shared/ lives in scripts/ — ensure it resolves when this file is imported
+# directly (e.g. in tests that add scripts/ to sys.path themselves).
+sys.path.insert(0, str(Path(__file__).parent))
+
+from shared.file_ops import resolve_collision  # noqa: E402
+from shared.file_ops import should_skip_file as _shared_should_skip_file  # noqa: E402
 
 
 class FileTypeOrganizer:
@@ -86,20 +93,8 @@ class FileTypeOrganizer:
         return 'Uncategorized'
 
     def should_skip_file(self, file_path: Path) -> bool:
-        """Check if file should be skipped."""
-        skip_files = {'.DS_Store', '.localized', 'Thumbs.db', 'desktop.ini'}
-        skip_dirs = {'__pycache__', '.git', 'node_modules', '.venv', 'venv'}
-
-        if file_path.name.startswith('.') and file_path.name not in {'.gitignore', '.env.example'}:
-            return True
-
-        if file_path.name in skip_files:
-            return True
-
-        if any(skip_dir in file_path.parts for skip_dir in skip_dirs):
-            return True
-
-        return False
+        """Check if file should be skipped (delegates to shared.file_ops.should_skip_file)."""
+        return _shared_should_skip_file(file_path)
 
     def organize_file(self, file_path: Path, dry_run: bool = False) -> dict:
         """Organize a single file based on type."""
@@ -127,13 +122,10 @@ class FileTypeOrganizer:
             dest_dir = self.base_path / category
             dest_dir.mkdir(parents=True, exist_ok=True)
 
-            # Handle duplicate filenames
+            # Handle duplicate filenames — delegate to the shared incrementing counter
             dest_path = dest_dir / file_path.name
             if dest_path.exists() and dest_path != file_path:
-                stem = file_path.stem
-                suffix = file_path.suffix
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                dest_path = dest_dir / f"{stem}_{timestamp}{suffix}"
+                dest_path = resolve_collision(dest_path)
 
             # Skip if already in right place
             if file_path.parent == dest_dir:
@@ -230,43 +222,35 @@ class FileTypeOrganizer:
             print(f"{category}: {count} files")
 
 
-def main():
-    """Main entry point."""
-    import argparse
+def run(args) -> None:
+    """Typed entry point: organize by extension from a parsed namespace.
 
-    parser = argparse.ArgumentParser(
-        description='Organize files by type based on extensions'
-    )
-    parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Simulate organization without moving files'
-    )
-    parser.add_argument(
-        '--base-path',
-        default='~/Documents',
-        help='Base path for organized files (default: ~/Documents)'
-    )
-    parser.add_argument(
-        '--source', '--sources',
-        dest='sources',
-        nargs='+',
-        default=['~/Documents/Uncategorized'],
-        help='Source directories to organize (default: ~/Documents/Uncategorized)'
-    )
-
-    args = parser.parse_args()
-
-    # Create organizer
+    The namespace must carry the attributes defined by
+    ``src.cli.add_type_arguments`` (the single source for this command's
+    options, shared with the unified CLI).
+    """
     organizer = FileTypeOrganizer(base_path=args.base_path)
 
-    # Organize directories
     for source_dir in args.sources:
         summary = organizer.organize_directory(
             source_dir=source_dir,
             dry_run=args.dry_run
         )
         organizer.print_summary(summary)
+
+
+def main():
+    """Standalone entry point (argument definitions shared with organize-files)."""
+    import argparse
+
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from src.cli import add_type_arguments
+
+    parser = argparse.ArgumentParser(
+        description='Organize files by type based on extensions'
+    )
+    add_type_arguments(parser)
+    run(parser.parse_args())
 
 
 if __name__ == '__main__':
