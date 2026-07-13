@@ -1,7 +1,7 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-07-12.
+Last updated: 2026-07-13.
 
 ## Open Items
 
@@ -13,10 +13,27 @@ Leaky denylist (prune and dead-path tooling shipped 2026-07-12).
 **Priority:** P3
 **Source:** person-view / index-people operational session, 2026-07-12
 
-Three related gaps surfaced while populating the `Person/{Name}/` symlink view; the remaining one is still handled by manual review.
+One remaining gap handles false-positive "people" in the symlink view.
 
-1. ~~**No prune tooling for `file→person` edges.**~~ **Done (2026-07-12):** `GraphStore.remove_person_edge(file_id, person)` drops a single edge; `GraphStore.prune_person(name_or_id, dry_run=...)` deletes a person plus all its edges (clearing dependents' merge pointers, never touching files on disk), exposed as `organize-files prune-person <name-or-id>...` — dry-run by default, `--apply` backs up the DB (+ WAL/SHM sidecars) first. Tests: `tests/unit/test_graph_store_prune.py`.
-2. **`get_all_people_with_files` denylist is leaky.** False-positive "people" (event/org names) still pass the org/keyword denylist — e.g. `Morning Train` (from `Burning_Flipside_Map.pdf`) — and would create spurious `Person/{Name}/` folders on `person-view --apply` unless pruned first. *Fix idea:* stronger heuristics (require given+family name shape, expand denylist) or a confirmation/review step before view generation.
-3. ~~**Dead-path edges are cruft, not errors.**~~ **Done (2026-07-12):** `GraphStore.prune_missing_person_edges(dry_run=...)` drops edges whose file path (current_path, falling back to original_path) no longer exists on disk, keeping File and Person rows. Exposed as `--prune-missing` on both `organize-files person-view` (prunes before regenerating the view) and `organize-files index-people` (prunes after indexing); honors each command's `--apply`/dry-run flag. Tests: `tests/unit/test_graph_store_prune.py`.
+1. **`get_all_people_with_files` denylist is leaky.** False-positive "people" (event/org names) still pass the org/keyword denylist — e.g. `Morning Train` (from `Burning_Flipside_Map.pdf`) — and would create spurious `Person/{Name}/` folders on `person-view --apply` unless pruned first.
+
+   *Fix planned (2026-07-13):* layered local-only confidence gate at write time (`nameparser` shape → `probablepeople` CRF → Census gazetteer, weighted composite) with three-way routing (auto-accept / `pending_review` queue via a new `organize-files review-people` CLI / reject), `review_status`+`validation_scores` columns on `people`, and an `additionalProperty` JSON-LD sidecar. External KB validation rejected (notability gap — see the Wikidata item below). Full phased design: [`docs/plans/PERSON_NAME_VALIDATION_PLAN.md`](plans/PERSON_NAME_VALIDATION_PLAN.md).
+
+### Wikidata SPARQL for non-person entity typing
+
+Investigate Wikidata as a type validator for entities where notability is expected.
+
+**Status:** Open — investigation, not committed work.
+**Priority:** P3
+**Source:** gap-2 web research session, 2026-07-13
+
+Wikidata was rejected for *person* validation because personal documents are dominated by non-notable people it can never confirm. But the notability profile inverts for other entity types the system already detects, where a large share of true positives *are* notable:
+
+- **Organizations** — validate `entity_detector.extract_company_names` output (vendors, employers) against organization classes before creating `Organization/{Name}/` folders.
+- **Research publishers** — confirm publisher identity for `Research/{Publisher}/` routing (`schema_type=ScholarlyArticle`).
+- **Locations** — type-check detected place names before creating Location nodes.
+- **Events** — a positive event-class match is a strong *negative* signal for person/org detection (would have caught `Morning Train` if notable).
+
+Technical notes from the research: `P31` (instance-of) checks against class QIDs (org `Q43229`+subclasses, event `Q1656682`/`Q52943`, human `Q5`); content is CC0 so results cache in SQLite indefinitely; rate limits ~5 parallel queries/IP + 60s query-time/min + mandatory identifiable User-Agent (nightly sequential batch fits easily); the ready-made reconciliation endpoint `wikidata.reconci.link` (W3C Reconciliation API v0.2, `query + type hint → ranked scored candidates`) is the lower-effort integration path vs raw SPARQL. Investigation should size: hit rate on the real `companies` table, wrong-entity collision risk, and whether a "no match" fallback stays cheap. Keep any implementation as an optional nightly enrichment — the core pipeline must remain offline-capable.
 
 
