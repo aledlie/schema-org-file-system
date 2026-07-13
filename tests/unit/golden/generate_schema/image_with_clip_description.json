@@ -1,0 +1,12 @@
+{
+  "@context": "https://schema.org",
+  "@id": "<normalized>",
+  "@type": "ImageObject",
+  "contentUrl": "https://localhost/files/sample_landscape.png",
+  "dateCreated": "<normalized>",
+  "dateModified": "<normalized>",
+  "description": "Content: a landscape or nature scene (84% confident)",
+  "encodingFormat": "image/png",
+  "filePath": "<normalized>",
+  "name": "sample_landscape.png"
+}

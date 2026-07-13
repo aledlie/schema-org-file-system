@@ -954,6 +954,10 @@ class ContentOrganizer(BaseOrganizer):
         except Exception as e:
             print(f"  CLIP signal error: {e}")
             return (None, 0.0)
+        # Stash the raw label for schema.org description composition even when
+        # the score is below the classification-enhancement threshold — the
+        # description states its confidence, so a weak signal is still useful.
+        self._last_file_state["clip_description"] = (best_label, best_score)
         if best_score < CLIP_ENHANCE_THRESHOLD:
             return (None, 0.0)
         return (self._map_clip_label(best_label, image_metadata), best_score)

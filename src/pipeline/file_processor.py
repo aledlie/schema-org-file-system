@@ -112,6 +112,20 @@ class FileProcessor:
         self.rename_analyzer = rename_analyzer
         self._organizer = organizer
 
+    def _content_description(self, file_path: Path) -> str:
+        """Human-readable description for the schema.org ``description`` field.
+
+        Uses the winning CLIP label + confidence when the organizer's per-file
+        state carries one (stashed by ContentOrganizer._run_clip_signal);
+        falls back to the filename for non-CLIP paths.
+        """
+        state = getattr(self._organizer, "_last_file_state", None) or {}
+        clip = state.get("clip_description")
+        if clip:
+            label, score = clip
+            return f"Content: {label} ({score:.0%} confident)"
+        return f"{file_path.name}"
+
     def generate_schema(
         self,
         file_path: Path,
@@ -123,6 +137,7 @@ class FileProcessor:
         mime_type = self.enricher.detect_mime_type(str(file_path))
         file_url = f"https://localhost/files/{quote(file_path.name)}"
         actual_path = str(file_path.absolute())
+        description = self._content_description(file_path)
 
         # Create generator based on type
         if schema_type == "ImageObject":
@@ -130,11 +145,11 @@ class FileProcessor:
             generator.set_property("name", file_path.name, PropertyType.TEXT)
             generator.set_property("contentUrl", file_url, PropertyType.URL)
             generator.set_property("encodingFormat", mime_type or "image/png", PropertyType.TEXT)
-            generator.set_property("description", f"{file_path.name}", PropertyType.TEXT)
+            generator.set_property("description", description, PropertyType.TEXT)
         elif schema_type in ["DigitalDocument", "Article", SCHOLARLY_ARTICLE_SCHEMA_TYPE, "Report"]:
             generator = DocumentGenerator(schema_type)
             generator.set_property("name", file_path.name, PropertyType.TEXT)
-            generator.set_property("description", f"{file_path.name}", PropertyType.TEXT)
+            generator.set_property("description", description, PropertyType.TEXT)
             generator.set_property(
                 "encodingFormat", mime_type or "application/octet-stream", PropertyType.TEXT
             )
@@ -158,7 +173,7 @@ class FileProcessor:
         else:
             generator = DocumentGenerator()
             generator.set_property("name", file_path.name, PropertyType.TEXT)
-            generator.set_property("description", f"{file_path.name}", PropertyType.TEXT)
+            generator.set_property("description", description, PropertyType.TEXT)
 
         # Set dates
         try:

@@ -120,6 +120,20 @@ def test_golden_scholarly_article(processor, temp_dir):
                    processor.generate_schema(path, "ScholarlyArticle"))
 
 
+def test_golden_image_with_clip_description(processor, temp_dir):
+    """ImageObject with a stashed CLIP signal -> classifier-derived
+    description ("Content: {label} ({confidence:.0%} confident}") instead of
+    the filename fallback."""
+    image = pytest.importorskip("PIL.Image", reason="PIL needed for a real PNG")
+    processor._organizer = SimpleNamespace(
+        _last_file_state={"clip_description": ("a landscape or nature scene", 0.84)}
+    )
+    path = temp_dir / "sample_landscape.png"
+    image.new("RGB", (4, 2), "green").save(path)
+    _assert_golden("image_with_clip_description",
+                   processor.generate_schema(path, "ImageObject"))
+
+
 def test_golden_fallback_video_object(processor, temp_dir):
     """Non-image, non-document types (VideoObject here) collapse to the
     generic DocumentGenerator fallback — pins that intentional divergence
