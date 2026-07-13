@@ -59,12 +59,18 @@ mypy src/ scripts/            # type check
 │   ├── utils/              # Shared utilities
 │   ├── api/
 │   │   ├── schema_org_api.py    # FastAPI JSON-LD REST endpoints
-│   │   └── schema_org_models.py # Pydantic request/response models
+│   │   ├── schema_org_models.py # Pydantic request/response models
+│   │   └── timeline_api.py      # Timeline data endpoints
 │   └── storage/
 │       ├── graph_store.py       # SQLAlchemy graph with canonical IDs
 │       ├── models.py            # ORM models with to_schema_org()
+│       ├── kv_store.py          # Key-value storage layer
+│       ├── migration.py         # Canonical-ID migration (backs organize-files migrate-ids)
+│       ├── person_migration.py  # Person/ → Personal/{subcat} migration (+ rollback)
+│       ├── person_view_generator.py # Derived Person/{Name}/ symlink view
 │       ├── schema_org_exporter.py   # Bulk export (JSON, NDJSON, @graph)
 │       ├── schema_org_context.py    # JSON-LD @context document generation
+│       ├── schema_org_variants.py   # Typed representation variants
 │       └── schema_org_base.py       # Shared base types
 ├── scripts/
 │   ├── shared/                          # Shared utilities
@@ -128,7 +134,7 @@ mypy src/ scripts/            # type check
 
 ## Dependencies
 
-Requires Python 3.13 (3.14 broken on macOS 26 — see Troubleshooting).
+Requires Python 3.12 or 3.13 (3.14 broken on macOS 26 — see Troubleshooting; `pyproject.toml` declares `>=3.8` but 3.12/3.13 are what's tested).
 
 ```bash
 python3.13 -m venv venv && source venv/bin/activate
@@ -187,11 +193,11 @@ Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 ## Testing
 
 ```bash
-pytest tests/unit/           # ~762 unit tests
+pytest tests/unit/           # ~1,070 unit tests
 pytest tests/integration/    # schema.org export pipeline
 pytest tests/performance/ --benchmark-only -m "not slow"   # benchmarks (skip 10k)
 pytest tests/e2e/            # Playwright E2E
 ```
 
 ---
-**Python:** 3.13 (3.14 blocked by macOS 26 libexpat ABI) | **Version:** 2.1.0 | **Files:** 265,000+ processed
+**Python:** 3.12–3.13 (3.14 blocked by macOS 26 libexpat ABI) | **Version:** 2.1.0 | **Files:** 265,000+ processed

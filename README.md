@@ -2,7 +2,7 @@
 
 AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and entity detection.
 
-**Version:** 2.1.0 | **Python:** 3.13 (3.14 blocked by macOS 26 libexpat ABI) | **Files Processed:** 265,000+
+**Version:** 2.1.0 | **Python:** 3.12–3.13 (3.14 blocked by macOS 26 libexpat ABI) | **Files Processed:** 265,000+
 
 ## Capabilities
 
@@ -23,7 +23,7 @@ All entry points share one backing SQLite graph (`results/file_organization.db`)
 |---------|---------------|
 | **CLI** | `organize-files <command>` (console script → `src.cli:main`) — see [CLI Commands](#cli-commands) |
 | **REST API** | `uvicorn src.api.schema_org_api:app --reload` — JSON-LD endpoints for `files`, `categories`, `companies`, `people`, `locations` (see [REST API](#rest-api)) |
-| **Library** | Import organizers/classifiers from `scripts/` and the graph store from `src.storage` (run from project root so `from shared.x import y` resolves) |
+| **Library** | Import organizers/classifiers from `src.organizers` / `src.classifiers` and the graph store from `src.storage`; `scripts/` entry points are thin CLI wrappers (run from project root so `from shared.x import y` resolves) |
 | **Dashboard** | Static UI in `_site/`, consuming data from `update-site` / `timeline` |
 
 ## Quick Start
@@ -57,8 +57,9 @@ organize-files health  # Should report 9/9 features operational
 | `organize-files preprocess` | Data preprocessing pipeline for ML model training (`--input`, `--output`) |
 | `organize-files evaluate` | Run evaluation metrics on test dataset (`--test-data`, `--model`, `--classifier {baseline,content}`) |
 | `organize-files migrate-person` | Migrate on-disk `Person/` files into `Personal/{subcat}/` (dry-run default; `--apply`, `--rollback`) |
-| `organize-files person-view` | Regenerate `Person/{Name}/` as a derived symlink view from graph edges (`--apply`) |
-| `organize-files index-people` | Attach `person→file` graph edges for migrated files, no moves (`--apply`) |
+| `organize-files person-view` | Regenerate `Person/{Name}/` as a derived symlink view from graph edges (`--apply`; `--prune-missing` drops dead-path edges first) |
+| `organize-files index-people` | Attach `person→file` graph edges for migrated files, no moves (`--apply`; `--prune-missing` drops dead-path edges after) |
+| `organize-files prune-person` | Delete people + their `file→person` edges from the graph, no file moves (dry-run default; `--apply` backs up the DB first) |
 
 ## REST API
 
@@ -118,6 +119,10 @@ flowchart LR
 ├── src/
 │   ├── cli.py                       # CLI entry point
 │   ├── generators.py                # Schema.org generators
+│   ├── classifiers/                 # content_classifier + entity_detector
+│   ├── organizers/                  # base/content/name organizers + category_config
+│   ├── pipeline/                    # batch_processor, file_processor
+│   ├── analyzers/                   # image/content analyzers, text extraction
 │   ├── api/
 │   │   ├── schema_org_api.py        # FastAPI JSON-LD REST endpoints
 │   │   ├── schema_org_models.py     # Pydantic models
@@ -133,9 +138,9 @@ flowchart LR
 │       ├── schema_org_context.py    # JSON-LD @context generation
 │       ├── schema_org_variants.py   # Typed representation variants
 │       └── schema_org_base.py       # Shared base types
-├── scripts/                         # Organizer scripts
+├── scripts/                         # Thin CLI wrappers + shared/ utilities
 ├── tests/
-│   ├── unit/                        # ~762 unit tests
+│   ├── unit/                        # ~1,070 unit tests
 │   ├── integration/                 # Export pipeline integration tests
 │   ├── performance/                 # pytest-benchmark suite
 │   └── e2e/                         # Playwright + OpenTelemetry
@@ -171,7 +176,7 @@ flowchart LR
 | Layer | Technology |
 |-------|------------|
 | AI/ML | PyTorch, open-clip-torch, OpenCV |
-| OCR | docTR (PyTorch) |
+| OCR | docTR (PyTorch); easyocr preferred for the screenshot path when installed |
 | Database | SQLite + SQLAlchemy |
 | API | FastAPI |
 | Monitoring | Sentry SDK |
@@ -179,11 +184,22 @@ flowchart LR
 
 ## Documentation
 
-- [CHANGELOG (v2.0.0)](docs/changelog/2.0.0/CHANGELOG.md) - Version history
+- [CHANGELOG (v2.1.0)](docs/changelog/2.1.0/CHANGELOG.md) - Current version history
+- [CHANGELOG (v2.0.0)](docs/changelog/2.0.0/CHANGELOG.md) - Prior version history
 - [ARCHITECTURE_REFACTOR](docs/ARCHITECTURE_REFACTOR.md) - Design decisions
 - [SCHEMA_ORG_ARCHITECTURE](docs/SCHEMA_ORG_ARCHITECTURE.md) - Schema.org type mappings, IRI patterns, JSON-LD context, and implementation reference
 
 ## Changelog
+
+### v2.1.0 (2026-06-29) + unreleased
+
+**Person taxonomy Option C (unreleased):** `person` demoted from filing category to graph relationship — files go to `Personal/{subcat}/`, `Person/{Name}/` becomes a derived symlink view; new `migrate-person`, `person-view`, `index-people`, `prune-person` commands.
+
+**Refactor (unreleased):** `file_organizer_content_based.py` reduced to a thin CLI wrapper over `src/{classifiers,analyzers,organizers,pipeline}`; streaming core-query Schema.org export.
+
+**Released 2.1.0:** easyocr screenshot OCR backend + benchmark harness (`scripts/bench_ocr_backends.py`), photo-evidence gating for low-confidence image routing, multi-agent collision-detection pre-commit hook.
+
+See [docs/changelog/2.1.0/CHANGELOG.md](docs/changelog/2.1.0/CHANGELOG.md) for detail.
 
 ### v2.0.0 (2026-03-28)
 
@@ -217,6 +233,7 @@ flowchart LR
 |----------|-------------|
 | `FILE_SYSTEM_SENTRY_DSN` | Sentry error tracking (Doppler) |
 | `FILE_ORGANIZE_MODE` | `in-place` (default for image renamer) or `folder` (default for screenshot renamer) |
+| `OCR_EASYOCR_LANGS` | Comma-separated ISO language codes for easyocr (e.g. `en,fr,es`); defaults to `en`. Resolved at Reader-construction time — set before first OCR use. |
 | `--sentry-dsn` | CLI override |
 
 ## Troubleshooting
@@ -400,13 +417,17 @@ graph TB
         som[schema_org_models.py]
     end
 
-    subgraph Scripts["Organizer Scripts"]
+    subgraph Scripts["CLI Wrappers (scripts/)"]
         foc[file_organizer_content_based.py]
         icr[rename_images.py]
         ica[image_content_analyzer.py]
     end
 
-    subgraph Core["Core Library"]
+    subgraph Core["Core Library (src/)"]
+        org[organizers/content_organizer.py]
+        pipe[pipeline/file_processor + batch_processor]
+        clf[classifiers/]
+        ana[analyzers/]
         gen[generators.py]
         err[error_tracking.py]
         cost[cost_roi_calculator.py]
@@ -430,12 +451,16 @@ graph TB
 
     cli --> foc
 
-    foc --> gen
+    foc --> org
+    foc --> pipe
+    org --> clf
+    org --> ana
+    org --> torch
+    org --> doctr
+    pipe --> gen
+    pipe --> gs
+    pipe --> cost
     foc --> err
-    foc --> cost
-    foc --> gs
-    foc --> torch
-    foc --> doctr
 
     icr --> torch
     ica --> torch
