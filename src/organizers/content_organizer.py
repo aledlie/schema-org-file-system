@@ -19,8 +19,8 @@ from typing import Any, Dict, List, Optional, Tuple
 from src.classifiers.entity_detector import _has_human_name_signal
 from src.organizers.base_organizer import BaseOrganizer
 from src.organizers.category_config import CONTENT_CATEGORY_PATHS
-from shared.constants import GAME_SPRITE_KEYWORDS, SIDECAR_DIR_SUFFIXES
-from shared.file_ops import resolve_collision
+from shared.constants import GAME_SPRITE_KEYWORDS
+from shared.file_ops import resolve_collision, should_skip_file as _shared_should_skip_file
 from shared.filename_classifier import (
     RESEARCH_CATEGORY,
     SCHOLARLY_ARTICLE_SCHEMA_TYPE,
@@ -1734,5 +1734,4 @@ class ContentOrganizer(BaseOrganizer):
 
     def should_skip_file(self, file_path: Path) -> bool:
         """Check if file should be skipped (delegates to shared.file_ops.should_skip_file)."""
-        from shared.file_ops import should_skip_file as _shared_should_skip_file
         return _shared_should_skip_file(file_path)
