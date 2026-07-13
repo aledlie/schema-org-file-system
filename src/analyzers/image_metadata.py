@@ -210,7 +210,12 @@ class ImageMetadataParser:
                     address = location.raw["address"]
                     parts = []
 
-                    city = address.get("city") or address.get("town") or address.get("village")
+                    city = (
+                        address.get("city")
+                        or address.get("town")
+                        or address.get("village")
+                        or address.get("county")
+                    )
                     if city:
                         parts.append(city)
 

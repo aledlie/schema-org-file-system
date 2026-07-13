@@ -220,6 +220,44 @@ class TestGetMetadataSummary:
 
 
 # ---------------------------------------------------------------------------
+# get_location_name
+# ---------------------------------------------------------------------------
+
+def _fake_geocoder(address: dict) -> MagicMock:
+    """Geocoder stub whose reverse() returns a location with the given address."""
+    location = MagicMock()
+    location.raw = {"address": address}
+    geocoder = MagicMock()
+    geocoder.reverse.return_value = location
+    return geocoder
+
+
+class TestGetLocationName:
+    def test_none_when_geocoder_unavailable(self, parser: ImageMetadataParser) -> None:
+        assert parser.get_location_name((37.77, -122.42)) is None
+
+    def test_city_state_country(self, parser: ImageMetadataParser) -> None:
+        parser.geocoder = _fake_geocoder(
+            {"city": "San Francisco", "state": "California", "country": "USA"}
+        )
+        assert parser.get_location_name((37.77, -122.42)) == "San Francisco, California, USA"
+
+    def test_town_preferred_over_county(self, parser: ImageMetadataParser) -> None:
+        parser.geocoder = _fake_geocoder({"town": "Marfa", "county": "Presidio County"})
+        assert parser.get_location_name((30.31, -104.02)) == "Marfa"
+
+    def test_county_fallback_when_no_locality(self, parser: ImageMetadataParser) -> None:
+        parser.geocoder = _fake_geocoder(
+            {"county": "Presidio County", "state": "Texas", "country": "USA"}
+        )
+        assert parser.get_location_name((30.31, -104.02)) == "Presidio County, Texas, USA"
+
+    def test_none_when_address_empty(self, parser: ImageMetadataParser) -> None:
+        parser.geocoder = _fake_geocoder({})
+        assert parser.get_location_name((0.0, 0.0)) is None
+
+
+# ---------------------------------------------------------------------------
 # _convert_to_degrees
 # ---------------------------------------------------------------------------
 
