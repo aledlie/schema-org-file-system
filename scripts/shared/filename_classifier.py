@@ -1548,9 +1548,40 @@ def classify_by_filename_patterns(
             return ("business", "legal", None, [])
 
     # =========================================================
+    # FINANCIAL DOCUMENTS: billing, statement, invoice, receipt
+    # Must check BEFORE event documents (month names in filenames,
+    # e.g. "May 2026 Billing Statement.pdf")
+    # =========================================================
+    financial_doc_keywords = {
+        "invoice": "invoices",
+        "billing": "statements",
+        "statement": "statements",
+        "receipt": "other",
+    }
+    if ext in {".pdf", ".docx", ".doc"}:
+        for keyword, subcategory in financial_doc_keywords.items():
+            if keyword in stem:
+                print("  ✓ Filename pattern: Financial document")
+                return ("financial", subcategory, None, [])
+
+    # =========================================================
     # EVENT DOCUMENTS: Oct25Event, Nov15Party (month+day in name)
+    # The month must be immediately followed by a 1-2 digit day
+    # (one optional separator allowed: "oct 25", "may_15");
+    # a bare year ("May 2026 Report") does not qualify.
     # =========================================================
     month_patterns = [
+        "january",
+        "february",
+        "march",
+        "april",
+        "june",
+        "july",
+        "august",
+        "september",
+        "october",
+        "november",
+        "december",
         "jan",
         "feb",
         "mar",
@@ -1566,7 +1597,7 @@ def classify_by_filename_patterns(
     ]
     if ext in {".docx", ".doc", ".pdf"}:
         for month in month_patterns:
-            if month in stem and re.search(r"\d{1,2}", stem):
+            if re.search(rf"{month}[ _-]?\d{{1,2}}(?!\d)", stem):
                 print("  ✓ Filename pattern: Event document")
                 return ("personal", "events", None, [])
 

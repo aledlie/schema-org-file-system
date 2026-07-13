@@ -327,6 +327,46 @@ class TestClassifyByFilenamePatterns:
         assert result[0] == 'personal'
         assert result[1] == 'events'
 
+    def test_event_document_allows_separated_month_day(
+        self, organizer: ContentOrganizer
+    ) -> None:
+        result = organizer.classify_by_filename_patterns(Path("/docs/nov_15_party.docx"))
+        assert result is not None
+        assert result[0] == 'personal'
+        assert result[1] == 'events'
+
+    def test_bare_year_is_not_an_event_document(self, organizer: ContentOrganizer) -> None:
+        # "may 2026" has no month+day adjacency (2026 is a year), so the
+        # event heuristic must not fire.
+        result = organizer.classify_by_filename_patterns(Path("/docs/xyzzy may 2026.pdf"))
+        assert result is None
+
+    def test_billing_statement_maps_to_financial(self, organizer: ContentOrganizer) -> None:
+        # Regression: previously matched the event heuristic ("may" + digits)
+        # and filed under personal/events before content extraction ran.
+        result = organizer.classify_by_filename_patterns(
+            Path("/docs/May 2026 Billing Statement (2).pdf")
+        )
+        assert result is not None
+        assert result[0] == 'financial'
+        assert result[1] == 'statements'
+
+    def test_invoice_filename_maps_to_financial_invoices(
+        self, organizer: ContentOrganizer
+    ) -> None:
+        result = organizer.classify_by_filename_patterns(Path("/docs/acme_invoice_march.pdf"))
+        assert result is not None
+        assert result[0] == 'financial'
+        assert result[1] == 'invoices'
+
+    def test_receipt_filename_maps_to_financial_other(
+        self, organizer: ContentOrganizer
+    ) -> None:
+        result = organizer.classify_by_filename_patterns(Path("/docs/store_receipt.pdf"))
+        assert result is not None
+        assert result[0] == 'financial'
+        assert result[1] == 'other'
+
     def test_journal_entry_maps_to_personal_journal(self, organizer: ContentOrganizer) -> None:
         result = organizer.classify_by_filename_patterns(Path("/docs/dream_journal.docx"))
         assert result is not None
