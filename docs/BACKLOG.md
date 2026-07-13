@@ -134,6 +134,16 @@ Image EXIF/GPS extraction in `scripts/image_renamer_metadata.py` parallels `src/
 
 `scripts/regenerate_schemas.py:27-37` re-lists the seven generator classes that `src/__init__.py:13-20` already exports, importing them from `generators` via a `sys.path` insert. Harmless today; importing from the `src` package (`from src import DocumentGenerator, ...`) would remove the parallel list. Fold into any future touch of the script rather than picking up standalone.
 
+### `extract_project_name` accepts the username directory as a project name
+
+Files organized straight out of home subdirectories get the user's own directory name as a "project" folder.
+
+**Status:** Open
+**Priority:** P3
+**Source:** organize-files content dry-run observation, 2026-07-13
+
+`ContentOrganizer.extract_project_name` (`src/organizers/content_organizer.py:421`) walks path segments backwards, skipping a fixed `skip_dirs` set (`home`, `users`, `documents`, `downloads`, …) — but not the user's own directory name. Observed: `~/Downloads/index.html` → `Technical/Web/alyshialedlie/index.html` ("downloads" skipped, then `alyshialedlie` accepted as the project). Any file organized from `~/Downloads`/`~/Desktop` whose extension carries project-name expansion gets this junk segment. Action: skip segments equal to `Path.home().name` (or any direct child of `/Users` / `/home`), and add a regression test for the home-subdirectory case.
+
 ### `generate_schema` fidelity losses vs the retired legacy implementation
 
 Two divergences found while re-pointing the golden snapshot tests from the legacy `scripts/file_organizer.py` to the live `FileProcessor.generate_schema` look like losses rather than intent — investigate and either restore or bless.
