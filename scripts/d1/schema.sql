@@ -27,8 +27,11 @@ CREATE TABLE IF NOT EXISTS files (
   organization_reason TEXT,
   extracted_text TEXT,
   extracted_text_length INTEGER DEFAULT 0,
+  ocr_confidence REAL,
+  detected_language TEXT,
   schema_type TEXT,
   schema_data JSON,
+  kie_fields JSON,
   image_width INTEGER,
   image_height INTEGER,
   has_faces BOOLEAN,
@@ -258,3 +261,25 @@ CREATE TABLE IF NOT EXISTS key_value_store (
   db_created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   db_updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Merge events (entity dedup audit trail with owl:sameAs semantics)
+-- MergeEventType: category, company, person, location, file
+CREATE TABLE IF NOT EXISTS merge_events (
+  id TEXT PRIMARY KEY,
+  target_entity_type TEXT NOT NULL,
+  target_entity_id INTEGER NOT NULL,
+  target_canonical_id TEXT,
+  source_entity_ids JSON NOT NULL,
+  source_canonical_ids JSON,
+  merge_reason TEXT,
+  confidence REAL DEFAULT 1.0,
+  performed_by TEXT,
+  performed_at DATETIME,
+  jsonld JSON,
+  is_rolled_back BOOLEAN DEFAULT 0,
+  rolled_back_at DATETIME,
+  rolled_back_by TEXT
+);
+
+CREATE INDEX IF NOT EXISTS ix_merge_entity_type ON merge_events(target_entity_type);
+CREATE INDEX IF NOT EXISTS ix_merge_performed_at ON merge_events(performed_at);

@@ -14,6 +14,18 @@ per instance).
 
 from typing import Any, Dict, Union
 
+# Single source for the GameAssets subcategory→folder map, shared by both
+# taxonomies below (previously duplicated verbatim in each). Consumers that
+# mutate a taxonomy already deepcopy it first, so the shared reference is safe.
+GAME_ASSETS_PATHS: Dict[str, str] = {
+    'sprites': 'GameAssets/Sprites',
+    'textures': 'GameAssets/Textures',
+    'fonts': 'GameAssets/Fonts',
+    'audio': 'GameAssets/Audio',
+    'music': 'GameAssets/Music',
+    'other': 'GameAssets/Other',
+}
+
 CATEGORY_PATHS: Dict[str, Union[str, Dict[str, str]]] = {
     'images': {
         'screenshots': 'Images/Screenshots',
@@ -73,14 +85,7 @@ CATEGORY_PATHS: Dict[str, Union[str, Dict[str, str]]] = {
         'contracts': 'Business/Contracts',
         'other': 'Business/Other'
     },
-    'game_assets': {
-        'sprites': 'GameAssets/Sprites',
-        'textures': 'GameAssets/Textures',
-        'fonts': 'GameAssets/Fonts',
-        'audio': 'GameAssets/Audio',
-        'music': 'GameAssets/Music',
-        'other': 'GameAssets/Other'
-    },
+    'game_assets': GAME_ASSETS_PATHS,
     'fonts': {
         'truetype': 'CreativeWork/Fonts/TrueType',
         'opentype': 'CreativeWork/Fonts/OpenType',
@@ -184,14 +189,7 @@ CONTENT_CATEGORY_PATHS: Dict[str, Any] = {
         "meeting_notes": "Organization",  # Gets Meeting Notes subfolder after company
         "other": "Organization",
     },
-    "game_assets": {
-        "audio": "GameAssets/Audio",
-        "music": "GameAssets/Music",
-        "sprites": "GameAssets/Sprites",
-        "textures": "GameAssets/Textures",
-        "fonts": "GameAssets/Fonts",
-        "other": "GameAssets/Other",
-    },
+    "game_assets": GAME_ASSETS_PATHS,
     "fonts": {
         "truetype": "CreativeWork/Fonts/TrueType",
         "opentype": "CreativeWork/Fonts/OpenType",

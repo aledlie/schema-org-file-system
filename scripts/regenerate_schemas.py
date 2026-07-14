@@ -20,20 +20,21 @@ from datetime import datetime
 from typing import Dict, Any, Optional
 from urllib.parse import quote
 
-# Add src directory to path
-sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+# Import through the src package boundary (the canonical public API) rather
+# than re-reaching into the raw modules with src/ on the path.
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from generators import (
+from src import (
     DocumentGenerator,
     ImageGenerator,
     VideoGenerator,
     AudioGenerator,
     CodeGenerator,
     DatasetGenerator,
-    ArchiveGenerator
+    ArchiveGenerator,
+    MetadataEnricher,
 )
-from base import PropertyType
-from enrichment import MetadataEnricher
+from src.base import PropertyType
 
 
 def get_generator_for_type(schema_type: str, entity_id: str):
@@ -144,9 +145,14 @@ def regenerate_schema(
     # Preserve existing properties that we don't regenerate
     schema = generator.to_dict()
 
-    # Preserve these properties from existing schema if present
+    # Preserve properties this regeneration step doesn't rebuild. Beyond the
+    # media/enrichment fields, keep the identity/provenance keys that
+    # FileProcessor.generate_schema now emits (identifier/sameAs/publisher for
+    # ScholarlyArticle, description from CLIP/OCR) so re-running this script
+    # doesn't silently strip them when the source file is missing/moved.
     preserve_keys = ['abstract', 'text', 'keywords', 'author', 'creator',
-                     'width', 'height', 'duration', 'bitrate']
+                     'width', 'height', 'duration', 'bitrate',
+                     'identifier', 'sameAs', 'publisher', 'description']
     for key in preserve_keys:
         if key in existing_schema and key not in schema:
             schema[key] = existing_schema[key]
