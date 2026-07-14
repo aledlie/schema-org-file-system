@@ -51,6 +51,8 @@ dependencies = [
     "requests>=2.32.0",
     "tqdm>=4.67.0",
     "PyYAML>=6.0.0",
+    "fastapi>=0.115.0",
+    "pydantic>=2.9.0",
 ]
 
 [project.optional-dependencies]
