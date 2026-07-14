@@ -6,7 +6,7 @@
 
 **Result: 53 confirmed findings** (5 high, 45 medium, 3 low), grouped into 7 duplication zones below.
 
-**Progress:** 3 of 53 resolved (`cc06190` — the three game-keyword findings; priority #3). 50 open.
+**Progress:** 8 of 53 resolved (game keywords `cc06190`; `ae561f8` `42a5ae3` `4a0d98d` `ecdcdf6` `f085830` this session), plus the archive half of the software/archive finding (`6521f65`). ~45 open.
 
 **Structural note that keeps this list honest:** `src/` imports heavily *from* `scripts/shared` (`GAME_SPRITE_KEYWORDS`, `SCREENSHOT_KEYWORDS`, `SCREENSHOT_PATTERNS`/`DOCUMENT_PATTERNS`, `IMAGE_EXTENSIONS_WIDE`, `classify_by_ocr`, `kie_*` are single-sourced via `from shared.x import y`). Those were spot-checked and are shared single sources, not copies — everything listed below is a genuine second implementation or second data table.
 
@@ -187,8 +187,9 @@ Hand-maintained D1 DDL mirroring the ORM table-for-table, already stale: `files`
 - **Divergence:** SQL is missing merged_into_id (models.py:655), the indexed geohash column (models.py:665), and the composite indexes ix_locations_geo / ix_locations_city_state (models.py:678-679). ORM timestamp is created_at only (models.py:671); SQL has db_created_at/db_updated_at instead (schema.sql:125-126).
 - **Recommendation:** Regenerate from Base.metadata to pick up geohash and the spatial composite indexes.
 
-### [MEDIUM] CREATE TABLE file_categories / file_companies / file_people / file_locations
+### [MEDIUM] CREATE TABLE file_categories / file_companies / file_people / file_locations — RESOLVED (`42a5ae3`)
 
+- **Resolution:** Replaced the two invalid column-level `PRIMARY KEY` declarations per table with a single composite `PRIMARY KEY (file_id, <other>_id)` table constraint (+ `NOT NULL` on the key columns). Full `schema.sql` now executes end-to-end under SQLite / `wrangler d1 execute`; previously the first association table errored with "more than one primary key". (Surgical fix; the broader "regenerate all tables from Base.metadata" recommendation for the other D1 findings still stands.)
 - **Kind:** diverged-copy
 - **Script:** `scripts/d1/schema.sql:133-181`
 - **Src counterpart:** `src/storage/models.py:96-133` — `file_categories / file_companies / file_people / file_locations association Tables`
@@ -296,8 +297,9 @@ The `GAME_SPRITE_KEYWORDS` pattern (single-homed in `shared.constants`, imported
 
 > **Update (`cc06190`):** the three game-keyword findings below (`GAME_FONT_KEYWORDS`, `GAME_AUDIO_KEYWORDS`, `GAME_MUSIC_KEYWORDS`) are **resolved** — all three are now single-homed in `shared.constants` and consumed by `ContentOrganizer`, with the bidirectional divergence unioned (src's ~34 extra terms + the script's `'spellcast'` fix). Eval re-run: accuracy 0.8596→0.8624, macro F1 0.4619→0.4647, no category regression. The remaining findings in this zone (extension sets, the `filename_classifier.py` copies, entity/business/legal/journal/font/sprite tables) are still open.
 
-### [MEDIUM] IMAGE_EXTENSIONS / IMAGE_EXTENSIONS_WIDE
+### [MEDIUM] IMAGE_EXTENSIONS / IMAGE_EXTENSIONS_WIDE — RESOLVED (`4a0d98d`)
 
+- **Resolution:** `batch_processor._IMAGE_EXTENSIONS` now derives from `shared.constants.IMAGE_EXTENSIONS` (base set + `{.tiff,.tif}`) with the prior literal kept as an ImportError fallback. Membership is byte-for-byte identical to the old frozenset (verified), so scan behavior is unchanged — this single-sources the vocabulary but does NOT yet reconcile the `.svg/.ico/.raw` membership question the finding raises (still open).
 - **Kind:** diverged-copy
 - **Script:** `scripts/shared/constants.py:17-18`
 - **Src counterpart:** `src/pipeline/batch_processor.py:9-11` — `_IMAGE_EXTENSIONS`
@@ -305,8 +307,9 @@ The `GAME_SPRITE_KEYWORDS` pattern (single-homed in `shared.constants`, imported
 - **Divergence:** src's private frozenset includes .tiff/.tif (like the WIDE variant) but omits .svg/.ico/.raw; shared's narrow IMAGE_EXTENSIONS omits .tiff/.tif. Neither set exactly equals the other, so directory scans in BatchProcessor (line 112) accept a different file population than scripts using the shared tables (e.g. scripts/organize_to_existing.py line 32). Note the duplication direction is src copying scripts/shared: shared.constants is the de-facto canonical table — src/pipeline/file_processor.py:52 already imports IMAGE_EXTENSIONS_WIDE from shared.constants, and batch_processor itself imports other shared.constants symbols (lines 14-15).
 - **Recommendation:** Have batch_processor import the extension set from shared.constants like file_processor.py does (keep the local frozenset only as the ImportError fallback inside the existing try block, or move the extension tables into src and have scripts/shared re-export them), then pick one canonical member list so scan filters agree.
 
-### [MEDIUM] _IMAGE_EXTENSIONS
+### [MEDIUM] _IMAGE_EXTENSIONS — RESOLVED (`ecdcdf6`)
 
+- **Resolution:** Now derived as `(IMAGE_EXTENSIONS | {.tiff,.tif}) - {.gif}` from `shared.constants`. Membership unchanged (verified); the `.gif` exclusion (animated GIFs aren't document scans) is now explicit rather than a silent omission.
 - **Kind:** diverged-copy
 - **Script:** `scripts/collect_kie_training_data.py:46`
 - **Src counterpart:** `src/pipeline/batch_processor.py:9-11` — `_IMAGE_EXTENSIONS`
@@ -415,6 +418,7 @@ The `GAME_SPRITE_KEYWORDS` pattern (single-homed in `shared.constants`, imported
 - **Evidence:** src 97: 'journal': ['journal', 'diary', 'dream', 'reflection', 'memoir'] — all five words appear in script 1607-1616 journal_keywords = ["dream", "diary", "journal", "thoughts", "reflection", "memoir", ...]; both route to personal/journal.
 - **Divergence:** Script adds 'thoughts', 'nightbefore', 'morningafter', 'dayof' which never made it into the content-tier vocabulary.
 - **Recommendation:** Single-home the journal keyword list in src and import it in the script section.
+- **Implementation note (2026-07-14):** Not a mechanical single-home. The script list (`dream, diary, journal, thoughts, reflection, memoir, nightbefore, morningafter, dayof`) is a superset of `content_classifier`'s 5 (`journal, diary, dream, reflection, memoir`). Folding the union into one shared constant that `content_classifier` consumes would add `thoughts/nightbefore/morningafter/dayof` to the content tier's journal scoring (which scores text+filename), changing classification. Requires an eval run — reclassify to the eval-gated tier, not a safe win.
 
 ### [MEDIUM] corporate_legal_patterns + contract_legal_patterns + legal_patterns + legal_keywords
 
@@ -433,6 +437,7 @@ The `GAME_SPRITE_KEYWORDS` pattern (single-homed in `shared.constants`, imported
 - **Evidence:** Script 1379 archive_extensions = {".zip", ".tar", ".gz", ".rar", ".7z", ".bz2"} vs mime_classifier 91-95: '.zip' plus ['.tar', '.gz', '.bz2', '.7z', '.rar'] — identical six-member set. Script 618-629 software_extensions includes ".dmg", ".pkg", ".msi", ".deb", ".rpm", ".exe" vs mime_classifier 98: ['.dmg', '.pkg', '.exe', '.msi', '.deb', '.rpm'] — identical six installers.
 - **Divergence:** Script extends software with .app/.snap/.flatpak/.appimage and routes to technical/software_packages and technical/archives; mime_classifier routes to software/installers and archives/* in the type-organizer's CATEGORY_PATHS taxonomy. Different CLI modes, but the extension membership is the same data maintained twice.
 - **Recommendation:** Share the archive/software extension-set constants (single-home in shared constants or src.organizers) and keep only the per-organizer destination mapping local.
+- **Implementation note (2026-07-14):** Split outcome. The ARCHIVE set (`.zip,.tar,.gz,.rar,.7z,.bz2`) is identical on both sides and was single-homed into `shared.constants.ARCHIVE_EXTENSIONS` in `6521f65` (both consumers now reference it; `mime_classifier` keeps its `.zip` special-case). The SOFTWARE set is NOT identical: the script has 10 members incl. `.app/.snap/.flatpak/.appimage`; `mime_classifier` has only 6. Single-homing software would either add those 4 to `mime_classifier` (changing where the type-organizer routes `.app/.snap/.flatpak/.appimage`) or subset them — a membership-reconciliation decision, not a mechanical move. Software half deferred.
 
 ### [MEDIUM] _GENERIC_FILENAME_PATTERNS
 
@@ -473,6 +478,7 @@ Independent small copies: `compute_file_id` verbatim; `DEFAULT_DB_PATH` defined 
 - **Evidence:** Both files carry the same distinctive comment — script: "pypdf and PIL are imported here (even though extraction now lives in src.analyzers.text_extractor) so that OCR_AVAILABLE keeps gating the pipeline on the full dependency set, matching historical behavior."; src: identical minus the word "now" — followed by the same try-block: `import pypdf  # noqa: F401 — availability probe`, `from PIL import Image  # noqa: F401 — availability probe`, `from shared.ocr_classifier import OCR_AVAILABLE  # shared module-level flag; avoids duplicate probe`, and the identical nested HEIC block `from pillow_heif import register_heif_opener` / `register_heif_opener()` with `except ImportError: pass`, then `except ImportError: OCR_AVAILABLE = False`.
 - **Divergence:** Script's probe additionally imports shared.file_ops.resolve_collision, shared.filename_utils.is_generic_filename, and shared.status.ProcessingStatus as availability probes, and prints "Warning: OCR libraries not available. Install python-doctr[torch], Pillow, pypdf" on failure; src's copy instead probes SCREENSHOT_KEYWORDS/classify_by_ocr/extract_ocr_with_confidence and silently stubs them to None/{} on failure. So the two OCR_AVAILABLE flags can disagree (e.g. if shared.status fails to import, only the script's flag goes False).
 - **Recommendation:** Delete the script's probe and import the flag from the canonical module (`from src.organizers.content_organizer import OCR_AVAILABLE`), which already registers the HEIC opener as a side effect; ContentOrganizer.__init__ already defaults ocr_available=None to its own OCR_AVAILABLE (content_organizer.py line 231), so the script can also stop passing ocr_available=. If gating on file_ops/filename_utils/status is genuinely required, fold those extra probes into the src block first, then delegate.
+- **Implementation note (2026-07-14):** Not behavior-preserving. The two `OCR_AVAILABLE` flags probe different dependency sets: the script's probe also imports `shared.file_ops.resolve_collision`, `shared.filename_utils.is_generic_filename`, `shared.status.ProcessingStatus` (and prints an install hint on failure), while the src copy probes SCREENSHOT_KEYWORDS/classify_by_ocr/extract_ocr_with_confidence and silently stubs to None/{}. Importing the src flag would make the script's OCR gating blind to file_ops/filename_utils/status availability. Consolidation requires folding those extra probes into the src block first.
 
 ### [MEDIUM] run() --run-migration branch
 
@@ -482,6 +488,7 @@ Independent small copies: `compute_file_id` verbatim; `DEFAULT_DB_PATH` defined 
 - **Evidence:** Identical 4-line invocation sequence in both: `print(f"\n{'='*60}")`, `print("Running ID Generation Migration")`, `print(f"{'='*60}\n")`, `run_migration(...)`, followed by the identical completion string `print("\nMigration complete. Canonical IDs have been generated for existing records.")`, both preceded by the same local `from storage.migration import run_migration`.
 - **Divergence:** Script wraps the block in `if GRAPH_STORE_AVAILABLE:` with an else branch printing "Error: GraphStore not available. Cannot run migration." and passes args.db_path directly; src/cli.py cmd_migrate has no availability guard but adds a default fallback `db_path = args.db_path or DEFAULT_DB_PATH`.
 - **Recommendation:** Make the script's --run-migration branch delegate to the canonical handler (`from src.cli import cmd_migrate; cmd_migrate(args); return`), optionally keeping the GRAPH_STORE_AVAILABLE guard around the call — or extract a shared helper (e.g. a banner-owning wrapper in src/storage/migration.py) that both src/cli.py cmd_migrate and the script call, so the banner/completion strings and db-path defaulting live in one place.
+- **Implementation note (2026-07-14):** Not behavior-preserving as a direct delegation. `cmd_migrate` (src/cli.py) differs from the script branch two ways: it defaults `db_path = args.db_path or DEFAULT_DB_PATH` (the script passes `args.db_path` through with no fallback), and it lacks the script's `if GRAPH_STORE_AVAILABLE:` guard + "GraphStore not available" error branch. Naive delegation would drop the guard and add a default. Safe consolidation needs a shared helper that preserves both, or keeping the guard around the delegated call.
 
 ### [MEDIUM] kie_result_to_schema_org / _KIE_SCHEMA_MIN_CONFIDENCE / KIE_FIELD_CLASSES
 
@@ -501,8 +508,9 @@ Independent small copies: `compute_file_id` verbatim; `DEFAULT_DB_PATH` defined 
 - **Divergence:** Script version is a repo-root-anchored absolute Path (CWD-independent); src version is a CWD-relative string that only resolves when run from project root. The raw literal 'results/file_organization.db' is additionally repeated as a hardcoded default argument in src/storage/graph_store.py:67, src/storage/kv_store.py:44 and 755, src/storage/migration.py:57/552/826, src/storage/person_migration.py:571, and src/api/timeline_api.py:25/328 (src/constants.py has no DB-path constant).
 - **Recommendation:** Define one canonical DEFAULT_DB_PATH in src/constants.py (repo-root-anchored, like the script version), reference it from src/cli.py and every default argument in src/storage/{graph_store,kv_store,migration,person_migration}.py and src/api/timeline_api.py, and have scripts/shared/db_utils.py import it from src instead of redefining it.
 
-### [LOW] compute_file_id
+### [LOW] compute_file_id — RESOLVED (`ae561f8`)
 
+- **Resolution:** Deleted; it was dead code (defined, never called) duplicating `File.generate_id`. Removed the function and its now-unused `hashlib` import from `scripts/update_report_with_labels.py`.
 - **Kind:** identical-copy
 - **Script:** `scripts/update_report_with_labels.py:18-20`
 - **Src counterpart:** `src/storage/models.py:233-236` — `File.generate_id`
@@ -510,8 +518,9 @@ Independent small copies: `compute_file_id` verbatim; `DEFAULT_DB_PATH` defined 
 - **Divergence:** None in logic; parameter renamed filepath vs path. The script copy is also dead code: grep shows compute_file_id is defined but never called anywhere in the repo.
 - **Recommendation:** Delete compute_file_id from the script (it is unused). If the ID computation is ever needed there, import File.generate_id from src.storage.models instead.
 
-### [LOW] _SCREENSHOT_RE (pass 4 screenshot check)
+### [LOW] _SCREENSHOT_RE (pass 4 screenshot check) — RESOLVED (`f085830`)
 
+- **Resolution:** Dropped `_SCREENSHOT_RE` and the `SCREENSHOT_PATTERNS` import; pass 4 now reads the precomputed `is_screenshot` feature each sample already carries. Verified equivalent to the old regex on all 6037 test samples (0 disagreements) and relabeled output byte-identical HEAD-vs-now.
 - **Kind:** reimplementation
 - **Script:** `scripts/relabel_test_set.py:90, 188-191`
 - **Src counterpart:** `src/ml/feature_extractor.py:87, 153-156` — `FileFeatureExtractor._matches_patterns / is_screenshot feature`
