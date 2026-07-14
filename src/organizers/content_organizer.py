@@ -19,7 +19,12 @@ from typing import Any, Dict, List, Optional, Tuple
 from src.classifiers.entity_detector import _has_human_name_signal
 from src.organizers.base_organizer import BaseOrganizer
 from src.organizers.category_config import CONTENT_CATEGORY_PATHS
-from shared.constants import GAME_SPRITE_KEYWORDS
+from shared.constants import (
+    GAME_AUDIO_KEYWORDS,
+    GAME_FONT_KEYWORDS,
+    GAME_MUSIC_KEYWORDS,
+    GAME_SPRITE_KEYWORDS,
+)
 from shared.file_ops import resolve_collision, should_skip_file as _shared_should_skip_file
 from shared.filename_classifier import (
     RESEARCH_CATEGORY,
@@ -348,30 +353,10 @@ class ContentOrganizer(BaseOrganizer):
             if key not in _screenshots:
                 _screenshots[key] = f"Media/Photos/Screenshots/{key.title()}"
 
-        # Game asset detection patterns
-        self.game_audio_keywords: List[str] = [
-            'bolt', 'spell', 'magic', 'cast', 'chirp', 'crossbow', 'dagger',
-            'sword', 'arrow', 'bow', 'heal', 'potion', 'lightning', 'fire',
-            'ice', 'acid', 'poison', 'explosion', 'blast', 'summon', 'dispel',
-            'petrification', 'neutralize', 'slow', 'darkness', 'achievement',
-            'quest', 'unlock', 'lock', 'door', 'chest', 'coin', 'pickup',
-            'attack', 'hit', 'damage', 'death', 'footstep', 'jump', 'land',
-            'monster', 'creature', 'enemy', 'boss', 'battle', 'combat',
-            'starving', 'hunger', 'thirst', 'eat', 'drink', 'sleep',
-            'fiddle', 'lute', 'mandoline', 'glockenspiel', 'instrument',
-            'identify', 'greater', 'mental',
-        ]
-
-        self.game_music_keywords: List[str] = [
-            'battle', 'boss', 'dungeon', 'castle', 'forest', 'town', 'village',
-            'temple', 'ruins', 'cave', 'mountain', 'ocean', 'desert', 'snow',
-            'victory', 'defeat', 'theme', 'menu', 'credits', 'intro', 'outro',
-            'mysterious', 'dark', 'light', 'epic', 'calm', 'peaceful', 'tension',
-            'chaos', 'hope', 'despair', 'triumph', 'march', 'symphony', 'monotony',
-            'drakalor', 'altar', 'lawful', 'chaotic', 'neutral', 'alignment',
-            'dwarven', 'elven', 'orcish', 'halls', 'abandon', 'corrupting',
-            'breeze', 'clockwork', 'knowledge', 'oddisey', 'final', 'welcome',
-        ]
+        # Game asset detection patterns — single-homed in shared.constants
+        # (same lists the eval baseline uses).
+        self.game_audio_keywords: List[str] = GAME_AUDIO_KEYWORDS
+        self.game_music_keywords: List[str] = GAME_MUSIC_KEYWORDS
 
         # Single-homed in shared.constants (same list the production script used).
         self.game_sprite_keywords: List[str] = GAME_SPRITE_KEYWORDS
@@ -390,12 +375,8 @@ class ContentOrganizer(BaseOrganizer):
             re.compile(r'^(weapon|armor|item|sprite|frame|tile)\d*_', re.IGNORECASE),  # game prefixes
         ]
 
-        # Game font sprite sheet patterns
-        self.game_font_keywords: List[str] = [
-            'broguefont', 'gamefont', 'pixelfont', 'bitfont', 'font_',
-            '_font', 'fontsheet', 'font_atlas', 'fontatlas', 'charset',
-            'glyphs', 'tilefont', 'asciifont', 'ascii_font',
-        ]
+        # Game font sprite sheet patterns — single-homed in shared.constants
+        self.game_font_keywords: List[str] = GAME_FONT_KEYWORDS
 
     # ------------------------------------------------------------------ #
     # Classification methods                                               #
