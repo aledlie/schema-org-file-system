@@ -26,6 +26,15 @@ GAME_ASSETS_PATHS: Dict[str, str] = {
     'other': 'GameAssets/Other',
 }
 
+# Single source for the CreativeWork fonts subcategory→folder map, shared by
+# both taxonomies below (previously duplicated verbatim in each).
+FONTS_PATHS: Dict[str, str] = {
+    'truetype': 'CreativeWork/Fonts/TrueType',
+    'opentype': 'CreativeWork/Fonts/OpenType',
+    'web': 'CreativeWork/Fonts/Web',
+    'other': 'CreativeWork/Fonts/Other',
+}
+
 CATEGORY_PATHS: Dict[str, Union[str, Dict[str, str]]] = {
     'images': {
         'screenshots': 'Images/Screenshots',
@@ -92,12 +101,7 @@ CATEGORY_PATHS: Dict[str, Union[str, Dict[str, str]]] = {
         'other': 'Business/Other'
     },
     'game_assets': GAME_ASSETS_PATHS,
-    'fonts': {
-        'truetype': 'CreativeWork/Fonts/TrueType',
-        'opentype': 'CreativeWork/Fonts/OpenType',
-        'web': 'CreativeWork/Fonts/Web',
-        'other': 'CreativeWork/Fonts/Other'
-    },
+    'fonts': FONTS_PATHS,
     'other': 'Other'
 }
 
@@ -196,12 +200,7 @@ CONTENT_CATEGORY_PATHS: Dict[str, Any] = {
         "other": "Organization",
     },
     "game_assets": GAME_ASSETS_PATHS,
-    "fonts": {
-        "truetype": "CreativeWork/Fonts/TrueType",
-        "opentype": "CreativeWork/Fonts/OpenType",
-        "web": "CreativeWork/Fonts/Web",
-        "other": "CreativeWork/Fonts/Other",
-    },
+    "fonts": FONTS_PATHS,
     "media": {
         "photos": {
             "screenshots": {
