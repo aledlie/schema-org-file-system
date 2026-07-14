@@ -101,6 +101,18 @@ def timeline_db(tmp_path: Path) -> Path:
     return db
 
 
+class TestConstruction:
+    def test_missing_db_raises_file_not_found(self, tmp_path):
+        with pytest.raises(FileNotFoundError, match="Timeline database not found"):
+            TimelineAPI(tmp_path / "nonexistent.db")
+
+    def test_missing_db_does_not_create_phantom_file(self, tmp_path):
+        missing = tmp_path / "nonexistent.db"
+        with pytest.raises(FileNotFoundError):
+            TimelineAPI(missing)
+        assert not missing.exists()
+
+
 class TestGetSessions:
     def test_filters_empty_and_orders_ascending(self, timeline_db):
         sessions = TimelineAPI(timeline_db).get_sessions()

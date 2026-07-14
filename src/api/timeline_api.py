@@ -34,6 +34,15 @@ class TimelineAPI:
 
     def __init__(self, db_path: Path | str | None = None) -> None:
         self.db_path = db_path
+        # Fail early with a clear message instead of an opaque "no such table"
+        # from the first query (and avoid sqlite3.connect creating an empty
+        # phantom DB file at the missing path).
+        effective_path = Path(db_path) if db_path else Path(DB_PATH)
+        if not effective_path.exists():
+            raise FileNotFoundError(
+                f"Timeline database not found: {effective_path}. "
+                "Run the file organizer at least once to create it."
+            )
 
     def get_sessions(self) -> list[dict[str, Any]]:
         """Get all non-empty organization sessions with their stats, oldest first."""

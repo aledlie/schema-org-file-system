@@ -240,7 +240,11 @@ def cmd_timeline(args: argparse.Namespace) -> None:
     sys.path.insert(0, str(SCRIPTS_DIR))  # timeline_api imports shared.db_utils
     from src.api.timeline_api import run as timeline_run
 
-    timeline_run(TimelineInputs.from_namespace(args))
+    try:
+        timeline_run(TimelineInputs.from_namespace(args))
+    except FileNotFoundError as exc:
+        print(f"Error: {exc}")
+        sys.exit(1)
 
 
 # --------------------------------------------------------------------------- #
