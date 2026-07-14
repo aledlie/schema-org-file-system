@@ -73,6 +73,20 @@ Priority order from the review:
 
 Subsumes the pre-existing item below (generator import list) into the same cleanup effort.
 
+Zones 1 (timeline) and the three game-keyword findings in the keyword zone are now **resolved** (`a2146fe`, `1d495ed`, `cc06190`) — see the review doc's resolution notes.
+
+### TimelineAPI post-consolidation cleanups (code-review follow-ups)
+
+Low-severity findings from the code review of the timeline consolidation that were verified real but deliberately deferred; each is pre-existing (inherited verbatim from the old script) or optional.
+
+**Status:** Open — deferred, low value
+**Priority:** P4
+**Source:** code-reviewer pass on the TimelineAPI consolidation, 2026-07-14
+
+1. **Always-empty first-session delta fields.** `TimelineAPI.calculate_session_changes` (`src/api/timeline_api.py`) returns `new_categories: []` and `category_changes: []` only in the `previous is None` branch — always empty, never populated, and absent from the non-first branch (asymmetric key set). The frontend (`_site/run_timeline.html`) does not read them. Verbatim from the pre-consolidation script; removing them diverges from the snapshot-parity baseline, so fold into a future change that intentionally re-records that baseline.
+2. **3N+1 DB connections per document.** `TimelineAPI.generate_document` opens a fresh `shared.db_utils.db_connection` for each of the three per-session enrichments plus one for cumulative stats — 3N+1 connection cycles for N sessions. Pre-existing from the script and negligible at realistic session counts; if it ever matters, thread one connection through the enrichment methods.
+3. **No test for a present-but-schemaless DB.** The missing-DB path is now guarded and tested (`1d495ed`), but a DB file that exists yet lacks the `organization_sessions`/`files`/`categories` tables still raises a raw `sqlite3.OperationalError`. Add a test (and optionally a friendlier error) if this becomes a real failure mode.
+
 ### `regenerate_schemas.py` mirrors the src generator import list
 
 **Status:** Open
