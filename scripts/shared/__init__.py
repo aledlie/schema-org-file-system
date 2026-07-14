@@ -1,11 +1,17 @@
-"""Shared utilities for scripts."""
+"""Shared utilities for scripts.
 
-from shared.clip_cache import (
-    CLIP_CACHE_AVAILABLE,
-    get_cached_embedding,
-    get_cached_embeddings_batch,
-)
-from shared.clip_utils import CLIP_AVAILABLE, CLIPClassifier
+Only lightweight, non-ML imports are re-exported here.  Heavy dependencies
+(CLIP, OCR, KIE) are intentionally *not* eagerly imported so that scripts
+which only need constants or file-ops do not pay the torch/open_clip load
+cost (~1.8 s, several hundred MB RSS).  Import those directly from their
+submodules when needed:
+
+    from shared.clip_utils import CLIPClassifier, CLIP_AVAILABLE
+    from shared.ocr_classifier import extract_ocr_text, is_ocr_available
+    from shared.kie_utils import extract_kie_fields, KIE_AVAILABLE
+    from shared.clip_cache import get_cached_embedding, CLIP_CACHE_AVAILABLE
+"""
+
 from shared.constants import (
     CLIP_CATEGORY_PROMPTS,
     CLIP_CONTENT_LABELS,
@@ -23,29 +29,8 @@ from shared.constants import (
 )
 from shared.db_utils import DEFAULT_DB_PATH, db_connection, get_db_connection
 from shared.file_ops import resolve_collision
-from shared.kie_utils import (
-    KIE_AVAILABLE,
-    KIEField,
-    KIEResult,
-    extract_kie_fields,
-    extract_kie_fields_pdf,
-    is_kie_available,
-)
-from shared.ocr_classifier import (
-    OCRResult,
-    extract_ocr_pdf_with_confidence,
-    extract_ocr_text,
-    extract_ocr_text_pdf,
-    extract_ocr_with_confidence,
-    is_ocr_available,
-)
 
 __all__ = [
-    "CLIP_CACHE_AVAILABLE",
-    "get_cached_embedding",
-    "get_cached_embeddings_batch",
-    "CLIP_AVAILABLE",
-    "CLIPClassifier",
     "CLIP_CATEGORY_PROMPTS",
     "CLIP_CONTENT_LABELS",
     "CONTENT_ABBREVIATIONS",
@@ -63,16 +48,4 @@ __all__ = [
     "db_connection",
     "get_db_connection",
     "resolve_collision",
-    "KIE_AVAILABLE",
-    "KIEField",
-    "KIEResult",
-    "extract_kie_fields",
-    "extract_kie_fields_pdf",
-    "is_kie_available",
-    "OCRResult",
-    "extract_ocr_pdf_with_confidence",
-    "extract_ocr_text",
-    "extract_ocr_text_pdf",
-    "extract_ocr_with_confidence",
-    "is_ocr_available",
 ]
