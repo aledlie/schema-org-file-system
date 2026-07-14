@@ -40,7 +40,7 @@ Technical notes from the research: `P31` (instance-of) checks against class QIDs
 
 Missing unit test coverage for AI-runtime paths required to reach 80% overall coverage.
 
-**Status:** Open
+**Status:** Done — commits 232ef52, 3d5ee56 (also fixed organizer._persist_to_graph_store → self)
 **Priority:** P2
 **Source:** coverage observation, 2026-07-13
 
@@ -55,20 +55,19 @@ Test design approach: Stub the expensive classifiers (`CLIPClassifier.encode`, `
 
 ### Non-AI-path coverage tail + developer docs (migrated from retired TEST_AND_REFACTOR_PLAN.md)
 
-**Status:** Open
+**Status:** Partially done — commit 8eaf056 brought `validator.py` 28% → 100% and overall to 82%.
 **Priority:** P3
 **Source:** coverage measurement + doc-TODO migration, 2026-07-14
 
-The 2026-07-14 coverage run (`pytest tests/unit tests/integration --cov=src`) measured **79% overall** (7,365 stmts) — hitting the plan's Month-1 75% bar but short of its 80%/85% goals. The AI-path portion of the gap is tracked in the item above; the remaining drag is non-AI glue with little or no direct test:
+The 2026-07-14 coverage run (`pytest tests/unit tests/integration --cov=src`) measured **79% overall** (7,365 stmts) — hitting the plan's Month-1 75% bar but short of its 80%/85% goals. 2026-07-14 session raised this to **82%**. Remaining gaps in non-AI glue:
 
-- `src/validator.py` 28% · `src/integration.py` 23% · `src/cost_integration.py` 0% · `src/utils/tracking.py` 26% · `src/error_tracking.py` 50% · `src/api/schema_org_api.py` 64% (single-entity-by-id + remaining per-type bulk endpoints; `tests/integration/test_schema_org_api.py` covers the rest).
+- `src/integration.py` 23% · `src/cost_integration.py` 0% · `src/utils/tracking.py` 26% · `src/error_tracking.py` 50% · `src/api/schema_org_api.py` 64%.
 
-Two documentation TODOs also carry over from the retired plan (both were never done):
+One documentation TODO also carries over from the retired plan (never done):
 
 1. **Docstring pass** — the plan's "update all docstrings" step landed only partially.
-2. ~~**Generated API docs** — `pdoc3 --html --output-dir docs/api src/` was specced but never run; no generated reference exists.~~ **DONE (`bc67838`)** — 52-page pdoc3 HTML reference generated into `docs/api/` (src/ + scripts/ on `PYTHONPATH` for the `shared.*`/intra-src bare imports; `--skip-errors` guard). Docstring pass (TODO 1) still open.
 
-Storage layer (90%), generators+base (91%), and enrichment (98%) already meet their targets — no further work needed there.
+Storage layer (90%), generators+base (91%), enrichment (98%), and validator (100%) already meet their targets.
 
 
 ### scripts/ ↔ src/ duplication cleanup (53 confirmed findings)
@@ -84,28 +83,10 @@ Full findings with line-level evidence, divergence notes, and per-item recommend
 Priority order from the review:
 
 1. **Timeline exporter split-brain** — `scripts/generate_timeline_data.py` and the orphaned `src/api/timeline_api.py` both write `_site/timeline_data.json` with incompatible document schemas; consolidate or delete the dead src path.
-2. ~~**`regenerate_schemas.py` metadata-dropping drift** — its copied schema builder's `preserve_keys` omits `identifier`/`sameAs`/`publisher`/`description`, so regeneration silently strips ScholarlyArticle/CLIP metadata that `FileProcessor.generate_schema` now emits.~~ **DONE (`83baf83`)** — the four keys were added to `preserve_keys`.
-3. **Game keyword tables split-brained** — `GAME_AUDIO/MUSIC/FONT_KEYWORDS` duplicated between `scripts/shared/constants.py` and `content_organizer.py` with fixes on *both* sides (src still has the `'cast'`→`'podcast'` false positive the script fixed); single-home like `GAME_SPRITE_KEYWORDS`.
-4. ~~**`scripts/d1/schema.sql` stale ORM mirror** — missing `files` columns (`ocr_confidence`, `detected_language`, `kie_fields`) and the entire `merge_events` table~~ **DONE (`83baf83`)** — the three columns + `merge_events` table & indexes were hand-added to match the ORM (DDL validated in sqlite). ~~The "generate from `Base.metadata` instead of hand-maintaining" root-cause fix remains **open** — the file will drift again on the next model change.~~ **DONE (`9991d8e`)** — `scripts/d1/generate_schema.py` now generates `schema.sql` from `Base.metadata` via SQLAlchemy's DDL compiler; the ORM also shed its duplicate indexes and gained the missing `session_id`, `parent_id`, and junction-table FK indexes. Verified drift-proof: regeneration is a byte-for-byte no-op, and the file's table/index set matches `Base.metadata.create_all` exactly (15 tables / 43 indexes).
-5. Remaining ~40 items (type-organizer taxonomy drift, `filename_classifier` keyword overlaps, ~~`DEFAULT_DB_PATH` ×11 call sites~~ **DONE (`5dcab58`)** — single-sourced from `src/constants.py`, small helper copies) opportunistically when the owning script is touched.
+5. Remaining ~40 items (type-organizer taxonomy drift, `filename_classifier` keyword overlaps) opportunistically when the owning script is touched.
 
-Subsumes the pre-existing item below (generator import list) into the same cleanup effort.
+Subsumes the pre-existing generator import-list item into the same cleanup effort — all resolved in a single 2026-07-14 multi-commit session.
 
-Resolved so far: zone 1 timeline (`a2146fe`), the three game-keyword findings (`1d495ed`, `cc06190`), priority items 2 (regenerate_schemas metadata-drop) and 4 (d1/schema.sql — drift fix `83baf83`, then fully root-caused to a `Base.metadata` generator `9991d8e`), the generator import-list item below (`83baf83`), plus the `DEFAULT_DB_PATH` consolidation (`5dcab58`) — see the review doc's resolution notes.
-
-### TimelineAPI post-consolidation cleanups (code-review follow-ups)
-
-Low-severity findings from the code review of the timeline consolidation that were verified real but deliberately deferred; each is pre-existing (inherited verbatim from the old script) or optional.
-
-**Status:** Open — deferred, low value
-**Priority:** P4
-**Source:** code-reviewer pass on the TimelineAPI consolidation, 2026-07-14
-
-1. ~~**Always-empty first-session delta fields.** `TimelineAPI.calculate_session_changes` returns `new_categories: []` and `category_changes: []` only in the `previous is None` branch — always empty and absent from the non-first branch.~~ **DONE** — the two dead fields were removed; the only change vs the prior output is their disappearance from the first session's `changes` (rest of the document byte-identical).
-2. ~~**3N+1 DB connections per document.** `generate_document` opened a fresh `db_connection` per per-session enrichment plus one for cumulative stats.~~ **DONE (`3eb5167`)** — a `_cursor` helper + optional `conn` parameter let `generate_document` share one connection across all queries (test locks the single-connection behavior); methods still open their own when called standalone.
-3. ~~**No test for a present-but-schemaless DB.** A DB file that exists yet lacks the timeline tables raised a raw `sqlite3.OperationalError`.~~ **DONE (`c14ff16`)** — `TimelineAPI.__init__` checks `sqlite_master` for `organization_sessions` and raises the same actionable `FileNotFoundError` as the missing-file case (clean CLI error + exit 1); test added.
-
-All three follow-ups above are now resolved.
 
 ### Cross-file duplication within `src/` (investigation)
 
@@ -119,23 +100,14 @@ Candidates found so far:
 
 1. **Session/aggregate stats computed at two layers.** `TimelineAPI.get_cumulative_stats` (`src/api/timeline_api.py`, raw sqlite3) and `GraphStore.get_statistics` (`src/storage/graph_store.py:1215`, SQLAlchemy ORM) both aggregate total files / organized count / category + extension breakdowns over the same DB. Likely *intentional* — timeline reads lightweight raw SQL to avoid pulling the ORM (and its torch import weight) into the dashboard path — but the scopes also differ (session-scoped vs global), so confirm the split is deliberate and, if so, document it rather than merging.
 2. **`Technical/` extension map overlap.** `content_organizer.py`'s extension map (~lines 240-330) overlaps `mime_classifier.py`'s extension routing — two extension→category tables that can drift.
-3. ~~**GameAssets folder map defined twice.** `src/organizers/category_config.py` defines the same GameAssets subcategory→folder map at lines 77-82 and 188-193 — a single table copied verbatim; the lower-risk of the three to single-home.~~ **DONE (`83baf83`)** — single-homed as the `GAME_ASSETS_PATHS` module constant, referenced by both taxonomies (consumers already deepcopy before mutating). Candidates 1–2 remain open.
 
-Items 2–3 are recorded in the review doc's "Out-of-scope observations": [`docs/reviews/SCRIPTS_SRC_DUPLICATION_AUDIT.md`](reviews/SCRIPTS_SRC_DUPLICATION_AUDIT.md).
-
-### `regenerate_schemas.py` mirrors the src generator import list
-
-**Status:** Done (`83baf83`)
-**Priority:** P4
-**Source:** scripts↔src code-duplication audit, 2026-07-13
-
-~~`scripts/regenerate_schemas.py:27-37` re-lists the seven generator classes that `src/__init__.py:13-20` already exports, importing them from `generators` via a `sys.path` insert.~~ **DONE** — imports now go through the `src` package boundary (`from src import …`, `MetadataEnricher` included) with the project root on `sys.path`; `PropertyType` comes from `src.base`. The raw-module + `src/`-on-path hack is gone.
+Both candidates are recorded in the review doc's "Out-of-scope observations": [`docs/reviews/SCRIPTS_SRC_DUPLICATION_AUDIT.md`](reviews/SCRIPTS_SRC_DUPLICATION_AUDIT.md).
 
 ### `generate_schema` fidelity losses vs the retired legacy implementation
 
 Two divergences found while re-pointing the golden snapshot tests from the legacy `scripts/file_organizer.py` to the live `FileProcessor.generate_schema` look like losses rather than intent — investigate and either restore or bless.
 
-**Status:** Open — investigation
+**Status:** Done — commit 5a698e7
 **Priority:** P2
 **Source:** legacy-retirement session (golden re-record diff review), 2026-07-13
 
@@ -146,7 +118,7 @@ Migration context: the goldens originally pinned `scripts/file_organizer.py`'s `
 
 ### `scripts/shared/__init__.py` eager CLIP/OCR imports make every `shared.X` import heavy
 
-**Status:** Open
+**Status:** Done — commit 9f69983
 **Priority:** P3
 **Source:** format-classifier consolidation session, 2026-07-14
 
