@@ -137,7 +137,7 @@ def capture_error(
             print(f"  Context: {context}")
         return None
 
-    with sentry_sdk.push_scope() as scope:
+    with sentry_sdk.new_scope() as scope:
         # Set severity level
         scope.level = level
 
@@ -169,7 +169,7 @@ def capture_warning(
         print(f"[WARNING] {message}")
         return None
 
-    with sentry_sdk.push_scope() as scope:
+    with sentry_sdk.new_scope() as scope:
         scope.level = ErrorLevel.WARNING
         if tags:
             for key, value in tags.items():
