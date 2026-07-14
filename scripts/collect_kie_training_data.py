@@ -35,6 +35,7 @@ from pathlib import Path
 # Ensure scripts/shared is importable.
 sys.path.insert(0, str(Path(__file__).parent))
 
+from shared.constants import IMAGE_EXTENSIONS  # noqa: E402
 from shared.ocr_classifier import OCR_AVAILABLE, _get_predictor  # noqa: E402
 
 try:
@@ -42,8 +43,11 @@ try:
 except ImportError:
     DocumentFile = None
 
-# Supported extensions for annotation collection.
-_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".tiff", ".tif", ".bmp", ".webp", ".heic"}
+# Supported extensions for annotation collection: the shared image vocabulary
+# plus TIFF variants, minus .gif (animated GIFs are not document scans, so KIE
+# annotation deliberately skips them). Derived from shared.constants so the
+# vocabulary has one source of truth. Membership is unchanged.
+_IMAGE_EXTENSIONS = (IMAGE_EXTENSIONS | {".tiff", ".tif"}) - {".gif"}
 _PDF_EXTENSION = ".pdf"
 
 
