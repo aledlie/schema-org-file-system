@@ -7,6 +7,7 @@ tmp_path corrections file — never the real ~/.schema-org-file-system store.
 """
 
 import json
+from pathlib import Path
 
 import pytest
 
@@ -214,19 +215,35 @@ class TestFeedbackIntegration:
         assert "game_assets" in report
 
 
-class TestScriptWrappers:
-    def test_correction_feedback_wrapper_reexports(self):
-        import correction_feedback as wrapper
+class TestScriptLaunchers:
+    """The scripts are pure launchers for src.feedback — importing them does
+    nothing; running them must reach the extracted implementations."""
 
-        from src.feedback import correction_tracker as canonical
+    _SCRIPTS_DIR = Path(__file__).parent.parent.parent / "scripts"
 
-        assert wrapper.CorrectionFeedbackSystem is canonical.CorrectionFeedbackSystem
-        assert wrapper.main is canonical.main
+    def _launch(self, script, *argv, env=None):
+        import os
+        import subprocess
+        import sys
 
-    def test_feedback_integration_wrapper_reexports(self):
-        import feedback_integration as wrapper
+        return subprocess.run(
+            [sys.executable, str(self._SCRIPTS_DIR / script), *argv],
+            capture_output=True, text=True, timeout=60,
+            env={**os.environ, **(env or {})},
+        )
 
-        from src.feedback import feedback_loop as canonical
+    def test_correction_feedback_cli_help(self):
+        result = self._launch("correction_feedback.py", "--help")
+        assert result.returncode == 0
+        for subcommand in ("add", "suggest", "stats", "export-rules"):
+            assert subcommand in result.stdout
 
-        assert wrapper.FeedbackIntegration is canonical.FeedbackIntegration
-        assert wrapper.main is canonical.main
+    def test_feedback_integration_demo(self, tmp_path):
+        # The demo opens the default store under $HOME — point it at tmp_path
+        # so the test never touches the real ~/.schema-org-file-system.
+        result = self._launch(
+            "feedback_integration.py", env={"HOME": str(tmp_path)}
+        )
+        assert result.returncode == 0
+        assert "Feedback Integration System" in result.stdout
+        assert "Corrections recorded: 0" in result.stdout

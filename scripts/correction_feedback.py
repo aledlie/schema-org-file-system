@@ -1,17 +1,16 @@
 #!/usr/bin/env python3
-"""Correction feedback CLI wrapper.
+"""Launcher for the correction-feedback CLI — logic lives in src/feedback/.
 
-Thin wrapper around ``src.feedback.correction_tracker``, which holds
-CorrectionFeedbackSystem and this CLI's implementation (add/check/suggest/
-stats/export-rules/list subcommands).
+Subcommands: add / check / suggest / stats / export-rules / list
+(see ``src.feedback.correction_tracker``).
 """
 
-import sys
-from pathlib import Path
-
-sys.path.insert(0, str(Path(__file__).parent.parent))
-
-from src.feedback.correction_tracker import CorrectionFeedbackSystem, main  # noqa: E402,F401
-
 if __name__ == "__main__":
+    import sys
+    from pathlib import Path
+
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+
+    from src.feedback.correction_tracker import main
+
     main()
