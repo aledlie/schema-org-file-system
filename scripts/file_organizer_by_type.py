@@ -4,7 +4,6 @@ Simple file organizer based on file extensions and naming patterns.
 Organizes files by type without OCR.
 """
 
-import os
 import shutil
 import sys
 from pathlib import Path
@@ -14,12 +13,20 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from src.cli_inputs import TypeInputs
 
-# shared/ lives in scripts/ — ensure it resolves when this file is imported
-# directly (e.g. in tests that add scripts/ to sys.path themselves).
+# shared/ lives in scripts/ and the canonical classifier in src/ — ensure both
+# resolve when this file is imported directly (e.g. in tests that add scripts/
+# to sys.path themselves).
 sys.path.insert(0, str(Path(__file__).parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from shared.file_ops import resolve_collision  # noqa: E402
 from shared.file_ops import should_skip_file as _shared_should_skip_file  # noqa: E402
+from src.organizers.mime_classifier import classify_by_mime  # noqa: E402
+from src.organizers.category_config import CATEGORY_PATHS  # noqa: E402
+
+# Miscellaneous known formats with no canonical format category. Bucketed to
+# 'Other' (vs 'Uncategorized' for truly-unknown extensions) to preserve intent.
+_MISC_EXTENSIONS = {'.tpl', '.proto', '.rst', '.noe', '.lark'}
 
 
 class FileTypeOrganizer:
@@ -30,52 +37,18 @@ class FileTypeOrganizer:
         self.base_path = Path(base_path or "~/Documents").expanduser()
         self.stats = defaultdict(int)
 
-        # File type to category mapping
-        self.type_mapping = {
-            # Images
-            'Images/Photos': ['.jpg', '.jpeg', '.png', '.heic', '.gif', '.bmp', '.webp', '.svg'],
-
-            # Documents
-            'Documents/PDFs': ['.pdf'],
-            'Documents/Word': ['.doc', '.docx'],
-            'Documents/Excel': ['.xls', '.xlsx', '.csv'],
-            'Documents/PowerPoint': ['.ppt', '.pptx'],
-            'Documents/Text': ['.txt', '.md', '.rtf'],
-
-            # Code
-            'Code/Python': ['.py'],
-            'Code/JavaScript': ['.js', '.jsx', '.mjs'],
-            'Code/TypeScript': ['.ts', '.tsx'],
-            'Code/Shell': ['.sh', '.bash', '.zsh'],
-            'Code/Web': ['.html', '.css', '.scss', '.sass'],
-
-            # Data/Config
-            'Data/YAML': ['.yaml', '.yml'],
-            'Data/JSON': ['.json'],
-            'Data/XML': ['.xml'],
-            'Data/Config': ['.conf', '.config', '.ini', '.env', '.toml'],
-
-            # Media
-            'Media/Audio': ['.mp3', '.wav', '.ogg', '.flac', '.m4a', '.aac'],
-            'Media/Video': ['.mp4', '.mov', '.avi', '.mkv', '.webm'],
-
-            # Archives
-            'Archives': ['.zip', '.tar', '.gz', '.rar', '.7z', '.bz2'],
-
-            # Fonts
-            'Fonts': ['.ttf', '.otf', '.woff', '.woff2'],
-
-            # Other
-            'Other/Executables': ['.exe', '.app', '.pkg', '.dmg'],
-            'Other/Misc': ['.noe', '.tpl', '.lark', '.proto', '.rst'],
-        }
-
     def get_category_for_file(self, file_path: Path) -> str:
-        """Determine category based on file extension."""
+        """Determine the destination folder for a file.
+
+        Name/structure heuristics run first (screenshots, game assets,
+        extension-less timezone data); the format itself is then resolved by the
+        canonical ``classify_by_mime`` (extension-only, ``mime_type=None``) and
+        mapped to a destination via ``CATEGORY_PATHS``.
+        """
         ext = file_path.suffix.lower()
         name_lower = file_path.name.lower()
 
-        # Check for special naming patterns BEFORE general type mapping
+        # Special naming/structure patterns BEFORE format classification
         # Screenshots - check first so they don't get categorized as generic images
         if name_lower.startswith('screenshot'):
             return 'Images/Photos/Screenshots'
@@ -84,16 +57,29 @@ class FileTypeOrganizer:
         if any(pattern in name_lower for pattern in ['frame', 'item', 'segment', 'wing', 'arm', 'leg', 'head', 'torso']):
             return 'Images/Photos/GameAssets'
 
-        # Check file type mappings
-        for category, extensions in self.type_mapping.items():
-            if ext in extensions:
-                return category
-
-        # Timezone files
+        # Extension-less single-token files (e.g. timezone data)
         if file_path.suffix == '' and len(file_path.name.split('_')) == 1:
-            # Could be timezone file
             return 'Data/Timezones'
 
+        category, subcategory, _ = classify_by_mime(file_path, None)
+        return self._resolve_category_path(category, subcategory, ext)
+
+    @staticmethod
+    def _resolve_category_path(category: str, subcategory: str, ext: str) -> str:
+        """Map a (category, subcategory) pair to a destination folder string.
+
+        Mirrors ``ContentOrganizer.get_destination_path`` resolution against
+        ``CATEGORY_PATHS``. Files the classifier cannot place (``('other',
+        'other')``) go to 'Other' for known-but-uncategorized formats and
+        'Uncategorized' for everything else, preserving the prior fallback split.
+        """
+        if (category, subcategory) == ('other', 'other'):
+            return 'Other' if ext in _MISC_EXTENSIONS else 'Uncategorized'
+        node = CATEGORY_PATHS.get(category)
+        if isinstance(node, dict):
+            return node.get(subcategory) or node.get('other', f'{category.capitalize()}/Other')
+        if isinstance(node, str):
+            return node
         return 'Uncategorized'
 
     def should_skip_file(self, file_path: Path) -> bool:
