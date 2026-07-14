@@ -140,13 +140,20 @@ class TestDataPreprocessor:
             assert json.loads(open(out[key]).read()) is not None
 
 
-class TestScriptWrapper:
-    def test_wrapper_reexports_src_ml(self):
-        """scripts/data_preprocessing.py must expose the src.ml objects."""
-        import data_preprocessing as wrapper
+class TestScriptLauncher:
+    def test_direct_invocation_reaches_src_ml_parser(self):
+        """scripts/data_preprocessing.py is a pure launcher for src.ml —
+        importing it does nothing; running it must reach the shared parser."""
+        import subprocess
+        import sys
+        from pathlib import Path
 
-        from src.ml import data_preprocessor as canonical
+        script = Path(__file__).parent.parent.parent / "scripts" / "data_preprocessing.py"
+        result = subprocess.run(
+            [sys.executable, str(script), "--help"],
+            capture_output=True, text=True, timeout=60,
+        )
 
-        assert wrapper.DataPreprocessor is canonical.DataPreprocessor
-        assert wrapper.run is canonical.run
-        assert wrapper.FileFeatureExtractor is FileFeatureExtractor
+        assert result.returncode == 0
+        assert "--input" in result.stdout
+        assert "--report-only" in result.stdout
