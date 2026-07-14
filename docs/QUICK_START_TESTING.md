@@ -437,7 +437,7 @@ pip install -e ".[ai,docs,monitoring,dev]"
 
 ## Resources
 
-- **Full Plan:** `docs/TEST_AND_REFACTOR_PLAN.md`
+- **Full Plan:** retired 2026-07-14 (open work migrated to `docs/BACKLOG.md`; resolved items in `docs/changelog/2.1.0/CHANGELOG.md`)
 - **Pytest Docs:** https://docs.pytest.org/
 - **Coverage.py:** https://coverage.readthedocs.io/
 - **Factory Boy:** https://factoryboy.readthedocs.io/ (for test data)

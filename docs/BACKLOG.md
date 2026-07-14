@@ -53,6 +53,24 @@ Coverage run 2026-07-13 (`pytest tests/unit tests/integration --cov=src`): overa
 Test design approach: Stub the expensive classifiers (`CLIPClassifier.encode`, `ocr_classifier.classify`) with deterministic mock implementations that return known scores, then drive realistic file-organization scenarios (e.g., mixed content types with classifier disagreement, OCR fallback triggering, confidence-gate rejections).
 
 
+### Non-AI-path coverage tail + developer docs (migrated from retired TEST_AND_REFACTOR_PLAN.md)
+
+**Status:** Open
+**Priority:** P3
+**Source:** coverage measurement + doc-TODO migration, 2026-07-14
+
+The 2026-07-14 coverage run (`pytest tests/unit tests/integration --cov=src`) measured **79% overall** (7,365 stmts) — hitting the plan's Month-1 75% bar but short of its 80%/85% goals. The AI-path portion of the gap is tracked in the item above; the remaining drag is non-AI glue with little or no direct test:
+
+- `src/validator.py` 28% · `src/integration.py` 23% · `src/cost_integration.py` 0% · `src/utils/tracking.py` 26% · `src/error_tracking.py` 50% · `src/api/schema_org_api.py` 64% (single-entity-by-id + remaining per-type bulk endpoints; `tests/integration/test_schema_org_api.py` covers the rest).
+
+Two documentation TODOs also carry over from the retired plan (both were never done):
+
+1. **Docstring pass** — the plan's "update all docstrings" step landed only partially.
+2. **Generated API docs** — `pdoc3 --html --output-dir docs/api src/` was specced but never run; no generated reference exists.
+
+Storage layer (90%), generators+base (91%), and enrichment (98%) already meet their targets — no further work needed there.
+
+
 ### scripts/ ↔ src/ duplication cleanup (53 confirmed findings)
 
 Full copypasta audit of `scripts/` against the canonical `src/` library found 53 verified duplications across 7 zones.
@@ -84,7 +102,7 @@ Low-severity findings from the code review of the timeline consolidation that we
 **Source:** code-reviewer pass on the TimelineAPI consolidation, 2026-07-14
 
 1. ~~**Always-empty first-session delta fields.** `TimelineAPI.calculate_session_changes` returns `new_categories: []` and `category_changes: []` only in the `previous is None` branch — always empty and absent from the non-first branch.~~ **DONE** — the two dead fields were removed; the only change vs the prior output is their disappearance from the first session's `changes` (rest of the document byte-identical).
-2. **3N+1 DB connections per document.** `TimelineAPI.generate_document` opens a fresh `shared.db_utils.db_connection` for each of the three per-session enrichments plus one for cumulative stats — 3N+1 connection cycles for N sessions. Pre-existing from the script and negligible at realistic session counts; if it ever matters, thread one connection through the enrichment methods.
+2. ~~**3N+1 DB connections per document.** `generate_document` opened a fresh `db_connection` per per-session enrichment plus one for cumulative stats.~~ **DONE (`3eb5167`)** — a `_cursor` helper + optional `conn` parameter let `generate_document` share one connection across all queries (test locks the single-connection behavior); methods still open their own when called standalone.
 3. **No test for a present-but-schemaless DB.** The missing-DB path is now guarded and tested (`1d495ed`), but a DB file that exists yet lacks the `organization_sessions`/`files`/`categories` tables still raises a raw `sqlite3.OperationalError`. Add a test (and optionally a friendlier error) if this becomes a real failure mode.
 
 ### `regenerate_schemas.py` mirrors the src generator import list

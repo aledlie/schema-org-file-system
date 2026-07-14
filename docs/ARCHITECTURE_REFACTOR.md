@@ -481,7 +481,7 @@ graph TD
 
 ## References
 
-- **Full Plan:** `docs/TEST_AND_REFACTOR_PLAN.md`
+- **Full Plan:** retired 2026-07-14 (test suite + God-Script-1 split shipped; residual open work migrated to `docs/BACKLOG.md`, resolved items recorded in `docs/changelog/2.1.0/CHANGELOG.md`)
 - **Quick Start:** `docs/QUICK_START_TESTING.md`
 - **Current CLAUDE.md:** Root directory
 
