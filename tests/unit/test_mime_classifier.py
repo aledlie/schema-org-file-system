@@ -44,6 +44,7 @@ class TestClassifyByMime:
         ("diagram.png", "image/png", ("images", "graphics", "ImageObject")),
         # Documents
         ("report.pdf", "application/pdf", ("documents", "pdf", "DigitalDocument")),
+        ("report.pdf", None, ("documents", "pdf", "DigitalDocument")),
         ("letter.docx",
          "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
          ("documents", "word", "DigitalDocument")),
@@ -55,23 +56,49 @@ class TestClassifyByMime:
          ("documents", "presentations", "DigitalDocument")),
         ("README.md", None, ("documents", "markdown", "Article")),
         ("notes.txt", "text/plain", ("documents", "text", "DigitalDocument")),
+        # Documents via extension only (mime=None)
+        ("letter.docx", None, ("documents", "word", "DigitalDocument")),
+        ("sheet.xlsx", None, ("documents", "spreadsheets", "DigitalDocument")),
+        ("deck.pptx", None, ("documents", "presentations", "DigitalDocument")),
+        ("notes.txt", None, ("documents", "text", "DigitalDocument")),
+        # Images via extension only (mime=None): jpg/jpeg/heic photos, rest graphics
+        ("vacation.jpg", None, ("images", "photos", "Photograph")),
+        ("diagram.png", None, ("images", "graphics", "ImageObject")),
+        ("vector.svg", None, ("images", "graphics", "ImageObject")),
         # Media
         ("clip.mp4", "video/mp4", ("media", "videos", "VideoObject")),
+        ("clip.mov", None, ("media", "videos", "VideoObject")),
         ("track.mp3", "audio/mpeg", ("media", "music", "MusicRecording")),
+        ("track.mp3", None, ("media", "music", "MusicRecording")),
         ("voicemail.ogg", "audio/ogg", ("media", "audio", "AudioObject")),
+        ("voicemail.wav", None, ("media", "audio", "AudioObject")),
+        # Fonts route through classify_by_mime too
+        ("Roboto.ttf", None, ("fonts", "truetype", "DigitalDocument")),
         # Archives
         ("bundle.zip", "application/zip", ("archives", "zip", "DigitalDocument")),
         ("bundle.zip", None, ("archives", "zip", "DigitalDocument")),
         ("backup.tar", None, ("archives", "other", "DigitalDocument")),
-        # Software installers
+        # Software: installer vs package split
         ("installer.dmg", None, ("software", "installers", "SoftwareApplication")),
         ("setup.exe", None, ("software", "installers", "SoftwareApplication")),
+        ("MyApp.app", None, ("software", "installers", "SoftwareApplication")),
+        ("pkg.deb", None, ("software", "packages", "SoftwareApplication")),
+        ("pkg.rpm", None, ("software", "packages", "SoftwareApplication")),
+        ("app.flatpak", None, ("software", "packages", "SoftwareApplication")),
         # Code
         ("script.py", None, ("code", "python", "SoftwareSourceCode")),
-        ("app.ts", None, ("code", "javascript", "SoftwareSourceCode")),
+        ("app.ts", None, ("code", "typescript", "SoftwareSourceCode")),
+        ("app.tsx", None, ("code", "typescript", "SoftwareSourceCode")),
+        ("app.js", None, ("code", "javascript", "SoftwareSourceCode")),
+        ("bundle.mjs", None, ("code", "javascript", "SoftwareSourceCode")),
+        ("deploy.sh", None, ("code", "shell", "SoftwareSourceCode")),
+        ("index.html", None, ("code", "web", "SoftwareSourceCode")),
         # Data
         ("data.json", None, ("data", "json", "Dataset")),
         ("data.csv", None, ("data", "csv", "Dataset")),
+        ("config.yaml", None, ("data", "yaml", "Dataset")),
+        ("feed.xml", None, ("data", "xml", "Dataset")),
+        ("settings.ini", None, ("data", "config", "Dataset")),
         ("app.sqlite3", None, ("data", "databases", "Dataset")),
         # Fallback
         ("unknown.xyz", None, ("other", "other", "CreativeWork")),

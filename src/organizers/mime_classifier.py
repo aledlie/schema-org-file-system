@@ -11,9 +11,15 @@ from pathlib import Path
 from typing import Dict, Optional, Tuple
 
 try:
-    from shared.constants import ARCHIVE_EXTENSIONS
+    from shared.constants import (
+        ARCHIVE_EXTENSIONS,
+        SOFTWARE_INSTALLER_EXTENSIONS,
+        SOFTWARE_PACKAGE_EXTENSIONS,
+    )
 except ImportError:  # scripts/shared not on sys.path (e.g. direct-import tests)
     ARCHIVE_EXTENSIONS = {".zip", ".tar", ".gz", ".rar", ".7z", ".bz2"}
+    SOFTWARE_INSTALLER_EXTENSIONS = {".dmg", ".pkg", ".exe", ".msi", ".app"}
+    SOFTWARE_PACKAGE_EXTENSIONS = {".deb", ".rpm", ".snap", ".flatpak", ".appimage"}
 
 # .zip is classified separately (archives/zip); the rest route to archives/other.
 _NON_ZIP_ARCHIVE_EXTENSIONS = ARCHIVE_EXTENSIONS - {".zip"}
@@ -43,12 +49,21 @@ def classify_font(file_ext: str) -> Optional[Classification]:
 def classify_by_mime(file_path: Path, mime_type: Optional[str]) -> Classification:
     """Classify a file by MIME type and extension.
 
-    Lowest-priority fallback: runs after contact/business/font/game-asset
-    detection. Always returns a classification, defaulting to
-    ``('other', 'other', 'CreativeWork')``.
+    Canonical format-fallback classifier. When ``mime_type`` is provided the
+    MIME branches take precedence; otherwise every supported format is resolved
+    from the extension alone, so callers may pass ``mime_type=None`` (the type
+    organizer does). Always returns a classification, defaulting to
+    ``('other', 'other', 'CreativeWork')``. Screenshot detection by name applies
+    only to the image/* MIME branch; extension-only callers that need it should
+    pre-check the filename (as the type organizer does).
     """
     file_name = file_path.name.lower()
     file_ext = file_path.suffix.lower()
+
+    # Fonts (extension-only; no competing MIME type)
+    font = classify_font(file_ext)
+    if font is not None:
+        return font
 
     # Images
     if mime_type and mime_type.startswith('image/'):
@@ -58,9 +73,13 @@ def classify_by_mime(file_path: Path, mime_type: Optional[str]) -> Classificatio
             return ('images', 'photos', 'Photograph')
         else:
             return ('images', 'graphics', 'ImageObject')
+    elif file_ext in ['.jpg', '.jpeg', '.heic']:
+        return ('images', 'photos', 'Photograph')
+    elif file_ext in ['.png', '.gif', '.bmp', '.webp', '.svg']:
+        return ('images', 'graphics', 'ImageObject')
 
     # Documents
-    elif mime_type in ['application/pdf']:
+    elif mime_type in ['application/pdf'] or file_ext == '.pdf':
         # Check if in research directory
         if 'research' in str(file_path.parent).lower():
             return ('research', 'papers', 'ScholarlyArticle')
@@ -78,6 +97,7 @@ def classify_by_mime(file_path: Path, mime_type: Optional[str]) -> Classificatio
                        'application/vnd.ms-powerpoint']:
         return ('documents', 'presentations', 'DigitalDocument')
 
+    # Markdown before the text/ branch so .md keeps its markdown subcategory
     elif file_ext == '.md':
         if 'research' in str(file_path.parent).lower():
             return ('research', 'notes', 'Article')
@@ -86,13 +106,34 @@ def classify_by_mime(file_path: Path, mime_type: Optional[str]) -> Classificatio
     elif mime_type and mime_type.startswith('text/'):
         return ('documents', 'text', 'DigitalDocument')
 
+    elif file_ext in ['.doc', '.docx']:
+        return ('documents', 'word', 'DigitalDocument')
+
+    elif file_ext in ['.xls', '.xlsx']:
+        return ('documents', 'spreadsheets', 'DigitalDocument')
+
+    elif file_ext in ['.ppt', '.pptx']:
+        return ('documents', 'presentations', 'DigitalDocument')
+
+    elif file_ext in ['.txt', '.rtf']:
+        return ('documents', 'text', 'DigitalDocument')
+
     # Media
     elif mime_type and mime_type.startswith('video/'):
+        return ('media', 'videos', 'VideoObject')
+
+    elif file_ext in ['.mp4', '.mov', '.avi', '.mkv', '.webm']:
         return ('media', 'videos', 'VideoObject')
 
     elif mime_type and mime_type.startswith('audio/'):
         if 'music' in file_name or file_ext in ['.mp3', '.m4a', '.flac']:
             return ('media', 'music', 'MusicRecording')
+        return ('media', 'audio', 'AudioObject')
+
+    elif file_ext in ['.mp3', '.m4a', '.flac']:
+        return ('media', 'music', 'MusicRecording')
+
+    elif file_ext in ['.wav', '.ogg', '.aac']:
         return ('media', 'audio', 'AudioObject')
 
     # Archives
@@ -103,15 +144,27 @@ def classify_by_mime(file_path: Path, mime_type: Optional[str]) -> Classificatio
         return ('archives', 'other', 'DigitalDocument')
 
     # Software
-    elif file_ext in ['.dmg', '.pkg', '.exe', '.msi', '.deb', '.rpm']:
+    elif file_ext in SOFTWARE_INSTALLER_EXTENSIONS:
         return ('software', 'installers', 'SoftwareApplication')
+
+    elif file_ext in SOFTWARE_PACKAGE_EXTENSIONS:
+        return ('software', 'packages', 'SoftwareApplication')
 
     # Code
     elif file_ext == '.py':
         return ('code', 'python', 'SoftwareSourceCode')
 
-    elif file_ext in ['.js', '.ts', '.jsx', '.tsx']:
+    elif file_ext in ['.ts', '.tsx']:
+        return ('code', 'typescript', 'SoftwareSourceCode')
+
+    elif file_ext in ['.js', '.jsx', '.mjs']:
         return ('code', 'javascript', 'SoftwareSourceCode')
+
+    elif file_ext in ['.sh', '.bash', '.zsh']:
+        return ('code', 'shell', 'SoftwareSourceCode')
+
+    elif file_ext in ['.html', '.css', '.scss', '.sass']:
+        return ('code', 'web', 'SoftwareSourceCode')
 
     # Data
     elif file_ext == '.json':
@@ -119,6 +172,15 @@ def classify_by_mime(file_path: Path, mime_type: Optional[str]) -> Classificatio
 
     elif file_ext == '.csv':
         return ('data', 'csv', 'Dataset')
+
+    elif file_ext in ['.yaml', '.yml']:
+        return ('data', 'yaml', 'Dataset')
+
+    elif file_ext == '.xml':
+        return ('data', 'xml', 'Dataset')
+
+    elif file_ext in ['.conf', '.config', '.ini', '.env', '.toml']:
+        return ('data', 'config', 'Dataset')
 
     elif file_ext in ['.db', '.sqlite', '.sqlite3']:
         return ('data', 'databases', 'Dataset')

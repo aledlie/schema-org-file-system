@@ -27,7 +27,11 @@ import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
-from shared.constants import ARCHIVE_EXTENSIONS
+from shared.constants import (
+    ARCHIVE_EXTENSIONS,
+    SOFTWARE_INSTALLER_EXTENSIONS,
+    SOFTWARE_PACKAGE_EXTENSIONS,
+)
 
 # Research category key and Schema.org type for scholarly articles.
 # See: https://schema.org/ScholarlyArticle
@@ -617,18 +621,7 @@ def classify_by_filename_patterns(
     # =========================================================
     # SOFTWARE PACKAGES: .dmg, .pkg, .msi, .deb, .rpm, .exe, .app
     # =========================================================
-    software_extensions = {
-        ".dmg",
-        ".pkg",
-        ".msi",
-        ".deb",
-        ".rpm",
-        ".exe",
-        ".app",
-        ".snap",
-        ".flatpak",
-        ".appimage",
-    }
+    software_extensions = SOFTWARE_INSTALLER_EXTENSIONS | SOFTWARE_PACKAGE_EXTENSIONS
     if ext in software_extensions:
         print(f"  ✓ Filename pattern: Software package ({ext})")
         return ("technical", "software_packages", None, [])
