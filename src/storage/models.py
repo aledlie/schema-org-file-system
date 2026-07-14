@@ -101,6 +101,7 @@ file_categories = Table(
     Column('confidence', Float, default=1.0),
     Column('created_at', DateTime, default=utcnow)
 )
+Index('ix_file_categories_category_id', file_categories.c.category_id)
 
 file_companies = Table(
     'file_companies',
@@ -111,6 +112,7 @@ file_companies = Table(
     Column('context', String(MAX_STRING_LENGTH)),  # How the company was detected
     Column('created_at', DateTime, default=utcnow)
 )
+Index('ix_file_companies_company_id', file_companies.c.company_id)
 
 file_people = Table(
     'file_people',
@@ -121,6 +123,7 @@ file_people = Table(
     Column('confidence', Float, default=1.0),
     Column('created_at', DateTime, default=utcnow)
 )
+Index('ix_file_people_person_id', file_people.c.person_id)
 
 file_locations = Table(
     'file_locations',
@@ -131,6 +134,7 @@ file_locations = Table(
     Column('confidence', Float, default=1.0),
     Column('created_at', DateTime, default=utcnow)
 )
+Index('ix_file_locations_location_id', file_locations.c.location_id)
 
 
 class File(Base, SchemaOrgSerializable):
@@ -198,7 +202,7 @@ class File(Base, SchemaOrgSerializable):
 
     # Processing metadata
     processing_time_sec = Column(Float)
-    session_id = Column(String(SHA256_HEX_LENGTH), ForeignKey('organization_sessions.id'))
+    session_id = Column(String(SHA256_HEX_LENGTH), ForeignKey('organization_sessions.id'), index=True)
 
     # Timestamps
     db_created_at = Column(DateTime, default=utcnow)
@@ -373,7 +377,7 @@ class Category(Base, SchemaOrgSerializable):
     merged_into_id = Column(Integer, ForeignKey('categories.id'))
 
     name = Column(String(100), nullable=False, unique=True, index=True)
-    parent_id = Column(Integer, ForeignKey('categories.id'))
+    parent_id = Column(Integer, ForeignKey('categories.id'), index=True)
     description = Column(Text)
     icon = Column(String(SHORT_STRING_LENGTH))  # Emoji or icon name
     color = Column(String(SHORT_FIELD_LENGTH))  # Hex color
@@ -474,9 +478,8 @@ class Company(Base, SchemaOrgSerializable):
     files = relationship('File', secondary=file_companies, back_populates='companies')
     merged_into = relationship('Company', remote_side=[id])
 
-    __table_args__ = (
-        Index('ix_companies_normalized', 'normalized_name'),
-    )
+    # ix_companies_normalized_name created by unique=True, index=True on normalized_name column
+
 
     @staticmethod
     def normalize_name(name: str) -> str:
@@ -1007,7 +1010,7 @@ class FileRelationship(Base):
     __table_args__ = (
         UniqueConstraint('source_file_id', 'target_file_id', 'relationship_type',
                         name='uq_file_relationship'),
-        Index('ix_file_rel_type', 'relationship_type'),
+        # ix_file_relationships_* indexes created by index=True on source_file_id, target_file_id, relationship_type
     )
 
 
@@ -1175,7 +1178,7 @@ class MergeEvent(Base):
     id = Column(String(UUID_STRING_LENGTH), primary_key=True, default=lambda: str(uuid.uuid4()))
 
     # Target entity (canonical/surviving)
-    target_entity_type = Column(SQLEnum(MergeEventType), nullable=False, index=True)
+    target_entity_type = Column(SQLEnum(MergeEventType), nullable=False)  # indexed via ix_merge_entity_type
     target_entity_id = Column(Integer, nullable=False)  # Internal DB ID
     target_canonical_id = Column(String(UUID_STRING_LENGTH))  # UUID for JSON-LD @id
 
@@ -1189,7 +1192,7 @@ class MergeEvent(Base):
     merge_reason = Column(Text)  # Why these were merged
     confidence = Column(Float, default=1.0)  # 0.0-1.0
     performed_by = Column(String(100))  # user_id or 'system'
-    performed_at = Column(DateTime, default=utcnow, index=True)
+    performed_at = Column(DateTime, default=utcnow)  # indexed via ix_merge_performed_at
 
     # JSON-LD representation (for export/API)
     jsonld = Column(JSON)
