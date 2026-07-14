@@ -45,9 +45,10 @@ class TestInitSentryNoSdk:
 
     def test_returns_false_when_no_dsn(self) -> None:
         """Without a DSN, init_sentry returns False even when SDK is installed."""
+        # clear=True ensures SENTRY_DSN is not present regardless of the host env.
         with (
             patch("src.error_tracking.SENTRY_AVAILABLE", True),
-            patch.dict("os.environ", {}, clear_for_key="SENTRY_DSN"),
+            patch.dict("os.environ", {}, clear=True),
         ):
             result = init_sentry(dsn=None)
         assert result is False
@@ -116,9 +117,9 @@ class TestTrackOperationNoSentry:
     def test_yields_with_sentry(self) -> None:
         """When Sentry is present, the context manager still yields normally."""
         mock_sdk = MagicMock()
-        fake_span = MagicMock()
-        mock_sdk.start_span.return_value.__enter__ = lambda s: fake_span
-        mock_sdk.start_span.return_value.__exit__ = MagicMock(return_value=False)
+        # MagicMock already supports context manager protocol via __enter__/__exit__
+        mock_sdk.start_span.return_value.__enter__.return_value = MagicMock()
+        mock_sdk.start_span.return_value.__exit__.return_value = False
 
         with patch("src.error_tracking.SENTRY_AVAILABLE", True), patch(
             "src.error_tracking.sentry_sdk", mock_sdk
@@ -130,9 +131,8 @@ class TestTrackOperationNoSentry:
 
     def test_sentry_path_captures_exception(self) -> None:
         mock_sdk = MagicMock()
-        fake_span = MagicMock()
-        mock_sdk.start_span.return_value.__enter__ = lambda s: fake_span
-        mock_sdk.start_span.return_value.__exit__ = MagicMock(return_value=False)
+        mock_sdk.start_span.return_value.__enter__.return_value = MagicMock()
+        mock_sdk.start_span.return_value.__exit__.return_value = False
 
         with (
             patch("src.error_tracking.SENTRY_AVAILABLE", True),
@@ -217,6 +217,10 @@ class TestFileProcessingErrorTrackerFromErrorTracking:
     internally, so the Sentry path is exercised when SENTRY_AVAILABLE is True.
     Here we run without Sentry.
     """
+
+    def setup_method(self) -> None:
+        # Reset the module-level singleton so tests don't share state.
+        reset_file_tracker()
 
     def test_initial_state(self) -> None:
         tracker = FileProcessingErrorTracker()
