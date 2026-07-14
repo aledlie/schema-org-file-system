@@ -30,20 +30,35 @@ class TimelineAPI:
     """Builds the timeline visualization document from the SQLite database.
 
     A single instance is bound to one database path (``None`` resolves to the
-    shared ``DEFAULT_DB_PATH``). ``generate_document`` assembles the full
-    ``_site/timeline_data.json`` payload; ``export_to_json`` also writes it.
+    shared ``DEFAULT_DB_PATH``). Construction validates that the database
+    exists and has been populated, raising ``FileNotFoundError`` otherwise.
+    ``generate_document`` assembles the full ``_site/timeline_data.json``
+    payload; ``export_to_json`` also writes it.
     """
 
     def __init__(self, db_path: Path | str | None = None) -> None:
         self.db_path = db_path
-        # Fail early with a clear message instead of an opaque "no such table"
-        # from the first query (and avoid sqlite3.connect creating an empty
-        # phantom DB file at the missing path).
+        # Fail early with a clear, actionable message instead of an opaque
+        # "no such table" from the first query. Both a missing file and a
+        # present-but-unpopulated one (e.g. a fresh/empty DB) mean the same
+        # thing to the user — there is no timeline data yet — so both raise
+        # FileNotFoundError, which cmd_timeline turns into a clean CLI error.
         effective_path = Path(db_path) if db_path else Path(DB_PATH)
         if not effective_path.exists():
             raise FileNotFoundError(
                 f"Timeline database not found: {effective_path}. "
                 "Run the file organizer at least once to create it."
+            )
+        with db_connection(self.db_path) as conn:
+            has_sessions_table = conn.execute(
+                "SELECT name FROM sqlite_master "
+                "WHERE type = 'table' AND name = 'organization_sessions'"
+            ).fetchone()
+        if not has_sessions_table:
+            raise FileNotFoundError(
+                f"Timeline database at {effective_path} has no "
+                "organization_sessions table. Run the file organizer at least "
+                "once to populate it."
             )
 
     @contextmanager

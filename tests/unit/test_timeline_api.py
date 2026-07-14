@@ -112,6 +112,14 @@ class TestConstruction:
             TimelineAPI(missing)
         assert not missing.exists()
 
+    def test_schemaless_db_raises_file_not_found(self, tmp_path):
+        """A present-but-unpopulated DB (no organization_sessions table) is
+        surfaced as the same actionable error, not an opaque OperationalError."""
+        empty = tmp_path / "empty.db"
+        sqlite3.connect(empty).close()  # exists, but has no tables
+        with pytest.raises(FileNotFoundError, match="no organization_sessions table"):
+            TimelineAPI(empty)
+
 
 class TestGetSessions:
     def test_filters_empty_and_orders_ascending(self, timeline_db):
@@ -205,6 +213,7 @@ class TestDocument:
     def test_generate_document_opens_single_connection(self, timeline_db, monkeypatch):
         """All per-session enrichments + cumulative stats must share one
         connection — guards against the 3N+1 connection regression."""
+        api = TimelineAPI(timeline_db)  # construct first; __init__ validates the schema
         real = timeline_api.db_connection
         calls = {"n": 0}
 
@@ -213,7 +222,7 @@ class TestDocument:
             return real(*args, **kwargs)
 
         monkeypatch.setattr(timeline_api, "db_connection", counting)
-        doc = TimelineAPI(timeline_db).generate_document()
+        doc = api.generate_document()
         assert calls["n"] == 1  # not 3 * len(sessions) + 2
         assert doc["session_count"] == 2
 
