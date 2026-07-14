@@ -10,7 +10,10 @@ import os
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
+
+if TYPE_CHECKING:
+    from src.cli_inputs import ContentInputs
 
 # Shared filename-pattern classifier (single source of truth, lives in
 # shared.filename_classifier and is consumed via ContentOrganizer). Re-export
@@ -332,12 +335,12 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         self._file_processor.save_report(summary, output_path)
 
 
-def run(args) -> None:
-    """Typed entry point: organize by content from a parsed namespace.
+def run(args: "ContentInputs") -> None:
+    """Typed entry point: organize by content from validated CLI inputs.
 
-    The namespace must carry the attributes defined by
-    ``src.cli.add_content_arguments`` (the single source for this command's
-    options, shared with the unified CLI).
+    ``args`` is the frozen ``src.cli_inputs.ContentInputs`` dataclass built
+    from the options ``src.cli.add_content_arguments`` defines (the single
+    source for this command, shared with the unified CLI).
     """
     # Initialize Sentry error tracking (before any other operations)
     if not args.no_sentry and ERROR_TRACKING_AVAILABLE:
@@ -424,12 +427,13 @@ def main():
     import argparse
 
     from src.cli import add_content_arguments
+    from src.cli_inputs import ContentInputs
 
     parser = argparse.ArgumentParser(
         description="Organize files by content using OCR and Schema.org metadata"
     )
     add_content_arguments(parser)
-    run(parser.parse_args())
+    run(ContentInputs.from_namespace(parser.parse_args()))
 
 
 if __name__ == "__main__":

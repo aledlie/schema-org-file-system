@@ -18,7 +18,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 
 from shared.file_ops import resolve_collision  # noqa: E402
 import json
-from typing import Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+
+if TYPE_CHECKING:
+    from src.cli_inputs import NameInputs
 
 
 class FileNameOrganizer:
@@ -734,12 +737,12 @@ class FileNameOrganizer:
         print(f"Report saved: {report_file}")
 
 
-def run(args) -> None:
-    """Typed entry point: organize by name patterns from a parsed namespace.
+def run(args: "NameInputs") -> None:
+    """Typed entry point: organize by name patterns from validated CLI inputs.
 
-    The namespace must carry the attributes defined by
-    ``src.cli.add_name_arguments`` (the single source for this command's
-    options, shared with the unified CLI).
+    ``args`` is the frozen ``src.cli_inputs.NameInputs`` dataclass built
+    from the options ``src.cli.add_name_arguments`` defines (the single
+    source for this command, shared with the unified CLI).
     """
     organizer = FileNameOrganizer(
         base_path=args.base_path,
@@ -758,6 +761,7 @@ def main():
     """Standalone entry point (argument definitions shared with organize-files)."""
     sys.path.insert(0, str(Path(__file__).parent.parent.parent))
     from src.cli import add_name_arguments
+    from src.cli_inputs import NameInputs
 
     parser = argparse.ArgumentParser(
         description='Organize files by name and path patterns only',
@@ -778,7 +782,7 @@ Examples:
         '''
     )
     add_name_arguments(parser)
-    run(parser.parse_args())
+    run(NameInputs.from_namespace(parser.parse_args()))
 
 
 if __name__ == '__main__':

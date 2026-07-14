@@ -11,7 +11,10 @@ import json
 import re
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple, Any
+from typing import TYPE_CHECKING, Dict, List, Tuple, Any
+
+if TYPE_CHECKING:
+    from src.cli_inputs import EvaluateInputs
 from collections import Counter, defaultdict
 
 from shared.constants import (
@@ -449,13 +452,14 @@ def print_report(evaluation: Dict[str, Any]):
     print("\n" + "=" * 60)
 
 
-def run(args) -> None:
-    """Typed entry point: evaluate the classifier from a parsed namespace.
+def run(args: "EvaluateInputs") -> None:
+    """Typed entry point: evaluate the classifier from validated CLI inputs.
 
-    The namespace must carry the attributes defined by
-    ``src.cli.add_evaluate_arguments`` (the single source for this command's
-    options, shared with the unified CLI). ``min_support=None`` resolves to
-    DEFAULT_MIN_SUPPORT here so the constant stays single-homed.
+    ``args`` is the frozen ``src.cli_inputs.EvaluateInputs`` dataclass built
+    from the options ``src.cli.add_evaluate_arguments`` defines (the single
+    source for this command, shared with the unified CLI).
+    ``min_support=None`` resolves to DEFAULT_MIN_SUPPORT here so the
+    constant stays single-homed.
     """
     min_support = args.min_support if args.min_support is not None else DEFAULT_MIN_SUPPORT
 
@@ -475,10 +479,11 @@ def main():
 
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from src.cli import add_evaluate_arguments
+    from src.cli_inputs import EvaluateInputs
 
     parser = argparse.ArgumentParser(description='Evaluate file categorization model')
     add_evaluate_arguments(parser)
-    run(parser.parse_args())
+    run(EvaluateInputs.from_namespace(parser.parse_args()))
 
 
 if __name__ == "__main__":

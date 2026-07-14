@@ -12,9 +12,11 @@ Drives ``main()`` through real argv parsing into the underlying subsystems:
   ``migrate-ids``, ``preprocess``, ``update-site``, ``timeline``) are
   verified at the parser→run(args) boundary with the target entry point
   stubbed — their subsystems have their own suites and importing them pulls
-  in torch/CLIP.  The stub captures the Namespace passed to run() so that
-  tests can assert that every outer CLI flag lands on the right attribute
-  without triggering real I/O.
+  in torch/CLIP.  The stub captures the typed inputs dataclass
+  (src/cli_inputs.py) passed to run() so that tests can assert that every
+  outer CLI flag lands on the right attribute without triggering real I/O.
+  Parser <-> dataclass field parity is locked by
+  ``tests/unit/test_cli_inputs.py``.
 """
 
 import sys
@@ -239,11 +241,12 @@ class TestPrunePersonCommand:
 
 
 class TestStubbedWiring:
-    """Verify that the outer parser passes the correct Namespace to each
-    target's run(args) without importing the torch/CLIP dependency stacks."""
+    """Verify that the outer parser converts argv into the correct typed
+    inputs for each target's run() without importing the torch/CLIP
+    dependency stacks."""
 
     def _stub_run(self, monkeypatch, module_name: str, **extra_attrs):
-        """Inject a fake module that captures the args Namespace passed to run()."""
+        """Inject a fake module that captures the typed inputs passed to run()."""
         captured = {}
 
         def fake_run(args):
@@ -256,7 +259,7 @@ class TestStubbedWiring:
         monkeypatch.setitem(sys.modules, module_name, module)
         return captured
 
-    def test_content_passes_namespace(self, monkeypatch):
+    def test_content_passes_typed_inputs(self, monkeypatch):
         captured = self._stub_run(monkeypatch, "file_organizer_content_based")
         run_cli(
             monkeypatch,
@@ -272,7 +275,7 @@ class TestStubbedWiring:
         assert args.limit == 5
         assert args.no_db is True
 
-    def test_evaluate_passes_namespace(self, monkeypatch):
+    def test_evaluate_passes_typed_inputs(self, monkeypatch):
         captured = self._stub_run(monkeypatch, "evaluate_model")
         run_cli(monkeypatch, "evaluate", "--classifier", "content")
         assert captured["args"].classifier == "content"
@@ -310,37 +313,37 @@ class TestStubbedWiring:
         assert calls["db_path"] == db_path
         assert "Migration complete" in capsys.readouterr().out
 
-    def test_preprocess_passes_namespace(self, monkeypatch):
-        """Verify preprocess flags land on the right Namespace attributes."""
+    def test_preprocess_passes_typed_inputs(self, monkeypatch):
+        """Verify preprocess flags land on the right typed-input attributes."""
         captured = self._stub_run(monkeypatch, "src.ml.data_preprocessor")
         run_cli(monkeypatch, "preprocess", "--input", "/data/in", "--output", "/data/out")
         args = captured["args"]
         assert args.input == "/data/in"
         assert args.output == "/data/out"
 
-    def test_update_site_passes_namespace(self, monkeypatch):
-        """Verify update-site flags land on the right Namespace attributes."""
+    def test_update_site_passes_typed_inputs(self, monkeypatch):
+        """Verify update-site flags land on the right typed-input attributes."""
         captured = self._stub_run(monkeypatch, "update_site_data")
         run_cli(monkeypatch, "update-site", "--report", "/tmp/report.json")
         assert captured["args"].report == "/tmp/report.json"
 
     def test_update_site_defaults(self, monkeypatch):
-        """Verify update-site default Namespace reaches update_site_data.run()."""
+        """Verify update-site defaults reach update_site_data.run()."""
         captured = self._stub_run(monkeypatch, "update_site_data")
         run_cli(monkeypatch, "update-site")
         assert captured["args"].report is None
 
-    def test_timeline_passes_namespace(self, monkeypatch):
-        """Verify timeline flags land on the right Namespace attributes."""
-        captured = self._stub_run(monkeypatch, "generate_timeline_data")
+    def test_timeline_passes_typed_inputs(self, monkeypatch):
+        """Verify timeline flags land on the right typed-input attributes."""
+        captured = self._stub_run(monkeypatch, "src.api.timeline_api")
         run_cli(monkeypatch, "timeline")
         # Default db_path is None (cli uses DEFAULT_DB_PATH as fallback in run())
         assert captured["args"].db_path is None
 
     def test_timeline_custom_db_path_reaches_run(self, monkeypatch):
         """--db-path was parsed and then silently ignored (the old main()
-        never read argv); it now lands on the namespace run() honors."""
-        captured = self._stub_run(monkeypatch, "generate_timeline_data")
+        never read argv); it now lands on the typed inputs run() honors."""
+        captured = self._stub_run(monkeypatch, "src.api.timeline_api")
         run_cli(monkeypatch, "timeline", "--db-path", "/tmp/custom.db")
         assert captured["args"].db_path == "/tmp/custom.db"
 

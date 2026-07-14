@@ -25,6 +25,16 @@ sys.path.insert(0, str(Path(__file__).parent))
 PROJECT_ROOT = Path(__file__).parent.parent
 SCRIPTS_DIR = PROJECT_ROOT / 'scripts'
 
+from cli_inputs import (  # noqa: E402  (needs the src path insert above)
+    ContentInputs,
+    EvaluateInputs,
+    NameInputs,
+    PreprocessInputs,
+    TimelineInputs,
+    TypeInputs,
+    UpdateSiteInputs,
+)
+
 # Shared option defaults, single-sourced for the parser definitions below.
 DEFAULT_SOURCES = ['~/Desktop', '~/Downloads']
 DEFAULT_TARGET = '~/Documents'
@@ -32,50 +42,50 @@ DEFAULT_DB_PATH = 'results/file_organization.db'
 DEFAULT_COST_REPORT = 'results/cost_report.json'
 
 
-def cmd_content(args: Any) -> None:
+def cmd_content(args: argparse.Namespace) -> None:
     """Run content-based organization using AI/OCR."""
     # Import here to avoid loading heavy dependencies until needed
     sys.path.insert(0, str(SCRIPTS_DIR))
     from file_organizer_content_based import run as content_run
 
-    content_run(args)
+    content_run(ContentInputs.from_namespace(args))
 
 
-def cmd_name(args: Any) -> None:
+def cmd_name(args: argparse.Namespace) -> None:
     """Run name-based organization (no AI)."""
     sys.path.insert(0, str(PROJECT_ROOT))
     sys.path.insert(0, str(SCRIPTS_DIR))
     from src.organizers.name_organizer import run as name_run
 
-    name_run(args)
+    name_run(NameInputs.from_namespace(args))
 
 
-def cmd_type(args: Any) -> None:
+def cmd_type(args: argparse.Namespace) -> None:
     """Run type-based organization by file extension."""
     sys.path.insert(0, str(SCRIPTS_DIR))
     from file_organizer_by_type import run as type_run
 
-    type_run(args)
+    type_run(TypeInputs.from_namespace(args))
 
 
-def cmd_preprocess(args: Any) -> None:
+def cmd_preprocess(args: argparse.Namespace) -> None:
     """Run ML data preprocessing."""
     sys.path.insert(0, str(PROJECT_ROOT))
     sys.path.insert(0, str(SCRIPTS_DIR))  # shared.constants, used by feature extraction
     from src.ml.data_preprocessor import run as preprocess_run
 
-    preprocess_run(args)
+    preprocess_run(PreprocessInputs.from_namespace(args))
 
 
-def cmd_evaluate(args: Any) -> None:
+def cmd_evaluate(args: argparse.Namespace) -> None:
     """Run model evaluation."""
     sys.path.insert(0, str(SCRIPTS_DIR))
     from evaluate_model import run as evaluate_run
 
-    evaluate_run(args)
+    evaluate_run(EvaluateInputs.from_namespace(args))
 
 
-def cmd_migrate(args: Any) -> None:
+def cmd_migrate(args: argparse.Namespace) -> None:
     """Run database migration for ID generation."""
     from storage.migration import run_migration
 
@@ -96,7 +106,7 @@ def _prune_missing_edges(graph_store: Any, apply: bool) -> None:
         print(f"    {edge['person']}: {edge['path']}")
 
 
-def cmd_person_view(args: Any) -> None:
+def cmd_person_view(args: argparse.Namespace) -> None:
     """Regenerate the derived Person/{Name}/ symlink view from graph edges."""
     from storage.graph_store import GraphStore
     from storage.person_view_generator import PersonViewGenerator
@@ -120,7 +130,7 @@ def cmd_person_view(args: Any) -> None:
         print(f"  ! {err}")
 
 
-def cmd_migrate_person(args: Any) -> None:
+def cmd_migrate_person(args: argparse.Namespace) -> None:
     """Migrate legacy on-disk Person/ files into Personal/{subcat}/ folders."""
     from storage.person_migration import (
         DEFAULT_DOCUMENTS_ROOT,
@@ -150,7 +160,7 @@ def cmd_migrate_person(args: Any) -> None:
     )
 
 
-def cmd_index_people(args: Any) -> None:
+def cmd_index_people(args: argparse.Namespace) -> None:
     """Register migrated files in the graph with person edges (no file moves)."""
     from storage.person_migration import DEFAULT_MANIFEST_PATH, index_person_files
 
@@ -172,7 +182,7 @@ def cmd_index_people(args: Any) -> None:
         _prune_missing_edges(GraphStore(args.db_path), bool(args.apply))
 
 
-def cmd_prune_person(args: Any) -> None:
+def cmd_prune_person(args: argparse.Namespace) -> None:
     """Delete people and their file->person graph edges (no file moves)."""
     import shutil
     from datetime import datetime
@@ -210,26 +220,27 @@ def cmd_prune_person(args: Any) -> None:
         sys.exit(1)
 
 
-def cmd_health(args: Any) -> None:
+def cmd_health(args: argparse.Namespace) -> None:
     """Run system health check."""
     from health_check import check_system
     check_system(verbose=True)
 
 
-def cmd_update_site(args: Any) -> None:
+def cmd_update_site(args: argparse.Namespace) -> None:
     """Update _site dashboard data."""
     sys.path.insert(0, str(SCRIPTS_DIR))
     from update_site_data import run as update_run
 
-    update_run(args)
+    update_run(UpdateSiteInputs.from_namespace(args))
 
 
-def cmd_timeline(args: Any) -> None:
+def cmd_timeline(args: argparse.Namespace) -> None:
     """Generate timeline data for visualization."""
-    sys.path.insert(0, str(SCRIPTS_DIR))
-    from generate_timeline_data import run as timeline_run
+    sys.path.insert(0, str(PROJECT_ROOT))
+    sys.path.insert(0, str(SCRIPTS_DIR))  # timeline_api imports shared.db_utils
+    from src.api.timeline_api import run as timeline_run
 
-    timeline_run(args)
+    timeline_run(TimelineInputs.from_namespace(args))
 
 
 # --------------------------------------------------------------------------- #
@@ -238,9 +249,10 @@ def cmd_timeline(args: Any) -> None:
 # Each add_*_arguments function is the single source of truth for its          #
 # command's options: main() registers it on the organize-files subparser, and  #
 # the target script's standalone main() applies the same function to its own   #
-# parser. The cmd_* handlers pass the parsed namespace straight to the         #
-# target's typed run(args) — no argv re-serialization, so outer/inner parser   #
-# drift cannot occur.                                                          #
+# parser. Both entry points convert the parsed namespace into the command's    #
+# frozen dataclass from src/cli_inputs.py before calling the target's typed    #
+# run() — no argv re-serialization, and any parser <-> dataclass field drift   #
+# fails loudly at the boundary (see tests/unit/test_cli_inputs.py).            #
 # --------------------------------------------------------------------------- #
 
 

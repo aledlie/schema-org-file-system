@@ -12,6 +12,10 @@ import json
 from datetime import datetime
 from pathlib import Path
 from collections import Counter
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.cli_inputs import UpdateSiteInputs
 
 
 def find_latest_report(results_dir: Path) -> Path:
@@ -111,12 +115,12 @@ def update_index_html(site_dir: Path, stats: dict):
     print(f"Updated {index_path}")
 
 
-def run(args) -> None:
-    """Typed entry point: refresh _site data from a parsed namespace.
+def run(args: "UpdateSiteInputs") -> None:
+    """Typed entry point: refresh _site data from validated CLI inputs.
 
-    The namespace must carry the attributes defined by
-    ``src.cli.add_update_site_arguments`` (the single source for this
-    command's options, shared with the unified CLI).
+    ``args`` is the frozen ``src.cli_inputs.UpdateSiteInputs`` dataclass
+    built from the options ``src.cli.add_update_site_arguments`` defines
+    (the single source for this command, shared with the unified CLI).
     """
     base_dir = Path(__file__).parent.parent
     results_dir = base_dir / args.results_dir
@@ -158,17 +162,17 @@ def run(args) -> None:
 
     # Regenerate timeline data
     print("\nRegenerating timeline data...")
-    import subprocess
-    result = subprocess.run(
-        ['python3', 'scripts/generate_timeline_data.py'],
-        cwd=base_dir,
-        capture_output=True,
-        text=True
-    )
-    if result.returncode == 0:
+    import sys
+    if str(base_dir) not in sys.path:
+        sys.path.insert(0, str(base_dir))
+    try:
+        from src.api.timeline_api import run as timeline_run
+        from src.cli_inputs import TimelineInputs
+
+        timeline_run(TimelineInputs(db_path=None))
         print("  Timeline data regenerated")
-    else:
-        print(f"  Warning: {result.stderr}")
+    except Exception as e:  # site update stays usable when timeline data fails
+        print(f"  Warning: {e}")
 
     print("\n" + "=" * 60)
     print("SITE DATA UPDATED")
@@ -185,10 +189,11 @@ def main():
 
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from src.cli import add_update_site_arguments
+    from src.cli_inputs import UpdateSiteInputs
 
     parser = argparse.ArgumentParser(description='Update _site data from latest report')
     add_update_site_arguments(parser)
-    run(parser.parse_args())
+    run(UpdateSiteInputs.from_namespace(parser.parse_args()))
 
 
 if __name__ == "__main__":

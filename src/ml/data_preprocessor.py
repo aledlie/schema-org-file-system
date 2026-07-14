@@ -17,7 +17,10 @@ import logging
 import os
 from collections import Counter
 from datetime import datetime
-from typing import Any, Dict, List, Tuple
+from typing import TYPE_CHECKING, Any, Dict, List, Tuple
+
+if TYPE_CHECKING:
+    from src.cli_inputs import PreprocessInputs
 
 from .feature_extractor import FileFeatureExtractor
 
@@ -402,12 +405,12 @@ class DataPreprocessor:
         return "\n".join(report)
 
 
-def run(args) -> None:
-    """Typed entry point: run the preprocessing pipeline from a parsed namespace.
+def run(args: "PreprocessInputs") -> None:
+    """Typed entry point: run the preprocessing pipeline from validated CLI inputs.
 
-    The namespace must carry the attributes defined by
-    ``src.cli.add_preprocess_arguments`` (the single source for this command's
-    options, shared with the unified CLI).
+    ``args`` is the frozen ``src.cli_inputs.PreprocessInputs`` dataclass
+    built from the options ``src.cli.add_preprocess_arguments`` defines (the
+    single source for this command, shared with the unified CLI).
     """
     print("Initializing Data Preprocessor...")
     preprocessor = DataPreprocessor()
@@ -448,7 +451,8 @@ def main():
     import argparse
 
     from src.cli import add_preprocess_arguments
+    from src.cli_inputs import PreprocessInputs
 
     parser = argparse.ArgumentParser(description='Preprocess file organization data for ML')
     add_preprocess_arguments(parser)
-    run(parser.parse_args())
+    run(PreprocessInputs.from_namespace(parser.parse_args()))

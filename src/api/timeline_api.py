@@ -1,400 +1,266 @@
 #!/usr/bin/env python3
 """
-Timeline API - Provides session data for timeline visualization.
+Timeline data generation for the run-history visualization.
 
-Fetches organization session data from SQLite database and serves it
-as JSON for the timeline interface.
+Canonical implementation of the ``_site/timeline_data.json`` document
+consumed by ``_site/run_timeline.html``: sessions (with per-session
+category/schema-type/extension breakdowns and consecutive-session deltas)
+plus cumulative stats. Reached via ``organize-files timeline``,
+``organize-files update-site``, and the ``scripts/generate_timeline_data.py``
+launcher — keep those the only writers of the output file.
 """
 
 import json
-import sqlite3
-from storage._time import utcnow
-from typing import List, Dict, Any, Optional
 from pathlib import Path
-from collections import defaultdict
+from typing import TYPE_CHECKING, Any
 
-try:
-    from .constants import COST_DECIMAL_PLACES
-except ImportError:
-    from constants import COST_DECIMAL_PLACES
+if TYPE_CHECKING:
+    from src.cli_inputs import TimelineInputs
+
+from shared.db_utils import db_connection, DEFAULT_DB_PATH
+from src.storage._time import utcnow
+
+DB_PATH = DEFAULT_DB_PATH
+OUTPUT_PATH = Path(__file__).resolve().parents[2] / "_site" / "timeline_data.json"
 
 
-class TimelineAPI:
-    """API for fetching and formatting timeline data."""
-
-    def __init__(self, db_path: str = "results/file_organization.db"):
-        """
-        Initialize the Timeline API.
-
-        Args:
-            db_path: Path to SQLite database
-        """
-        self.db_path = Path(db_path)
-        if not self.db_path.exists():
-            raise FileNotFoundError(f"Database not found: {db_path}")
-
-    def get_all_sessions(self) -> List[Dict[str, Any]]:
-        """
-        Fetch all organization sessions with aggregated statistics.
-
-        Returns:
-            List of session dictionaries with enriched data
-        """
-        conn = sqlite3.connect(self.db_path)
-        conn.row_factory = sqlite3.Row
+def get_sessions(db_path: Path | str | None = None) -> list[dict[str, Any]]:
+    """Get all organization sessions with their stats."""
+    with db_connection(db_path) as conn:
         cursor = conn.cursor()
 
-        # Fetch sessions with category distributions
+        cursor.execute("""
+            SELECT
+                id,
+                started_at,
+                completed_at,
+                dry_run,
+                source_directories,
+                base_path,
+                file_limit,
+                total_files,
+                organized_count,
+                skipped_count,
+                error_count,
+                total_cost,
+                total_processing_time_sec
+            FROM organization_sessions
+            WHERE total_files > 0
+            ORDER BY started_at ASC
+        """)
+
         sessions = []
+        for row in cursor.fetchall():
+            session = dict(row)
+            session['id_short'] = session['id'][:8]
 
-        try:
-            # Get all sessions
-            cursor.execute("""
-                SELECT
-                    id,
-                    started_at,
-                    completed_at,
-                    dry_run,
-                    total_files,
-                    organized_count,
-                    skipped_count,
-                    error_count,
-                    total_cost,
-                    total_processing_time_sec as processing_time,
-                    source_directories,
-                    base_path
-                FROM organization_sessions
-                ORDER BY started_at DESC
-            """)
+            # Parse JSON fields
+            if session['source_directories']:
+                try:
+                    session['source_directories'] = json.loads(session['source_directories'])
+                except (json.JSONDecodeError, TypeError):
+                    session['source_directories'] = []
+            else:
+                session['source_directories'] = []
 
-            session_rows = cursor.fetchall()
-
-            for row in session_rows:
-                session_data = dict(row)
-
-                # Parse JSON fields
-                if session_data['source_directories']:
-                    try:
-                        session_data['source_directories'] = json.loads(
-                            session_data['source_directories']
-                        )
-                    except json.JSONDecodeError:
-                        session_data['source_directories'] = []
-
-                # Get category distribution for this session
-                session_data['categories'] = self._get_category_distribution(
-                    cursor, session_data['id']
+            # Calculate success rate
+            if session['total_files'] > 0:
+                session['success_rate'] = round(
+                    (session['organized_count'] / session['total_files']) * 100, 1
                 )
+            else:
+                session['success_rate'] = 0
 
-                # Calculate derived metrics
-                session_data['success_rate'] = self._calculate_success_rate(session_data)
-                session_data['files_per_second'] = self._calculate_files_per_second(
-                    session_data
-                )
-                session_data['cost_per_file'] = self._calculate_cost_per_file(session_data)
+            sessions.append(session)
 
-                # Get top schema types
-                session_data['schema_types'] = self._get_schema_type_distribution(
-                    cursor, session_data['id']
-                )
+    return sessions
 
-                sessions.append(session_data)
 
-        finally:
-            conn.close()
-
-        return sessions
-
-    def get_session_by_id(self, session_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Fetch a single session by ID.
-
-        Args:
-            session_id: Session ID to fetch
-
-        Returns:
-            Session dictionary or None if not found
-        """
-        sessions = self.get_all_sessions()
-        for session in sessions:
-            if session['id'] == session_id:
-                return session
-        return None
-
-    def get_session_comparison(
-        self, session_id_1: str, session_id_2: str
-    ) -> Dict[str, Any]:
-        """
-        Compare two sessions and calculate differences.
-
-        Args:
-            session_id_1: First session ID
-            session_id_2: Second session ID
-
-        Returns:
-            Comparison dictionary with deltas
-        """
-        session1 = self.get_session_by_id(session_id_1)
-        session2 = self.get_session_by_id(session_id_2)
-
-        if not session1 or not session2:
-            raise ValueError("One or both sessions not found")
-
-        comparison = {
-            'session1': session1,
-            'session2': session2,
-            'deltas': {
-                'total_files': session2['total_files'] - session1['total_files'],
-                'organized_count': session2['organized_count'] - session1['organized_count'],
-                'error_count': session2['error_count'] - session1['error_count'],
-                'total_cost': round(
-                    session2['total_cost'] - session1['total_cost'], 2
-                ),
-                'success_rate': round(
-                    session2['success_rate'] - session1['success_rate'], 2
-                ),
-            }
-        }
-
-        return comparison
-
-    def get_latest_sessions(self, limit: int = 2) -> List[Dict[str, Any]]:
-        """
-        Get the most recent sessions.
-
-        Args:
-            limit: Number of sessions to return
-
-        Returns:
-            List of recent sessions
-        """
-        sessions = self.get_all_sessions()
-        return sessions[:limit]
-
-    def get_aggregate_stats(self) -> Dict[str, Any]:
-        """
-        Calculate aggregate statistics across all sessions.
-
-        Returns:
-            Dictionary of aggregate metrics
-        """
-        sessions = self.get_all_sessions()
-
-        if not sessions:
-            return {
-                'total_sessions': 0,
-                'total_files_processed': 0,
-                'total_organized': 0,
-                'total_errors': 0,
-                'total_cost': 0.0,
-                'average_success_rate': 0.0,
-                'total_processing_time': 0.0,
-            }
-
-        total_files = sum(s['total_files'] for s in sessions)
-        total_organized = sum(s['organized_count'] for s in sessions)
-        total_errors = sum(s['error_count'] for s in sessions)
-        total_cost = sum(s['total_cost'] for s in sessions)
-        avg_success_rate = sum(s['success_rate'] for s in sessions) / len(sessions)
-        total_processing_time = sum(s['processing_time'] or 0 for s in sessions)
-
-        # Category breakdown across all sessions
-        all_categories = defaultdict(int)
-        for session in sessions:
-            for cat, count in session['categories'].items():
-                all_categories[cat] += count
-
-        return {
-            'total_sessions': len(sessions),
-            'total_files_processed': total_files,
-            'total_organized': total_organized,
-            'total_errors': total_errors,
-            'total_cost': round(total_cost, 2),
-            'average_success_rate': round(avg_success_rate, 2),
-            'total_processing_time': round(total_processing_time, 2),
-            'category_breakdown': dict(all_categories),
-            'dry_run_count': sum(1 for s in sessions if s['dry_run']),
-            'live_run_count': sum(1 for s in sessions if not s['dry_run']),
-        }
-
-    def _get_category_distribution(
-        self, cursor: sqlite3.Cursor, session_id: str
-    ) -> Dict[str, int]:
-        """
-        Get category distribution for a session.
-
-        Args:
-            cursor: Database cursor
-            session_id: Session ID
-
-        Returns:
-            Dictionary mapping category names to file counts
-        """
+def get_session_categories(
+    session_id: str, db_path: Path | str | None = None
+) -> list[dict[str, Any]]:
+    """Get category breakdown for a specific session."""
+    with db_connection(db_path) as conn:
+        cursor = conn.cursor()
         cursor.execute("""
-            SELECT c.name, COUNT(DISTINCT f.id) as count
-            FROM files f
-            JOIN file_categories fc ON f.id = fc.file_id
-            JOIN categories c ON fc.category_id = c.id
+            SELECT
+                c.name,
+                c.color,
+                c.icon,
+                COUNT(fc.file_id) as count,
+                AVG(fc.confidence) as avg_confidence
+            FROM categories c
+            JOIN file_categories fc ON c.id = fc.category_id
+            JOIN files f ON fc.file_id = f.id
             WHERE f.session_id = ?
-            GROUP BY c.name
+            GROUP BY c.id
             ORDER BY count DESC
+            LIMIT 10
         """, (session_id,))
+        return [dict(row) for row in cursor.fetchall()]
 
-        rows = cursor.fetchall()
-        distribution = {row['name']: row['count'] for row in rows}
 
-        return distribution
-
-    def _get_schema_type_distribution(
-        self, cursor: sqlite3.Cursor, session_id: str
-    ) -> Dict[str, int]:
-        """
-        Get schema type distribution for a session.
-
-        Args:
-            cursor: Database cursor
-            session_id: Session ID
-
-        Returns:
-            Dictionary mapping schema types to counts
-        """
+def get_session_schema_types(
+    session_id: str, db_path: Path | str | None = None
+) -> list[dict[str, Any]]:
+    """Get schema type distribution for a specific session."""
+    with db_connection(db_path) as conn:
+        cursor = conn.cursor()
         cursor.execute("""
-            SELECT schema_type, COUNT(*) as count
+            SELECT
+                schema_type,
+                COUNT(*) as count
             FROM files
             WHERE session_id = ? AND schema_type IS NOT NULL
             GROUP BY schema_type
             ORDER BY count DESC
+        """, (session_id,))
+        return [dict(row) for row in cursor.fetchall()]
+
+
+def get_session_extensions(
+    session_id: str, db_path: Path | str | None = None
+) -> list[dict[str, Any]]:
+    """Get file extension distribution for a specific session."""
+    with db_connection(db_path) as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT
+                LOWER(file_extension) as extension,
+                COUNT(*) as count
+            FROM files
+            WHERE session_id = ? AND file_extension IS NOT NULL
+            GROUP BY LOWER(file_extension)
+            ORDER BY count DESC
             LIMIT 10
         """, (session_id,))
+        return [dict(row) for row in cursor.fetchall()]
 
-        rows = cursor.fetchall()
-        distribution = {row['schema_type']: row['count'] for row in rows}
 
-        return distribution
-
-    @staticmethod
-    def _calculate_success_rate(session: Dict[str, Any]) -> float:
-        """Calculate success rate percentage."""
-        if session['total_files'] == 0:
-            return 0.0
-        return round(
-            (session['organized_count'] / session['total_files']) * 100, 2
-        )
-
-    @staticmethod
-    def _calculate_files_per_second(session: Dict[str, Any]) -> float:
-        """Calculate processing throughput."""
-        if not session.get('processing_time') or session['processing_time'] == 0:
-            return 0.0
-        return round(session['total_files'] / session['processing_time'], 2)
-
-    @staticmethod
-    def _calculate_cost_per_file(session: Dict[str, Any]) -> float:
-        """Calculate cost per file."""
-        if session['total_files'] == 0:
-            return 0.0
-        return round(session['total_cost'] / session['total_files'], COST_DECIMAL_PLACES)
-
-    def export_to_json(self, output_path: str = "_site/timeline_data.json") -> str:
-        """
-        Export all session data to JSON file for static serving.
-
-        Args:
-            output_path: Path to write JSON file
-        """
-        data = {
-            'sessions': self.get_all_sessions(),
-            'aggregate_stats': self.get_aggregate_stats(),
-            'generated_at': utcnow().isoformat(),
+def calculate_session_changes(current: dict, previous: dict | None) -> dict[str, Any]:
+    """Calculate what changed between two sessions."""
+    if previous is None:
+        return {
+            'is_first': True,
+            'files_delta': current['total_files'],
+            'organized_delta': current['organized_count'],
+            'new_categories': [],
+            'category_changes': []
         }
 
-        output_file = Path(output_path)
-        output_file.parent.mkdir(parents=True, exist_ok=True)
+    return {
+        'is_first': False,
+        'files_delta': current['total_files'] - previous['total_files'],
+        'organized_delta': current['organized_count'] - previous['organized_count'],
+        'success_rate_delta': round(current['success_rate'] - previous['success_rate'], 1),
+        'cost_delta': round(current['total_cost'] - previous['total_cost'], 4),
+        'time_delta': round(
+            (current['total_processing_time_sec'] or 0) -
+            (previous['total_processing_time_sec'] or 0), 2
+        )
+    }
 
-        with open(output_file, 'w') as f:
-            json.dump(data, f, indent=2, default=str)
 
-        print(f"Timeline data exported to {output_path}")
-        return output_path
+def get_cumulative_stats(db_path: Path | str | None = None) -> dict[str, Any]:
+    """Get cumulative statistics across all sessions."""
+    with db_connection(db_path) as conn:
+        cursor = conn.cursor()
+
+        cursor.execute("""
+            SELECT
+                COUNT(DISTINCT session_id) as total_sessions,
+                COUNT(*) as total_files,
+                SUM(CASE WHEN status = 'organized' THEN 1 ELSE 0 END) as total_organized,
+                AVG(processing_time_sec) as avg_processing_time
+            FROM files
+            WHERE session_id IS NOT NULL
+        """)
+
+        row = cursor.fetchone()
+        stats = dict(row) if row else {
+            'total_sessions': 0, 'total_files': 0,
+            'total_organized': 0, 'avg_processing_time': None,
+        }
+
+        # Get category totals
+        cursor.execute("""
+            SELECT
+                c.name,
+                COUNT(fc.file_id) as count
+            FROM categories c
+            LEFT JOIN file_categories fc ON c.id = fc.category_id
+            GROUP BY c.id
+            ORDER BY count DESC
+            LIMIT 5
+        """)
+
+        stats['top_categories'] = [dict(row) for row in cursor.fetchall()]
+
+    return stats
+
+
+def generate_timeline_data(db_path: Path | str | None = None) -> dict[str, Any]:
+    """Generate complete timeline data structure."""
+    sessions = get_sessions(db_path)
+
+    # Enrich each session with detailed data
+    enriched_sessions = []
+    previous_session = None
+
+    for session in sessions:
+        session['categories'] = get_session_categories(session['id'], db_path)
+        session['schema_types'] = get_session_schema_types(session['id'], db_path)
+        session['extensions'] = get_session_extensions(session['id'], db_path)
+        session['changes'] = calculate_session_changes(session, previous_session)
+
+        enriched_sessions.append(session)
+        previous_session = session
+
+    return {
+        'generated_at': utcnow().isoformat(),
+        'cumulative': get_cumulative_stats(db_path),
+        'sessions': enriched_sessions,
+        'session_count': len(enriched_sessions)
+    }
+
+
+def run(args: "TimelineInputs") -> None:
+    """Typed entry point: generate and save timeline data from validated CLI inputs.
+
+    ``args`` is the frozen ``src.cli_inputs.TimelineInputs`` dataclass built
+    from the options ``src.cli.add_timeline_arguments`` defines (the single
+    source for this command, shared with the unified CLI). ``db_path=None``
+    resolves to the shared DEFAULT_DB_PATH.
+    """
+    db_path = args.db_path or DB_PATH
+    print(f"Generating timeline data from {db_path}...")
+
+    data = generate_timeline_data(db_path)
+
+    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
+    with open(OUTPUT_PATH, 'w') as f:
+        json.dump(data, f, indent=2, default=str)
+
+    print(f"Timeline data saved to {OUTPUT_PATH}")
+    print(f"  - {data['session_count']} sessions")
+    print(f"  - {data['cumulative']['total_files']} total files")
 
 
 def main() -> None:
-    """CLI entry point for generating timeline data."""
+    """Standalone entry point (argument definitions shared with organize-files).
+
+    Reached via the ``scripts/generate_timeline_data.py`` launcher, which puts
+    the project root and ``scripts/`` on ``sys.path``.
+    """
     import argparse
 
-    parser = argparse.ArgumentParser(description="Generate timeline data from database")
-    parser.add_argument(
-        '--db-path',
-        default='results/file_organization.db',
-        help='Path to SQLite database'
-    )
-    parser.add_argument(
-        '--output',
-        default='_site/timeline_data.json',
-        help='Output JSON file path'
-    )
-    parser.add_argument(
-        '--session-id',
-        help='Get specific session by ID'
-    )
-    parser.add_argument(
-        '--compare',
-        nargs=2,
-        metavar=('SESSION1', 'SESSION2'),
-        help='Compare two sessions'
-    )
-    parser.add_argument(
-        '--stats',
-        action='store_true',
-        help='Show aggregate statistics'
-    )
+    from src.cli import add_timeline_arguments
+    from src.cli_inputs import TimelineInputs
 
-    args = parser.parse_args()
-
-    try:
-        api = TimelineAPI(args.db_path)
-
-        if args.session_id:
-            # Get specific session
-            session = api.get_session_by_id(args.session_id)
-            if session:
-                print(json.dumps(session, indent=2, default=str))
-            else:
-                print(f"Session {args.session_id} not found")
-
-        elif args.compare:
-            # Compare two sessions
-            comparison = api.get_session_comparison(args.compare[0], args.compare[1])
-            print(json.dumps(comparison, indent=2, default=str))
-
-        elif args.stats:
-            # Show aggregate stats
-            stats = api.get_aggregate_stats()
-            print(json.dumps(stats, indent=2, default=str))
-
-        else:
-            # Export all data to JSON
-            output_path = api.export_to_json(args.output)
-            print(f"✅ Timeline data exported successfully to {output_path}")
-
-            # Print summary
-            stats = api.get_aggregate_stats()
-            print("\n📊 Summary:")
-            print(f"   Total Sessions: {stats['total_sessions']}")
-            print(f"   Total Files: {stats['total_files_processed']:,}")
-            print(f"   Success Rate: {stats['average_success_rate']}%")
-            print(f"   Total Cost: ${stats['total_cost']:.2f}")
-
-    except FileNotFoundError as e:
-        print(f"❌ Error: {e}")
-        print("Make sure you've run the file organizer at least once.")
-        exit(1)
-    except Exception as e:
-        print(f"❌ Error: {e}")
-        import traceback
-        traceback.print_exc()
-        exit(1)
+    parser = argparse.ArgumentParser(description='Generate timeline visualization data')
+    add_timeline_arguments(parser)
+    run(TimelineInputs.from_namespace(parser.parse_args()))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

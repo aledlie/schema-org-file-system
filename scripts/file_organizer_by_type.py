@@ -9,6 +9,10 @@ import shutil
 import sys
 from pathlib import Path
 from collections import defaultdict
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.cli_inputs import TypeInputs
 
 # shared/ lives in scripts/ — ensure it resolves when this file is imported
 # directly (e.g. in tests that add scripts/ to sys.path themselves).
@@ -222,12 +226,12 @@ class FileTypeOrganizer:
             print(f"{category}: {count} files")
 
 
-def run(args) -> None:
-    """Typed entry point: organize by extension from a parsed namespace.
+def run(args: "TypeInputs") -> None:
+    """Typed entry point: organize by extension from validated CLI inputs.
 
-    The namespace must carry the attributes defined by
-    ``src.cli.add_type_arguments`` (the single source for this command's
-    options, shared with the unified CLI).
+    ``args`` is the frozen ``src.cli_inputs.TypeInputs`` dataclass built
+    from the options ``src.cli.add_type_arguments`` defines (the single
+    source for this command, shared with the unified CLI).
     """
     organizer = FileTypeOrganizer(base_path=args.base_path)
 
@@ -245,12 +249,13 @@ def main():
 
     sys.path.insert(0, str(Path(__file__).parent.parent))
     from src.cli import add_type_arguments
+    from src.cli_inputs import TypeInputs
 
     parser = argparse.ArgumentParser(
         description='Organize files by type based on extensions'
     )
     add_type_arguments(parser)
-    run(parser.parse_args())
+    run(TypeInputs.from_namespace(parser.parse_args()))
 
 
 if __name__ == '__main__':
