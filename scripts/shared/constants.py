@@ -20,6 +20,13 @@ IMAGE_EXTENSIONS_WIDE = IMAGE_EXTENSIONS | {".tiff", ".tif", ".svg", ".ico", ".r
 # Archive extensions -- single source shared by filename_classifier and mime_classifier
 ARCHIVE_EXTENSIONS = {".zip", ".tar", ".gz", ".rar", ".7z", ".bz2"}
 
+# Software extensions -- single source shared by filename_classifier (content mode)
+# and mime_classifier (canonical format classifier). The installer/package split
+# drives type-mode Software/Installers vs Software/Packages; their union is the set
+# filename_classifier files under technical/software_packages.
+SOFTWARE_INSTALLER_EXTENSIONS = {".dmg", ".pkg", ".exe", ".msi", ".app"}
+SOFTWARE_PACKAGE_EXTENSIONS = {".deb", ".rpm", ".snap", ".flatpak", ".appimage"}
+
 # CLIP content labels -- canonical list used by analyze_renamed_files, organize_by_content, etc.
 CLIP_CONTENT_LABELS = [
     "a landscape or nature scene",
