@@ -19,14 +19,6 @@ One remaining gap handles false-positive "people" in the symlink view.
 
    *Fix planned (2026-07-13):* layered local-only confidence gate at write time (`nameparser` shape → `probablepeople` CRF → Census gazetteer, weighted composite) with three-way routing (auto-accept / `pending_review` queue via a new `organize-files review-people` CLI / reject), `review_status`+`validation_scores` columns on `people`, and an `additionalProperty` JSON-LD sidecar. External KB validation rejected (notability gap — see the Wikidata item below). Full phased design: [`docs/plans/PERSON_NAME_VALIDATION_PLAN.md`](plans/PERSON_NAME_VALIDATION_PLAN.md).
 
-### CLI argv re-serialization fragility
-
-`src/cli.py` forwards subcommands by rebuilding `sys.argv` via `_args_to_argv` and re-parsing in the target script's `main()` (8 call sites: content, name, type, preprocess, evaluate, update-site, timeline, plus the script-side parsers).
-
-**Status:** Done — option 1 implemented 2026-07-13. Each forwarded command now has a typed `run(args)` entry point, and its options are single-sourced in `src/cli.py` (`add_<cmd>_arguments`), used by both the organize-files subparser and the script's standalone `main()` — the drift class is structurally gone (`_args_to_argv` deleted). Option definitions were unioned in the process: formerly script-only flags (`--force`, `--cost-report`, `--check-deps`, `--skip-health-check`, `--sentry-dsn`, `--run-migration` on content; `--recursive` on name; `--output`, `-t/-o/-i/-r/-s` shorts, `--test-ratio`, `--min-freq`, `--report-only` elsewhere) are now reachable from organize-files; `evaluate --model` (never worked — the old inner re-parse rejected it) was dropped; `timeline --db-path` (parsed but silently ignored by the old no-arg `main()`) is now honored end-to-end. Standalone-default changes: `type` sources default is now `~/Desktop ~/Downloads` (was `~/Documents/Uncategorized` standalone-only) and `name` sources default replaces its old `required=True` — both match what organize-files already did. Tests: `c29632c` plus namespace/contract tests for all forwarded commands.
-**Priority:** P3
-**Source:** thin-wrapper refactor session, 2026-07-13 (closes TEST_AND_REFACTOR_PLAN.md's superseded `workflow.py` item)
-
 ### Wikidata SPARQL for non-person entity typing
 
 Investigate Wikidata as a type validator for entities where notability is expected.
@@ -60,37 +52,6 @@ Coverage run 2026-07-13 (`pytest tests/unit tests/integration --cov=src`): overa
 
 Test design approach: Stub the expensive classifiers (`CLIPClassifier.encode`, `ocr_classifier.classify`) with deterministic mock implementations that return known scores, then drive realistic file-organization scenarios (e.g., mixed content types with classifier disagreement, OCR fallback triggering, confidence-gate rejections).
 
-### `should_skip_file` copied into CLI-wired and legacy scripts
-
-`ContentOrganizer.should_skip_file` (`src/organizers/content_organizer.py:1688-1710`) has two stale copies in `scripts/`.
-
-**Status:** Done — `shared.file_ops.should_skip_file()` extracted with SIDECAR_DIR_SUFFIXES check; both `content_organizer.py` and `file_organizer_by_type.py` now delegate to it (commit `213e791`, 2026-07-13).
-**Priority:** P3
-**Source:** scripts↔src code-duplication audit, 2026-07-13
-
-### Filename-collision handling has three divergent implementations
-
-Duplicate-destination collisions are resolved differently depending on which organizer runs.
-
-**Status:** Done — all three call sites consolidated on `shared.file_ops.resolve_collision` (incrementing counter); timestamp suffix removed from `content_organizer.py` and `file_organizer_by_type.py`, inline counter loop removed from `name_organizer.py` (commit `213e791`, 2026-07-13).
-**Priority:** P3
-**Source:** scripts↔src code-duplication audit, 2026-07-13
-
-### `_persist_to_graph_store` wrapper signature/docstring drift risk
-
-The thin CLI wrapper repeats the full 12-parameter signature and docstring of the `src/` implementation it delegates to.
-
-**Status:** Done — wrapper docstring slimmed to a single delegation pointer (commit `213e791`, 2026-07-13).
-**Priority:** P4
-**Source:** scripts↔src code-duplication audit, 2026-07-13
-
-### OCR availability probe duplicated between wrapper and organizer
-
-The try/except OCR dependency probe (pypdf/PIL/HEIC registration) exists in two places.
-
-**Status:** Done — both call sites now import `OCR_AVAILABLE` directly from `shared.ocr_classifier` (module-level flag); `is_ocr_available()` call removed from both (commit `213e791`, 2026-07-13).
-**Priority:** P4
-**Source:** scripts↔src code-duplication audit, 2026-07-13
 
 ### `regenerate_schemas.py` mirrors the src generator import list
 
@@ -99,14 +60,6 @@ The try/except OCR dependency probe (pypdf/PIL/HEIC registration) exists in two 
 **Source:** scripts↔src code-duplication audit, 2026-07-13
 
 `scripts/regenerate_schemas.py:27-37` re-lists the seven generator classes that `src/__init__.py:13-20` already exports, importing them from `generators` via a `sys.path` insert. Harmless today; importing from the `src` package (`from src import DocumentGenerator, ...`) would remove the parallel list. Fold into any future touch of the script rather than picking up standalone.
-
-### `extract_project_name` accepts the username directory as a project name
-
-Files organized straight out of home subdirectories get the user's own directory name as a "project" folder.
-
-**Status:** Done — `extract_project_name` now skips `Path.home().name`, the filesystem root `/`, and any direct child of `/Users` or `/home`; two regression tests added (commit `213e791`, 2026-07-13).
-**Priority:** P3
-**Source:** organize-files content dry-run observation, 2026-07-13
 
 ### `generate_schema` fidelity losses vs the retired legacy implementation
 
