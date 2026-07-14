@@ -33,6 +33,24 @@ try:
 except ImportError:
     pass
 
+
+def _inference_mode():
+    """torch.inference_mode() when torch is importable, else a no-op decorator.
+
+    CLIPClassifier's methods are decorated at class-definition (import) time, so
+    this must resolve even when the optional CLIP deps are absent — otherwise
+    importing this module raises NameError instead of degrading to
+    CLIP_AVAILABLE = False.
+    """
+    if CLIP_AVAILABLE:
+        return torch.inference_mode()
+
+    def _decorator(func):
+        return func
+
+    return _decorator
+
+
 # Module-level singleton cache: device string → CLIPClassifier instance.
 _instances: Dict[str, "CLIPClassifier"] = {}
 _lock = threading.Lock()
@@ -153,7 +171,7 @@ class CLIPClassifier:
                 self.preprocess(img.convert("RGB")).unsqueeze(0).to(self.device, dtype=self._dtype)
             )
 
-    @torch.inference_mode()
+    @_inference_mode()
     def _encode_image(self, image_path: Path) -> "torch.Tensor":
         """Return a normalised [D] image embedding."""
         pixel_values = self._preprocess_image(image_path)
@@ -182,7 +200,7 @@ class CLIPClassifier:
         """Return a normalised [D] image embedding as a CPU float32 numpy array."""
         return self.embedding_to_numpy(self._encode_image(image_path))
 
-    @torch.inference_mode()
+    @_inference_mode()
     def encode_images_to_numpy(self, image_paths: List[Path], batch_size: int = CLIP_BATCH_SIZE):
         """Return [(index, [D] numpy embedding)] for images that opened successfully.
 
@@ -234,7 +252,7 @@ class CLIPClassifier:
         results.sort(key=lambda x: x[1], reverse=True)
         return results
 
-    @torch.inference_mode()
+    @_inference_mode()
     def _encode_text(self, text_prompts: list[str]) -> "torch.Tensor":
         """Return normalised [N, D] text embeddings."""
         tokens = self.tokenizer(text_prompts).to(self.device)
@@ -336,7 +354,7 @@ class CLIPClassifier:
         all_results = self.classify_batch(image_paths, labels, prompt_prefix, batch_size)
         return [res[0] if res else ("unknown", self._FALLBACK_CONFIDENCE) for res in all_results]
 
-    @torch.inference_mode()
+    @_inference_mode()
     def _run_batch(
         self,
         image_paths: List[Path],
