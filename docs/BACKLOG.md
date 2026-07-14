@@ -127,16 +127,10 @@ Migration context: the goldens originally pinned `scripts/file_organizer.py`'s `
 
 ### Defensive `_getexif()` fix for non-EXIF image formats
 
-**Status:** In progress — uncommitted fix in working tree
+**Status:** Done — commit `229a011`, 2026-07-14
 **Priority:** P3
 **Source:** image_metadata.py defensive handling, 2026-07-14
 
-`ImageMetadataParser.extract_exif_data` directly calls `image._getexif()`, which raises `AttributeError` on formats without EXIF (GIF, PNG, WebP without EXIF). Uncommitted fix uses `getattr(image, "_getexif", None)` to probe for the method before calling. This change is defensive but needs to be:
-
-1. Committed (ready to merge)
-2. Tested to verify no regressions on JPEG/TIFF/HEIC and clean handling on GIF/PNG
-3. Confirm no side effects on the fallback `_extract_exif_via_piexif` path
-
-Change lives in `/Users/alyshialedlie/schema-org-file-system/src/analyzers/image_metadata.py:86-90`.
+`ImageMetadataParser.extract_exif_data` directly called `image._getexif()`, which raises `AttributeError` on formats without EXIF (GIF, PNG, WebP without EXIF). Fixed by probing with `getattr(image, "_getexif", None)` before calling so those formats degrade cleanly. The same commit added `extract_text_metadata()` for GIF/PNG textual chunks with a PNG "Creation Time" datetime fallback. Covered by `tests/unit/test_image_metadata.py` (48 tests); the piexif fallback path is unaffected.
 
 
