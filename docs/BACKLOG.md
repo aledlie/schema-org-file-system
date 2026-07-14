@@ -66,7 +66,7 @@ The 2026-07-14 coverage run (`pytest tests/unit tests/integration --cov=src`) me
 Two documentation TODOs also carry over from the retired plan (both were never done):
 
 1. **Docstring pass** — the plan's "update all docstrings" step landed only partially.
-2. **Generated API docs** — `pdoc3 --html --output-dir docs/api src/` was specced but never run; no generated reference exists.
+2. ~~**Generated API docs** — `pdoc3 --html --output-dir docs/api src/` was specced but never run; no generated reference exists.~~ **DONE (`bc67838`)** — 52-page pdoc3 HTML reference generated into `docs/api/` (src/ + scripts/ on `PYTHONPATH` for the `shared.*`/intra-src bare imports; `--skip-errors` guard). Docstring pass (TODO 1) still open.
 
 Storage layer (90%), generators+base (91%), and enrichment (98%) already meet their targets — no further work needed there.
 
@@ -84,14 +84,14 @@ Full findings with line-level evidence, divergence notes, and per-item recommend
 Priority order from the review:
 
 1. **Timeline exporter split-brain** — `scripts/generate_timeline_data.py` and the orphaned `src/api/timeline_api.py` both write `_site/timeline_data.json` with incompatible document schemas; consolidate or delete the dead src path.
-2. **`regenerate_schemas.py` metadata-dropping drift** — its copied schema builder's `preserve_keys` omits `identifier`/`sameAs`/`publisher`/`description`, so regeneration silently strips ScholarlyArticle/CLIP metadata that `FileProcessor.generate_schema` now emits.
+2. ~~**`regenerate_schemas.py` metadata-dropping drift** — its copied schema builder's `preserve_keys` omits `identifier`/`sameAs`/`publisher`/`description`, so regeneration silently strips ScholarlyArticle/CLIP metadata that `FileProcessor.generate_schema` now emits.~~ **DONE (`83baf83`)** — the four keys were added to `preserve_keys`.
 3. **Game keyword tables split-brained** — `GAME_AUDIO/MUSIC/FONT_KEYWORDS` duplicated between `scripts/shared/constants.py` and `content_organizer.py` with fixes on *both* sides (src still has the `'cast'`→`'podcast'` false positive the script fixed); single-home like `GAME_SPRITE_KEYWORDS`.
-4. **`scripts/d1/schema.sql` stale ORM mirror** — missing `files` columns (`ocr_confidence`, `detected_language`, `kie_fields`) and the entire `merge_events` table; generate from `Base.metadata` instead of hand-maintaining.
+4. ~~**`scripts/d1/schema.sql` stale ORM mirror** — missing `files` columns (`ocr_confidence`, `detected_language`, `kie_fields`) and the entire `merge_events` table~~ **DONE (`83baf83`)** — the three columns + `merge_events` table & indexes were hand-added to match the ORM (DDL validated in sqlite). The "generate from `Base.metadata` instead of hand-maintaining" root-cause fix remains **open** — the file will drift again on the next model change.
 5. Remaining ~40 items (type-organizer taxonomy drift, `filename_classifier` keyword overlaps, `DEFAULT_DB_PATH` ×11 call sites, small helper copies) opportunistically when the owning script is touched.
 
 Subsumes the pre-existing item below (generator import list) into the same cleanup effort.
 
-Zones 1 (timeline) and the three game-keyword findings in the keyword zone are now **resolved** (`a2146fe`, `1d495ed`, `cc06190`) — see the review doc's resolution notes.
+Resolved so far: zone 1 timeline (`a2146fe`), the three game-keyword findings (`1d495ed`, `cc06190`), priority items 2 (regenerate_schemas metadata-drop) and 4 (d1/schema.sql drift), plus the generator import-list item below (`83baf83`) — see the review doc's resolution notes.
 
 ### TimelineAPI post-consolidation cleanups (code-review follow-ups)
 
@@ -119,17 +119,17 @@ Candidates found so far:
 
 1. **Session/aggregate stats computed at two layers.** `TimelineAPI.get_cumulative_stats` (`src/api/timeline_api.py`, raw sqlite3) and `GraphStore.get_statistics` (`src/storage/graph_store.py:1215`, SQLAlchemy ORM) both aggregate total files / organized count / category + extension breakdowns over the same DB. Likely *intentional* — timeline reads lightweight raw SQL to avoid pulling the ORM (and its torch import weight) into the dashboard path — but the scopes also differ (session-scoped vs global), so confirm the split is deliberate and, if so, document it rather than merging.
 2. **`Technical/` extension map overlap.** `content_organizer.py`'s extension map (~lines 240-330) overlaps `mime_classifier.py`'s extension routing — two extension→category tables that can drift.
-3. **GameAssets folder map defined twice.** `src/organizers/category_config.py` defines the same GameAssets subcategory→folder map at lines 77-82 and 188-193 — a single table copied verbatim; the lower-risk of the three to single-home.
+3. ~~**GameAssets folder map defined twice.** `src/organizers/category_config.py` defines the same GameAssets subcategory→folder map at lines 77-82 and 188-193 — a single table copied verbatim; the lower-risk of the three to single-home.~~ **DONE (`83baf83`)** — single-homed as the `GAME_ASSETS_PATHS` module constant, referenced by both taxonomies (consumers already deepcopy before mutating). Candidates 1–2 remain open.
 
 Items 2–3 are recorded in the review doc's "Out-of-scope observations": [`docs/reviews/SCRIPTS_SRC_DUPLICATION_AUDIT.md`](reviews/SCRIPTS_SRC_DUPLICATION_AUDIT.md).
 
 ### `regenerate_schemas.py` mirrors the src generator import list
 
-**Status:** Open
+**Status:** Done (`83baf83`)
 **Priority:** P4
 **Source:** scripts↔src code-duplication audit, 2026-07-13
 
-`scripts/regenerate_schemas.py:27-37` re-lists the seven generator classes that `src/__init__.py:13-20` already exports, importing them from `generators` via a `sys.path` insert. Harmless today; importing from the `src` package (`from src import DocumentGenerator, ...`) would remove the parallel list. Fold into any future touch of the script rather than picking up standalone.
+~~`scripts/regenerate_schemas.py:27-37` re-lists the seven generator classes that `src/__init__.py:13-20` already exports, importing them from `generators` via a `sys.path` insert.~~ **DONE** — imports now go through the `src` package boundary (`from src import …`, `MetadataEnricher` included) with the project root on `sys.path`; `PropertyType` comes from `src.base`. The raw-module + `src/`-on-path hack is gone.
 
 ### `generate_schema` fidelity losses vs the retired legacy implementation
 
