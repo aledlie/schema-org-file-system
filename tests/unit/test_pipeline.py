@@ -524,16 +524,14 @@ class TestOrganizeFileAIPaths:
         graph_store.add_file.return_value = MagicMock(id="file-42")
         fp = self._make_fp(tmp_path, graph_store=graph_store)
         org = self._attach_organizer(fp, dest)
-        # Expose the _persist_to_graph_store hook via the organizer mock
-        org._persist_to_graph_store = fp._persist_to_graph_store
-
-        # Wire the organizer so FileProcessor can call back into _persist_to_graph_store
-        fp._organizer = org  # type: ignore[attr-defined]
 
         result = fp.organize_file(src, dry_run=False)
 
         assert result["status"] == "organized"
         graph_store.add_file.assert_called_once()
+        call_kwargs = graph_store.add_file.call_args.kwargs
+        assert call_kwargs["filename"] == "graphed.txt"
+        assert call_kwargs["current_path"] == str(dest)
 
     def test_non_file_path_is_skipped(self, tmp_path: Path) -> None:
         """Passing a directory path returns skipped / not_file."""
@@ -554,30 +552,6 @@ class TestOrganizeFileAIPaths:
 
 class TestOrganizeDirectories:
     """Exercises the organize_directories / organize_batch main loop."""
-
-    def _make_bp_with_mock_fp(self, tmp_path: Path) -> tuple:
-        """Returns (BatchProcessor, mock FileProcessor, mock organizer)."""
-        org = MagicMock()
-        org.stats = defaultdict(int)
-        org.ocr_available = True
-        org.registry = None
-
-        mock_fp = MagicMock()
-        mock_fp.organize_file.return_value = {
-            "status": "would_organize",
-            "destination": str(tmp_path / "dest" / "file.txt"),
-            "category": "technical",
-            "subcategory": "other",
-            "company_name": None,
-            "people_names": [],
-            "extracted_text_length": 0,
-            "reason": None,
-        }
-
-        bp = BatchProcessor(file_processor=mock_fp)
-        bp.file_processor._organizer = org  # type: ignore[attr-defined]
-        bp.file_processor._effective_organizer = org  # type: ignore[attr-defined]
-        return bp, mock_fp, org
 
     def test_organize_directories_processes_all_files(self, tmp_path: Path) -> None:
         """Files from a source directory are each passed to file_processor."""

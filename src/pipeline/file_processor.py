@@ -535,7 +535,7 @@ class FileProcessor:
 
                 # Persist to database with canonical IDs
                 if self.graph_store:
-                    organizer._persist_to_graph_store(
+                    self._persist_to_graph_store(
                         file_path=file_path,
                         dest_path=dest_path,
                         category=category,
