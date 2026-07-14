@@ -23,6 +23,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
+from src.constants import DEFAULT_DB_PATH
 from src.storage.migration import JSONMigrator, run_migration
 
 
@@ -393,7 +394,7 @@ class TestJSONMigratorInit:
     def test_init_with_defaults(self):
         """Should initialize with default paths."""
         migrator = JSONMigrator()
-        assert migrator.db_path == 'results/file_organization.db'
+        assert migrator.db_path == DEFAULT_DB_PATH
         assert migrator.results_dir == Path('results')
 
     def test_init_with_custom_paths(self, temp_db, temp_results_dir):

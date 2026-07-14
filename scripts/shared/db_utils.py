@@ -1,11 +1,20 @@
 """Shared database connection utilities."""
 from __future__ import annotations
+import importlib.util
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
 from typing import Generator
 
-DEFAULT_DB_PATH = Path(__file__).parent.parent.parent / "results" / "file_organization.db"
+# Single-source DEFAULT_DB_PATH from src/constants.py. Loaded directly by file
+# path (not `from src.constants import ...`) to avoid triggering the heavy
+# ``src`` package __init__ and any scripts↔src import cycle from this low-level,
+# broadly-imported util.
+_CONSTANTS_PATH = Path(__file__).resolve().parent.parent.parent / "src" / "constants.py"
+_spec = importlib.util.spec_from_file_location("_src_constants", _CONSTANTS_PATH)
+_constants = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_constants)
+DEFAULT_DB_PATH = _constants.DEFAULT_DB_PATH
 
 
 def get_db_connection(

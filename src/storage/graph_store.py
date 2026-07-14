@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime
 from ._time import utcnow
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple
+from typing import Dict, List, Optional, Any, Tuple, Union
 from collections import defaultdict
 
 from sqlalchemy import create_engine, event, func, and_, or_
@@ -26,6 +26,7 @@ from .models import (
 try:
     from ..constants import (
         COORDINATE_TOLERANCE_DEG,
+        DEFAULT_DB_PATH,
         DEFAULT_SEARCH_LIMIT,
         KM_PER_DEGREE_LATITUDE,
         TOP_EXTENSIONS_LIMIT,
@@ -33,6 +34,7 @@ try:
 except ImportError:
     from constants import (
         COORDINATE_TOLERANCE_DEG,
+        DEFAULT_DB_PATH,
         DEFAULT_SEARCH_LIMIT,
         KM_PER_DEGREE_LATITUDE,
         TOP_EXTENSIONS_LIMIT,
@@ -64,7 +66,7 @@ class GraphStore:
     - Statistics and aggregations
     """
 
-    def __init__(self, db_path: str = 'results/file_organization.db'):
+    def __init__(self, db_path: Union[str, Path] = DEFAULT_DB_PATH):
         """
         Initialize the graph store.
 

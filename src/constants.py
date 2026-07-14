@@ -3,6 +3,17 @@
 Organized by domain to eliminate magic numbers across the codebase.
 """
 
+from pathlib import Path
+
+# =============================================================================
+# Filesystem Paths
+# =============================================================================
+
+# Canonical default database location, anchored to the repo root so it resolves
+# the same regardless of the current working directory. Single-sourced here for
+# src/cli.py, the storage/api modules, and scripts/shared/db_utils.py.
+DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "results" / "file_organization.db"
+
 # =============================================================================
 # Database Column Lengths
 # =============================================================================

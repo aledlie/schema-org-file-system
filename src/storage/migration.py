@@ -11,7 +11,7 @@ import hashlib
 from datetime import datetime
 from ._time import utcnow
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 from collections import defaultdict
 
 from sqlalchemy.orm import Session
@@ -30,6 +30,7 @@ try:
         SEPARATOR_WIDTH_SMALL,
         SEPARATOR_WIDTH_MEDIUM,
         MIGRATION_VERIFICATION_THRESHOLD,
+        DEFAULT_DB_PATH,
     )
 except ImportError:
     from constants import (
@@ -39,6 +40,7 @@ except ImportError:
         SEPARATOR_WIDTH_SMALL,
         SEPARATOR_WIDTH_MEDIUM,
         MIGRATION_VERIFICATION_THRESHOLD,
+        DEFAULT_DB_PATH,
     )
 
 
@@ -54,7 +56,7 @@ class JSONMigrator:
 
     def __init__(
         self,
-        db_path: str = 'results/file_organization.db',
+        db_path: Union[str, Path] = DEFAULT_DB_PATH,
         results_dir: str = 'results'
     ):
         """
@@ -549,7 +551,7 @@ class JSONMigrator:
         return results
 
 
-def run_migration(db_path: str = 'results/file_organization.db', dry_run: bool = False) -> Dict[str, Any]:
+def run_migration(db_path: Union[str, Path] = DEFAULT_DB_PATH, dry_run: bool = False) -> Dict[str, Any]:
     """
     Run ID generation migration to add canonical_id to all entities.
 
@@ -823,7 +825,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description='Migrate JSON results to database')
     parser.add_argument(
         '--db-path',
-        default='results/file_organization.db',
+        default=DEFAULT_DB_PATH,
         help='Database path'
     )
     parser.add_argument(

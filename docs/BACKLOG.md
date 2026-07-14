@@ -87,11 +87,11 @@ Priority order from the review:
 2. ~~**`regenerate_schemas.py` metadata-dropping drift** — its copied schema builder's `preserve_keys` omits `identifier`/`sameAs`/`publisher`/`description`, so regeneration silently strips ScholarlyArticle/CLIP metadata that `FileProcessor.generate_schema` now emits.~~ **DONE (`83baf83`)** — the four keys were added to `preserve_keys`.
 3. **Game keyword tables split-brained** — `GAME_AUDIO/MUSIC/FONT_KEYWORDS` duplicated between `scripts/shared/constants.py` and `content_organizer.py` with fixes on *both* sides (src still has the `'cast'`→`'podcast'` false positive the script fixed); single-home like `GAME_SPRITE_KEYWORDS`.
 4. ~~**`scripts/d1/schema.sql` stale ORM mirror** — missing `files` columns (`ocr_confidence`, `detected_language`, `kie_fields`) and the entire `merge_events` table~~ **DONE (`83baf83`)** — the three columns + `merge_events` table & indexes were hand-added to match the ORM (DDL validated in sqlite). The "generate from `Base.metadata` instead of hand-maintaining" root-cause fix remains **open** — the file will drift again on the next model change.
-5. Remaining ~40 items (type-organizer taxonomy drift, `filename_classifier` keyword overlaps, `DEFAULT_DB_PATH` ×11 call sites, small helper copies) opportunistically when the owning script is touched.
+5. Remaining ~40 items (type-organizer taxonomy drift, `filename_classifier` keyword overlaps, ~~`DEFAULT_DB_PATH` ×11 call sites~~ **DONE (`723d674`)** — single-sourced from `src/constants.py`, small helper copies) opportunistically when the owning script is touched.
 
 Subsumes the pre-existing item below (generator import list) into the same cleanup effort.
 
-Resolved so far: zone 1 timeline (`a2146fe`), the three game-keyword findings (`1d495ed`, `cc06190`), priority items 2 (regenerate_schemas metadata-drop) and 4 (d1/schema.sql drift), plus the generator import-list item below (`83baf83`) — see the review doc's resolution notes.
+Resolved so far: zone 1 timeline (`a2146fe`), the three game-keyword findings (`1d495ed`, `cc06190`), priority items 2 (regenerate_schemas metadata-drop) and 4 (d1/schema.sql drift), the generator import-list item below (`83baf83`), plus the `DEFAULT_DB_PATH` consolidation (`723d674`) — see the review doc's resolution notes.
 
 ### TimelineAPI post-consolidation cleanups (code-review follow-ups)
 

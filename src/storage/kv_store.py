@@ -9,14 +9,19 @@ Design allows easy migration to Redis/Memcached in the future.
 """
 
 from datetime import timedelta
+from pathlib import Path
 from ._time import utcnow
-from typing import Any, Dict, List, Optional, Generator
+from typing import Any, Dict, List, Optional, Generator, Union
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine, event, func, and_
 from sqlalchemy.orm import Session, sessionmaker
 
 from .models import Base, KeyValueStore
+try:
+    from ..constants import DEFAULT_DB_PATH
+except ImportError:
+    from constants import DEFAULT_DB_PATH
 
 
 class KeyValueStorage:
@@ -41,7 +46,7 @@ class KeyValueStorage:
     NAMESPACE_SESSION = 'session'       # Session-specific data
     NAMESPACE_FEATURE = 'feature'       # Feature flags
 
-    def __init__(self, db_path: str = 'results/file_organization.db'):
+    def __init__(self, db_path: Union[str, Path] = DEFAULT_DB_PATH):
         """
         Initialize key-value storage.
 
@@ -752,6 +757,6 @@ class KeyValueStorage:
 
 
 # Convenience functions for common operations
-def get_kv_store(db_path: str = 'results/file_organization.db') -> KeyValueStorage:
+def get_kv_store(db_path: Union[str, Path] = DEFAULT_DB_PATH) -> KeyValueStorage:
     """Get a KeyValueStorage instance."""
     return KeyValueStorage(db_path)

@@ -501,7 +501,7 @@ Independent small copies: `compute_file_id` verbatim; `DEFAULT_DB_PATH` defined 
 - **Divergence:** Script selects the best prediction within a single class then applies the 0.5 gate; src scans a tuple of class names with the gate inline. The two 0.5 thresholds have different names/docstrings, so they can silently drift apart, as can the class-name vocabulary (src hardcodes 6 of the 10 KIE_FIELD_CLASSES strings instead of referencing the table). Both sides were introduced by the same commit (685c91f).
 - **Recommendation:** Hoist a shared best_kie_field(kie_result, class_names, min_confidence) helper and a single KIE min-confidence constant into scripts/shared/kie_utils.py (next to KIEField/KIEResult, which src already imports), then have both kie_result_to_schema_org and ContentClassifier.classify_with_kie delegate to it; replace the hardcoded class-name tuples in content_classifier with groups defined alongside KIE_FIELD_CLASSES in kie_schema_mapping.
 
-### [MEDIUM] DEFAULT_DB_PATH
+### [MEDIUM] DEFAULT_DB_PATH — RESOLVED (`723d674`)
 
 - **Kind:** duplicated-constant
 - **Script:** `scripts/shared/db_utils.py:8`
@@ -509,6 +509,7 @@ Independent small copies: `compute_file_id` verbatim; `DEFAULT_DB_PATH` defined 
 - **Evidence:** Script: DEFAULT_DB_PATH = Path(__file__).parent.parent.parent / "results" / "file_organization.db" -- src: DEFAULT_DB_PATH = 'results/file_organization.db'. Same constant name, same DB target, two modalities.
 - **Divergence:** Script version is a repo-root-anchored absolute Path (CWD-independent); src version is a CWD-relative string that only resolves when run from project root. The raw literal 'results/file_organization.db' is additionally repeated as a hardcoded default argument in src/storage/graph_store.py:67, src/storage/kv_store.py:44 and 755, src/storage/migration.py:57/552/826, src/storage/person_migration.py:571, and src/api/timeline_api.py:25/328 (src/constants.py has no DB-path constant).
 - **Recommendation:** Define one canonical DEFAULT_DB_PATH in src/constants.py (repo-root-anchored, like the script version), reference it from src/cli.py and every default argument in src/storage/{graph_store,kv_store,migration,person_migration}.py and src/api/timeline_api.py, and have scripts/shared/db_utils.py import it from src instead of redefining it.
+- **Resolution:** Added canonical `DEFAULT_DB_PATH` (repo-root-anchored `Path`) to `src/constants.py`. `src/cli.py` and every default argument in `src/storage/{graph_store,kv_store,migration,person_migration}.py` now reference it (annotations widened to `Union[str, Path]`); `src/api/timeline_api.py` already sourced it via `shared.db_utils`. `scripts/shared/db_utils.py` now loads the constant directly from `src/constants.py` (by file path, avoiding the heavy `src` package init and a scripts↔src import cycle) instead of redefining it. All consumers verified equal to the single absolute path; 231 storage/integration/CLI tests pass.
 
 ### [LOW] compute_file_id — RESOLVED (`ae561f8`)
 

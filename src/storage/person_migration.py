@@ -22,7 +22,7 @@ import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -31,9 +31,9 @@ from .models import File, FileStatus
 from .graph_store import GraphStore
 
 try:
-    from ..constants import SEPARATOR_WIDTH_MEDIUM
+    from ..constants import SEPARATOR_WIDTH_MEDIUM, DEFAULT_DB_PATH
 except ImportError:
-    from constants import SEPARATOR_WIDTH_MEDIUM
+    from constants import SEPARATOR_WIDTH_MEDIUM, DEFAULT_DB_PATH
 
 try:
     from shared.file_ops import is_os_junk_file, resolve_collision
@@ -568,7 +568,7 @@ def apply_person_index(index: List[Tuple[str, str]], db_path: str) -> int:
 
 def index_person_files(
     manifest_path: Path = DEFAULT_MANIFEST_PATH,
-    db_path: str = "results/file_organization.db",
+    db_path: Union[str, Path] = DEFAULT_DB_PATH,
     person_root: Path = DEFAULT_PERSON_ROOT,
     apply: bool = False,
     verbose: bool = True,

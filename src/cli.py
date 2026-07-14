@@ -34,11 +34,11 @@ from cli_inputs import (  # noqa: E402  (needs the src path insert above)
     TypeInputs,
     UpdateSiteInputs,
 )
+from constants import DEFAULT_DB_PATH  # noqa: E402  (src on path via insert above)
 
 # Shared option defaults, single-sourced for the parser definitions below.
 DEFAULT_SOURCES = ['~/Desktop', '~/Downloads']
 DEFAULT_TARGET = '~/Documents'
-DEFAULT_DB_PATH = 'results/file_organization.db'
 DEFAULT_COST_REPORT = 'results/cost_report.json'
 
 
