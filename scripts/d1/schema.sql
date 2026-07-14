@@ -131,10 +131,11 @@ CREATE INDEX IF NOT EXISTS ix_locations_name ON locations(name);
 
 -- Many-to-many: Files <-> Categories
 CREATE TABLE IF NOT EXISTS file_categories (
-  file_id TEXT PRIMARY KEY,
-  category_id INTEGER PRIMARY KEY,
+  file_id TEXT NOT NULL,
+  category_id INTEGER NOT NULL,
   confidence REAL DEFAULT 1.0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (file_id, category_id),
   FOREIGN KEY (file_id) REFERENCES files(id),
   FOREIGN KEY (category_id) REFERENCES categories(id)
 );
@@ -143,11 +144,12 @@ CREATE INDEX IF NOT EXISTS ix_file_categories_category_id ON file_categories(cat
 
 -- Many-to-many: Files <-> Companies
 CREATE TABLE IF NOT EXISTS file_companies (
-  file_id TEXT PRIMARY KEY,
-  company_id INTEGER PRIMARY KEY,
+  file_id TEXT NOT NULL,
+  company_id INTEGER NOT NULL,
   confidence REAL DEFAULT 1.0,
   context TEXT,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (file_id, company_id),
   FOREIGN KEY (file_id) REFERENCES files(id),
   FOREIGN KEY (company_id) REFERENCES companies(id)
 );
@@ -156,11 +158,12 @@ CREATE INDEX IF NOT EXISTS ix_file_companies_company_id ON file_companies(compan
 
 -- Many-to-many: Files <-> People
 CREATE TABLE IF NOT EXISTS file_people (
-  file_id TEXT PRIMARY KEY,
-  person_id INTEGER PRIMARY KEY,
+  file_id TEXT NOT NULL,
+  person_id INTEGER NOT NULL,
   role TEXT,
   confidence REAL DEFAULT 1.0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (file_id, person_id),
   FOREIGN KEY (file_id) REFERENCES files(id),
   FOREIGN KEY (person_id) REFERENCES people(id)
 );
@@ -169,11 +172,12 @@ CREATE INDEX IF NOT EXISTS ix_file_people_person_id ON file_people(person_id);
 
 -- Many-to-many: Files <-> Locations
 CREATE TABLE IF NOT EXISTS file_locations (
-  file_id TEXT PRIMARY KEY,
-  location_id INTEGER PRIMARY KEY,
+  file_id TEXT NOT NULL,
+  location_id INTEGER NOT NULL,
   location_type TEXT,
   confidence REAL DEFAULT 1.0,
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (file_id, location_id),
   FOREIGN KEY (file_id) REFERENCES files(id),
   FOREIGN KEY (location_id) REFERENCES locations(id)
 );
