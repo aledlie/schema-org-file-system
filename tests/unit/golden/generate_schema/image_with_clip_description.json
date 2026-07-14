@@ -8,5 +8,7 @@
   "description": "Content: a landscape or nature scene (84% confident)",
   "encodingFormat": "image/png",
   "filePath": "<normalized>",
-  "name": "sample_landscape.png"
+  "height": 2,
+  "name": "sample_landscape.png",
+  "width": 4
 }

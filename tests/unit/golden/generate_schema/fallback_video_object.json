@@ -1,10 +1,13 @@
 {
   "@context": "https://schema.org",
   "@id": "<normalized>",
-  "@type": "DigitalDocument",
+  "@type": "VideoObject",
+  "contentUrl": "https://localhost/files/sample_clip.mp4",
   "dateCreated": "<normalized>",
   "dateModified": "<normalized>",
   "description": "sample_clip.mp4",
+  "encodingFormat": "video/mp4",
   "filePath": "<normalized>",
-  "name": "sample_clip.mp4"
+  "name": "sample_clip.mp4",
+  "uploadDate": "<normalized>"
 }

@@ -14,14 +14,15 @@ Workflow:
     pytest tests/unit/test_generate_schema_golden.py
 
 Branch map of FileProcessor.generate_schema:
-  1. ImageObject                      -> ImageGenerator
-  2. DigitalDocument/Article/Report   -> DocumentGenerator (+contentSize, url)
+  1. ImageObject                      -> ImageGenerator (+width/height when PIL available)
+  2. VideoObject                      -> VideoGenerator (+contentUrl/encodingFormat/uploadDate)
+  3. AudioObject/MusicRecording       -> AudioGenerator (+contentUrl/encodingFormat)
+  4. SoftwareSourceCode               -> CodeGenerator (+url/encodingFormat)
+  5. Dataset                          -> DatasetGenerator
+  6. DigitalDocument/Article/Report   -> DocumentGenerator (+contentSize, url)
      ScholarlyArticle                 -> same, + identifier/sameAs/publisher
                                          from organizer._last_file_state
-  3. anything else                    -> generic DocumentGenerator fallback
-     (media/code/dataset/person/org types intentionally collapsed here when
-     the pipeline layer moved into src/ — the graph store re-derives display
-     types from MIME)
+  7. anything else                    -> generic DocumentGenerator fallback
 Plus cross-cutting: set_dates, extracted_text -> abstract/text, filePath.
 """
 
@@ -135,9 +136,8 @@ def test_golden_image_with_clip_description(processor, temp_dir):
 
 
 def test_golden_fallback_video_object(processor, temp_dir):
-    """Non-image, non-document types (VideoObject here) collapse to the
-    generic DocumentGenerator fallback — pins that intentional divergence
-    from the legacy per-type generators."""
+    """VideoObject -> VideoGenerator (contentUrl/encodingFormat/uploadDate).
+    Named 'fallback_video_object' for historical continuity with the golden file."""
     path = _write(temp_dir, "sample_clip.mp4", "fake-video-bytes")
     _assert_golden("fallback_video_object",
                    processor.generate_schema(path, "VideoObject"))

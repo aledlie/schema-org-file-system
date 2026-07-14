@@ -8,5 +8,7 @@
   "description": "sample_photo.png",
   "encodingFormat": "image/png",
   "filePath": "<normalized>",
-  "name": "sample_photo.png"
+  "height": 2,
+  "name": "sample_photo.png",
+  "width": 4
 }

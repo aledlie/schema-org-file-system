@@ -7,7 +7,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote
 
-from src.generators import DocumentGenerator, ImageGenerator
+from src.generators import (
+    AudioGenerator,
+    CodeGenerator,
+    DatasetGenerator,
+    DocumentGenerator,
+    ImageGenerator,
+    VideoGenerator,
+)
 from src.base import PropertyType
 from src.enrichment import MetadataEnricher, cached_stat
 from src.validator import SchemaValidator
@@ -145,6 +152,44 @@ class FileProcessor:
             generator.set_property("name", file_path.name, PropertyType.TEXT)
             generator.set_property("contentUrl", file_url, PropertyType.URL)
             generator.set_property("encodingFormat", mime_type or "image/png", PropertyType.TEXT)
+            generator.set_property("description", description, PropertyType.TEXT)
+            try:
+                from PIL import Image as _PilImage  # noqa: PLC0415
+
+                with _PilImage.open(file_path) as _img:
+                    generator.set_property("width", _img.width, PropertyType.INTEGER)
+                    generator.set_property("height", _img.height, PropertyType.INTEGER)
+            except Exception:
+                pass
+        elif schema_type == "VideoObject":
+            generator = VideoGenerator()
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
+            generator.set_property("contentUrl", file_url, PropertyType.URL)
+            generator.set_property("encodingFormat", mime_type or "video/mp4", PropertyType.TEXT)
+            generator.set_property("description", description, PropertyType.TEXT)
+            try:
+                generator.set_property(
+                    "uploadDate",
+                    datetime.fromtimestamp(stats.st_ctime),
+                    PropertyType.DATETIME,
+                )
+            except Exception:
+                pass
+        elif schema_type in ("AudioObject", "MusicRecording"):
+            generator = AudioGenerator(schema_type)
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
+            generator.set_property("contentUrl", file_url, PropertyType.URL)
+            generator.set_property("encodingFormat", mime_type or "audio/mpeg", PropertyType.TEXT)
+            generator.set_property("description", description, PropertyType.TEXT)
+        elif schema_type == "SoftwareSourceCode":
+            generator = CodeGenerator()
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
+            generator.set_property("url", file_url, PropertyType.URL)
+            generator.set_property("encodingFormat", mime_type or "text/plain", PropertyType.TEXT)
+            generator.set_property("description", description, PropertyType.TEXT)
+        elif schema_type == "Dataset":
+            generator = DatasetGenerator()
+            generator.set_property("name", file_path.name, PropertyType.TEXT)
             generator.set_property("description", description, PropertyType.TEXT)
         elif schema_type in ["DigitalDocument", "Article", SCHOLARLY_ARTICLE_SCHEMA_TYPE, "Report"]:
             generator = DocumentGenerator(schema_type)
