@@ -10,7 +10,7 @@ Scans directories, classifies files by content, organizes them into a semantic f
 
 - **Content classification** — layered priority pipeline: organization → personal (doc-class) → legal → financial (filename) → research paper → e-commerce → software UI → game assets → filepath → CLIP/OCR content analysis → MIME fallback (see [Classification Priority](#classification-priority)).
 - **CLIP + OCR vision** — unified `classify_with_ocr_fallback()` (CLIP ViT-B-32 + cached embeddings) with OCR fallback for low-confidence predictions.
-- **Image/screenshot renaming** — `rename_images.py --profile {photo,screenshot}` selects vocabulary and in-place vs. folder mode.
+- **Image/screenshot renaming** — `rename_images.py --profile {photo,screenshot}` selects vocabulary and in-place vs. folder mode; the screenshot profile prefers a title-like OCR line (`Screenshot_<title>`) over the generic CLIP label when one qualifies.
 - **Schema.org graph store** — SQLAlchemy ORM with canonical IDs; every entity exposes `to_schema_org()`, plus bulk JSON/NDJSON/`@graph` export and JSON-LD `@context` generation.
 - **ML support** — training-data preprocessing and model evaluation.
 - **Dashboard + timeline** — static UI in `_site/`, fed by `update-site` and `timeline` data generators.
@@ -55,7 +55,7 @@ organize-files health  # Should report 9/9 features operational
 | `organize-files update-site` | Update dashboard data |
 | `organize-files timeline` | Generate timeline visualization data |
 | `organize-files preprocess` | Data preprocessing pipeline for ML model training (`--input`, `--output`) |
-| `organize-files evaluate` | Run evaluation metrics on test dataset (`--test-data`, `--model`, `--classifier {baseline,content}`) |
+| `organize-files evaluate` | Run evaluation metrics on test dataset (`--test-data`, `--output`, `--classifier {baseline,content}`, `--min-support`) |
 | `organize-files migrate-person` | Migrate on-disk `Person/` files into `Personal/{subcat}/` (dry-run default; `--apply`, `--rollback`) |
 | `organize-files person-view` | Regenerate `Person/{Name}/` as a derived symlink view from graph edges (`--apply`; `--prune-missing` drops dead-path edges first) |
 | `organize-files index-people` | Attach `person→file` graph edges for migrated files, no moves (`--apply`; `--prune-missing` drops dead-path edges after) |
@@ -185,6 +185,7 @@ flowchart LR
 
 ## Documentation
 
+- [QUICK_START](QUICK_START.md) - Setup and daily-use commands, copy-paste ready
 - [CHANGELOG (v2.1.0)](docs/changelog/2.1.0/CHANGELOG.md) - Current version history
 - [CHANGELOG (v2.0.0)](docs/changelog/2.0.0/CHANGELOG.md) - Prior version history
 - [ARCHITECTURE_REFACTOR](docs/ARCHITECTURE_REFACTOR.md) - Design decisions
@@ -196,7 +197,9 @@ flowchart LR
 
 **Person taxonomy Option C (unreleased):** `person` demoted from filing category to graph relationship — files go to `Personal/{subcat}/`, `Person/{Name}/` becomes a derived symlink view; new `migrate-person`, `person-view`, `index-people`, `prune-person` commands.
 
-**Refactor (unreleased):** `file_organizer_content_based.py` reduced to a thin CLI wrapper over `src/{classifiers,analyzers,organizers,pipeline}`; streaming core-query Schema.org export.
+**Refactor (unreleased):** `file_organizer_content_based.py` reduced to a thin CLI wrapper over `src/{classifiers,analyzers,organizers,pipeline}`; streaming core-query Schema.org export; typed `run(args)` entry points with single-sourced subcommand options in `src/cli.py`; orphaned rename-analysis scripts (`add_content_descriptions.py`, `analyze_renamed_files.py`, `image_renamer_metadata.py`) deleted.
+
+**Analyzers & renaming (unreleased):** OCR title-snippet naming for the screenshot renamer (`Screenshot_<title>` when a title-like OCR line qualifies); piexif EXIF fallback and modern-Pillow GPS parsing (fixes silently-empty GPS extraction); EXIF locations now create `file→location` graph edges; county fallback for reverse geocoding when Nominatim returns no city/town/village.
 
 **Released 2.1.0:** easyocr screenshot OCR backend + benchmark harness (`scripts/bench_ocr_backends.py`), photo-evidence gating for low-confidence image routing, multi-agent collision-detection pre-commit hook.
 
