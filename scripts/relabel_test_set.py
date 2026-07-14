@@ -57,7 +57,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from shared.constants import GAME_SPRITE_KEYWORDS, SCREENSHOT_PATTERNS  # noqa: E402
+from shared.constants import GAME_SPRITE_KEYWORDS  # noqa: E402
 
 SPRITE_VOCAB = frozenset(
     {
@@ -87,7 +87,6 @@ SPRITE_VOCAB = frozenset(
 )
 
 _SPRITE_KEYWORD_SET = frozenset(k.lstrip("_").lower() for k in GAME_SPRITE_KEYWORDS)
-_SCREENSHOT_RE = re.compile("|".join(SCREENSHOT_PATTERNS), re.IGNORECASE)
 
 # Map document-pattern hits to (category, subcategory). Patterns not listed
 # here are skipped (avoid clobbering a 'media' label with a vague 'report').
@@ -185,7 +184,7 @@ def relabel(samples: list[dict]) -> tuple[list[dict], dict[str, Counter]]:
             if ext_cat == "image" and _filename_has_sprite_keyword(filename):
                 counters["pass3"][cat] += 1
                 s["category"] = "game_assets"
-            elif ext_cat == "image" and _SCREENSHOT_RE.search(filename):
+            elif ext_cat == "image" and s.get("is_screenshot"):
                 counters["pass4"][cat] += 1
                 s["category"] = "media"
                 s["subcategory"] = "screenshot"
