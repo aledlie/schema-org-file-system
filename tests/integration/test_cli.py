@@ -312,7 +312,7 @@ class TestStubbedWiring:
 
     def test_preprocess_passes_namespace(self, monkeypatch):
         """Verify preprocess flags land on the right Namespace attributes."""
-        captured = self._stub_run(monkeypatch, "data_preprocessing")
+        captured = self._stub_run(monkeypatch, "src.ml.data_preprocessor")
         run_cli(monkeypatch, "preprocess", "--input", "/data/in", "--output", "/data/out")
         args = captured["args"]
         assert args.input == "/data/in"
@@ -381,7 +381,7 @@ class TestStubbedWiring:
     def test_preprocess_requires_input(self, monkeypatch):
         """--input is required by the shared definition, so organize-files
         fails fast instead of deep inside the script's old re-parse."""
-        self._stub_run(monkeypatch, "data_preprocessing")
+        self._stub_run(monkeypatch, "src.ml.data_preprocessor")
         with pytest.raises(SystemExit) as exc:
             run_cli(monkeypatch, "preprocess")
         assert exc.value.code == 2

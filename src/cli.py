@@ -60,8 +60,9 @@ def cmd_type(args: Any) -> None:
 
 def cmd_preprocess(args: Any) -> None:
     """Run ML data preprocessing."""
-    sys.path.insert(0, str(SCRIPTS_DIR))
-    from data_preprocessing import run as preprocess_run
+    sys.path.insert(0, str(PROJECT_ROOT))
+    sys.path.insert(0, str(SCRIPTS_DIR))  # shared.constants, used by feature extraction
+    from src.ml.data_preprocessor import run as preprocess_run
 
     preprocess_run(args)
 

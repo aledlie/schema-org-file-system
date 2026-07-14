@@ -7,10 +7,10 @@
 
 > **Completion note (2026-07-12):** The Part 1 test suite and Part 2 refactor of
 > `file_organizer_content_based.py` into `src/{classifiers,analyzers,organizers,pipeline}/`
-> shipped. Divergences from this plan: `category_rules.py`,
-> `workflow.py`, `src/ml/`, and `src/feedback/`
-> were never split out (`entity_detector.py`, `category_config.py`, `mime_classifier.py`,
-> and `name_organizer.py` since landed, 2026-07-12);
+> shipped. Divergences from this plan: `category_rules.py` and
+> `workflow.py` were never split out (`entity_detector.py`, `category_config.py`,
+> `mime_classifier.py`, and `name_organizer.py` since landed, 2026-07-12;
+> `src/ml/` and `src/feedback/` since landed 2026-07-13 — see Scripts #4/#5 below);
 > `tests/integration/test_cli.py` and `tests/unit/test_health_check.py` since landed (2026-07-13)
 > (`test_storage_models.py` and `test_uri_utils.py` landed at `tests/unit/`); `test_validator.py` lives at `tests/` not
 > `tests/unit/`; and `file_organizer_content_based.py` **was** reduced to a thin wrapper
@@ -395,29 +395,39 @@ src/organizers/name_organizer.py  # Move entire FileOrganizerByName class
 
 #### **Large Script #4: `data_preprocessing.py`** (651 LOC)
 
-**Status:** 🟢 LOW PRIORITY - ML training utility, used less frequently
+**Status:** ✅ COMPLETE (2026-07-13) — extracted to `src/ml/`
 **Target:** Extract to `src/ml/` module
 
 ```
 src/ml/
 ├── __init__.py
-├── data_preprocessor.py       # Extract preprocessing logic
-├── feature_extractor.py       # Feature engineering
-└── training_pipeline.py       # ML training workflow
+├── data_preprocessor.py       # Extract preprocessing logic — ✅ landed (incl. run()/main())
+├── feature_extractor.py       # Feature engineering — ✅ landed (FileFeatureExtractor)
+└── training_pipeline.py       # ML training workflow — ✖ not built (no training workflow exists to extract)
 ```
+
+> Landed 2026-07-13: `scripts/data_preprocessing.py` is now a thin re-export
+> wrapper; `organize-files preprocess` imports `src.ml.data_preprocessor`
+> directly. Unit tests at `tests/unit/test_ml_preprocessing.py`.
 
 #### **Large Script #5: `correction_feedback.py`** (620 LOC)
 
-**Status:** 🟢 LOW PRIORITY - User feedback system
+**Status:** ✅ COMPLETE (2026-07-13) — extracted to `src/feedback/`
 **Target:** Move to `src/feedback/`
 
 ```
 src/feedback/
 ├── __init__.py
-├── correction_tracker.py      # User corrections
-├── feedback_loop.py           # Feedback integration
-└── label_manager.py           # Label management
+├── correction_tracker.py      # User corrections — ✅ landed (CorrectionFeedbackSystem + CLI main)
+├── feedback_loop.py           # Feedback integration — ✅ landed (FeedbackIntegration, from feedback_integration.py)
+└── label_manager.py           # Label management — ✖ not built (no corresponding code existed)
 ```
+
+> Landed 2026-07-13: `scripts/correction_feedback.py` and
+> `scripts/feedback_integration.py` are thin re-export wrappers; the stale
+> `integrate_with_organizer()` snippet-printer (documented integration into
+> the pre-refactor architecture) was dropped in the move. Unit tests at
+> `tests/unit/test_feedback.py`.
 
 ### 2.2 Refactoring Principles
 
