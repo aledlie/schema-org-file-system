@@ -5,8 +5,8 @@ consumes: top-level ``{generated_at, cumulative, sessions, session_count}``,
 sessions ordered ASC and filtered to ``total_files > 0``, and list-of-dict
 shapes for categories (``name/color/icon/count/avg_confidence``), schema
 types (``schema_type/count``), and extensions (``extension/count``). The
-logic was consolidated here from scripts/generate_timeline_data.py (now a
-launcher); these shapes must not drift or the dashboard breaks.
+logic was folded into ``TimelineAPI`` from scripts/generate_timeline_data.py
+(now a launcher); these shapes must not drift or the dashboard breaks.
 """
 
 from __future__ import annotations
@@ -24,6 +24,7 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from src.api import timeline_api  # noqa: E402
+from src.api.timeline_api import TimelineAPI  # noqa: E402
 
 SESSION_A = "aaaaaaaa-1111-2222-3333-444444444444"
 SESSION_B = "bbbbbbbb-5555-6666-7777-888888888888"
@@ -102,37 +103,37 @@ def timeline_db(tmp_path: Path) -> Path:
 
 class TestGetSessions:
     def test_filters_empty_and_orders_ascending(self, timeline_db):
-        sessions = timeline_api.get_sessions(timeline_db)
+        sessions = TimelineAPI(timeline_db).get_sessions()
         assert [s["id"] for s in sessions] == [SESSION_A, SESSION_B]
 
     def test_id_short_and_success_rate_rounding(self, timeline_db):
-        first = timeline_api.get_sessions(timeline_db)[0]
+        first = TimelineAPI(timeline_db).get_sessions()[0]
         assert first["id_short"] == SESSION_A[:8]
         assert first["success_rate"] == 70.0  # 7/10, one decimal
 
     def test_source_directories_parsed_and_invalid_json_falls_back(self, timeline_db):
-        sessions = timeline_api.get_sessions(timeline_db)
+        sessions = TimelineAPI(timeline_db).get_sessions()
         assert sessions[0]["source_directories"] == ["~/Desktop", "~/Downloads"]
         assert sessions[1]["source_directories"] == []
 
 
 class TestSessionBreakdowns:
     def test_categories_shape(self, timeline_db):
-        cats = timeline_api.get_session_categories(SESSION_A, timeline_db)
+        cats = TimelineAPI(timeline_db).get_session_categories(SESSION_A)
         assert cats[0] == {
             "name": "media", "color": "#ff0000", "icon": "image",
             "count": 2, "avg_confidence": pytest.approx(0.85),
         }
 
     def test_schema_types_shape_and_null_excluded(self, timeline_db):
-        types = timeline_api.get_session_schema_types(SESSION_A, timeline_db)
+        types = TimelineAPI(timeline_db).get_session_schema_types(SESSION_A)
         assert types == [
             {"schema_type": "ImageObject", "count": 2},
             {"schema_type": "DigitalDocument", "count": 1},
         ]
 
     def test_extensions_lowercased_grouping(self, timeline_db):
-        exts = timeline_api.get_session_extensions(SESSION_A, timeline_db)
+        exts = TimelineAPI(timeline_db).get_session_extensions(SESSION_A)
         assert exts == [
             {"extension": ".png", "count": 2},
             {"extension": ".pdf", "count": 1},
@@ -141,7 +142,7 @@ class TestSessionBreakdowns:
 
 class TestSessionChanges:
     def test_first_session_marker(self):
-        changes = timeline_api.calculate_session_changes(
+        changes = TimelineAPI.calculate_session_changes(
             {"total_files": 10, "organized_count": 7}, None
         )
         assert changes == {
@@ -150,8 +151,8 @@ class TestSessionChanges:
         }
 
     def test_deltas_between_sessions(self, timeline_db):
-        a, b = timeline_api.get_sessions(timeline_db)
-        changes = timeline_api.calculate_session_changes(b, a)
+        a, b = TimelineAPI(timeline_db).get_sessions()
+        changes = TimelineAPI.calculate_session_changes(b, a)
         assert changes == {
             "is_first": False, "files_delta": 10, "organized_delta": 8,
             "success_rate_delta": 5.0, "cost_delta": 0.75, "time_delta": 10.5,
@@ -160,32 +161,41 @@ class TestSessionChanges:
     def test_none_processing_time_treated_as_zero(self):
         base = {"total_files": 1, "organized_count": 1, "success_rate": 100.0,
                 "total_cost": 0.0, "total_processing_time_sec": None}
-        changes = timeline_api.calculate_session_changes(dict(base), dict(base))
+        changes = TimelineAPI.calculate_session_changes(dict(base), dict(base))
         assert changes["time_delta"] == 0
 
 
 class TestCumulativeStats:
     def test_orphan_files_excluded(self, timeline_db):
-        stats = timeline_api.get_cumulative_stats(timeline_db)
+        stats = TimelineAPI(timeline_db).get_cumulative_stats()
         assert stats["total_sessions"] == 2
         assert stats["total_files"] == 7  # file 8 has no session
         assert stats["total_organized"] == 4
 
     def test_top_categories_include_empty_category(self, timeline_db):
-        stats = timeline_api.get_cumulative_stats(timeline_db)
+        stats = TimelineAPI(timeline_db).get_cumulative_stats()
         assert {"name": "empty-cat", "count": 0} in stats["top_categories"]
 
 
 class TestDocument:
     def test_top_level_contract(self, timeline_db):
-        data = timeline_api.generate_timeline_data(timeline_db)
+        data = TimelineAPI(timeline_db).generate_document()
         assert set(data) == {"generated_at", "cumulative", "sessions", "session_count"}
         assert data["session_count"] == 2
 
     def test_session_enrichment_keys(self, timeline_db):
-        session = timeline_api.generate_timeline_data(timeline_db)["sessions"][0]
+        session = TimelineAPI(timeline_db).generate_document()["sessions"][0]
         assert {"categories", "schema_types", "extensions", "changes"} <= set(session)
         assert session["changes"]["is_first"] is True
+
+    def test_module_convenience_delegates_to_class(self, timeline_db):
+        assert timeline_api.generate_timeline_data(timeline_db)["session_count"] == 2
+
+    def test_export_to_json_writes_and_returns_document(self, timeline_db, tmp_path):
+        out = tmp_path / "_site" / "timeline_data.json"
+        data = TimelineAPI(timeline_db).export_to_json(out)
+        assert json.loads(out.read_text()) == data
+        assert data["session_count"] == 2
 
     def test_run_writes_output_path(self, timeline_db, tmp_path, monkeypatch, capsys):
         from src.cli_inputs import TimelineInputs
