@@ -11,8 +11,10 @@ launcher — keep those the only writers of the output file.
 """
 
 import json
+import sqlite3
+from contextlib import contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Iterator
 
 if TYPE_CHECKING:
     from src.cli_inputs import TimelineInputs
@@ -44,11 +46,27 @@ class TimelineAPI:
                 "Run the file organizer at least once to create it."
             )
 
-    def get_sessions(self) -> list[dict[str, Any]]:
-        """Get all non-empty organization sessions with their stats, oldest first."""
-        with db_connection(self.db_path) as conn:
-            cursor = conn.cursor()
+    @contextmanager
+    def _cursor(
+        self, conn: sqlite3.Connection | None = None
+    ) -> Iterator[sqlite3.Cursor]:
+        """Yield a cursor, reusing ``conn`` when given or opening a scoped one.
 
+        Query methods accept an optional connection so they stay usable
+        standalone (each opens its own) while ``generate_document`` can share a
+        single connection across the whole build.
+        """
+        if conn is not None:
+            yield conn.cursor()
+        else:
+            with db_connection(self.db_path) as owned:
+                yield owned.cursor()
+
+    def get_sessions(
+        self, conn: sqlite3.Connection | None = None
+    ) -> list[dict[str, Any]]:
+        """Get all non-empty organization sessions with their stats, oldest first."""
+        with self._cursor(conn) as cursor:
             cursor.execute("""
                 SELECT
                     id,
@@ -97,10 +115,11 @@ class TimelineAPI:
 
         return sessions
 
-    def get_session_categories(self, session_id: str) -> list[dict[str, Any]]:
+    def get_session_categories(
+        self, session_id: str, conn: sqlite3.Connection | None = None
+    ) -> list[dict[str, Any]]:
         """Get category breakdown for a specific session."""
-        with db_connection(self.db_path) as conn:
-            cursor = conn.cursor()
+        with self._cursor(conn) as cursor:
             cursor.execute("""
                 SELECT
                     c.name,
@@ -118,10 +137,11 @@ class TimelineAPI:
             """, (session_id,))
             return [dict(row) for row in cursor.fetchall()]
 
-    def get_session_schema_types(self, session_id: str) -> list[dict[str, Any]]:
+    def get_session_schema_types(
+        self, session_id: str, conn: sqlite3.Connection | None = None
+    ) -> list[dict[str, Any]]:
         """Get schema type distribution for a specific session."""
-        with db_connection(self.db_path) as conn:
-            cursor = conn.cursor()
+        with self._cursor(conn) as cursor:
             cursor.execute("""
                 SELECT
                     schema_type,
@@ -133,10 +153,11 @@ class TimelineAPI:
             """, (session_id,))
             return [dict(row) for row in cursor.fetchall()]
 
-    def get_session_extensions(self, session_id: str) -> list[dict[str, Any]]:
+    def get_session_extensions(
+        self, session_id: str, conn: sqlite3.Connection | None = None
+    ) -> list[dict[str, Any]]:
         """Get file extension distribution for a specific session."""
-        with db_connection(self.db_path) as conn:
-            cursor = conn.cursor()
+        with self._cursor(conn) as cursor:
             cursor.execute("""
                 SELECT
                     LOWER(file_extension) as extension,
@@ -175,11 +196,11 @@ class TimelineAPI:
             )
         }
 
-    def get_cumulative_stats(self) -> dict[str, Any]:
+    def get_cumulative_stats(
+        self, conn: sqlite3.Connection | None = None
+    ) -> dict[str, Any]:
         """Get cumulative statistics across all sessions."""
-        with db_connection(self.db_path) as conn:
-            cursor = conn.cursor()
-
+        with self._cursor(conn) as cursor:
             cursor.execute("""
                 SELECT
                     COUNT(DISTINCT session_id) as total_sessions,
@@ -216,25 +237,29 @@ class TimelineAPI:
         """Assemble the complete timeline document.
 
         Each session is enriched with its category / schema-type / extension
-        breakdowns and the deltas versus the preceding session.
+        breakdowns and the deltas versus the preceding session. All queries
+        share one connection for the duration of the build.
         """
-        sessions = self.get_sessions()
+        with db_connection(self.db_path) as conn:
+            sessions = self.get_sessions(conn)
 
-        enriched_sessions = []
-        previous_session = None
+            enriched_sessions = []
+            previous_session = None
 
-        for session in sessions:
-            session['categories'] = self.get_session_categories(session['id'])
-            session['schema_types'] = self.get_session_schema_types(session['id'])
-            session['extensions'] = self.get_session_extensions(session['id'])
-            session['changes'] = self.calculate_session_changes(session, previous_session)
+            for session in sessions:
+                session['categories'] = self.get_session_categories(session['id'], conn)
+                session['schema_types'] = self.get_session_schema_types(session['id'], conn)
+                session['extensions'] = self.get_session_extensions(session['id'], conn)
+                session['changes'] = self.calculate_session_changes(session, previous_session)
 
-            enriched_sessions.append(session)
-            previous_session = session
+                enriched_sessions.append(session)
+                previous_session = session
+
+            cumulative = self.get_cumulative_stats(conn)
 
         return {
             'generated_at': utcnow().isoformat(),
-            'cumulative': self.get_cumulative_stats(),
+            'cumulative': cumulative,
             'sessions': enriched_sessions,
             'session_count': len(enriched_sessions)
         }

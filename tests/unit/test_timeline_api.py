@@ -202,6 +202,27 @@ class TestDocument:
     def test_module_convenience_delegates_to_class(self, timeline_db):
         assert timeline_api.generate_timeline_data(timeline_db)["session_count"] == 2
 
+    def test_generate_document_opens_single_connection(self, timeline_db, monkeypatch):
+        """All per-session enrichments + cumulative stats must share one
+        connection — guards against the 3N+1 connection regression."""
+        real = timeline_api.db_connection
+        calls = {"n": 0}
+
+        def counting(*args, **kwargs):
+            calls["n"] += 1
+            return real(*args, **kwargs)
+
+        monkeypatch.setattr(timeline_api, "db_connection", counting)
+        doc = TimelineAPI(timeline_db).generate_document()
+        assert calls["n"] == 1  # not 3 * len(sessions) + 2
+        assert doc["session_count"] == 2
+
+    def test_standalone_methods_open_their_own_connection(self, timeline_db):
+        """Query methods stay usable without a shared connection."""
+        api = TimelineAPI(timeline_db)
+        assert len(api.get_sessions()) == 2
+        assert api.get_session_categories(SESSION_A)[0]["name"] == "media"
+
     def test_export_to_json_writes_and_returns_document(self, timeline_db, tmp_path):
         out = tmp_path / "_site" / "timeline_data.json"
         data = TimelineAPI(timeline_db).export_to_json(out)
