@@ -1,24 +1,45 @@
 {
   "metadata": {
-    "generated_at": "2026-03-31T12:14:57.596201",
-    "session_start": "2026-03-31T11:50:46.427857",
-    "session_duration_sec": 1451.168349,
-    "total_usage_records": 0
+    "generated_at": "2026-07-13T20:20:05.939664",
+    "session_start": "2026-07-13T20:19:51.282087",
+    "session_duration_sec": 14.65758,
+    "total_usage_records": 2
   },
   "cost_summary": {
     "total_cost": 0.0,
-    "total_files_processed": 0,
-    "total_processing_time_sec": 0.0,
+    "total_files_processed": 2,
+    "total_processing_time_sec": 3.7736308574676514,
     "avg_cost_per_file": 0.0,
-    "feature_breakdown": {}
+    "feature_breakdown": {
+      "doctr_ocr": {
+        "feature_name": "doctr_ocr",
+        "total_invocations": 2,
+        "total_processing_time_sec": 3.7736308574676514,
+        "total_cost": 0.0,
+        "avg_cost_per_file": 0.0,
+        "success_rate": 1.0,
+        "total_files_processed": 2
+      }
+    }
   },
   "roi_summary": {
     "total_cost": 0.0,
-    "total_value": 0.0,
+    "total_value": 0.6833333333333332,
     "overall_roi_percentage": Infinity,
-    "total_manual_hours_saved": 0.0,
+    "total_manual_hours_saved": 0.02733333333333333,
     "hourly_rate_used": 25.0,
-    "feature_breakdown": {}
+    "feature_breakdown": {
+      "doctr_ocr": {
+        "feature_name": "doctr_ocr",
+        "total_cost": 0.0,
+        "total_value": 0.6833333333333332,
+        "roi_percentage": Infinity,
+        "manual_hours_saved": 0.02733333333333333,
+        "cost_per_file": 0.0,
+        "value_per_file": 0.3416666666666667,
+        "break_even_files": 0
+      }
+    }
   },
   "recommendations": [],
   "model_configs": {
