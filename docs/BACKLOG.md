@@ -103,7 +103,9 @@ Low-severity findings from the code review of the timeline consolidation that we
 
 1. ~~**Always-empty first-session delta fields.** `TimelineAPI.calculate_session_changes` returns `new_categories: []` and `category_changes: []` only in the `previous is None` branch — always empty and absent from the non-first branch.~~ **DONE** — the two dead fields were removed; the only change vs the prior output is their disappearance from the first session's `changes` (rest of the document byte-identical).
 2. ~~**3N+1 DB connections per document.** `generate_document` opened a fresh `db_connection` per per-session enrichment plus one for cumulative stats.~~ **DONE (`3eb5167`)** — a `_cursor` helper + optional `conn` parameter let `generate_document` share one connection across all queries (test locks the single-connection behavior); methods still open their own when called standalone.
-3. **No test for a present-but-schemaless DB.** The missing-DB path is now guarded and tested (`1d495ed`), but a DB file that exists yet lacks the `organization_sessions`/`files`/`categories` tables still raises a raw `sqlite3.OperationalError`. Add a test (and optionally a friendlier error) if this becomes a real failure mode.
+3. ~~**No test for a present-but-schemaless DB.** A DB file that exists yet lacks the timeline tables raised a raw `sqlite3.OperationalError`.~~ **DONE (`c14ff16`)** — `TimelineAPI.__init__` checks `sqlite_master` for `organization_sessions` and raises the same actionable `FileNotFoundError` as the missing-file case (clean CLI error + exit 1); test added.
+
+All three follow-ups above are now resolved.
 
 ### `regenerate_schemas.py` mirrors the src generator import list
 
