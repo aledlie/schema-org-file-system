@@ -32,6 +32,22 @@ try:
 except ImportError:
     PIEXIF_AVAILABLE = False
 
+# Non-EXIF textual metadata that GIF and PNG files can carry. GIF exposes a free
+# text "comment" in image.info; PNG exposes these as tEXt/iTXt/zTXt chunks, read
+# via image.info and PngImageFile.text. Keys mirror the PNG registered keywords
+# plus GIF's lowercase "comment".
+_TEXT_METADATA_KEYS: Tuple[str, ...] = (
+    "comment",
+    "Comment",
+    "Title",
+    "Author",
+    "Description",
+    "Copyright",
+    "Software",
+    "Source",
+    "Creation Time",
+)
+
 # Cost tracking is optional
 try:
     from cost_roi_calculator import CostTracker
@@ -83,7 +99,11 @@ class ImageMetadataParser:
         exif_data: Dict[str, Any] = {}
         try:
             image = Image.open(image_path)
-            exif = image._getexif()  # type: ignore[attr-defined]
+            # _getexif is the legacy private accessor; it only exists on formats
+            # that carry EXIF (JPEG/TIFF/WebP/HEIC). Formats like GIF/PNG lack it,
+            # so probe for it rather than letting the call raise AttributeError.
+            getexif = getattr(image, "_getexif", None)
+            exif = getexif() if getexif is not None else None
             if exif:
                 for tag_id, value in exif.items():
                     tag = TAGS.get(tag_id, tag_id)
@@ -127,6 +147,72 @@ class ImageMetadataParser:
             exif_data["GPSInfo"] = {tag_id: decode(value) for tag_id, value in gps.items()}
 
         return exif_data
+
+    def extract_text_metadata(self, image_path: Path) -> Dict[str, str]:
+        """Extract non-EXIF textual metadata carried by GIF and PNG files.
+
+        GIF exposes a free-text ``comment`` (plus animation fields) in
+        ``image.info``; PNG exposes tEXt/iTXt/zTXt chunks (``Software``,
+        ``Description``, ``Creation Time``, ...) via ``image.info`` and
+        ``PngImageFile.text``. Only keys in ``_TEXT_METADATA_KEYS`` are returned,
+        each normalized to a non-empty stripped ``str``.
+        """
+        if not self.metadata_available:
+            return {}
+
+        text_metadata: Dict[str, str] = {}
+        try:
+            with Image.open(image_path) as image:
+                # PngImageFile.text holds decoded text chunks; image.info is the
+                # superset (GIF's comment lives only there). Read both.
+                for source in (getattr(image, "text", None), image.info):
+                    if not source:
+                        continue
+                    for key, value in source.items():
+                        if key not in _TEXT_METADATA_KEYS:
+                            continue
+                        normalized = self._normalize_text_value(value)
+                        if normalized:
+                            text_metadata.setdefault(str(key), normalized)
+        except Exception as e:
+            print(f"  Text metadata extraction error: {e}")
+
+        return text_metadata
+
+    @staticmethod
+    def _normalize_text_value(value: Any) -> Optional[str]:
+        """Coerce a PNG/GIF metadata value to a non-empty stripped str, or None."""
+        if isinstance(value, bytes):
+            try:
+                value = value.decode("utf-8")
+            except UnicodeDecodeError:
+                return None
+        if not isinstance(value, str):
+            return None
+        value = value.strip()
+        return value or None
+
+    def _parse_creation_time(self, text_metadata: Dict[str, str]) -> Optional[datetime]:
+        """Parse a PNG "Creation Time" text chunk into a datetime, best-effort.
+
+        The PNG spec suggests RFC 1123, but tools commonly write ISO 8601; try
+        the formats we actually see and return None for anything unrecognized.
+        """
+        raw = text_metadata.get("Creation Time")
+        if not raw:
+            return None
+        for fmt in (
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y:%m:%d %H:%M:%S",
+            "%Y-%m-%d",
+            "%a, %d %b %Y %H:%M:%S %Z",  # RFC 1123
+        ):
+            try:
+                return datetime.strptime(raw, fmt)
+            except ValueError:
+                continue
+        return None
 
     def extract_datetime(
         self, image_path: Path, exif_data: Optional[Dict[str, Any]] = None
@@ -304,11 +390,18 @@ class ImageMetadataParser:
             "year": None,
             "month": None,
             "date_str": None,
+            "text_metadata": {},
         }
 
         exif_data = self.extract_exif_data(image_path)
+        text_metadata = self.extract_text_metadata(image_path)
+        if text_metadata:
+            summary["text_metadata"] = text_metadata
 
         dt = self._extract_datetime_from_exif(exif_data)
+        if dt is None:
+            # GIF/PNG carry no EXIF datetime; fall back to a PNG "Creation Time".
+            dt = self._parse_creation_time(text_metadata)
         if dt:
             summary["datetime"] = dt
             summary["year"] = dt.year

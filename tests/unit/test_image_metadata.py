@@ -4,6 +4,7 @@ import sys
 import types
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -337,6 +338,106 @@ class TestGetMetadataSummary:
 
         assert result["gps_coordinates"] == coords
         assert result["location_name"] == "San Francisco, CA, USA"
+
+    def test_includes_text_metadata(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        with patch.object(parser, "extract_exif_data", return_value={}), \
+             patch.object(parser, "extract_text_metadata", return_value={"Software": "GIMP"}):
+            result = parser.get_metadata_summary(dummy_path)
+        assert result["text_metadata"] == {"Software": "GIMP"}
+
+    def test_creation_time_used_as_datetime_fallback(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        with patch.object(parser, "extract_exif_data", return_value={}), \
+             patch.object(parser, "extract_text_metadata",
+                          return_value={"Creation Time": "2021-08-15T09:30:00"}):
+            result = parser.get_metadata_summary(dummy_path)
+        assert result["datetime"] == datetime(2021, 8, 15, 9, 30, 0)
+        assert result["year"] == 2021
+        assert result["date_str"] == "2021-08"
+
+    def test_exif_datetime_wins_over_creation_time(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        with patch.object(parser, "extract_exif_data", return_value={"DateTimeOriginal": "2023:11:26 14:30:00"}), \
+             patch.object(parser, "extract_text_metadata",
+                          return_value={"Creation Time": "2021-08-15T09:30:00"}):
+            result = parser.get_metadata_summary(dummy_path)
+        assert result["datetime"] == datetime(2023, 11, 26, 14, 30, 0)
+
+
+# ---------------------------------------------------------------------------
+# extract_text_metadata (GIF / PNG textual metadata)
+# ---------------------------------------------------------------------------
+
+def _mock_text_image(text: Optional[dict] = None, info: Optional[dict] = None) -> MagicMock:
+    """Mock image usable as a context manager, exposing .text and .info dicts."""
+    img = MagicMock()
+    img.__enter__.return_value = img
+    img.__exit__.return_value = False
+    img.text = text if text is not None else {}
+    img.info = info if info is not None else {}
+    return img
+
+
+class TestExtractTextMetadata:
+    def test_returns_empty_when_metadata_unavailable(self, dummy_path: Path) -> None:
+        p = ImageMetadataParser()
+        p.metadata_available = False
+        assert p.extract_text_metadata(dummy_path) == {}
+
+    def test_returns_empty_on_open_failure(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        with patch("src.analyzers.image_metadata.Image.open", side_effect=OSError("bad file")):
+            assert parser.extract_text_metadata(dummy_path) == {}
+
+    def test_reads_png_text_chunks_and_strips(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        img = _mock_text_image(text={"Software": "GIMP", "Description": "  a render  "})
+        with patch("src.analyzers.image_metadata.Image.open", return_value=img):
+            result = parser.extract_text_metadata(dummy_path)
+        assert result == {"Software": "GIMP", "Description": "a render"}
+
+    def test_reads_gif_comment_from_info_and_decodes_bytes(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        img = _mock_text_image(info={"comment": b"Made with X", "duration": 100})
+        with patch("src.analyzers.image_metadata.Image.open", return_value=img):
+            result = parser.extract_text_metadata(dummy_path)
+        assert result == {"comment": "Made with X"}
+
+    def test_ignores_unlisted_keys_and_empty_values(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        img = _mock_text_image(text={"Title": "   ", "icc_profile": "x"}, info={"dpi": (72, 72)})
+        with patch("src.analyzers.image_metadata.Image.open", return_value=img):
+            assert parser.extract_text_metadata(dummy_path) == {}
+
+    def test_text_chunk_wins_over_info_duplicate(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        img = _mock_text_image(text={"Comment": "from-text"}, info={"Comment": "from-info"})
+        with patch("src.analyzers.image_metadata.Image.open", return_value=img):
+            assert parser.extract_text_metadata(dummy_path) == {"Comment": "from-text"}
+
+
+class TestNormalizeTextValue:
+    def test_strips_str(self) -> None:
+        assert ImageMetadataParser._normalize_text_value("  hi  ") == "hi"
+
+    def test_decodes_utf8_bytes(self) -> None:
+        assert ImageMetadataParser._normalize_text_value(b"hi") == "hi"
+
+    def test_empty_after_strip_returns_none(self) -> None:
+        assert ImageMetadataParser._normalize_text_value("   ") is None
+
+    def test_non_text_returns_none(self) -> None:
+        assert ImageMetadataParser._normalize_text_value(123) is None
+
+    def test_undecodable_bytes_returns_none(self) -> None:
+        assert ImageMetadataParser._normalize_text_value(b"\xff\xfe") is None
+
+
+class TestParseCreationTime:
+    def test_iso_8601(self, parser: ImageMetadataParser) -> None:
+        assert parser._parse_creation_time({"Creation Time": "2021-08-15T09:30:00"}) == datetime(2021, 8, 15, 9, 30, 0)
+
+    def test_date_only(self, parser: ImageMetadataParser) -> None:
+        assert parser._parse_creation_time({"Creation Time": "2021-08-15"}) == datetime(2021, 8, 15)
+
+    def test_missing_key_returns_none(self, parser: ImageMetadataParser) -> None:
+        assert parser._parse_creation_time({}) is None
+
+    def test_unparseable_returns_none(self, parser: ImageMetadataParser) -> None:
+        assert parser._parse_creation_time({"Creation Time": "last tuesday"}) is None
 
 
 # ---------------------------------------------------------------------------
