@@ -6,13 +6,15 @@
 
 **Result: 53 confirmed findings** (5 high, 45 medium, 3 low), grouped into 7 duplication zones below.
 
+**Progress:** 3 of 53 resolved (`cc06190` — the three game-keyword findings; priority #3). 50 open.
+
 **Structural note that keeps this list honest:** `src/` imports heavily *from* `scripts/shared` (`GAME_SPRITE_KEYWORDS`, `SCREENSHOT_KEYWORDS`, `SCREENSHOT_PATTERNS`/`DOCUMENT_PATTERNS`, `IMAGE_EXTENSIONS_WIDE`, `classify_by_ocr`, `kie_*` are single-sourced via `from shared.x import y`). Those were spot-checked and are shared single sources, not copies — everything listed below is a genuine second implementation or second data table.
 
 ## Recommended priority order
 
 1. Consolidate the timeline exporter (or delete the orphaned `TimelineAPI` export path) — two writers emit incompatible schemas to the same `_site/timeline_data.json`.
 2. Fix `regenerate_schemas.py` metadata-dropping drift (regeneration silently loses ScholarlyArticle/CLIP properties src now emits).
-3. Single-home the game keyword tables (union the bidirectional fixes; re-run the eval).
+3. ~~Single-home the game keyword tables (union the bidirectional fixes; re-run the eval).~~ **DONE** (`cc06190`) — see the three resolved findings below.
 4. Auto-generate `scripts/d1/schema.sql` from `Base.metadata` (whole `merge_events` table is missing).
 5. The rest opportunistically, when the owning script is next touched.
 
@@ -292,6 +294,8 @@ The script's `type_mapping` routes the same extensions to different destinations
 
 The `GAME_SPRITE_KEYWORDS` pattern (single-homed in `shared.constants`, imported by `content_organizer.py:22`) is the model; these tables never got the same treatment. Notable: `GAME_FONT_KEYWORDS` is element-for-element identical on both sides; `GAME_AUDIO/MUSIC_KEYWORDS` diverged in both directions — src added ~34 terms the script lacks, while the script fixed the `'cast'`-matches-`'podcast'` false positive (`'spellcast'`) that src still has.
 
+> **Update (`cc06190`):** the three game-keyword findings below (`GAME_FONT_KEYWORDS`, `GAME_AUDIO_KEYWORDS`, `GAME_MUSIC_KEYWORDS`) are **resolved** — all three are now single-homed in `shared.constants` and consumed by `ContentOrganizer`, with the bidirectional divergence unioned (src's ~34 extra terms + the script's `'spellcast'` fix). Eval re-run: accuracy 0.8596→0.8624, macro F1 0.4619→0.4647, no category regression. The remaining findings in this zone (extension sets, the `filename_classifier.py` copies, entity/business/legal/journal/font/sprite tables) are still open.
+
 ### [MEDIUM] IMAGE_EXTENSIONS / IMAGE_EXTENSIONS_WIDE
 
 - **Kind:** diverged-copy
@@ -310,8 +314,9 @@ The `GAME_SPRITE_KEYWORDS` pattern (single-homed in `shared.constants`, imported
 - **Divergence:** Src set includes ".gif" (and is a frozenset); the script's set omits it, so GIFs are scanned by the batch pipeline but silently skipped by KIE training-data collection. Both restate scripts/shared/constants.py IMAGE_EXTENSIONS (plus {".tiff", ".tif"}) instead of deriving from it — the repo already centralizes this vocabulary there (commented "used by 6+ scripts").
 - **Recommendation:** Derive both sets from scripts/shared/constants.py, e.g. IMAGE_EXTENSIONS | {".tiff", ".tif"}, so the extension vocabulary has one source of truth; if the KIE collector intentionally excludes .gif, express that as an explicit subtraction from the shared set.
 
-### [MEDIUM] GAME_FONT_KEYWORDS
+### [MEDIUM] GAME_FONT_KEYWORDS — RESOLVED (`cc06190`)
 
+- **Resolution:** `content_organizer.py` now imports `GAME_FONT_KEYWORDS` from `shared.constants` and assigns `self.game_font_keywords = GAME_FONT_KEYWORDS` (inline literal deleted). Lists were already identical, so no behavior change.
 - **Kind:** identical-copy
 - **Script:** `scripts/shared/constants.py:438-453`
 - **Src counterpart:** `src/organizers/content_organizer.py:393-398` — `ContentOrganizer.__init__ self.game_font_keywords`
@@ -319,8 +324,9 @@ The `GAME_SPRITE_KEYWORDS` pattern (single-homed in `shared.constants`, imported
 - **Divergence:** None — the two lists are element-for-element identical, only formatting differs.
 - **Recommendation:** Single-home like GAME_SPRITE_KEYWORDS already is: content_organizer.py:22 imports GAME_SPRITE_KEYWORDS from shared.constants and assigns it at line 377 with the comment 'Single-homed in shared.constants'. Do the same for GAME_FONT_KEYWORDS: delete the inline literal at content_organizer.py:394-398 and assign self.game_font_keywords = GAME_FONT_KEYWORDS from the shared constant (GAME_FONT_KEYWORDS currently has no consumer besides the scripts/shared/__init__.py re-export).
 
-### [MEDIUM] GAME_AUDIO_KEYWORDS
+### [MEDIUM] GAME_AUDIO_KEYWORDS — RESOLVED (`cc06190`)
 
+- **Resolution:** unioned in `shared.constants.GAME_AUDIO_KEYWORDS` (src's ~34 extra terms folded in; `'cast'` replaced by `'spellcast'` to keep the podcast/broadcast fix). `ContentOrganizer` now assigns the shared constant; `evaluate_model.py` already imported it, so eval and production share one list. Eval re-run confirmed no regression (game_assets F1 0.9367→0.9382).
 - **Kind:** diverged-copy
 - **Script:** `scripts/shared/constants.py:377-408`
 - **Src counterpart:** `src/organizers/content_organizer.py:352-363` — `ContentOrganizer.__init__ self.game_audio_keywords`
@@ -328,8 +334,9 @@ The `GAME_SPRITE_KEYWORDS` pattern (single-homed in `shared.constants`, imported
 - **Divergence:** Src list (~60 items) adds 'cast', 'chirp', 'crossbow', 'bow', 'potion', 'explosion', 'blast', 'petrification', 'neutralize', 'slow', 'darkness', 'achievement', 'quest', 'hit', 'death', 'footstep', 'jump', 'land', 'monster', 'creature', 'enemy', 'boss', 'battle', 'combat', 'starving', 'hunger', 'thirst', 'eat', 'drink', 'sleep', 'instrument', 'identify', 'greater', 'mental'; script list has 'sfx', 'sound', 'effect', 'ambient' which the src list lacks. Since scripts/evaluate_model.py:18,157 classifies eval data with the script list while production ContentOrganizer uses the src list, evaluation and production disagree on game-audio detection.
 - **Recommendation:** Reconcile into one list (union or deliberate curation) in shared.constants.GAME_AUDIO_KEYWORDS, then have ContentOrganizer assign self.game_audio_keywords from it, mirroring the GAME_SPRITE_KEYWORDS pattern at content_organizer.py:22,377. Re-run the eval (scripts/evaluate_model.py consumes the same constant) to confirm no regression.
 
-### [MEDIUM] GAME_MUSIC_KEYWORDS
+### [MEDIUM] GAME_MUSIC_KEYWORDS — RESOLVED (`cc06190`)
 
+- **Resolution:** unioned in `shared.constants.GAME_MUSIC_KEYWORDS` (src's ~32 extra terms folded into the script list). `ContentOrganizer` now assigns the shared constant. The `.ogg`-only music check still precedes the audio check in `classify_game_asset`, so the term overlap between the audio and music lists is harmless.
 - **Kind:** diverged-copy
 - **Script:** `scripts/shared/constants.py:410-436`
 - **Src counterpart:** `src/organizers/content_organizer.py:365-374` — `ContentOrganizer.__init__ self.game_music_keywords`
