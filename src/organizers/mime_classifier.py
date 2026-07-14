@@ -10,19 +10,18 @@ schema_type)`` triple whose category/subcategory key into
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
-try:
-    from shared.constants import (
-        ARCHIVE_EXTENSIONS,
-        SOFTWARE_INSTALLER_EXTENSIONS,
-        SOFTWARE_PACKAGE_EXTENSIONS,
-    )
-except ImportError:  # scripts/shared not on sys.path (e.g. direct-import tests)
-    ARCHIVE_EXTENSIONS = {".zip", ".tar", ".gz", ".rar", ".7z", ".bz2"}
-    SOFTWARE_INSTALLER_EXTENSIONS = {".dmg", ".pkg", ".exe", ".msi", ".app"}
-    SOFTWARE_PACKAGE_EXTENSIONS = {".deb", ".rpm", ".snap", ".flatpak", ".appimage"}
+from shared.constants import (
+    ARCHIVE_EXTENSIONS,
+    SOFTWARE_INSTALLER_EXTENSIONS,
+    SOFTWARE_PACKAGE_EXTENSIONS,
+)
 
 # .zip is classified separately (archives/zip); the rest route to archives/other.
 _NON_ZIP_ARCHIVE_EXTENSIONS = ARCHIVE_EXTENSIONS - {".zip"}
+
+# Image and audio format splits (photos vs graphics; music vs plain audio).
+_PHOTO_EXTENSIONS = {".jpg", ".jpeg", ".heic"}
+_MUSIC_EXTENSIONS = {".mp3", ".m4a", ".flac"}
 
 Classification = Tuple[str, str, str]
 
@@ -69,11 +68,11 @@ def classify_by_mime(file_path: Path, mime_type: Optional[str]) -> Classificatio
     if mime_type and mime_type.startswith('image/'):
         if 'screenshot' in file_name or file_name.startswith('screen'):
             return ('images', 'screenshots', 'ImageObject')
-        elif file_ext in ['.jpg', '.jpeg', '.heic']:
+        elif file_ext in _PHOTO_EXTENSIONS:
             return ('images', 'photos', 'Photograph')
         else:
             return ('images', 'graphics', 'ImageObject')
-    elif file_ext in ['.jpg', '.jpeg', '.heic']:
+    elif file_ext in _PHOTO_EXTENSIONS:
         return ('images', 'photos', 'Photograph')
     elif file_ext in ['.png', '.gif', '.bmp', '.webp', '.svg']:
         return ('images', 'graphics', 'ImageObject')
@@ -126,11 +125,11 @@ def classify_by_mime(file_path: Path, mime_type: Optional[str]) -> Classificatio
         return ('media', 'videos', 'VideoObject')
 
     elif mime_type and mime_type.startswith('audio/'):
-        if 'music' in file_name or file_ext in ['.mp3', '.m4a', '.flac']:
+        if 'music' in file_name or file_ext in _MUSIC_EXTENSIONS:
             return ('media', 'music', 'MusicRecording')
         return ('media', 'audio', 'AudioObject')
 
-    elif file_ext in ['.mp3', '.m4a', '.flac']:
+    elif file_ext in _MUSIC_EXTENSIONS:
         return ('media', 'music', 'MusicRecording')
 
     elif file_ext in ['.wav', '.ogg', '.aac']:
