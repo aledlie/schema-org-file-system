@@ -130,6 +130,28 @@ def clear_reader() -> None:
     logger.info("easyocr Reader cache cleared")
 
 
+def _readtext_input(image_path: Path):
+    """Return the value to pass to Reader.readtext for this image.
+
+    easyocr's reformat_input loads animated images (multi-frame GIF/WebP) as a
+    4-D (frames, H, W, 3) stack, which its detection pipeline then converts to
+    float — multi-GB for long animations, enough to OOM-kill the process. For
+    animated images, decode only the first frame and pass it as an RGB array
+    (readtext accepts ndarray input); otherwise pass the path through unchanged.
+    """
+    try:
+        from PIL import Image
+        import numpy as np
+
+        with Image.open(image_path) as img:
+            if getattr(img, "n_frames", 1) > 1:
+                img.seek(0)
+                return np.asarray(img.convert("RGB"))
+    except Exception as e:
+        logger.debug("animated-image check failed on %s: %s", image_path, e)
+    return str(image_path)
+
+
 def extract_text_easyocr(image_path: Path, max_chars: int = 500) -> str | None:
     """Extract text from a screenshot/mobile image via easyocr.
 
@@ -140,7 +162,7 @@ def extract_text_easyocr(image_path: Path, max_chars: int = 500) -> str | None:
         return None
     try:
         reader = _get_reader()
-        lines = reader.readtext(str(image_path), detail=0, paragraph=True)
+        lines = reader.readtext(_readtext_input(image_path), detail=0, paragraph=True)
         text = " ".join(" ".join(lines).split())
         if not text.strip():
             return None
@@ -163,7 +185,7 @@ def extract_lines_easyocr(image_path: Path, max_lines: int = 20) -> list[str] | 
         return None
     try:
         reader = _get_reader()
-        raw = reader.readtext(str(image_path), detail=0, paragraph=True)
+        raw = reader.readtext(_readtext_input(image_path), detail=0, paragraph=True)
         lines = [" ".join(segment.split()) for segment in raw]
         lines = [line for line in lines if line]
         return lines[:max_lines] or None
@@ -191,7 +213,7 @@ def extract_text_easyocr_with_confidence(
         from shared.ocr_classifier import OCRResult
 
         reader = _get_reader()
-        detections = reader.readtext(str(image_path), detail=1, paragraph=False)
+        detections = reader.readtext(_readtext_input(image_path), detail=1, paragraph=False)
         if not detections:
             return None
 
