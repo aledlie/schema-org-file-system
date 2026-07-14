@@ -77,6 +77,21 @@ class TimelineAPI:
             with db_connection(self.db_path) as owned:
                 yield owned.cursor()
 
+    def _fetch_dicts(
+        self,
+        sql: str,
+        params: tuple = (),
+        conn: sqlite3.Connection | None = None,
+    ) -> list[dict[str, Any]]:
+        """Run ``sql`` and return every row as a dict.
+
+        Shared by the per-session distribution getters, which differ only in
+        their query text.
+        """
+        with self._cursor(conn) as cursor:
+            cursor.execute(sql, params)
+            return [dict(row) for row in cursor.fetchall()]
+
     def get_sessions(
         self, conn: sqlite3.Connection | None = None
     ) -> list[dict[str, Any]]:
@@ -134,56 +149,50 @@ class TimelineAPI:
         self, session_id: str, conn: sqlite3.Connection | None = None
     ) -> list[dict[str, Any]]:
         """Get category breakdown for a specific session."""
-        with self._cursor(conn) as cursor:
-            cursor.execute("""
-                SELECT
-                    c.name,
-                    c.color,
-                    c.icon,
-                    COUNT(fc.file_id) as count,
-                    AVG(fc.confidence) as avg_confidence
-                FROM categories c
-                JOIN file_categories fc ON c.id = fc.category_id
-                JOIN files f ON fc.file_id = f.id
-                WHERE f.session_id = ?
-                GROUP BY c.id
-                ORDER BY count DESC
-                LIMIT 10
-            """, (session_id,))
-            return [dict(row) for row in cursor.fetchall()]
+        return self._fetch_dicts("""
+            SELECT
+                c.name,
+                c.color,
+                c.icon,
+                COUNT(fc.file_id) as count,
+                AVG(fc.confidence) as avg_confidence
+            FROM categories c
+            JOIN file_categories fc ON c.id = fc.category_id
+            JOIN files f ON fc.file_id = f.id
+            WHERE f.session_id = ?
+            GROUP BY c.id
+            ORDER BY count DESC
+            LIMIT 10
+        """, (session_id,), conn)
 
     def get_session_schema_types(
         self, session_id: str, conn: sqlite3.Connection | None = None
     ) -> list[dict[str, Any]]:
         """Get schema type distribution for a specific session."""
-        with self._cursor(conn) as cursor:
-            cursor.execute("""
-                SELECT
-                    schema_type,
-                    COUNT(*) as count
-                FROM files
-                WHERE session_id = ? AND schema_type IS NOT NULL
-                GROUP BY schema_type
-                ORDER BY count DESC
-            """, (session_id,))
-            return [dict(row) for row in cursor.fetchall()]
+        return self._fetch_dicts("""
+            SELECT
+                schema_type,
+                COUNT(*) as count
+            FROM files
+            WHERE session_id = ? AND schema_type IS NOT NULL
+            GROUP BY schema_type
+            ORDER BY count DESC
+        """, (session_id,), conn)
 
     def get_session_extensions(
         self, session_id: str, conn: sqlite3.Connection | None = None
     ) -> list[dict[str, Any]]:
         """Get file extension distribution for a specific session."""
-        with self._cursor(conn) as cursor:
-            cursor.execute("""
-                SELECT
-                    LOWER(file_extension) as extension,
-                    COUNT(*) as count
-                FROM files
-                WHERE session_id = ? AND file_extension IS NOT NULL
-                GROUP BY LOWER(file_extension)
-                ORDER BY count DESC
-                LIMIT 10
-            """, (session_id,))
-            return [dict(row) for row in cursor.fetchall()]
+        return self._fetch_dicts("""
+            SELECT
+                LOWER(file_extension) as extension,
+                COUNT(*) as count
+            FROM files
+            WHERE session_id = ? AND file_extension IS NOT NULL
+            GROUP BY LOWER(file_extension)
+            ORDER BY count DESC
+            LIMIT 10
+        """, (session_id,), conn)
 
     @staticmethod
     def calculate_session_changes(
