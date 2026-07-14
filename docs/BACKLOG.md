@@ -107,6 +107,22 @@ Low-severity findings from the code review of the timeline consolidation that we
 
 All three follow-ups above are now resolved.
 
+### Cross-file duplication within `src/` (investigation)
+
+The scripts↔src audit and the TimelineAPI copypasta trim both surfaced duplication that is *internal to `src/`* — out of scope for the scripts↔src cleanup but worth a dedicated pass. Investigate whether each is worth consolidating or is a deliberate layer split before changing anything.
+
+**Status:** Open — investigation, not committed work
+**Priority:** P3
+**Source:** TimelineAPI copypasta trim + scripts↔src audit out-of-scope observations, 2026-07-14
+
+Candidates found so far:
+
+1. **Session/aggregate stats computed at two layers.** `TimelineAPI.get_cumulative_stats` (`src/api/timeline_api.py`, raw sqlite3) and `GraphStore.get_statistics` (`src/storage/graph_store.py:1215`, SQLAlchemy ORM) both aggregate total files / organized count / category + extension breakdowns over the same DB. Likely *intentional* — timeline reads lightweight raw SQL to avoid pulling the ORM (and its torch import weight) into the dashboard path — but the scopes also differ (session-scoped vs global), so confirm the split is deliberate and, if so, document it rather than merging.
+2. **`Technical/` extension map overlap.** `content_organizer.py`'s extension map (~lines 240-330) overlaps `mime_classifier.py`'s extension routing — two extension→category tables that can drift.
+3. **GameAssets folder map defined twice.** `src/organizers/category_config.py` defines the same GameAssets subcategory→folder map at lines 77-82 and 188-193 — a single table copied verbatim; the lower-risk of the three to single-home.
+
+Items 2–3 are recorded in the review doc's "Out-of-scope observations": [`docs/reviews/SCRIPTS_SRC_DUPLICATION_AUDIT.md`](reviews/SCRIPTS_SRC_DUPLICATION_AUDIT.md).
+
 ### `regenerate_schemas.py` mirrors the src generator import list
 
 **Status:** Open
