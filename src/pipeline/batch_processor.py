@@ -6,9 +6,16 @@ from typing import Any, Dict, List, Optional
 
 _SEPARATOR = "=" * 60
 
-_IMAGE_EXTENSIONS = frozenset({
-  ".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".heic", ".tiff", ".tif",
-})
+# Single-sourced from shared.constants (base set + TIFF variants); membership
+# is unchanged from the previous inline literal. Guarded for import contexts
+# where scripts/shared is not on sys.path (e.g. direct-import unit tests).
+try:
+  from shared.constants import IMAGE_EXTENSIONS as _SHARED_IMAGE_EXTENSIONS
+  _IMAGE_EXTENSIONS = frozenset(_SHARED_IMAGE_EXTENSIONS | {".tiff", ".tif"})
+except ImportError:
+  _IMAGE_EXTENSIONS = frozenset(
+    {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".heic", ".tiff", ".tif"}
+  )
 
 try:
   from shared.clip_cache import get_cached_embeddings_batch, CLIP_CACHE_AVAILABLE
