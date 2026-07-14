@@ -159,7 +159,6 @@ class TestSessionChanges:
         )
         assert changes == {
             "is_first": True, "files_delta": 10, "organized_delta": 7,
-            "new_categories": [], "category_changes": [],
         }
 
     def test_deltas_between_sessions(self, timeline_db):

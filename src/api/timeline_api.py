@@ -159,8 +159,6 @@ class TimelineAPI:
                 'is_first': True,
                 'files_delta': current['total_files'],
                 'organized_delta': current['organized_count'],
-                'new_categories': [],
-                'category_changes': []
             }
 
         return {
