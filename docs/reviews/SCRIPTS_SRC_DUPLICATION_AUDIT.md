@@ -501,7 +501,7 @@ Independent small copies: `compute_file_id` verbatim; `DEFAULT_DB_PATH` defined 
 - **Divergence:** Script selects the best prediction within a single class then applies the 0.5 gate; src scans a tuple of class names with the gate inline. The two 0.5 thresholds have different names/docstrings, so they can silently drift apart, as can the class-name vocabulary (src hardcodes 6 of the 10 KIE_FIELD_CLASSES strings instead of referencing the table). Both sides were introduced by the same commit (685c91f).
 - **Recommendation:** Hoist a shared best_kie_field(kie_result, class_names, min_confidence) helper and a single KIE min-confidence constant into scripts/shared/kie_utils.py (next to KIEField/KIEResult, which src already imports), then have both kie_result_to_schema_org and ContentClassifier.classify_with_kie delegate to it; replace the hardcoded class-name tuples in content_classifier with groups defined alongside KIE_FIELD_CLASSES in kie_schema_mapping.
 
-### [MEDIUM] DEFAULT_DB_PATH — RESOLVED (`723d674`)
+### [MEDIUM] DEFAULT_DB_PATH — RESOLVED (`5dcab58`)
 
 - **Kind:** duplicated-constant
 - **Script:** `scripts/shared/db_utils.py:8`
