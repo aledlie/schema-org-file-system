@@ -94,4 +94,12 @@ Migration context: the goldens originally pinned `scripts/file_organizer.py`'s `
 1. **ImageObject lost `width`/`height`.** The legacy branch read PIL dimensions (`set_dimensions`); the live one doesn't. Dimensions may still reach the graph via the image-metadata path, but they're gone from the per-file JSON-LD.
 2. **The type collapse.** VideoObject, AudioObject, SoftwareSourceCode, Dataset, Person, and Organization all fall to a bare `DocumentGenerator()` fallback that emits `@type: DigitalDocument` with only `name` + `description` (the legacy fallback at least had `encodingFormat`/`contentSize`/`url`). This is not hypothetical: `content_organizer.py:1054` still emits VideoObject/AudioObject and `category_config.py` maps whole subcategories to Organization — and `_persist_to_graph_store` stores `schema.get("@type")`, so **videos organized today are recorded in the graph as DigitalDocument**. The vCard parsing (`worksFor`, PostalAddress, name parts) also has no live equivalent; if it is restored, the deleted `_enrich_person_from_vcard`/`_enrich_organization_from_file` implementations and their tests are recoverable from git history (pre-2026-07-13).
 
+### `scripts/shared/__init__.py` eager CLIP/OCR imports make every `shared.X` import heavy
+
+**Status:** Open
+**Priority:** P3
+**Source:** format-classifier consolidation session, 2026-07-14
+
+`scripts/shared/__init__.py` eagerly imports `clip_cache`, `clip_utils` (`CLIPClassifier`), and `ocr_classifier` at package-import time, so *any* `from shared.X import ...` drags in torch + open_clip (~1.8s, several hundred MB of RSS) even for lightweight helpers. This penalizes callers that need no ML — notably `organize-files type` (extension-only, deterministic), which imports `shared.file_ops` and pays the full ML-stack load before doing any work. Fix by making the heavy re-exports lazy (PEP 562 `__getattr__` in `shared/__init__.py`) or dropping `clip_*`/`ocr_*` from `__init__` so they are imported only via their submodules; first confirm no consumer relies on eager `from shared import CLIPClassifier`-style access. Pre-existing (not introduced by the consolidation work); surfaced while measuring the type command's import weight.
+
 
