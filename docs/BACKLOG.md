@@ -125,3 +125,18 @@ Migration context: the goldens originally pinned `scripts/file_organizer.py`'s `
 `scripts/shared/__init__.py` eagerly imports `clip_cache`, `clip_utils` (`CLIPClassifier`), and `ocr_classifier` at package-import time, so *any* `from shared.X import ...` drags in torch + open_clip (~1.8s, several hundred MB of RSS) even for lightweight helpers. This penalizes callers that need no ML — notably `organize-files type` (extension-only, deterministic), which imports `shared.file_ops` and pays the full ML-stack load before doing any work. Fix by making the heavy re-exports lazy (PEP 562 `__getattr__` in `shared/__init__.py`) or dropping `clip_*`/`ocr_*` from `__init__` so they are imported only via their submodules; first confirm no consumer relies on eager `from shared import CLIPClassifier`-style access. Pre-existing (not introduced by the consolidation work); surfaced while measuring the type command's import weight.
 
 
+### Defensive `_getexif()` fix for non-EXIF image formats
+
+**Status:** In progress — uncommitted fix in working tree
+**Priority:** P3
+**Source:** image_metadata.py defensive handling, 2026-07-14
+
+`ImageMetadataParser.extract_exif_data` directly calls `image._getexif()`, which raises `AttributeError` on formats without EXIF (GIF, PNG, WebP without EXIF). Uncommitted fix uses `getattr(image, "_getexif", None)` to probe for the method before calling. This change is defensive but needs to be:
+
+1. Committed (ready to merge)
+2. Tested to verify no regressions on JPEG/TIFF/HEIC and clean handling on GIF/PNG
+3. Confirm no side effects on the fallback `_extract_exif_via_piexif` path
+
+Change lives in `/Users/alyshialedlie/schema-org-file-system/src/analyzers/image_metadata.py:86-90`.
+
+
