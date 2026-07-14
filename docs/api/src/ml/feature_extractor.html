@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.ml.feature_extractor API documentation</title>
+<meta name="description" content="Feature engineering for file-organization ML …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.ml.feature_extractor</code></h1>
+</header>
+<section id="section-intro">
+<p>Feature engineering for file-organization ML.</p>
+<p>Turns a single organization-report record into a flat
+feature dict consumed by DataPreprocessor.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.ml.feature_extractor.FileFeatureExtractor"><code class="flex name class">
+<span>class <span class="ident">FileFeatureExtractor</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FileFeatureExtractor:
+    &#34;&#34;&#34;Extract ML features from file metadata.&#34;&#34;&#34;
+
+    def __init__(self):
+        self.extension_map = self._build_extension_map()
+
+    def _build_extension_map(self) -&gt; Dict[str, str]:
+        &#34;&#34;&#34;Build mapping of extensions to general categories.&#34;&#34;&#34;
+        return {
+            # Images
+            &#39;.jpg&#39;: &#39;image&#39;, &#39;.jpeg&#39;: &#39;image&#39;, &#39;.png&#39;: &#39;image&#39;,
+            &#39;.gif&#39;: &#39;image&#39;, &#39;.bmp&#39;: &#39;image&#39;, &#39;.webp&#39;: &#39;image&#39;,
+            &#39;.heic&#39;: &#39;image&#39;, &#39;.heif&#39;: &#39;image&#39;, &#39;.svg&#39;: &#39;image&#39;,
+            &#39;.tiff&#39;: &#39;image&#39;, &#39;.ico&#39;: &#39;image&#39;,
+            # Videos
+            &#39;.mp4&#39;: &#39;video&#39;, &#39;.mov&#39;: &#39;video&#39;, &#39;.avi&#39;: &#39;video&#39;,
+            &#39;.mkv&#39;: &#39;video&#39;, &#39;.webm&#39;: &#39;video&#39;, &#39;.m4v&#39;: &#39;video&#39;,
+            # Audio
+            &#39;.mp3&#39;: &#39;audio&#39;, &#39;.wav&#39;: &#39;audio&#39;, &#39;.ogg&#39;: &#39;audio&#39;,
+            &#39;.flac&#39;: &#39;audio&#39;, &#39;.aac&#39;: &#39;audio&#39;, &#39;.m4a&#39;: &#39;audio&#39;,
+            # Documents
+            &#39;.pdf&#39;: &#39;document&#39;, &#39;.doc&#39;: &#39;document&#39;, &#39;.docx&#39;: &#39;document&#39;,
+            &#39;.txt&#39;: &#39;text&#39;, &#39;.rtf&#39;: &#39;document&#39;, &#39;.odt&#39;: &#39;document&#39;,
+            # Spreadsheets
+            &#39;.xls&#39;: &#39;spreadsheet&#39;, &#39;.xlsx&#39;: &#39;spreadsheet&#39;, &#39;.csv&#39;: &#39;data&#39;,
+            # Code
+            &#39;.py&#39;: &#39;code&#39;, &#39;.js&#39;: &#39;code&#39;, &#39;.ts&#39;: &#39;code&#39;, &#39;.jsx&#39;: &#39;code&#39;,
+            &#39;.tsx&#39;: &#39;code&#39;, &#39;.html&#39;: &#39;code&#39;, &#39;.css&#39;: &#39;code&#39;, &#39;.json&#39;: &#39;data&#39;,
+            &#39;.xml&#39;: &#39;data&#39;, &#39;.yaml&#39;: &#39;data&#39;, &#39;.yml&#39;: &#39;data&#39;,
+            # Archives
+            &#39;.zip&#39;: &#39;archive&#39;, &#39;.tar&#39;: &#39;archive&#39;, &#39;.gz&#39;: &#39;archive&#39;,
+            &#39;.rar&#39;: &#39;archive&#39;, &#39;.7z&#39;: &#39;archive&#39;,
+        }
+
+    def extract_features(self, file_record: Dict) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Extract all features from a file record.&#34;&#34;&#34;
+        filename = file_record.get(&#39;schema&#39;, {}).get(&#39;name&#39;, &#39;&#39;)
+        filepath = file_record.get(&#39;source&#39;, &#39;&#39;)
+        category = file_record.get(&#39;category&#39;, &#39;uncategorized&#39;)
+        subcategory = file_record.get(&#39;subcategory&#39;, &#39;&#39;)
+
+        features = {
+            # Basic features
+            &#39;filename&#39;: filename,
+            &#39;filename_lower&#39;: filename.lower(),
+            &#39;filepath&#39;: filepath,
+            &#39;category&#39;: category,
+            &#39;subcategory&#39;: subcategory,
+
+            # Extension features
+            &#39;extension&#39;: self._get_extension(filename),
+            &#39;extension_category&#39;: self._get_extension_category(filename),
+
+            # Filename pattern features
+            &#39;filename_tokens&#39;: self._tokenize_filename(filename),
+            &#39;filename_length&#39;: len(filename),
+            &#39;has_numbers&#39;: bool(re.search(r&#39;\d&#39;, filename)),
+            &#39;has_underscores&#39;: &#39;_&#39; in filename,
+            &#39;has_dashes&#39;: &#39;-&#39; in filename,
+            &#39;has_spaces&#39;: &#39; &#39; in filename,
+            &#39;starts_with_date&#39;: self._starts_with_date(filename),
+
+            # Pattern detection
+            &#39;is_screenshot&#39;: self._matches_patterns(filename, SCREENSHOT_PATTERNS),
+            &#39;is_game_asset&#39;: self._matches_patterns(filename, GAME_ASSET_PATTERNS),
+            &#39;is_document&#39;: self._matches_patterns(filename, DOCUMENT_PATTERNS),
+
+            # Metadata features
+            &#39;has_extracted_text&#39;: file_record.get(&#39;extracted_text_length&#39;, 0) &gt; 0,
+            &#39;extracted_text_length&#39;: file_record.get(&#39;extracted_text_length&#39;, 0),
+            &#39;has_company_name&#39;: file_record.get(&#39;company_name&#39;) is not None,
+            &#39;has_people_names&#39;: len(file_record.get(&#39;people_names&#39;, [])) &gt; 0,
+            &#39;people_count&#39;: len(file_record.get(&#39;people_names&#39;, [])),
+
+            # Image metadata features
+            &#39;has_datetime&#39;: file_record.get(&#39;image_metadata&#39;, {}).get(&#39;datetime&#39;) is not None,
+            &#39;has_gps&#39;: file_record.get(&#39;image_metadata&#39;, {}).get(&#39;gps_coordinates&#39;) is not None,
+            &#39;has_location&#39;: file_record.get(&#39;image_metadata&#39;, {}).get(&#39;location_name&#39;) is not None,
+
+            # Path features
+            &#39;path_depth&#39;: filepath.count(&#39;/&#39;) if filepath else 0,
+            &#39;parent_folder&#39;: self._get_parent_folder(filepath),
+
+            # Derived features
+            &#39;filename_hash&#39;: self._hash_filename(filename),
+        }
+
+        return features
+
+    def _get_extension(self, filename: str) -&gt; str:
+        &#34;&#34;&#34;Get lowercase file extension.&#34;&#34;&#34;
+        return Path(filename).suffix.lower()
+
+    def _get_extension_category(self, filename: str) -&gt; str:
+        &#34;&#34;&#34;Get category based on extension.&#34;&#34;&#34;
+        ext = self._get_extension(filename)
+        return self.extension_map.get(ext, &#39;other&#39;)
+
+    def _tokenize_filename(self, filename: str) -&gt; List[str]:
+        &#34;&#34;&#34;Tokenize filename into meaningful parts.&#34;&#34;&#34;
+        # Remove extension
+        name = Path(filename).stem
+
+        # Normalize unicode
+        name = unicodedata.normalize(&#39;NFKD&#39;, name)
+
+        # Split on common delimiters
+        tokens = re.split(r&#39;[_\-\s\.]+&#39;, name)
+
+        # Split camelCase
+        expanded_tokens = []
+        for token in tokens:
+            # Split on camelCase boundaries
+            parts = re.findall(r&#39;[A-Z]?[a-z]+|[A-Z]+(?=[A-Z][a-z]|\d|\W|$)|\d+&#39;, token)
+            expanded_tokens.extend(parts if parts else [token])
+
+        # Lowercase and filter
+        return [t.lower() for t in expanded_tokens if t and len(t) &gt; 1]
+
+    def _starts_with_date(self, filename: str) -&gt; bool:
+        &#34;&#34;&#34;Check if filename starts with a date pattern.&#34;&#34;&#34;
+        date_patterns = [
+            r&#39;^\d{8}&#39;,  # YYYYMMDD
+            r&#39;^\d{4}-\d{2}-\d{2}&#39;,  # YYYY-MM-DD
+            r&#39;^\d{2}-\d{2}-\d{4}&#39;,  # MM-DD-YYYY
+            r&#39;^20\d{2}\d{4}&#39;,  # 20YYMMDD
+        ]
+        return any(re.match(p, filename) for p in date_patterns)
+
+    def _matches_patterns(self, filename: str, patterns: List[str]) -&gt; bool:
+        &#34;&#34;&#34;Check if filename matches any of the patterns.&#34;&#34;&#34;
+        filename_lower = filename.lower()
+        return any(re.search(p, filename_lower) for p in patterns)
+
+    def _get_parent_folder(self, filepath: str) -&gt; str:
+        &#34;&#34;&#34;Get immediate parent folder name.&#34;&#34;&#34;
+        if not filepath:
+            return &#39;&#39;
+        parts = Path(filepath).parts
+        return parts[-2] if len(parts) &gt;= 2 else &#39;&#39;
+
+    def _hash_filename(self, filename: str) -&gt; str:
+        &#34;&#34;&#34;Create a hash of the filename for deduplication.&#34;&#34;&#34;
+        return hashlib.sha256(filename.encode()).hexdigest()[:8]</code></pre>
+</details>
+<div class="desc"><p>Extract ML features from file metadata.</p></div>
+<h3>Methods</h3>
+<dl>
+<dt id="src.ml.feature_extractor.FileFeatureExtractor.extract_features"><code class="name flex">
+<span>def <span class="ident">extract_features</span></span>(<span>self, file_record: Dict) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_features(self, file_record: Dict) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Extract all features from a file record.&#34;&#34;&#34;
+    filename = file_record.get(&#39;schema&#39;, {}).get(&#39;name&#39;, &#39;&#39;)
+    filepath = file_record.get(&#39;source&#39;, &#39;&#39;)
+    category = file_record.get(&#39;category&#39;, &#39;uncategorized&#39;)
+    subcategory = file_record.get(&#39;subcategory&#39;, &#39;&#39;)
+
+    features = {
+        # Basic features
+        &#39;filename&#39;: filename,
+        &#39;filename_lower&#39;: filename.lower(),
+        &#39;filepath&#39;: filepath,
+        &#39;category&#39;: category,
+        &#39;subcategory&#39;: subcategory,
+
+        # Extension features
+        &#39;extension&#39;: self._get_extension(filename),
+        &#39;extension_category&#39;: self._get_extension_category(filename),
+
+        # Filename pattern features
+        &#39;filename_tokens&#39;: self._tokenize_filename(filename),
+        &#39;filename_length&#39;: len(filename),
+        &#39;has_numbers&#39;: bool(re.search(r&#39;\d&#39;, filename)),
+        &#39;has_underscores&#39;: &#39;_&#39; in filename,
+        &#39;has_dashes&#39;: &#39;-&#39; in filename,
+        &#39;has_spaces&#39;: &#39; &#39; in filename,
+        &#39;starts_with_date&#39;: self._starts_with_date(filename),
+
+        # Pattern detection
+        &#39;is_screenshot&#39;: self._matches_patterns(filename, SCREENSHOT_PATTERNS),
+        &#39;is_game_asset&#39;: self._matches_patterns(filename, GAME_ASSET_PATTERNS),
+        &#39;is_document&#39;: self._matches_patterns(filename, DOCUMENT_PATTERNS),
+
+        # Metadata features
+        &#39;has_extracted_text&#39;: file_record.get(&#39;extracted_text_length&#39;, 0) &gt; 0,
+        &#39;extracted_text_length&#39;: file_record.get(&#39;extracted_text_length&#39;, 0),
+        &#39;has_company_name&#39;: file_record.get(&#39;company_name&#39;) is not None,
+        &#39;has_people_names&#39;: len(file_record.get(&#39;people_names&#39;, [])) &gt; 0,
+        &#39;people_count&#39;: len(file_record.get(&#39;people_names&#39;, [])),
+
+        # Image metadata features
+        &#39;has_datetime&#39;: file_record.get(&#39;image_metadata&#39;, {}).get(&#39;datetime&#39;) is not None,
+        &#39;has_gps&#39;: file_record.get(&#39;image_metadata&#39;, {}).get(&#39;gps_coordinates&#39;) is not None,
+        &#39;has_location&#39;: file_record.get(&#39;image_metadata&#39;, {}).get(&#39;location_name&#39;) is not None,
+
+        # Path features
+        &#39;path_depth&#39;: filepath.count(&#39;/&#39;) if filepath else 0,
+        &#39;parent_folder&#39;: self._get_parent_folder(filepath),
+
+        # Derived features
+        &#39;filename_hash&#39;: self._hash_filename(filename),
+    }
+
+    return features</code></pre>
+</details>
+<div class="desc"><p>Extract all features from a file record.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.ml" href="index.html">src.ml</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.ml.feature_extractor.FileFeatureExtractor" href="#src.ml.feature_extractor.FileFeatureExtractor">FileFeatureExtractor</a></code></h4>
+<ul class="">
+<li><code><a title="src.ml.feature_extractor.FileFeatureExtractor.extract_features" href="#src.ml.feature_extractor.FileFeatureExtractor.extract_features">extract_features</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,807 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.classifiers.content_classifier API documentation</title>
+<meta name="description" content="ContentClassifier: classifies document content into categories using keyword patterns.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.classifiers.content_classifier</code></h1>
+</header>
+<section id="section-intro">
+<p>ContentClassifier: classifies document content into categories using keyword patterns.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.classifiers.content_classifier.ContentClassifier"><code class="flex name class">
+<span>class <span class="ident">ContentClassifier</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ContentClassifier:
+    &#34;&#34;&#34;Classifies document content into categories.
+
+    Entity extraction (companies, people, relationships, and company-name
+    normalization) is delegated to a composed :class:`EntityDetector`; the
+    ``extract_*``/``*_company_name`` methods below are thin pass-throughs that
+    preserve the historical public API.
+    &#34;&#34;&#34;
+
+    def __init__(self) -&gt; None:
+        &#34;&#34;&#34;Initialize classifier with keyword patterns.&#34;&#34;&#34;
+        # Entity detection (company/people/relationship extraction) lives in a
+        # dedicated collaborator; classification keeps only category scoring.
+        self.entities = EntityDetector()
+
+        self.patterns: dict[str, dict] = {
+            &#39;legal&#39;: {
+                &#39;keywords&#39;: [
+                    &#39;contract&#39;, &#39;agreement&#39;, &#39;terms&#39;, &#39;conditions&#39;, &#39;legal&#39;, &#39;attorney&#39;,
+                    &#39;law&#39;, &#39;litigation&#39;, &#39;plaintiff&#39;, &#39;defendant&#39;, &#39;court&#39;, &#39;settlement&#39;,
+                    &#39;lease&#39;, &#39;deed&#39;, &#39;will&#39;, &#39;testament&#39;, &#39;power of attorney&#39;, &#39;notary&#39;,
+                    &#39;amendment&#39;, &#39;exhibit&#39;, &#39;whereas&#39;, &#39;party&#39;, &#39;parties&#39;, &#39;executed&#39;,
+                    &#39;operating agreement&#39;, &#39;llc&#39;, &#39;corporation&#39;, &#39;bylaws&#39;, &#39;articles&#39;
+                ],
+                &#39;subcategories&#39;: {
+                    &#39;contracts&#39;: [&#39;contract&#39;, &#39;agreement&#39;, &#39;terms&#39;, &#39;subscription&#39;, &#39;saas&#39;],
+                    &#39;real_estate&#39;: [&#39;lease&#39;, &#39;deed&#39;, &#39;property&#39;, &#39;real estate&#39;, &#39;mortgage&#39;],
+                    &#39;litigation&#39;: [
+                        &#39;court&#39;, &#39;hearing&#39;, &#39;docket&#39;, &#39;plaintiff&#39;, &#39;defendant&#39;,
+                        &#39;petitioner&#39;, &#39;respondent&#39;, &#39;cause no&#39;, &#39;judgment&#39;,
+                        &#39;motion to&#39;, &#39;motion for&#39;,
+                    ],
+                    &#39;corporate&#39;: [&#39;llc&#39;, &#39;corporation&#39;, &#39;operating agreement&#39;, &#39;bylaws&#39;, &#39;articles&#39;, &#39;formation&#39;],
+                    &#39;other&#39;: []
+                }
+            },
+            &#39;financial&#39;: {
+                &#39;keywords&#39;: [
+                    &#39;invoice&#39;, &#39;receipt&#39;, &#39;tax&#39;, &#39;irs&#39;, &#39;payment&#39;, &#39;bill&#39;, &#39;billing&#39;,
+                    &#39;statement&#39;, &#39;account&#39;, &#39;balance&#39;, &#39;transaction&#39;, &#39;credit&#39;, &#39;debit&#39;,
+                    &#39;bank&#39;, &#39;finance&#39;, &#39;loan&#39;, &#39;interest&#39;, &#39;1098&#39;, &#39;1099&#39;, &#39;w-2&#39;, &#39;w2&#39;,
+                    &#39;federal&#39;, &#39;state return&#39;, &#39;refund&#39;, &#39;revenue&#39;, &#39;expense&#39;, &#39;budget&#39;,
+                    &#39;investment&#39;, &#39;portfolio&#39;, &#39;ein&#39;, &#39;employer identification&#39;
+                ],
+                &#39;subcategories&#39;: {
+                    &#39;tax&#39;: [&#39;tax&#39;, &#39;irs&#39;, &#39;1098&#39;, &#39;1099&#39;, &#39;w-2&#39;, &#39;w2&#39;, &#39;federal&#39;, &#39;state return&#39;],
+                    &#39;invoices&#39;: [&#39;invoice&#39;, &#39;bill&#39;, &#39;billing&#39;, &#39;payment&#39;],
+                    &#39;statements&#39;: [&#39;statement&#39;, &#39;account&#39;, &#39;balance&#39;, &#39;transaction&#39;],
+                    &#39;other&#39;: []
+                }
+            },
+            &#39;business&#39;: {
+                &#39;keywords&#39;: [
+                    &#39;proposal&#39;, &#39;pitch&#39;, &#39;business plan&#39;, &#39;strategy&#39;, &#39;marketing&#39;,
+                    &#39;presentation&#39;, &#39;deck&#39;, &#39;startup&#39;, &#39;company&#39;, &#39;venture&#39;, &#39;investor&#39;,
+                    &#39;growth&#39;, &#39;revenue model&#39;, &#39;unit economics&#39;, &#39;expansion&#39;, &#39;rfp&#39;,
+                    &#39;guidelines&#39;, &#39;program&#39;, &#39;service package&#39;, &#39;pricing&#39;, &#39;client&#39;,
+                    &#39;customer&#39;, &#39;vendor&#39;, &#39;supplier&#39;, &#39;partner&#39;, &#39;contacts&#39;, &#39;crm&#39;,
+                    &#39;hiring&#39;, &#39;job posting&#39;, &#39;meeting&#39;, &#39;standup&#39;, &#39;minutes&#39;
+                ],
+                &#39;subcategories&#39;: {
+                    &#39;planning&#39;: [&#39;business plan&#39;, &#39;strategy&#39;, &#39;expansion&#39;, &#39;growth&#39;, &#39;project&#39;],
+                    &#39;marketing&#39;: [&#39;marketing&#39;, &#39;pricing&#39;, &#39;service package&#39;, &#39;pitch&#39;, &#39;deck&#39;],
+                    &#39;proposals&#39;: [&#39;proposal&#39;, &#39;rfp&#39;, &#39;guidelines&#39;],
+                    &#39;crm&#39;: [&#39;crm&#39;, &#39;contacts&#39;, &#39;microlender&#39;, &#39;customer&#39;],
+                    &#39;hr&#39;: [&#39;hiring&#39;, &#39;job posting&#39;, &#39;team roster&#39;, &#39;application&#39;, &#39;linkedin&#39;],
+                    &#39;meeting_notes&#39;: [&#39;meeting&#39;, &#39;standup&#39;, &#39;minutes&#39;, &#39;agenda&#39;, &#39;retrospective&#39;],
+                    &#39;clients&#39;: [&#39;client&#39;, &#39;llc&#39;, &#39;inc&#39;, &#39;corp&#39;, &#39;company&#39;],  # Legacy
+                    &#39;other&#39;: []
+                }
+            },
+            &#39;personal&#39;: {
+                &#39;keywords&#39;: [
+                    &#39;resume&#39;, &#39;cv&#39;, &#39;cover letter&#39;, &#39;curriculum vitae&#39;, &#39;employment&#39;,
+                    &#39;personal&#39;, &#39;identification&#39;, &#39;passport&#39;, &#39;driver license&#39;, &#39;ssn&#39;,
+                    &#39;birth certificate&#39;, &#39;marriage&#39;, &#39;divorce&#39;, &#39;diploma&#39;, &#39;transcript&#39;,
+                    &#39;reference&#39;, &#39;recommendation&#39;, &#39;vcard&#39;, &#39;contact&#39;,
+                    &#39;journal&#39;, &#39;diary&#39;, &#39;event&#39;, &#39;wedding&#39;, &#39;citation&#39;
+                ],
+                &#39;subcategories&#39;: {
+                    &#39;employment&#39;: [&#39;resume&#39;, &#39;cv&#39;, &#39;cover letter&#39;, &#39;employment&#39;, &#39;reference&#39;],
+                    &#39;identification&#39;: [&#39;passport&#39;, &#39;driver license&#39;, &#39;ssn&#39;, &#39;id&#39;],
+                    &#39;certificates&#39;: [&#39;birth certificate&#39;, &#39;marriage&#39;, &#39;divorce&#39;, &#39;diploma&#39;],
+                    &#39;contacts&#39;: [&#39;resume&#39;, &#39;cv&#39;, &#39;vcard&#39;, &#39;contact&#39;, &#39;curriculum vitae&#39;],
+                    &#39;journal&#39;: [&#39;journal&#39;, &#39;diary&#39;, &#39;dream&#39;, &#39;reflection&#39;, &#39;memoir&#39;],
+                    &#39;events&#39;: [&#39;event&#39;, &#39;party&#39;, &#39;wedding&#39;, &#39;invitation&#39;, &#39;rsvp&#39;],
+                    &#39;legal&#39;: [&#39;dui&#39;, &#39;court&#39;, &#39;citation&#39;, &#39;traffic ticket&#39;, &#39;hearing&#39;, &#39;dmv&#39;],
+                    &#39;records&#39;: [&#39;personal record&#39;, &#39;records&#39;],
+                    &#39;other&#39;: []
+                }
+            },
+            &#39;medical&#39;: {
+                &#39;keywords&#39;: [
+                    &#39;medical&#39;, &#39;health&#39;, &#39;doctor&#39;, &#39;patient&#39;, &#39;prescription&#39;, &#39;diagnosis&#39;,
+                    &#39;treatment&#39;, &#39;hospital&#39;, &#39;clinic&#39;, &#39;insurance claim&#39;, &#39;hipaa&#39;,
+                    &#39;vaccination&#39;, &#39;immunization&#39;, &#39;lab results&#39;, &#39;pharmacy&#39;
+                ],
+                &#39;subcategories&#39;: {
+                    &#39;records&#39;: [&#39;medical record&#39;, &#39;patient&#39;, &#39;diagnosis&#39;, &#39;treatment&#39;],
+                    &#39;insurance&#39;: [&#39;insurance&#39;, &#39;claim&#39;, &#39;coverage&#39;],
+                    &#39;prescriptions&#39;: [&#39;prescription&#39;, &#39;pharmacy&#39;, &#39;medication&#39;],
+                    &#39;other&#39;: []
+                }
+            },
+            &#39;property&#39;: {
+                &#39;keywords&#39;: [
+                    &#39;property management&#39;, &#39;tenant&#39;, &#39;landlord&#39;, &#39;rent&#39;, &#39;rental&#39;,
+                    &#39;maintenance&#39;, &#39;repair&#39;, &#39;inspection&#39;, &#39;utilities&#39;, &#39;hoa&#39;
+                ],
+                &#39;subcategories&#39;: {
+                    &#39;leases&#39;: [&#39;lease&#39;, &#39;tenant&#39;, &#39;landlord&#39;, &#39;rent&#39;, &#39;rental&#39;],
+                    &#39;maintenance&#39;: [&#39;maintenance&#39;, &#39;repair&#39;, &#39;inspection&#39;],
+                    &#39;other&#39;: []
+                }
+            },
+            &#39;education&#39;: {
+                &#39;keywords&#39;: [
+                    &#39;course&#39;, &#39;syllabus&#39;, &#39;lecture&#39;, &#39;assignment&#39;, &#39;homework&#39;, &#39;exam&#39;,
+                    &#39;grade&#39;, &#39;transcript&#39;, &#39;diploma&#39;, &#39;degree&#39;, &#39;certificate&#39;, &#39;university&#39;,
+                    &#39;college&#39;, &#39;school&#39;, &#39;research paper&#39;, &#39;thesis&#39;, &#39;dissertation&#39;
+                ],
+                &#39;subcategories&#39;: {
+                    &#39;coursework&#39;: [&#39;course&#39;, &#39;syllabus&#39;, &#39;lecture&#39;, &#39;assignment&#39;],
+                    &#39;research&#39;: [&#39;research&#39;, &#39;paper&#39;, &#39;thesis&#39;, &#39;dissertation&#39;],
+                    &#39;records&#39;: [&#39;transcript&#39;, &#39;diploma&#39;, &#39;degree&#39;, &#39;certificate&#39;],
+                    &#39;other&#39;: []
+                }
+            },
+            &#39;technical&#39;: {
+                &#39;keywords&#39;: [
+                    &#39;code&#39;, &#39;software&#39;, &#39;development&#39;, &#39;programming&#39;, &#39;api&#39;, &#39;database&#39;,
+                    &#39;documentation&#39;, &#39;technical&#39;, &#39;specification&#39;, &#39;architecture&#39;, &#39;design&#39;,
+                    &#39;system&#39;, &#39;infrastructure&#39;, &#39;deployment&#39;, &#39;configuration&#39;
+                ],
+                &#39;subcategories&#39;: {
+                    &#39;documentation&#39;: [&#39;documentation&#39;, &#39;spec&#39;, &#39;specification&#39;, &#39;readme&#39;],
+                    &#39;architecture&#39;: [&#39;architecture&#39;, &#39;design&#39;, &#39;system&#39;, &#39;infrastructure&#39;],
+                    &#39;other&#39;: []
+                }
+            },
+            &#39;creative&#39;: {
+                &#39;keywords&#39;: [
+                    &#39;design&#39;, &#39;graphic&#39;, &#39;illustration&#39;, &#39;artwork&#39;, &#39;photo&#39;, &#39;image&#39;,
+                    &#39;screenshot&#39;, &#39;mockup&#39;, &#39;prototype&#39;, &#39;wireframe&#39;, &#39;brand&#39;, &#39;logo&#39;
+                ],
+                &#39;subcategories&#39;: {
+                    &#39;design&#39;: [&#39;design&#39;, &#39;mockup&#39;, &#39;wireframe&#39;, &#39;prototype&#39;],
+                    &#39;branding&#39;: [&#39;brand&#39;, &#39;logo&#39;, &#39;identity&#39;],
+                    &#39;photos&#39;: [&#39;photo&#39;, &#39;photography&#39;, &#39;image&#39;],
+                    &#39;other&#39;: []
+                }
+            }
+        }
+
+        # Pre-lowercase keywords and subcategory keyword lists
+        self._keywords_lower: dict[str, list[str]] = {
+            cat: [kw.lower() for kw in data[&#39;keywords&#39;]]
+            for cat, data in self.patterns.items()
+        }
+        self._subcats_lower: dict[str, dict[str, list[str]]] = {
+            cat: {sc: [kw.lower() for kw in kws] for sc, kws in data[&#39;subcategories&#39;].items()}
+            for cat, data in self.patterns.items()
+        }
+
+    # ------------------------------------------------------------------
+    # Entity detection (delegated to EntityDetector; kept on the public
+    # ContentClassifier surface for backward compatibility)
+    # ------------------------------------------------------------------
+
+    def extract_company_names(self, text: str) -&gt; list[str]:
+        &#34;&#34;&#34;Extract company names from text (delegates to EntityDetector).&#34;&#34;&#34;
+        return self.entities.extract_company_names(text)
+
+    def extract_people_names(self, text: str) -&gt; list[str]:
+        &#34;&#34;&#34;Extract people names from text (delegates to EntityDetector).&#34;&#34;&#34;
+        return self.entities.extract_people_names(text)
+
+    def extract_person_company_relationships(self, text: str) -&gt; dict[str, str]:
+        &#34;&#34;&#34;Extract person→company relationships (delegates to EntityDetector).&#34;&#34;&#34;
+        return self.entities.extract_person_company_relationships(text)
+
+    def is_valid_company_name(self, name: str) -&gt; bool:
+        &#34;&#34;&#34;Validate a candidate company name (delegates to EntityDetector).&#34;&#34;&#34;
+        return self.entities.is_valid_company_name(name)
+
+    def normalize_company_name(self, company_name: str) -&gt; str:
+        &#34;&#34;&#34;Normalize a company name (delegates to EntityDetector).&#34;&#34;&#34;
+        return self.entities.normalize_company_name(company_name)
+
+    def sanitize_company_name(self, company_name: str) -&gt; str | None:
+        &#34;&#34;&#34;Sanitize a company name for folder use (delegates to EntityDetector).&#34;&#34;&#34;
+        return self.entities.sanitize_company_name(company_name)
+
+    # ------------------------------------------------------------------
+    # KIE-based classification (structured document extraction)
+    # ------------------------------------------------------------------
+
+    # Minimum per-field confidence for KIE to drive classification.
+    _KIE_CLASSIFICATION_MIN_CONFIDENCE = 0.5
+
+    def classify_with_kie(
+        self,
+        kie_result: KIEResult,
+        text: str = &#34;&#34;,
+        filename: str = &#34;&#34;,
+    ) -&gt; tuple[str, str, str | None, list[str]] | None:
+        &#34;&#34;&#34;Attempt classification using KIE-extracted structured fields.
+
+        Returns a ``(category, subcategory, company_name, people_names)``
+        tuple when high-confidence invoice/receipt fields are detected.
+        Returns ``None`` when the KIE result is insufficient and the caller
+        should fall through to keyword-based ``classify_content()``.
+        &#34;&#34;&#34;
+        threshold = self._KIE_CLASSIFICATION_MIN_CONFIDENCE
+
+        # Look for strong financial document signals: a vendor/store AND
+        # an amount OR a date.
+        vendor = self._best_kie_field(kie_result, (&#34;vendor_name&#34;, &#34;store_name&#34;), threshold)
+        amount = self._best_kie_field(kie_result, (&#34;total_amount&#34;, &#34;receipt_total&#34;), threshold)
+        date = self._best_kie_field(kie_result, (&#34;invoice_date&#34;, &#34;receipt_date&#34;), threshold)
+
+        if vendor and (amount or date):
+            people_names = self.extract_people_names(text) if text else []
+            return (&#34;financial&#34;, &#34;invoices&#34;, vendor.value, people_names)
+
+        return None
+
+    @staticmethod
+    def _best_kie_field(
+        kie_result: KIEResult,
+        class_names: tuple[str, ...],
+        min_confidence: float,
+    ):
+        &#34;&#34;&#34;Return the highest-confidence KIEField across *class_names*, or None.&#34;&#34;&#34;
+        best = None
+        for name in class_names:
+            for f in kie_result.fields.get(name, ()):
+                if f.confidence &gt;= min_confidence and (best is None or f.confidence &gt; best.confidence):
+                    best = f
+        return best
+
+    def score_all_categories(self, text: str, filename: str = &#34;&#34;) -&gt; dict[str, float]:
+        &#34;&#34;&#34;Score text against all Schema.org keyword categories.
+
+        Returns a dict of ``{category: confidence}`` where confidence is
+        the fraction of category keywords found in the text.  Categories
+        with zero hits are omitted.
+        &#34;&#34;&#34;
+        combined = f&#34;{text.lower()} {filename.lower()}&#34;
+        scores: dict[str, float] = {}
+
+        for category, keywords in self._keywords_lower.items():
+            hits = sum(1 for kw in keywords if kw in combined)
+            if hits:
+                scores[category] = hits / len(keywords)
+
+        return scores
+
+    def classify_content(
+        self,
+        text: str,
+        filename: str = &#34;&#34;,
+        detected_language: str | None = None,
+    ) -&gt; tuple[str, str, str | None, list[str]]:
+        &#34;&#34;&#34;
+        Classify content based on extracted text.
+        Uses Schema.org person-company relationships to improve categorization.
+
+        Args:
+            text: Extracted document text.
+            filename: Original filename (used as secondary signal).
+            detected_language: BCP-47 language code from OCR (e.g. ``&#34;en&#34;``, ``&#34;fr&#34;``).
+                When a non-English language is detected the English keyword matching
+                is skipped to avoid false positives; the document routes to
+                ``(&#34;uncategorized&#34;, &#34;other&#34;)``.
+
+        Returns:
+            Tuple of (category, subcategory, company_name, people_names)
+        &#34;&#34;&#34;
+        if not text:
+            return (&#39;uncategorized&#39;, &#39;other&#39;, None, [])
+
+        # Non-English OCR text — English keyword patterns are unreliable.
+        # Skip keyword classification and let the caller handle routing.
+        if detected_language is not None and detected_language != &#39;en&#39;:
+            return (&#39;uncategorized&#39;, &#39;other&#39;, None, [])
+
+        text_lower = text.lower()
+        filename_lower = filename.lower()
+        combined = f&#34;{text_lower} {filename_lower}&#34;
+
+        # Check for known companies in text (canonical name mapping)
+        known_text_companies: dict[str, tuple[str, str, str | None]] = {
+            &#39;capital city village&#39;: (&#39;organization&#39;, &#39;property_management&#39;, &#39;Capital City Village&#39;),
+            &#39;leora home health&#39;: (&#39;organization&#39;, &#39;healthcare&#39;, &#39;Leora Home Health&#39;),
+            &#39;integrity studio&#39;: (&#39;organization&#39;, &#39;vendors&#39;, &#39;Integrity Studio&#39;),
+            &#39;inspired movement&#39;: (&#39;organization&#39;, &#39;vendors&#39;, &#39;Inspired Movement&#39;),
+            &#39;new beginnings child development&#39;: (&#39;organization&#39;, &#39;vendors&#39;, &#39;New Beginnings Child Development Center&#39;),
+            &#39;zouk&#39;: (&#39;zouk&#39;, &#39;events&#39;, None),
+        }
+        for phrase, (cat, subcat, canonical_name) in known_text_companies.items():
+            if phrase in text_lower:
+                return (cat, subcat, canonical_name, self.extract_people_names(text))
+
+        # Extract company names and people names
+        company_names = self.extract_company_names(text)
+        primary_company: str | None = company_names[0] if company_names else None
+
+        people_names = self.extract_people_names(text)
+
+        # Extract person-company relationships (Schema.org connections)
+        person_company_relationships = self.extract_person_company_relationships(text)
+
+        # Prioritize company from person-company relationships over direct extraction
+        # Relationships tend to be more accurate as they include context
+        if person_company_relationships:
+            # Get the first relationship&#39;s company
+            relationship_company = next(iter(person_company_relationships.values()))
+
+            # Check if relationship company has proper legal suffix
+            has_legal_suffix = any(relationship_company.endswith(suffix)
+                                  for suffix in [&#39;LLC&#39;, &#39;Inc.&#39;, &#39;Inc&#39;, &#39;Corp.&#39;, &#39;Corp&#39;,
+                                                &#39;Ltd.&#39;, &#39;Ltd&#39;, &#39;LLP&#39;, &#39;L.L.C.&#39;, &#39;L.L.P.&#39;])
+
+            # Prefer relationship company if it has legal suffix or we don&#39;t have a primary company
+            if has_legal_suffix or not primary_company:
+                primary_company = relationship_company
+            # Or if the relationship company is much cleaner (shorter and no weird prefixes)
+            elif primary_company and &#39;CEO&#39; not in relationship_company and &#39;at&#39; not in relationship_company:
+                if len(relationship_company) &lt; len(primary_company) * 0.8:
+                    primary_company = relationship_company
+
+        # Fallback: If we found people but no company, check relationships again
+        if people_names and not primary_company and person_company_relationships:
+            # Try to find a company for the first person mentioned
+            for person in people_names:
+                if person in person_company_relationships:
+                    primary_company = person_company_relationships[person]
+                    break
+
+        # Score each category by its keyword counts. Subcategories score on
+        # their OWN keyword counts, independent of the category score, so the
+        # winning subcategory is the one whose vocabulary dominates the text —
+        # not the first-listed subcategory with any hit (the old behavior gave
+        # every matched subcategory an identical copy of the category total,
+        # making max() a dict-insertion-order tie-break).
+        scores: dict[str, int] = defaultdict(int)
+        category_subcats: dict[str, dict[str, int]] = {}
+
+        for category, keywords in self._keywords_lower.items():
+            # Short-circuit: skip count() pass entirely if no keyword is present.
+            # `in` stops at first hit; count() always scans the full string.
+            if not any(kw in combined for kw in keywords):
+                continue
+
+            for keyword in keywords:
+                scores[category] += combined.count(keyword)
+
+            subcat_scores = {
+                sc: sum(combined.count(sk) for sk in sc_kws)
+                for sc, sc_kws in self._subcats_lower[category].items()
+                if any(sk in combined for sk in sc_kws)
+            }
+            if subcat_scores:
+                category_subcats[category] = subcat_scores
+
+        if not scores:
+            return (&#39;uncategorized&#39;, &#39;other&#39;, primary_company, people_names)
+
+        # Get category with highest score
+        best_category = max(scores.items(), key=lambda x: x[1])[0]
+
+        # Get subcategory with highest score for this category
+        if best_category in category_subcats:
+            subcat_scores = category_subcats[best_category]
+            if subcat_scores:
+                best_subcategory = max(subcat_scores.items(), key=lambda x: x[1])[0]
+            else:
+                best_subcategory = &#39;other&#39;
+        else:
+            best_subcategory = &#39;other&#39;
+
+        # If we detected a company (either directly or via person relationship)
+        # and it&#39;s business-related, use clients subcategory
+        if primary_company and best_category == &#39;business&#39;:
+            best_subcategory = &#39;clients&#39;
+
+        return (best_category, best_subcategory, primary_company, people_names)</code></pre>
+</details>
+<div class="desc"><p>Classifies document content into categories.</p>
+<p>Entity extraction (companies, people, relationships, and company-name
+normalization) is delegated to a composed :class:<code>EntityDetector</code>; the
+<code>extract_*</code>/<code>*_company_name</code> methods below are thin pass-throughs that
+preserve the historical public API.</p>
+<p>Initialize classifier with keyword patterns.</p></div>
+<h3>Methods</h3>
+<dl>
+<dt id="src.classifiers.content_classifier.ContentClassifier.classify_content"><code class="name flex">
+<span>def <span class="ident">classify_content</span></span>(<span>self, text: str, filename: str = '', detected_language: str | None = None) ‑> tuple[str, str, str | None, list[str]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def classify_content(
+    self,
+    text: str,
+    filename: str = &#34;&#34;,
+    detected_language: str | None = None,
+) -&gt; tuple[str, str, str | None, list[str]]:
+    &#34;&#34;&#34;
+    Classify content based on extracted text.
+    Uses Schema.org person-company relationships to improve categorization.
+
+    Args:
+        text: Extracted document text.
+        filename: Original filename (used as secondary signal).
+        detected_language: BCP-47 language code from OCR (e.g. ``&#34;en&#34;``, ``&#34;fr&#34;``).
+            When a non-English language is detected the English keyword matching
+            is skipped to avoid false positives; the document routes to
+            ``(&#34;uncategorized&#34;, &#34;other&#34;)``.
+
+    Returns:
+        Tuple of (category, subcategory, company_name, people_names)
+    &#34;&#34;&#34;
+    if not text:
+        return (&#39;uncategorized&#39;, &#39;other&#39;, None, [])
+
+    # Non-English OCR text — English keyword patterns are unreliable.
+    # Skip keyword classification and let the caller handle routing.
+    if detected_language is not None and detected_language != &#39;en&#39;:
+        return (&#39;uncategorized&#39;, &#39;other&#39;, None, [])
+
+    text_lower = text.lower()
+    filename_lower = filename.lower()
+    combined = f&#34;{text_lower} {filename_lower}&#34;
+
+    # Check for known companies in text (canonical name mapping)
+    known_text_companies: dict[str, tuple[str, str, str | None]] = {
+        &#39;capital city village&#39;: (&#39;organization&#39;, &#39;property_management&#39;, &#39;Capital City Village&#39;),
+        &#39;leora home health&#39;: (&#39;organization&#39;, &#39;healthcare&#39;, &#39;Leora Home Health&#39;),
+        &#39;integrity studio&#39;: (&#39;organization&#39;, &#39;vendors&#39;, &#39;Integrity Studio&#39;),
+        &#39;inspired movement&#39;: (&#39;organization&#39;, &#39;vendors&#39;, &#39;Inspired Movement&#39;),
+        &#39;new beginnings child development&#39;: (&#39;organization&#39;, &#39;vendors&#39;, &#39;New Beginnings Child Development Center&#39;),
+        &#39;zouk&#39;: (&#39;zouk&#39;, &#39;events&#39;, None),
+    }
+    for phrase, (cat, subcat, canonical_name) in known_text_companies.items():
+        if phrase in text_lower:
+            return (cat, subcat, canonical_name, self.extract_people_names(text))
+
+    # Extract company names and people names
+    company_names = self.extract_company_names(text)
+    primary_company: str | None = company_names[0] if company_names else None
+
+    people_names = self.extract_people_names(text)
+
+    # Extract person-company relationships (Schema.org connections)
+    person_company_relationships = self.extract_person_company_relationships(text)
+
+    # Prioritize company from person-company relationships over direct extraction
+    # Relationships tend to be more accurate as they include context
+    if person_company_relationships:
+        # Get the first relationship&#39;s company
+        relationship_company = next(iter(person_company_relationships.values()))
+
+        # Check if relationship company has proper legal suffix
+        has_legal_suffix = any(relationship_company.endswith(suffix)
+                              for suffix in [&#39;LLC&#39;, &#39;Inc.&#39;, &#39;Inc&#39;, &#39;Corp.&#39;, &#39;Corp&#39;,
+                                            &#39;Ltd.&#39;, &#39;Ltd&#39;, &#39;LLP&#39;, &#39;L.L.C.&#39;, &#39;L.L.P.&#39;])
+
+        # Prefer relationship company if it has legal suffix or we don&#39;t have a primary company
+        if has_legal_suffix or not primary_company:
+            primary_company = relationship_company
+        # Or if the relationship company is much cleaner (shorter and no weird prefixes)
+        elif primary_company and &#39;CEO&#39; not in relationship_company and &#39;at&#39; not in relationship_company:
+            if len(relationship_company) &lt; len(primary_company) * 0.8:
+                primary_company = relationship_company
+
+    # Fallback: If we found people but no company, check relationships again
+    if people_names and not primary_company and person_company_relationships:
+        # Try to find a company for the first person mentioned
+        for person in people_names:
+            if person in person_company_relationships:
+                primary_company = person_company_relationships[person]
+                break
+
+    # Score each category by its keyword counts. Subcategories score on
+    # their OWN keyword counts, independent of the category score, so the
+    # winning subcategory is the one whose vocabulary dominates the text —
+    # not the first-listed subcategory with any hit (the old behavior gave
+    # every matched subcategory an identical copy of the category total,
+    # making max() a dict-insertion-order tie-break).
+    scores: dict[str, int] = defaultdict(int)
+    category_subcats: dict[str, dict[str, int]] = {}
+
+    for category, keywords in self._keywords_lower.items():
+        # Short-circuit: skip count() pass entirely if no keyword is present.
+        # `in` stops at first hit; count() always scans the full string.
+        if not any(kw in combined for kw in keywords):
+            continue
+
+        for keyword in keywords:
+            scores[category] += combined.count(keyword)
+
+        subcat_scores = {
+            sc: sum(combined.count(sk) for sk in sc_kws)
+            for sc, sc_kws in self._subcats_lower[category].items()
+            if any(sk in combined for sk in sc_kws)
+        }
+        if subcat_scores:
+            category_subcats[category] = subcat_scores
+
+    if not scores:
+        return (&#39;uncategorized&#39;, &#39;other&#39;, primary_company, people_names)
+
+    # Get category with highest score
+    best_category = max(scores.items(), key=lambda x: x[1])[0]
+
+    # Get subcategory with highest score for this category
+    if best_category in category_subcats:
+        subcat_scores = category_subcats[best_category]
+        if subcat_scores:
+            best_subcategory = max(subcat_scores.items(), key=lambda x: x[1])[0]
+        else:
+            best_subcategory = &#39;other&#39;
+    else:
+        best_subcategory = &#39;other&#39;
+
+    # If we detected a company (either directly or via person relationship)
+    # and it&#39;s business-related, use clients subcategory
+    if primary_company and best_category == &#39;business&#39;:
+        best_subcategory = &#39;clients&#39;
+
+    return (best_category, best_subcategory, primary_company, people_names)</code></pre>
+</details>
+<div class="desc"><p>Classify content based on extracted text.
+Uses Schema.org person-company relationships to improve categorization.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>text</code></strong></dt>
+<dd>Extracted document text.</dd>
+<dt><strong><code>filename</code></strong></dt>
+<dd>Original filename (used as secondary signal).</dd>
+<dt><strong><code>detected_language</code></strong></dt>
+<dd>BCP-47 language code from OCR (e.g. <code>"en"</code>, <code>"fr"</code>).
+When a non-English language is detected the English keyword matching
+is skipped to avoid false positives; the document routes to
+<code>("uncategorized", "other")</code>.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Tuple of (category, subcategory, company_name, people_names)</p></div>
+</dd>
+<dt id="src.classifiers.content_classifier.ContentClassifier.classify_with_kie"><code class="name flex">
+<span>def <span class="ident">classify_with_kie</span></span>(<span>self, kie_result: KIEResult, text: str = '', filename: str = '') ‑> tuple[str, str, str | None, list[str]] | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def classify_with_kie(
+    self,
+    kie_result: KIEResult,
+    text: str = &#34;&#34;,
+    filename: str = &#34;&#34;,
+) -&gt; tuple[str, str, str | None, list[str]] | None:
+    &#34;&#34;&#34;Attempt classification using KIE-extracted structured fields.
+
+    Returns a ``(category, subcategory, company_name, people_names)``
+    tuple when high-confidence invoice/receipt fields are detected.
+    Returns ``None`` when the KIE result is insufficient and the caller
+    should fall through to keyword-based ``classify_content()``.
+    &#34;&#34;&#34;
+    threshold = self._KIE_CLASSIFICATION_MIN_CONFIDENCE
+
+    # Look for strong financial document signals: a vendor/store AND
+    # an amount OR a date.
+    vendor = self._best_kie_field(kie_result, (&#34;vendor_name&#34;, &#34;store_name&#34;), threshold)
+    amount = self._best_kie_field(kie_result, (&#34;total_amount&#34;, &#34;receipt_total&#34;), threshold)
+    date = self._best_kie_field(kie_result, (&#34;invoice_date&#34;, &#34;receipt_date&#34;), threshold)
+
+    if vendor and (amount or date):
+        people_names = self.extract_people_names(text) if text else []
+        return (&#34;financial&#34;, &#34;invoices&#34;, vendor.value, people_names)
+
+    return None</code></pre>
+</details>
+<div class="desc"><p>Attempt classification using KIE-extracted structured fields.</p>
+<p>Returns a <code>(category, subcategory, company_name, people_names)</code>
+tuple when high-confidence invoice/receipt fields are detected.
+Returns <code>None</code> when the KIE result is insufficient and the caller
+should fall through to keyword-based <code>classify_content()</code>.</p></div>
+</dd>
+<dt id="src.classifiers.content_classifier.ContentClassifier.extract_company_names"><code class="name flex">
+<span>def <span class="ident">extract_company_names</span></span>(<span>self, text: str) ‑> list[str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_company_names(self, text: str) -&gt; list[str]:
+    &#34;&#34;&#34;Extract company names from text (delegates to EntityDetector).&#34;&#34;&#34;
+    return self.entities.extract_company_names(text)</code></pre>
+</details>
+<div class="desc"><p>Extract company names from text (delegates to EntityDetector).</p></div>
+</dd>
+<dt id="src.classifiers.content_classifier.ContentClassifier.extract_people_names"><code class="name flex">
+<span>def <span class="ident">extract_people_names</span></span>(<span>self, text: str) ‑> list[str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_people_names(self, text: str) -&gt; list[str]:
+    &#34;&#34;&#34;Extract people names from text (delegates to EntityDetector).&#34;&#34;&#34;
+    return self.entities.extract_people_names(text)</code></pre>
+</details>
+<div class="desc"><p>Extract people names from text (delegates to EntityDetector).</p></div>
+</dd>
+<dt id="src.classifiers.content_classifier.ContentClassifier.extract_person_company_relationships"><code class="name flex">
+<span>def <span class="ident">extract_person_company_relationships</span></span>(<span>self, text: str) ‑> dict[str, str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_person_company_relationships(self, text: str) -&gt; dict[str, str]:
+    &#34;&#34;&#34;Extract person→company relationships (delegates to EntityDetector).&#34;&#34;&#34;
+    return self.entities.extract_person_company_relationships(text)</code></pre>
+</details>
+<div class="desc"><p>Extract person→company relationships (delegates to EntityDetector).</p></div>
+</dd>
+<dt id="src.classifiers.content_classifier.ContentClassifier.is_valid_company_name"><code class="name flex">
+<span>def <span class="ident">is_valid_company_name</span></span>(<span>self, name: str) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_valid_company_name(self, name: str) -&gt; bool:
+    &#34;&#34;&#34;Validate a candidate company name (delegates to EntityDetector).&#34;&#34;&#34;
+    return self.entities.is_valid_company_name(name)</code></pre>
+</details>
+<div class="desc"><p>Validate a candidate company name (delegates to EntityDetector).</p></div>
+</dd>
+<dt id="src.classifiers.content_classifier.ContentClassifier.normalize_company_name"><code class="name flex">
+<span>def <span class="ident">normalize_company_name</span></span>(<span>self, company_name: str) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def normalize_company_name(self, company_name: str) -&gt; str:
+    &#34;&#34;&#34;Normalize a company name (delegates to EntityDetector).&#34;&#34;&#34;
+    return self.entities.normalize_company_name(company_name)</code></pre>
+</details>
+<div class="desc"><p>Normalize a company name (delegates to EntityDetector).</p></div>
+</dd>
+<dt id="src.classifiers.content_classifier.ContentClassifier.sanitize_company_name"><code class="name flex">
+<span>def <span class="ident">sanitize_company_name</span></span>(<span>self, company_name: str) ‑> str | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sanitize_company_name(self, company_name: str) -&gt; str | None:
+    &#34;&#34;&#34;Sanitize a company name for folder use (delegates to EntityDetector).&#34;&#34;&#34;
+    return self.entities.sanitize_company_name(company_name)</code></pre>
+</details>
+<div class="desc"><p>Sanitize a company name for folder use (delegates to EntityDetector).</p></div>
+</dd>
+<dt id="src.classifiers.content_classifier.ContentClassifier.score_all_categories"><code class="name flex">
+<span>def <span class="ident">score_all_categories</span></span>(<span>self, text: str, filename: str = '') ‑> dict[str, float]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def score_all_categories(self, text: str, filename: str = &#34;&#34;) -&gt; dict[str, float]:
+    &#34;&#34;&#34;Score text against all Schema.org keyword categories.
+
+    Returns a dict of ``{category: confidence}`` where confidence is
+    the fraction of category keywords found in the text.  Categories
+    with zero hits are omitted.
+    &#34;&#34;&#34;
+    combined = f&#34;{text.lower()} {filename.lower()}&#34;
+    scores: dict[str, float] = {}
+
+    for category, keywords in self._keywords_lower.items():
+        hits = sum(1 for kw in keywords if kw in combined)
+        if hits:
+            scores[category] = hits / len(keywords)
+
+    return scores</code></pre>
+</details>
+<div class="desc"><p>Score text against all Schema.org keyword categories.</p>
+<p>Returns a dict of <code>{category: confidence}</code> where confidence is
+the fraction of category keywords found in the text.
+Categories
+with zero hits are omitted.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.classifiers" href="index.html">src.classifiers</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.classifiers.content_classifier.ContentClassifier" href="#src.classifiers.content_classifier.ContentClassifier">ContentClassifier</a></code></h4>
+<ul class="">
+<li><code><a title="src.classifiers.content_classifier.ContentClassifier.classify_content" href="#src.classifiers.content_classifier.ContentClassifier.classify_content">classify_content</a></code></li>
+<li><code><a title="src.classifiers.content_classifier.ContentClassifier.classify_with_kie" href="#src.classifiers.content_classifier.ContentClassifier.classify_with_kie">classify_with_kie</a></code></li>
+<li><code><a title="src.classifiers.content_classifier.ContentClassifier.extract_company_names" href="#src.classifiers.content_classifier.ContentClassifier.extract_company_names">extract_company_names</a></code></li>
+<li><code><a title="src.classifiers.content_classifier.ContentClassifier.extract_people_names" href="#src.classifiers.content_classifier.ContentClassifier.extract_people_names">extract_people_names</a></code></li>
+<li><code><a title="src.classifiers.content_classifier.ContentClassifier.extract_person_company_relationships" href="#src.classifiers.content_classifier.ContentClassifier.extract_person_company_relationships">extract_person_company_relationships</a></code></li>
+<li><code><a title="src.classifiers.content_classifier.ContentClassifier.is_valid_company_name" href="#src.classifiers.content_classifier.ContentClassifier.is_valid_company_name">is_valid_company_name</a></code></li>
+<li><code><a title="src.classifiers.content_classifier.ContentClassifier.normalize_company_name" href="#src.classifiers.content_classifier.ContentClassifier.normalize_company_name">normalize_company_name</a></code></li>
+<li><code><a title="src.classifiers.content_classifier.ContentClassifier.sanitize_company_name" href="#src.classifiers.content_classifier.ContentClassifier.sanitize_company_name">sanitize_company_name</a></code></li>
+<li><code><a title="src.classifiers.content_classifier.ContentClassifier.score_all_categories" href="#src.classifiers.content_classifier.ContentClassifier.score_all_categories">score_all_categories</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

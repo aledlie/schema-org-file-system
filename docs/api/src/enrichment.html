@@ -1,0 +1,1527 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.enrichment API documentation</title>
+<meta name="description" content="Metadata enrichment utilities for Schema.org generation …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.enrichment</code></h1>
+</header>
+<section id="section-intro">
+<p>Metadata enrichment utilities for Schema.org generation.</p>
+<p>Extracts and enriches file metadata from various sources including
+EXIF, document properties, NLP results, and embeddings.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="src.enrichment.cached_stat"><code class="name flex">
+<span>def <span class="ident">cached_stat</span></span>(<span>path: str) ‑> os.stat_result</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@lru_cache(maxsize=1024)
+def cached_stat(path: str) -&gt; os.stat_result:
+    &#34;&#34;&#34;Return stat result for *path*, caching up to 1024 entries.
+
+    Key is the string representation of the path so it is hashable.
+    Call ``cached_stat.cache_clear()`` between processing batches if
+    files may be modified in-place.
+    &#34;&#34;&#34;
+    return Path(path).stat()</code></pre>
+</details>
+<div class="desc"><p>Return stat result for <em>path</em>, caching up to 1024 entries.</p>
+<p>Key is the string representation of the path so it is hashable.
+Call <code>cached_stat.cache_clear()</code> between processing batches if
+files may be modified in-place.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.enrichment.MetadataEnricher"><code class="flex name class">
+<span>class <span class="ident">MetadataEnricher</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MetadataEnricher:
+    &#34;&#34;&#34;
+    Enriches file metadata for Schema.org generation.
+
+    Extracts metadata from various sources and maps them to
+    appropriate Schema.org properties.
+    &#34;&#34;&#34;
+
+    def __init__(self):
+        &#34;&#34;&#34;Initialize metadata enricher.&#34;&#34;&#34;
+        self.mime_to_format = self._build_mime_mapping()
+
+    def _build_mime_mapping(self) -&gt; Dict[str, str]:
+        &#34;&#34;&#34;Build MIME type to encoding format mapping.&#34;&#34;&#34;
+        return {
+            # Documents
+            &#39;application/pdf&#39;: &#39;application/pdf&#39;,
+            &#39;application/msword&#39;: &#39;application/msword&#39;,
+            &#39;application/vnd.openxmlformats-officedocument.wordprocessingml.document&#39;: &#39;application/vnd.openxmlformats-officedocument.wordprocessingml.document&#39;,
+            &#39;text/plain&#39;: &#39;text/plain&#39;,
+            &#39;text/markdown&#39;: &#39;text/markdown&#39;,
+            &#39;text/html&#39;: &#39;text/html&#39;,
+
+            # Images
+            &#39;image/jpeg&#39;: &#39;image/jpeg&#39;,
+            &#39;image/png&#39;: &#39;image/png&#39;,
+            &#39;image/gif&#39;: &#39;image/gif&#39;,
+            &#39;image/webp&#39;: &#39;image/webp&#39;,
+            &#39;image/svg+xml&#39;: &#39;image/svg+xml&#39;,
+
+            # Videos
+            &#39;video/mp4&#39;: &#39;video/mp4&#39;,
+            &#39;video/mpeg&#39;: &#39;video/mpeg&#39;,
+            &#39;video/webm&#39;: &#39;video/webm&#39;,
+            &#39;video/quicktime&#39;: &#39;video/quicktime&#39;,
+
+            # Audio
+            &#39;audio/mpeg&#39;: &#39;audio/mpeg&#39;,
+            &#39;audio/mp4&#39;: &#39;audio/mp4&#39;,
+            &#39;audio/wav&#39;: &#39;audio/wav&#39;,
+            &#39;audio/ogg&#39;: &#39;audio/ogg&#39;,
+
+            # Code
+            &#39;text/x-python&#39;: &#39;text/x-python&#39;,
+            &#39;text/javascript&#39;: &#39;text/javascript&#39;,
+            &#39;text/x-java&#39;: &#39;text/x-java&#39;,
+            &#39;text/x-c&#39;: &#39;text/x-c&#39;,
+
+            # Archives
+            &#39;application/zip&#39;: &#39;application/zip&#39;,
+            &#39;application/x-tar&#39;: &#39;application/x-tar&#39;,
+            &#39;application/gzip&#39;: &#39;application/gzip&#39;,
+
+            # Data
+            &#39;text/csv&#39;: &#39;text/csv&#39;,
+            &#39;application/json&#39;: &#39;application/json&#39;,
+            &#39;application/xml&#39;: &#39;application/xml&#39;,
+        }
+
+    def detect_mime_type(self, file_path: str) -&gt; str:
+        &#34;&#34;&#34;
+        Detect MIME type from file path.
+
+        Args:
+            file_path: Path to file
+
+        Returns:
+            MIME type string
+        &#34;&#34;&#34;
+        mime_type, _ = mimetypes.guess_type(file_path)
+        return mime_type or &#39;application/octet-stream&#39;
+
+    def get_encoding_format(self, file_path: str) -&gt; str:
+        &#34;&#34;&#34;
+        Get encoding format for Schema.org.
+
+        Args:
+            file_path: Path to file
+
+        Returns:
+            Encoding format string
+        &#34;&#34;&#34;
+        mime_type = self.detect_mime_type(file_path)
+        return self.mime_to_format.get(mime_type, mime_type)
+
+    def enrich_from_file_stats(self, file_path: str) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Extract metadata from file system stats.
+
+        Args:
+            file_path: Path to file
+
+        Returns:
+            Metadata dictionary with proper @id for JSON-LD
+
+        Note:
+            The @id is generated as a content-addressed URN using SHA-256 hash
+            of the absolute file path. This ensures:
+            - Same file always gets the same @id (deterministic)
+            - Valid IRI for JSON-LD compliance
+            - Deduplication across systems
+        &#34;&#34;&#34;
+        path = Path(file_path)
+        if not path.exists():
+            return {}
+
+        stats = cached_stat(str(path))
+
+        # Generate deterministic @id from absolute path hash
+        abs_path = str(path.absolute())
+        file_hash = hashlib.sha256(abs_path.encode()).hexdigest()
+
+        return {
+            &#39;@id&#39;: f&#39;urn:sha256:{file_hash}&#39;,
+            &#39;name&#39;: path.name,
+            &#39;url&#39;: f&#39;file://{path.absolute()}&#39;,
+            &#39;encodingFormat&#39;: self.get_encoding_format(file_path),
+            &#39;contentSize&#39;: stats.st_size,
+            &#39;dateCreated&#39;: datetime.fromtimestamp(stats.st_ctime),
+            &#39;dateModified&#39;: datetime.fromtimestamp(stats.st_mtime),
+        }
+
+    def _generate_person_id(self, name: str) -&gt; str:
+        &#34;&#34;&#34;Generate deterministic @id for a Person.&#34;&#34;&#34;
+        person_uuid = uuid.uuid5(
+            uuid.UUID(&#39;d1e2a3b4-5678-9abc-def0-123456789012&#39;),  # Person namespace
+            name.lower().strip()
+        )
+        return f&#34;urn:uuid:{person_uuid}&#34;
+
+    def _generate_org_id(self, name: str) -&gt; str:
+        &#34;&#34;&#34;Generate deterministic @id for an Organization.&#34;&#34;&#34;
+        org_uuid = uuid.uuid5(
+            uuid.UUID(&#39;c0e1a2b3-4567-89ab-cdef-012345678901&#39;),  # Company namespace
+            name.lower().strip()
+        )
+        return f&#34;urn:uuid:{org_uuid}&#34;
+
+    def _generate_place_id(self, name: str) -&gt; str:
+        &#34;&#34;&#34;Generate deterministic @id for a Place.&#34;&#34;&#34;
+        place_uuid = uuid.uuid5(
+            uuid.UUID(&#39;e2e3a4b5-6789-abcd-ef01-234567890123&#39;),  # Location namespace
+            name.lower().strip()
+        )
+        return f&#34;urn:uuid:{place_uuid}&#34;
+
+    def enrich_from_exif(self, exif_data: Dict[str, Any]) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Extract metadata from EXIF data.
+
+        Args:
+            exif_data: EXIF data dictionary
+
+        Returns:
+            Enriched metadata
+        &#34;&#34;&#34;
+        metadata: Dict[str, Any] = {}
+
+        # Creator information
+        if &#39;Artist&#39; in exif_data:
+            artist_name = exif_data[&#39;Artist&#39;]
+            metadata[&#39;creator&#39;] = {
+                &#39;@type&#39;: &#39;Person&#39;,
+                &#39;@id&#39;: self._generate_person_id(artist_name),
+                &#39;name&#39;: artist_name
+            }
+
+        # Camera information
+        camera_info = []
+        if &#39;Make&#39; in exif_data:
+            camera_info.append(exif_data[&#39;Make&#39;])
+        if &#39;Model&#39; in exif_data:
+            camera_info.append(exif_data[&#39;Model&#39;])
+        if camera_info:
+            metadata[&#39;exifData&#39;] = {
+                &#39;@type&#39;: &#39;PropertyValue&#39;,
+                &#39;name&#39;: &#39;Camera&#39;,
+                &#39;value&#39;: &#39; &#39;.join(camera_info)
+            }
+
+        # Dates
+        date_fields = [&#39;DateTime&#39;, &#39;DateTimeOriginal&#39;, &#39;DateTimeDigitized&#39;]
+        for field in date_fields:
+            if field in exif_data:
+                try:
+                    # EXIF dates are typically in format: YYYY:MM:DD HH:MM:SS
+                    date_str = exif_data[field].replace(&#39;:&#39;, &#39;-&#39;, 2)
+                    metadata[&#39;dateCreated&#39;] = date_str
+                    break
+                except Exception:
+                    pass
+
+        # Location
+        if &#39;GPSLatitude&#39; in exif_data and &#39;GPSLongitude&#39; in exif_data:
+            metadata[&#39;contentLocation&#39;] = {
+                &#39;@type&#39;: &#39;Place&#39;,
+                &#39;geo&#39;: {
+                    &#39;@type&#39;: &#39;GeoCoordinates&#39;,
+                    &#39;latitude&#39;: exif_data[&#39;GPSLatitude&#39;],
+                    &#39;longitude&#39;: exif_data[&#39;GPSLongitude&#39;]
+                }
+            }
+
+        # Dimensions
+        if &#39;ImageWidth&#39; in exif_data:
+            metadata[&#39;width&#39;] = exif_data[&#39;ImageWidth&#39;]
+        if &#39;ImageHeight&#39; in exif_data:
+            metadata[&#39;height&#39;] = exif_data[&#39;ImageHeight&#39;]
+
+        # Copyright
+        if &#39;Copyright&#39; in exif_data:
+            metadata[&#39;copyrightNotice&#39;] = exif_data[&#39;Copyright&#39;]
+
+        # Description
+        if &#39;ImageDescription&#39; in exif_data:
+            metadata[&#39;description&#39;] = exif_data[&#39;ImageDescription&#39;]
+
+        return metadata
+
+    def enrich_from_document_properties(self, doc_props: Dict[str, Any]) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Extract metadata from document properties.
+
+        Args:
+            doc_props: Document properties dictionary
+
+        Returns:
+            Enriched metadata
+        &#34;&#34;&#34;
+        metadata: Dict[str, Any] = {}
+
+        # Basic properties
+        property_mapping = {
+            &#39;title&#39;: &#39;name&#39;,
+            &#39;subject&#39;: &#39;abstract&#39;,
+            &#39;description&#39;: &#39;description&#39;,
+            &#39;keywords&#39;: &#39;keywords&#39;,
+            &#39;creator&#39;: &#39;author&#39;,
+            &#39;author&#39;: &#39;author&#39;,
+            &#39;created&#39;: &#39;dateCreated&#39;,
+            &#39;modified&#39;: &#39;dateModified&#39;,
+            &#39;language&#39;: &#39;inLanguage&#39;,
+            &#39;pages&#39;: &#39;numberOfPages&#39;,
+        }
+
+        for doc_key, schema_key in property_mapping.items():
+            if doc_key in doc_props:
+                value = doc_props[doc_key]
+
+                if schema_key in [&#39;author&#39;, &#39;creator&#39;] and isinstance(value, str):
+                    metadata[schema_key] = {
+                        &#39;@type&#39;: &#39;Person&#39;,
+                        &#39;@id&#39;: self._generate_person_id(value),
+                        &#39;name&#39;: value
+                    }
+                else:
+                    metadata[schema_key] = value
+
+        return metadata
+
+    def enrich_from_nlp(self, nlp_results: Dict[str, Any]) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Extract metadata from NLP analysis results.
+
+        Args:
+            nlp_results: NLP analysis results
+
+        Returns:
+            Enriched metadata
+        &#34;&#34;&#34;
+        metadata: Dict[str, Any] = {}
+
+        # Keywords and topics
+        if &#39;keywords&#39; in nlp_results:
+            metadata[&#39;keywords&#39;] = &#39;, &#39;.join(nlp_results[&#39;keywords&#39;])
+
+        if &#39;topics&#39; in nlp_results:
+            metadata[&#39;about&#39;] = [
+                {&#39;@type&#39;: &#39;Thing&#39;, &#39;name&#39;: topic}
+                for topic in nlp_results[&#39;topics&#39;]
+            ]
+
+        # Entities
+        if &#39;entities&#39; in nlp_results:
+            mentions = []
+            for entity in nlp_results[&#39;entities&#39;]:
+                entity_type = entity.get(&#39;type&#39;, &#39;Thing&#39;)
+                schema_type = self._map_entity_type_to_schema(entity_type)
+                entity_name = entity.get(&#39;text&#39;, entity.get(&#39;name&#39;, &#39;&#39;))
+
+                # Generate appropriate @id based on entity type
+                if schema_type == &#39;Person&#39;:
+                    entity_id = self._generate_person_id(entity_name)
+                elif schema_type == &#39;Organization&#39;:
+                    entity_id = self._generate_org_id(entity_name)
+                elif schema_type == &#39;Place&#39;:
+                    entity_id = self._generate_place_id(entity_name)
+                else:
+                    # Generic Thing - use a hash-based ID
+                    thing_uuid = uuid.uuid5(
+                        uuid.UUID(&#39;a0b1c2d3-4567-89ab-cdef-0123456789ab&#39;),  # Thing namespace
+                        entity_name.lower().strip()
+                    )
+                    entity_id = f&#34;urn:uuid:{thing_uuid}&#34;
+
+                mentions.append({
+                    &#39;@type&#39;: schema_type,
+                    &#39;@id&#39;: entity_id,
+                    &#39;name&#39;: entity_name
+                })
+            if mentions:
+                metadata[&#39;mentions&#39;] = mentions
+
+        # Language
+        if &#39;language&#39; in nlp_results:
+            metadata[&#39;inLanguage&#39;] = nlp_results[&#39;language&#39;]
+
+        # Sentiment (as custom property)
+        if &#39;sentiment&#39; in nlp_results:
+            metadata[&#39;additionalProperty&#39;] = [{
+                &#39;@type&#39;: &#39;PropertyValue&#39;,
+                &#39;name&#39;: &#39;sentiment&#39;,
+                &#39;value&#39;: nlp_results[&#39;sentiment&#39;]
+            }]
+
+        # Summary
+        if &#39;summary&#39; in nlp_results:
+            metadata[&#39;abstract&#39;] = nlp_results[&#39;summary&#39;]
+
+        return metadata
+
+    def enrich_from_audio_metadata(self, audio_meta: Dict[str, Any]) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Extract metadata from audio file metadata.
+
+        Args:
+            audio_meta: Audio metadata dictionary
+
+        Returns:
+            Enriched metadata
+        &#34;&#34;&#34;
+        metadata: Dict[str, Any] = {}
+
+        # Basic properties
+        if &#39;title&#39; in audio_meta:
+            metadata[&#39;name&#39;] = audio_meta[&#39;title&#39;]
+        if &#39;artist&#39; in audio_meta:
+            artist_name = audio_meta[&#39;artist&#39;]
+            metadata[&#39;byArtist&#39;] = {
+                &#39;@type&#39;: &#39;Person&#39;,
+                &#39;@id&#39;: self._generate_person_id(artist_name),
+                &#39;name&#39;: artist_name
+            }
+        if &#39;album&#39; in audio_meta:
+            album_name = audio_meta[&#39;album&#39;]
+            album_uuid = uuid.uuid5(
+                uuid.UUID(&#39;b1c2d3e4-5678-9abc-def0-123456789abc&#39;),  # Album namespace
+                album_name.lower().strip()
+            )
+            metadata[&#39;inAlbum&#39;] = {
+                &#39;@type&#39;: &#39;MusicAlbum&#39;,
+                &#39;@id&#39;: f&#34;urn:uuid:{album_uuid}&#34;,
+                &#39;name&#39;: album_name
+            }
+        if &#39;genre&#39; in audio_meta:
+            metadata[&#39;genre&#39;] = audio_meta[&#39;genre&#39;]
+        if &#39;duration&#39; in audio_meta:
+            # Convert seconds to ISO 8601 duration
+            duration_sec = audio_meta[&#39;duration&#39;]
+            metadata[&#39;duration&#39;] = self._seconds_to_iso_duration(duration_sec)
+
+        # Audio quality
+        if &#39;bitrate&#39; in audio_meta:
+            metadata[&#39;bitrate&#39;] = f&#34;{audio_meta[&#39;bitrate&#39;]}kbps&#34;
+        if &#39;sample_rate&#39; in audio_meta:
+            metadata[&#39;encodingFormat&#39;] = f&#34;{metadata.get(&#39;encodingFormat&#39;, &#39;audio/mpeg&#39;)} ({audio_meta[&#39;sample_rate&#39;]}Hz)&#34;
+
+        # Track number
+        if &#39;track_number&#39; in audio_meta:
+            metadata[&#39;position&#39;] = audio_meta[&#39;track_number&#39;]
+
+        # Year/date
+        if &#39;year&#39; in audio_meta:
+            metadata[&#39;datePublished&#39;] = f&#34;{audio_meta[&#39;year&#39;]}-01-01&#34;
+
+        # ISRC
+        if &#39;isrc&#39; in audio_meta:
+            metadata[&#39;isrcCode&#39;] = audio_meta[&#39;isrc&#39;]
+
+        return metadata
+
+    def enrich_from_video_metadata(self, video_meta: Dict[str, Any]) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Extract metadata from video file metadata.
+
+        Args:
+            video_meta: Video metadata dictionary
+
+        Returns:
+            Enriched metadata
+        &#34;&#34;&#34;
+        metadata: Dict[str, Any] = {}
+
+        # Basic properties
+        if &#39;title&#39; in video_meta:
+            metadata[&#39;name&#39;] = video_meta[&#39;title&#39;]
+        if &#39;description&#39; in video_meta:
+            metadata[&#39;description&#39;] = video_meta[&#39;description&#39;]
+
+        # Dimensions
+        if &#39;width&#39; in video_meta:
+            metadata[&#39;width&#39;] = video_meta[&#39;width&#39;]
+        if &#39;height&#39; in video_meta:
+            metadata[&#39;height&#39;] = video_meta[&#39;height&#39;]
+
+        # Duration
+        if &#39;duration&#39; in video_meta:
+            duration_sec = video_meta[&#39;duration&#39;]
+            metadata[&#39;duration&#39;] = self._seconds_to_iso_duration(duration_sec)
+
+        # Quality
+        if &#39;bitrate&#39; in video_meta:
+            metadata[&#39;bitrate&#39;] = f&#34;{video_meta[&#39;bitrate&#39;]}kbps&#34;
+
+        # Codec
+        if &#39;codec&#39; in video_meta:
+            metadata[&#39;videoCodec&#39;] = video_meta[&#39;codec&#39;]
+        if &#39;audio_codec&#39; in video_meta:
+            metadata[&#39;audioCodec&#39;] = video_meta[&#39;audio_codec&#39;]
+
+        # Upload date (default to current)
+        if &#39;upload_date&#39; in video_meta:
+            metadata[&#39;uploadDate&#39;] = video_meta[&#39;upload_date&#39;]
+        else:
+            metadata[&#39;uploadDate&#39;] = datetime.now()
+
+        return metadata
+
+    def enrich_from_code_analysis(self, code_analysis: Dict[str, Any]) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Extract metadata from code analysis results.
+
+        Args:
+            code_analysis: Code analysis results
+
+        Returns:
+            Enriched metadata
+        &#34;&#34;&#34;
+        metadata: Dict[str, Any] = {}
+
+        # Language
+        if &#39;language&#39; in code_analysis:
+            metadata[&#39;programmingLanguage&#39;] = code_analysis[&#39;language&#39;]
+
+        # Repository info
+        if &#39;repository&#39; in code_analysis:
+            repo = code_analysis[&#39;repository&#39;]
+            metadata[&#39;codeRepository&#39;] = repo.get(&#39;url&#39;, &#39;&#39;)
+            if &#39;branch&#39; in repo:
+                metadata[&#39;targetProduct&#39;] = repo[&#39;branch&#39;]
+
+        # Dependencies
+        if &#39;dependencies&#39; in code_analysis:
+            metadata[&#39;dependencies&#39;] = [
+                {
+                    &#39;@type&#39;: &#39;SoftwareApplication&#39;,
+                    &#39;name&#39;: dep[&#39;name&#39;],
+                    &#39;softwareVersion&#39;: dep.get(&#39;version&#39;, &#39;&#39;)
+                }
+                for dep in code_analysis[&#39;dependencies&#39;]
+            ]
+
+        # Runtime
+        if &#39;runtime&#39; in code_analysis:
+            metadata[&#39;runtimePlatform&#39;] = code_analysis[&#39;runtime&#39;]
+
+        # License
+        if &#39;license&#39; in code_analysis:
+            metadata[&#39;license&#39;] = code_analysis[&#39;license&#39;]
+
+        # Author
+        if &#39;author&#39; in code_analysis:
+            author_name = code_analysis[&#39;author&#39;]
+            metadata[&#39;author&#39;] = {
+                &#39;@type&#39;: &#39;Person&#39;,
+                &#39;@id&#39;: self._generate_person_id(author_name),
+                &#39;name&#39;: author_name
+            }
+
+        # Functions/classes (as description)
+        if &#39;functions&#39; in code_analysis:
+            func_count = len(code_analysis[&#39;functions&#39;])
+            metadata[&#39;description&#39;] = f&#34;Contains {func_count} functions&#34;
+
+        return metadata
+
+    def enrich_from_dataset_info(self, dataset_info: Dict[str, Any]) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Extract metadata from dataset information.
+
+        Args:
+            dataset_info: Dataset information dictionary
+
+        Returns:
+            Enriched metadata
+        &#34;&#34;&#34;
+        metadata: Dict[str, Any] = {}
+
+        # Basic properties
+        if &#39;name&#39; in dataset_info:
+            metadata[&#39;name&#39;] = dataset_info[&#39;name&#39;]
+        if &#39;description&#39; in dataset_info:
+            metadata[&#39;description&#39;] = dataset_info[&#39;description&#39;]
+
+        # Variables/columns
+        if &#39;columns&#39; in dataset_info:
+            metadata[&#39;variableMeasured&#39;] = [
+                {
+                    &#39;@type&#39;: &#39;PropertyValue&#39;,
+                    &#39;name&#39;: col[&#39;name&#39;],
+                    &#39;description&#39;: col.get(&#39;description&#39;, &#39;&#39;)
+                }
+                for col in dataset_info[&#39;columns&#39;]
+            ]
+
+        # Coverage
+        if &#39;temporal_coverage&#39; in dataset_info:
+            temporal = dataset_info[&#39;temporal_coverage&#39;]
+            if isinstance(temporal, dict):
+                start = temporal.get(&#39;start&#39;, &#39;&#39;)
+                end = temporal.get(&#39;end&#39;, &#39;&#39;)
+                metadata[&#39;temporalCoverage&#39;] = f&#34;{start}/{end}&#34;
+            else:
+                metadata[&#39;temporalCoverage&#39;] = temporal
+
+        if &#39;spatial_coverage&#39; in dataset_info:
+            metadata[&#39;spatialCoverage&#39;] = dataset_info[&#39;spatial_coverage&#39;]
+
+        # Distribution
+        if &#39;format&#39; in dataset_info:
+            metadata[&#39;distribution&#39;] = [{
+                &#39;@type&#39;: &#39;DataDownload&#39;,
+                &#39;encodingFormat&#39;: dataset_info[&#39;format&#39;]
+            }]
+
+        # Size
+        if &#39;rows&#39; in dataset_info:
+            metadata[&#39;additionalProperty&#39;] = [{
+                &#39;@type&#39;: &#39;PropertyValue&#39;,
+                &#39;name&#39;: &#39;rows&#39;,
+                &#39;value&#39;: dataset_info[&#39;rows&#39;]
+            }]
+
+        return metadata
+
+    def _map_entity_type_to_schema(self, entity_type: str) -&gt; str:
+        &#34;&#34;&#34;
+        Map NLP entity type to Schema.org type.
+
+        Args:
+            entity_type: Entity type from NLP
+
+        Returns:
+            Schema.org type
+        &#34;&#34;&#34;
+        mapping = {
+            &#39;PERSON&#39;: &#39;Person&#39;,
+            &#39;ORG&#39;: &#39;Organization&#39;,
+            &#39;ORGANIZATION&#39;: &#39;Organization&#39;,
+            &#39;GPE&#39;: &#39;Place&#39;,
+            &#39;LOC&#39;: &#39;Place&#39;,
+            &#39;LOCATION&#39;: &#39;Place&#39;,
+            &#39;EVENT&#39;: &#39;Event&#39;,
+            &#39;WORK_OF_ART&#39;: &#39;CreativeWork&#39;,
+            &#39;PRODUCT&#39;: &#39;Product&#39;,
+            &#39;DATE&#39;: &#39;Date&#39;,
+            &#39;TIME&#39;: &#39;Time&#39;,
+        }
+        return mapping.get(entity_type.upper(), &#39;Thing&#39;)
+
+    def _seconds_to_iso_duration(self, seconds: Union[int, float]) -&gt; str:
+        &#34;&#34;&#34;
+        Convert seconds to ISO 8601 duration format.
+
+        Args:
+            seconds: Duration in seconds
+
+        Returns:
+            ISO 8601 duration string (e.g., &#39;PT1H30M&#39;)
+        &#34;&#34;&#34;
+        hours = int(seconds // SECONDS_PER_HOUR)
+        minutes = int((seconds % SECONDS_PER_HOUR) // SECONDS_PER_MINUTE)
+        secs = int(seconds % SECONDS_PER_MINUTE)
+
+        parts = [&#39;PT&#39;]
+        if hours &gt; 0:
+            parts.append(f&#39;{hours}H&#39;)
+        if minutes &gt; 0:
+            parts.append(f&#39;{minutes}M&#39;)
+        if secs &gt; 0 or (hours == 0 and minutes == 0):
+            parts.append(f&#39;{secs}S&#39;)
+
+        return &#39;&#39;.join(parts)
+
+    def merge_metadata(self, *metadata_dicts: Dict[str, Any]) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Merge multiple metadata dictionaries.
+
+        Later dictionaries override earlier ones.
+
+        Args:
+            *metadata_dicts: Variable number of metadata dictionaries
+
+        Returns:
+            Merged metadata dictionary
+        &#34;&#34;&#34;
+        merged: Dict[str, Any] = {}
+        for metadata in metadata_dicts:
+            for key, value in metadata.items():
+                if key not in merged or value is not None:
+                    merged[key] = value
+        return merged
+
+    def create_enriched_schema(self, generator_class, base_metadata: Dict[str, Any],
+                              *enrichment_sources: Dict[str, Any]) -&gt; Any:
+        &#34;&#34;&#34;
+        Create enriched schema from multiple metadata sources.
+
+        Args:
+            generator_class: Schema generator class to use
+            base_metadata: Base metadata dictionary
+            *enrichment_sources: Additional enrichment source dictionaries
+
+        Returns:
+            Configured schema generator instance
+        &#34;&#34;&#34;
+        # Merge all metadata
+        merged = self.merge_metadata(base_metadata, *enrichment_sources)
+
+        # Create generator instance
+        generator = generator_class()
+
+        # Apply metadata to generator
+        for key, value in merged.items():
+            if hasattr(generator, &#39;set_property&#39;):
+                try:
+                    generator.set_property(key, value)
+                except Exception:
+                    pass  # Skip properties that can&#39;t be set
+
+        return generator</code></pre>
+</details>
+<div class="desc"><p>Enriches file metadata for Schema.org generation.</p>
+<p>Extracts metadata from various sources and maps them to
+appropriate Schema.org properties.</p>
+<p>Initialize metadata enricher.</p></div>
+<h3>Methods</h3>
+<dl>
+<dt id="src.enrichment.MetadataEnricher.create_enriched_schema"><code class="name flex">
+<span>def <span class="ident">create_enriched_schema</span></span>(<span>self,<br>generator_class,<br>base_metadata: Dict[str, Any],<br>*enrichment_sources: Dict[str, Any]) ‑> Any</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_enriched_schema(self, generator_class, base_metadata: Dict[str, Any],
+                          *enrichment_sources: Dict[str, Any]) -&gt; Any:
+    &#34;&#34;&#34;
+    Create enriched schema from multiple metadata sources.
+
+    Args:
+        generator_class: Schema generator class to use
+        base_metadata: Base metadata dictionary
+        *enrichment_sources: Additional enrichment source dictionaries
+
+    Returns:
+        Configured schema generator instance
+    &#34;&#34;&#34;
+    # Merge all metadata
+    merged = self.merge_metadata(base_metadata, *enrichment_sources)
+
+    # Create generator instance
+    generator = generator_class()
+
+    # Apply metadata to generator
+    for key, value in merged.items():
+        if hasattr(generator, &#39;set_property&#39;):
+            try:
+                generator.set_property(key, value)
+            except Exception:
+                pass  # Skip properties that can&#39;t be set
+
+    return generator</code></pre>
+</details>
+<div class="desc"><p>Create enriched schema from multiple metadata sources.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>generator_class</code></strong></dt>
+<dd>Schema generator class to use</dd>
+<dt><strong><code>base_metadata</code></strong></dt>
+<dd>Base metadata dictionary</dd>
+<dt><strong><code>*enrichment_sources</code></strong></dt>
+<dd>Additional enrichment source dictionaries</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Configured schema generator instance</p></div>
+</dd>
+<dt id="src.enrichment.MetadataEnricher.detect_mime_type"><code class="name flex">
+<span>def <span class="ident">detect_mime_type</span></span>(<span>self, file_path: str) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def detect_mime_type(self, file_path: str) -&gt; str:
+    &#34;&#34;&#34;
+    Detect MIME type from file path.
+
+    Args:
+        file_path: Path to file
+
+    Returns:
+        MIME type string
+    &#34;&#34;&#34;
+    mime_type, _ = mimetypes.guess_type(file_path)
+    return mime_type or &#39;application/octet-stream&#39;</code></pre>
+</details>
+<div class="desc"><p>Detect MIME type from file path.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_path</code></strong></dt>
+<dd>Path to file</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>MIME type string</p></div>
+</dd>
+<dt id="src.enrichment.MetadataEnricher.enrich_from_audio_metadata"><code class="name flex">
+<span>def <span class="ident">enrich_from_audio_metadata</span></span>(<span>self, audio_meta: Dict[str, Any]) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def enrich_from_audio_metadata(self, audio_meta: Dict[str, Any]) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Extract metadata from audio file metadata.
+
+    Args:
+        audio_meta: Audio metadata dictionary
+
+    Returns:
+        Enriched metadata
+    &#34;&#34;&#34;
+    metadata: Dict[str, Any] = {}
+
+    # Basic properties
+    if &#39;title&#39; in audio_meta:
+        metadata[&#39;name&#39;] = audio_meta[&#39;title&#39;]
+    if &#39;artist&#39; in audio_meta:
+        artist_name = audio_meta[&#39;artist&#39;]
+        metadata[&#39;byArtist&#39;] = {
+            &#39;@type&#39;: &#39;Person&#39;,
+            &#39;@id&#39;: self._generate_person_id(artist_name),
+            &#39;name&#39;: artist_name
+        }
+    if &#39;album&#39; in audio_meta:
+        album_name = audio_meta[&#39;album&#39;]
+        album_uuid = uuid.uuid5(
+            uuid.UUID(&#39;b1c2d3e4-5678-9abc-def0-123456789abc&#39;),  # Album namespace
+            album_name.lower().strip()
+        )
+        metadata[&#39;inAlbum&#39;] = {
+            &#39;@type&#39;: &#39;MusicAlbum&#39;,
+            &#39;@id&#39;: f&#34;urn:uuid:{album_uuid}&#34;,
+            &#39;name&#39;: album_name
+        }
+    if &#39;genre&#39; in audio_meta:
+        metadata[&#39;genre&#39;] = audio_meta[&#39;genre&#39;]
+    if &#39;duration&#39; in audio_meta:
+        # Convert seconds to ISO 8601 duration
+        duration_sec = audio_meta[&#39;duration&#39;]
+        metadata[&#39;duration&#39;] = self._seconds_to_iso_duration(duration_sec)
+
+    # Audio quality
+    if &#39;bitrate&#39; in audio_meta:
+        metadata[&#39;bitrate&#39;] = f&#34;{audio_meta[&#39;bitrate&#39;]}kbps&#34;
+    if &#39;sample_rate&#39; in audio_meta:
+        metadata[&#39;encodingFormat&#39;] = f&#34;{metadata.get(&#39;encodingFormat&#39;, &#39;audio/mpeg&#39;)} ({audio_meta[&#39;sample_rate&#39;]}Hz)&#34;
+
+    # Track number
+    if &#39;track_number&#39; in audio_meta:
+        metadata[&#39;position&#39;] = audio_meta[&#39;track_number&#39;]
+
+    # Year/date
+    if &#39;year&#39; in audio_meta:
+        metadata[&#39;datePublished&#39;] = f&#34;{audio_meta[&#39;year&#39;]}-01-01&#34;
+
+    # ISRC
+    if &#39;isrc&#39; in audio_meta:
+        metadata[&#39;isrcCode&#39;] = audio_meta[&#39;isrc&#39;]
+
+    return metadata</code></pre>
+</details>
+<div class="desc"><p>Extract metadata from audio file metadata.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>audio_meta</code></strong></dt>
+<dd>Audio metadata dictionary</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Enriched metadata</p></div>
+</dd>
+<dt id="src.enrichment.MetadataEnricher.enrich_from_code_analysis"><code class="name flex">
+<span>def <span class="ident">enrich_from_code_analysis</span></span>(<span>self, code_analysis: Dict[str, Any]) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def enrich_from_code_analysis(self, code_analysis: Dict[str, Any]) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Extract metadata from code analysis results.
+
+    Args:
+        code_analysis: Code analysis results
+
+    Returns:
+        Enriched metadata
+    &#34;&#34;&#34;
+    metadata: Dict[str, Any] = {}
+
+    # Language
+    if &#39;language&#39; in code_analysis:
+        metadata[&#39;programmingLanguage&#39;] = code_analysis[&#39;language&#39;]
+
+    # Repository info
+    if &#39;repository&#39; in code_analysis:
+        repo = code_analysis[&#39;repository&#39;]
+        metadata[&#39;codeRepository&#39;] = repo.get(&#39;url&#39;, &#39;&#39;)
+        if &#39;branch&#39; in repo:
+            metadata[&#39;targetProduct&#39;] = repo[&#39;branch&#39;]
+
+    # Dependencies
+    if &#39;dependencies&#39; in code_analysis:
+        metadata[&#39;dependencies&#39;] = [
+            {
+                &#39;@type&#39;: &#39;SoftwareApplication&#39;,
+                &#39;name&#39;: dep[&#39;name&#39;],
+                &#39;softwareVersion&#39;: dep.get(&#39;version&#39;, &#39;&#39;)
+            }
+            for dep in code_analysis[&#39;dependencies&#39;]
+        ]
+
+    # Runtime
+    if &#39;runtime&#39; in code_analysis:
+        metadata[&#39;runtimePlatform&#39;] = code_analysis[&#39;runtime&#39;]
+
+    # License
+    if &#39;license&#39; in code_analysis:
+        metadata[&#39;license&#39;] = code_analysis[&#39;license&#39;]
+
+    # Author
+    if &#39;author&#39; in code_analysis:
+        author_name = code_analysis[&#39;author&#39;]
+        metadata[&#39;author&#39;] = {
+            &#39;@type&#39;: &#39;Person&#39;,
+            &#39;@id&#39;: self._generate_person_id(author_name),
+            &#39;name&#39;: author_name
+        }
+
+    # Functions/classes (as description)
+    if &#39;functions&#39; in code_analysis:
+        func_count = len(code_analysis[&#39;functions&#39;])
+        metadata[&#39;description&#39;] = f&#34;Contains {func_count} functions&#34;
+
+    return metadata</code></pre>
+</details>
+<div class="desc"><p>Extract metadata from code analysis results.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>code_analysis</code></strong></dt>
+<dd>Code analysis results</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Enriched metadata</p></div>
+</dd>
+<dt id="src.enrichment.MetadataEnricher.enrich_from_dataset_info"><code class="name flex">
+<span>def <span class="ident">enrich_from_dataset_info</span></span>(<span>self, dataset_info: Dict[str, Any]) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def enrich_from_dataset_info(self, dataset_info: Dict[str, Any]) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Extract metadata from dataset information.
+
+    Args:
+        dataset_info: Dataset information dictionary
+
+    Returns:
+        Enriched metadata
+    &#34;&#34;&#34;
+    metadata: Dict[str, Any] = {}
+
+    # Basic properties
+    if &#39;name&#39; in dataset_info:
+        metadata[&#39;name&#39;] = dataset_info[&#39;name&#39;]
+    if &#39;description&#39; in dataset_info:
+        metadata[&#39;description&#39;] = dataset_info[&#39;description&#39;]
+
+    # Variables/columns
+    if &#39;columns&#39; in dataset_info:
+        metadata[&#39;variableMeasured&#39;] = [
+            {
+                &#39;@type&#39;: &#39;PropertyValue&#39;,
+                &#39;name&#39;: col[&#39;name&#39;],
+                &#39;description&#39;: col.get(&#39;description&#39;, &#39;&#39;)
+            }
+            for col in dataset_info[&#39;columns&#39;]
+        ]
+
+    # Coverage
+    if &#39;temporal_coverage&#39; in dataset_info:
+        temporal = dataset_info[&#39;temporal_coverage&#39;]
+        if isinstance(temporal, dict):
+            start = temporal.get(&#39;start&#39;, &#39;&#39;)
+            end = temporal.get(&#39;end&#39;, &#39;&#39;)
+            metadata[&#39;temporalCoverage&#39;] = f&#34;{start}/{end}&#34;
+        else:
+            metadata[&#39;temporalCoverage&#39;] = temporal
+
+    if &#39;spatial_coverage&#39; in dataset_info:
+        metadata[&#39;spatialCoverage&#39;] = dataset_info[&#39;spatial_coverage&#39;]
+
+    # Distribution
+    if &#39;format&#39; in dataset_info:
+        metadata[&#39;distribution&#39;] = [{
+            &#39;@type&#39;: &#39;DataDownload&#39;,
+            &#39;encodingFormat&#39;: dataset_info[&#39;format&#39;]
+        }]
+
+    # Size
+    if &#39;rows&#39; in dataset_info:
+        metadata[&#39;additionalProperty&#39;] = [{
+            &#39;@type&#39;: &#39;PropertyValue&#39;,
+            &#39;name&#39;: &#39;rows&#39;,
+            &#39;value&#39;: dataset_info[&#39;rows&#39;]
+        }]
+
+    return metadata</code></pre>
+</details>
+<div class="desc"><p>Extract metadata from dataset information.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dataset_info</code></strong></dt>
+<dd>Dataset information dictionary</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Enriched metadata</p></div>
+</dd>
+<dt id="src.enrichment.MetadataEnricher.enrich_from_document_properties"><code class="name flex">
+<span>def <span class="ident">enrich_from_document_properties</span></span>(<span>self, doc_props: Dict[str, Any]) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def enrich_from_document_properties(self, doc_props: Dict[str, Any]) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Extract metadata from document properties.
+
+    Args:
+        doc_props: Document properties dictionary
+
+    Returns:
+        Enriched metadata
+    &#34;&#34;&#34;
+    metadata: Dict[str, Any] = {}
+
+    # Basic properties
+    property_mapping = {
+        &#39;title&#39;: &#39;name&#39;,
+        &#39;subject&#39;: &#39;abstract&#39;,
+        &#39;description&#39;: &#39;description&#39;,
+        &#39;keywords&#39;: &#39;keywords&#39;,
+        &#39;creator&#39;: &#39;author&#39;,
+        &#39;author&#39;: &#39;author&#39;,
+        &#39;created&#39;: &#39;dateCreated&#39;,
+        &#39;modified&#39;: &#39;dateModified&#39;,
+        &#39;language&#39;: &#39;inLanguage&#39;,
+        &#39;pages&#39;: &#39;numberOfPages&#39;,
+    }
+
+    for doc_key, schema_key in property_mapping.items():
+        if doc_key in doc_props:
+            value = doc_props[doc_key]
+
+            if schema_key in [&#39;author&#39;, &#39;creator&#39;] and isinstance(value, str):
+                metadata[schema_key] = {
+                    &#39;@type&#39;: &#39;Person&#39;,
+                    &#39;@id&#39;: self._generate_person_id(value),
+                    &#39;name&#39;: value
+                }
+            else:
+                metadata[schema_key] = value
+
+    return metadata</code></pre>
+</details>
+<div class="desc"><p>Extract metadata from document properties.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>doc_props</code></strong></dt>
+<dd>Document properties dictionary</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Enriched metadata</p></div>
+</dd>
+<dt id="src.enrichment.MetadataEnricher.enrich_from_exif"><code class="name flex">
+<span>def <span class="ident">enrich_from_exif</span></span>(<span>self, exif_data: Dict[str, Any]) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def enrich_from_exif(self, exif_data: Dict[str, Any]) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Extract metadata from EXIF data.
+
+    Args:
+        exif_data: EXIF data dictionary
+
+    Returns:
+        Enriched metadata
+    &#34;&#34;&#34;
+    metadata: Dict[str, Any] = {}
+
+    # Creator information
+    if &#39;Artist&#39; in exif_data:
+        artist_name = exif_data[&#39;Artist&#39;]
+        metadata[&#39;creator&#39;] = {
+            &#39;@type&#39;: &#39;Person&#39;,
+            &#39;@id&#39;: self._generate_person_id(artist_name),
+            &#39;name&#39;: artist_name
+        }
+
+    # Camera information
+    camera_info = []
+    if &#39;Make&#39; in exif_data:
+        camera_info.append(exif_data[&#39;Make&#39;])
+    if &#39;Model&#39; in exif_data:
+        camera_info.append(exif_data[&#39;Model&#39;])
+    if camera_info:
+        metadata[&#39;exifData&#39;] = {
+            &#39;@type&#39;: &#39;PropertyValue&#39;,
+            &#39;name&#39;: &#39;Camera&#39;,
+            &#39;value&#39;: &#39; &#39;.join(camera_info)
+        }
+
+    # Dates
+    date_fields = [&#39;DateTime&#39;, &#39;DateTimeOriginal&#39;, &#39;DateTimeDigitized&#39;]
+    for field in date_fields:
+        if field in exif_data:
+            try:
+                # EXIF dates are typically in format: YYYY:MM:DD HH:MM:SS
+                date_str = exif_data[field].replace(&#39;:&#39;, &#39;-&#39;, 2)
+                metadata[&#39;dateCreated&#39;] = date_str
+                break
+            except Exception:
+                pass
+
+    # Location
+    if &#39;GPSLatitude&#39; in exif_data and &#39;GPSLongitude&#39; in exif_data:
+        metadata[&#39;contentLocation&#39;] = {
+            &#39;@type&#39;: &#39;Place&#39;,
+            &#39;geo&#39;: {
+                &#39;@type&#39;: &#39;GeoCoordinates&#39;,
+                &#39;latitude&#39;: exif_data[&#39;GPSLatitude&#39;],
+                &#39;longitude&#39;: exif_data[&#39;GPSLongitude&#39;]
+            }
+        }
+
+    # Dimensions
+    if &#39;ImageWidth&#39; in exif_data:
+        metadata[&#39;width&#39;] = exif_data[&#39;ImageWidth&#39;]
+    if &#39;ImageHeight&#39; in exif_data:
+        metadata[&#39;height&#39;] = exif_data[&#39;ImageHeight&#39;]
+
+    # Copyright
+    if &#39;Copyright&#39; in exif_data:
+        metadata[&#39;copyrightNotice&#39;] = exif_data[&#39;Copyright&#39;]
+
+    # Description
+    if &#39;ImageDescription&#39; in exif_data:
+        metadata[&#39;description&#39;] = exif_data[&#39;ImageDescription&#39;]
+
+    return metadata</code></pre>
+</details>
+<div class="desc"><p>Extract metadata from EXIF data.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>exif_data</code></strong></dt>
+<dd>EXIF data dictionary</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Enriched metadata</p></div>
+</dd>
+<dt id="src.enrichment.MetadataEnricher.enrich_from_file_stats"><code class="name flex">
+<span>def <span class="ident">enrich_from_file_stats</span></span>(<span>self, file_path: str) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def enrich_from_file_stats(self, file_path: str) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Extract metadata from file system stats.
+
+    Args:
+        file_path: Path to file
+
+    Returns:
+        Metadata dictionary with proper @id for JSON-LD
+
+    Note:
+        The @id is generated as a content-addressed URN using SHA-256 hash
+        of the absolute file path. This ensures:
+        - Same file always gets the same @id (deterministic)
+        - Valid IRI for JSON-LD compliance
+        - Deduplication across systems
+    &#34;&#34;&#34;
+    path = Path(file_path)
+    if not path.exists():
+        return {}
+
+    stats = cached_stat(str(path))
+
+    # Generate deterministic @id from absolute path hash
+    abs_path = str(path.absolute())
+    file_hash = hashlib.sha256(abs_path.encode()).hexdigest()
+
+    return {
+        &#39;@id&#39;: f&#39;urn:sha256:{file_hash}&#39;,
+        &#39;name&#39;: path.name,
+        &#39;url&#39;: f&#39;file://{path.absolute()}&#39;,
+        &#39;encodingFormat&#39;: self.get_encoding_format(file_path),
+        &#39;contentSize&#39;: stats.st_size,
+        &#39;dateCreated&#39;: datetime.fromtimestamp(stats.st_ctime),
+        &#39;dateModified&#39;: datetime.fromtimestamp(stats.st_mtime),
+    }</code></pre>
+</details>
+<div class="desc"><p>Extract metadata from file system stats.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_path</code></strong></dt>
+<dd>Path to file</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Metadata dictionary with proper @id for JSON-LD</p>
+<h2 id="note">Note</h2>
+<p>The @id is generated as a content-addressed URN using SHA-256 hash
+of the absolute file path. This ensures:
+- Same file always gets the same @id (deterministic)
+- Valid IRI for JSON-LD compliance
+- Deduplication across systems</p></div>
+</dd>
+<dt id="src.enrichment.MetadataEnricher.enrich_from_nlp"><code class="name flex">
+<span>def <span class="ident">enrich_from_nlp</span></span>(<span>self, nlp_results: Dict[str, Any]) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def enrich_from_nlp(self, nlp_results: Dict[str, Any]) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Extract metadata from NLP analysis results.
+
+    Args:
+        nlp_results: NLP analysis results
+
+    Returns:
+        Enriched metadata
+    &#34;&#34;&#34;
+    metadata: Dict[str, Any] = {}
+
+    # Keywords and topics
+    if &#39;keywords&#39; in nlp_results:
+        metadata[&#39;keywords&#39;] = &#39;, &#39;.join(nlp_results[&#39;keywords&#39;])
+
+    if &#39;topics&#39; in nlp_results:
+        metadata[&#39;about&#39;] = [
+            {&#39;@type&#39;: &#39;Thing&#39;, &#39;name&#39;: topic}
+            for topic in nlp_results[&#39;topics&#39;]
+        ]
+
+    # Entities
+    if &#39;entities&#39; in nlp_results:
+        mentions = []
+        for entity in nlp_results[&#39;entities&#39;]:
+            entity_type = entity.get(&#39;type&#39;, &#39;Thing&#39;)
+            schema_type = self._map_entity_type_to_schema(entity_type)
+            entity_name = entity.get(&#39;text&#39;, entity.get(&#39;name&#39;, &#39;&#39;))
+
+            # Generate appropriate @id based on entity type
+            if schema_type == &#39;Person&#39;:
+                entity_id = self._generate_person_id(entity_name)
+            elif schema_type == &#39;Organization&#39;:
+                entity_id = self._generate_org_id(entity_name)
+            elif schema_type == &#39;Place&#39;:
+                entity_id = self._generate_place_id(entity_name)
+            else:
+                # Generic Thing - use a hash-based ID
+                thing_uuid = uuid.uuid5(
+                    uuid.UUID(&#39;a0b1c2d3-4567-89ab-cdef-0123456789ab&#39;),  # Thing namespace
+                    entity_name.lower().strip()
+                )
+                entity_id = f&#34;urn:uuid:{thing_uuid}&#34;
+
+            mentions.append({
+                &#39;@type&#39;: schema_type,
+                &#39;@id&#39;: entity_id,
+                &#39;name&#39;: entity_name
+            })
+        if mentions:
+            metadata[&#39;mentions&#39;] = mentions
+
+    # Language
+    if &#39;language&#39; in nlp_results:
+        metadata[&#39;inLanguage&#39;] = nlp_results[&#39;language&#39;]
+
+    # Sentiment (as custom property)
+    if &#39;sentiment&#39; in nlp_results:
+        metadata[&#39;additionalProperty&#39;] = [{
+            &#39;@type&#39;: &#39;PropertyValue&#39;,
+            &#39;name&#39;: &#39;sentiment&#39;,
+            &#39;value&#39;: nlp_results[&#39;sentiment&#39;]
+        }]
+
+    # Summary
+    if &#39;summary&#39; in nlp_results:
+        metadata[&#39;abstract&#39;] = nlp_results[&#39;summary&#39;]
+
+    return metadata</code></pre>
+</details>
+<div class="desc"><p>Extract metadata from NLP analysis results.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>nlp_results</code></strong></dt>
+<dd>NLP analysis results</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Enriched metadata</p></div>
+</dd>
+<dt id="src.enrichment.MetadataEnricher.enrich_from_video_metadata"><code class="name flex">
+<span>def <span class="ident">enrich_from_video_metadata</span></span>(<span>self, video_meta: Dict[str, Any]) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def enrich_from_video_metadata(self, video_meta: Dict[str, Any]) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Extract metadata from video file metadata.
+
+    Args:
+        video_meta: Video metadata dictionary
+
+    Returns:
+        Enriched metadata
+    &#34;&#34;&#34;
+    metadata: Dict[str, Any] = {}
+
+    # Basic properties
+    if &#39;title&#39; in video_meta:
+        metadata[&#39;name&#39;] = video_meta[&#39;title&#39;]
+    if &#39;description&#39; in video_meta:
+        metadata[&#39;description&#39;] = video_meta[&#39;description&#39;]
+
+    # Dimensions
+    if &#39;width&#39; in video_meta:
+        metadata[&#39;width&#39;] = video_meta[&#39;width&#39;]
+    if &#39;height&#39; in video_meta:
+        metadata[&#39;height&#39;] = video_meta[&#39;height&#39;]
+
+    # Duration
+    if &#39;duration&#39; in video_meta:
+        duration_sec = video_meta[&#39;duration&#39;]
+        metadata[&#39;duration&#39;] = self._seconds_to_iso_duration(duration_sec)
+
+    # Quality
+    if &#39;bitrate&#39; in video_meta:
+        metadata[&#39;bitrate&#39;] = f&#34;{video_meta[&#39;bitrate&#39;]}kbps&#34;
+
+    # Codec
+    if &#39;codec&#39; in video_meta:
+        metadata[&#39;videoCodec&#39;] = video_meta[&#39;codec&#39;]
+    if &#39;audio_codec&#39; in video_meta:
+        metadata[&#39;audioCodec&#39;] = video_meta[&#39;audio_codec&#39;]
+
+    # Upload date (default to current)
+    if &#39;upload_date&#39; in video_meta:
+        metadata[&#39;uploadDate&#39;] = video_meta[&#39;upload_date&#39;]
+    else:
+        metadata[&#39;uploadDate&#39;] = datetime.now()
+
+    return metadata</code></pre>
+</details>
+<div class="desc"><p>Extract metadata from video file metadata.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>video_meta</code></strong></dt>
+<dd>Video metadata dictionary</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Enriched metadata</p></div>
+</dd>
+<dt id="src.enrichment.MetadataEnricher.get_encoding_format"><code class="name flex">
+<span>def <span class="ident">get_encoding_format</span></span>(<span>self, file_path: str) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_encoding_format(self, file_path: str) -&gt; str:
+    &#34;&#34;&#34;
+    Get encoding format for Schema.org.
+
+    Args:
+        file_path: Path to file
+
+    Returns:
+        Encoding format string
+    &#34;&#34;&#34;
+    mime_type = self.detect_mime_type(file_path)
+    return self.mime_to_format.get(mime_type, mime_type)</code></pre>
+</details>
+<div class="desc"><p>Get encoding format for Schema.org.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_path</code></strong></dt>
+<dd>Path to file</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Encoding format string</p></div>
+</dd>
+<dt id="src.enrichment.MetadataEnricher.merge_metadata"><code class="name flex">
+<span>def <span class="ident">merge_metadata</span></span>(<span>self, *metadata_dicts: Dict[str, Any]) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def merge_metadata(self, *metadata_dicts: Dict[str, Any]) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Merge multiple metadata dictionaries.
+
+    Later dictionaries override earlier ones.
+
+    Args:
+        *metadata_dicts: Variable number of metadata dictionaries
+
+    Returns:
+        Merged metadata dictionary
+    &#34;&#34;&#34;
+    merged: Dict[str, Any] = {}
+    for metadata in metadata_dicts:
+        for key, value in metadata.items():
+            if key not in merged or value is not None:
+                merged[key] = value
+    return merged</code></pre>
+</details>
+<div class="desc"><p>Merge multiple metadata dictionaries.</p>
+<p>Later dictionaries override earlier ones.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>*metadata_dicts</code></strong></dt>
+<dd>Variable number of metadata dictionaries</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Merged metadata dictionary</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src" href="index.html">src</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="src.enrichment.cached_stat" href="#src.enrichment.cached_stat">cached_stat</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.enrichment.MetadataEnricher" href="#src.enrichment.MetadataEnricher">MetadataEnricher</a></code></h4>
+<ul class="">
+<li><code><a title="src.enrichment.MetadataEnricher.create_enriched_schema" href="#src.enrichment.MetadataEnricher.create_enriched_schema">create_enriched_schema</a></code></li>
+<li><code><a title="src.enrichment.MetadataEnricher.detect_mime_type" href="#src.enrichment.MetadataEnricher.detect_mime_type">detect_mime_type</a></code></li>
+<li><code><a title="src.enrichment.MetadataEnricher.enrich_from_audio_metadata" href="#src.enrichment.MetadataEnricher.enrich_from_audio_metadata">enrich_from_audio_metadata</a></code></li>
+<li><code><a title="src.enrichment.MetadataEnricher.enrich_from_code_analysis" href="#src.enrichment.MetadataEnricher.enrich_from_code_analysis">enrich_from_code_analysis</a></code></li>
+<li><code><a title="src.enrichment.MetadataEnricher.enrich_from_dataset_info" href="#src.enrichment.MetadataEnricher.enrich_from_dataset_info">enrich_from_dataset_info</a></code></li>
+<li><code><a title="src.enrichment.MetadataEnricher.enrich_from_document_properties" href="#src.enrichment.MetadataEnricher.enrich_from_document_properties">enrich_from_document_properties</a></code></li>
+<li><code><a title="src.enrichment.MetadataEnricher.enrich_from_exif" href="#src.enrichment.MetadataEnricher.enrich_from_exif">enrich_from_exif</a></code></li>
+<li><code><a title="src.enrichment.MetadataEnricher.enrich_from_file_stats" href="#src.enrichment.MetadataEnricher.enrich_from_file_stats">enrich_from_file_stats</a></code></li>
+<li><code><a title="src.enrichment.MetadataEnricher.enrich_from_nlp" href="#src.enrichment.MetadataEnricher.enrich_from_nlp">enrich_from_nlp</a></code></li>
+<li><code><a title="src.enrichment.MetadataEnricher.enrich_from_video_metadata" href="#src.enrichment.MetadataEnricher.enrich_from_video_metadata">enrich_from_video_metadata</a></code></li>
+<li><code><a title="src.enrichment.MetadataEnricher.get_encoding_format" href="#src.enrichment.MetadataEnricher.get_encoding_format">get_encoding_format</a></code></li>
+<li><code><a title="src.enrichment.MetadataEnricher.merge_metadata" href="#src.enrichment.MetadataEnricher.merge_metadata">merge_metadata</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

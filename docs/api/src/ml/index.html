@@ -1,0 +1,1176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.ml API documentation</title>
+<meta name="description" content="ML preprocessing modules for file-organization training data.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.ml</code></h1>
+</header>
+<section id="section-intro">
+<p>ML preprocessing modules for file-organization training data.</p>
+</section>
+<section>
+<h2 class="section-title" id="header-submodules">Sub-modules</h2>
+<dl>
+<dt><code class="name"><a title="src.ml.data_preprocessor" href="data_preprocessor.html">src.ml.data_preprocessor</a></code></dt>
+<dd>
+<div class="desc"><p>Preprocessing pipeline for file-organization ML training data …</p></div>
+</dd>
+<dt><code class="name"><a title="src.ml.feature_extractor" href="feature_extractor.html">src.ml.feature_extractor</a></code></dt>
+<dd>
+<div class="desc"><p>Feature engineering for file-organization ML …</p></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.ml.DataPreprocessor"><code class="flex name class">
+<span>class <span class="ident">DataPreprocessor</span></span>
+<span>(</span><span>report_path: str = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DataPreprocessor:
+    &#34;&#34;&#34;Main preprocessing pipeline for file organization data.&#34;&#34;&#34;
+
+    def __init__(self, report_path: str = None):
+        &#34;&#34;&#34;Initialize preprocessor.
+
+        Args:
+            report_path: Path to organization report JSON
+        &#34;&#34;&#34;
+        self.report_path = report_path
+        self.feature_extractor = FileFeatureExtractor()
+        self.data = None
+        self.features = None
+        self.statistics = {}
+
+    def load_data(self, report_path: str = None) -&gt; Dict:
+        &#34;&#34;&#34;Load organization report data.&#34;&#34;&#34;
+        path = report_path or self.report_path
+        if not path:
+            raise ValueError(&#34;No report path provided&#34;)
+
+        with open(path, &#39;r&#39;) as f:
+            self.data = json.load(f)
+
+        self.statistics[&#39;total_records&#39;] = len(self.data.get(&#39;results&#39;, []))
+        self.statistics[&#39;load_time&#39;] = datetime.now().isoformat()
+        return self.data
+
+    def extract_all_features(self) -&gt; List[Dict]:
+        &#34;&#34;&#34;Extract features from all records.&#34;&#34;&#34;
+        if not self.data:
+            raise ValueError(&#34;No data loaded. Call load_data() first.&#34;)
+
+        results = self.data.get(&#39;results&#39;, [])
+        self.features = []
+
+        for record in results:
+            features = self.feature_extractor.extract_features(record)
+            self.features.append(features)
+
+        self.statistics[&#39;features_extracted&#39;] = len(self.features)
+        return self.features
+
+    def compute_statistics(self) -&gt; Dict:
+        &#34;&#34;&#34;Compute dataset statistics.&#34;&#34;&#34;
+        if not self.features:
+            raise ValueError(&#34;No features extracted. Call extract_all_features() first.&#34;)
+
+        # Category distribution
+        categories = Counter(f[&#39;category&#39;] for f in self.features)
+        subcategories = Counter(f[&#39;subcategory&#39;] for f in self.features)
+
+        # Extension distribution
+        extensions = Counter(f[&#39;extension&#39;] for f in self.features)
+
+        # Pattern counts
+        screenshots = sum(1 for f in self.features if f[&#39;is_screenshot&#39;])
+        game_assets = sum(1 for f in self.features if f[&#39;is_game_asset&#39;])
+        documents = sum(1 for f in self.features if f[&#39;is_document&#39;])
+
+        # Metadata availability
+        has_text = sum(1 for f in self.features if f[&#39;has_extracted_text&#39;])
+        has_datetime = sum(1 for f in self.features if f[&#39;has_datetime&#39;])
+        has_gps = sum(1 for f in self.features if f[&#39;has_gps&#39;])
+
+        # Filename analysis
+        avg_filename_length = sum(f[&#39;filename_length&#39;] for f in self.features) / len(self.features)
+        token_counts = Counter()
+        for f in self.features:
+            token_counts.update(f[&#39;filename_tokens&#39;])
+
+        self.statistics.update({
+            &#39;category_distribution&#39;: dict(categories),
+            &#39;subcategory_distribution&#39;: dict(subcategories.most_common(20)),
+            &#39;extension_distribution&#39;: dict(extensions.most_common(20)),
+            &#39;pattern_counts&#39;: {
+                &#39;screenshots&#39;: screenshots,
+                &#39;game_assets&#39;: game_assets,
+                &#39;documents&#39;: documents,
+            },
+            &#39;metadata_availability&#39;: {
+                &#39;has_text&#39;: has_text,
+                &#39;has_datetime&#39;: has_datetime,
+                &#39;has_gps&#39;: has_gps,
+            },
+            &#39;filename_analysis&#39;: {
+                &#39;avg_length&#39;: round(avg_filename_length, 2),
+                &#39;top_tokens&#39;: dict(token_counts.most_common(30)),
+            },
+        })
+
+        return self.statistics
+
+    def create_train_test_split(
+        self,
+        test_ratio: float = 0.2,
+        stratify_by: str = &#34;category&#34;,
+        random_seed: int = 42,
+    ) -&gt; Tuple[List[Dict], List[Dict]]:
+        &#34;&#34;&#34;Split features into train/test with stratification.&#34;&#34;&#34;
+        from sklearn.model_selection import train_test_split as sklearn_split
+
+        if not self.features:
+            return [], []
+
+        stratify_labels = [f.get(stratify_by, &#34;unknown&#34;) for f in self.features]
+        # sklearn requires at least 2 samples per class for stratification
+        label_counts = Counter(stratify_labels)
+        valid = [lbl for lbl, cnt in label_counts.items() if cnt &gt;= 2]
+        if len(valid) &lt; len(label_counts):
+            logger.warning(
+                &#34;Dropping %d classes with &lt;2 samples from stratification&#34;,
+                len(label_counts) - len(valid),
+            )
+            mask = [lbl in valid for lbl in stratify_labels]
+            features = [f for f, ok in zip(self.features, mask) if ok]
+            stratify_labels = [lbl for lbl, ok in zip(stratify_labels, mask) if ok]
+        else:
+            features = self.features
+
+        if len(features) &lt; 2:
+            return features, []
+
+        train, test = sklearn_split(
+            features,
+            test_size=test_ratio,
+            stratify=stratify_labels,
+            random_state=random_seed,
+        )
+        return train, test
+
+    def get_vocabulary(self, min_freq: int = 5) -&gt; Dict[str, int]:
+        &#34;&#34;&#34;Build vocabulary from filename tokens with minimum frequency threshold.&#34;&#34;&#34;
+        from sklearn.feature_extraction.text import CountVectorizer
+
+        if not self.features:
+            return {}
+
+        docs = [&#34; &#34;.join(f.get(&#34;filename_tokens&#34;, [])) for f in self.features]
+        docs = [d for d in docs if d.strip()]
+        if not docs:
+            return {}
+
+        vectorizer = CountVectorizer(min_df=min_freq, token_pattern=r&#34;(?u)\b\w+\b&#34;)
+        vectorizer.fit(docs)
+        return {token: idx for idx, token in enumerate(vectorizer.get_feature_names_out())}
+
+    def get_label_encoder(self) -&gt; Tuple[Dict[str, int], Dict[int, str]]:
+        &#34;&#34;&#34;Create label encoder for category classification.&#34;&#34;&#34;
+        from sklearn.preprocessing import LabelEncoder
+
+        categories = sorted({f.get(&#34;category&#34;, &#34;uncategorized&#34;) for f in self.features})
+        if not categories:
+            return {}, {}
+
+        le = LabelEncoder()
+        le.fit(categories)
+        label_to_id = {cls: int(le.transform([cls])[0]) for cls in le.classes_}
+        id_to_label = {v: k for k, v in label_to_id.items()}
+        return label_to_id, id_to_label
+
+    def validate_data_quality(self) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Validate data quality and identify issues.&#34;&#34;&#34;
+        if not self.features:
+            raise ValueError(&#34;No features extracted. Call extract_all_features() first.&#34;)
+
+        issues = {
+            &#39;missing_category&#39;: [],
+            &#39;empty_filename&#39;: [],
+            &#39;duplicate_filenames&#39;: [],
+            &#39;suspicious_extensions&#39;: [],
+        }
+
+        filename_counts = Counter(f[&#39;filename&#39;] for f in self.features)
+
+        for f in self.features:
+            # Check for missing categories
+            if not f[&#39;category&#39;] or f[&#39;category&#39;] == &#39;uncategorized&#39;:
+                issues[&#39;missing_category&#39;].append(f[&#39;filename&#39;])
+
+            # Check for empty filenames
+            if not f[&#39;filename&#39;]:
+                issues[&#39;empty_filename&#39;].append(f[&#39;filepath&#39;])
+
+            # Check for suspicious extensions
+            if f[&#39;extension&#39;] and f[&#39;extension&#39;] not in self.feature_extractor.extension_map:
+                issues[&#39;suspicious_extensions&#39;].append((f[&#39;filename&#39;], f[&#39;extension&#39;]))
+
+        # Find duplicates
+        issues[&#39;duplicate_filenames&#39;] = [
+            name for name, count in filename_counts.items() if count &gt; 1
+        ]
+
+        # Summarize
+        quality_report = {
+            &#39;total_records&#39;: len(self.features),
+            &#39;uncategorized_count&#39;: len(issues[&#39;missing_category&#39;]),
+            &#39;empty_filename_count&#39;: len(issues[&#39;empty_filename&#39;]),
+            &#39;duplicate_count&#39;: len(issues[&#39;duplicate_filenames&#39;]),
+            &#39;unknown_extension_count&#39;: len(issues[&#39;suspicious_extensions&#39;]),
+            &#39;quality_score&#39;: self._compute_quality_score(issues),
+            &#39;issues_sample&#39;: {
+                &#39;uncategorized&#39;: issues[&#39;missing_category&#39;][:10],
+                &#39;duplicates&#39;: issues[&#39;duplicate_filenames&#39;][:10],
+                &#39;unknown_extensions&#39;: list(
+                    set(ext for _, ext in issues[&#39;suspicious_extensions&#39;])
+                )[:10],
+            }
+        }
+
+        self.statistics[&#39;data_quality&#39;] = quality_report
+        return quality_report
+
+    def _compute_quality_score(self, issues: Dict) -&gt; float:
+        &#34;&#34;&#34;Compute overall data quality score (0-100).&#34;&#34;&#34;
+        total = len(self.features)
+        if total == 0:
+            return 0.0
+
+        # Penalize based on issues
+        penalties = 0
+        penalties += len(issues[&#39;missing_category&#39;]) * 0.5
+        penalties += len(issues[&#39;empty_filename&#39;]) * 1.0
+        penalties += len(issues[&#39;duplicate_filenames&#39;]) * 0.1
+        penalties += len(issues[&#39;suspicious_extensions&#39;]) * 0.05
+
+        score = max(0, 100 - (penalties / total * 100))
+        return round(score, 2)
+
+    def export_for_training(
+        self,
+        output_dir: str,
+        include_test_split: bool = True
+    ) -&gt; Dict[str, str]:
+        &#34;&#34;&#34;Export preprocessed data for ML training.
+
+        Args:
+            output_dir: Directory to save files
+            include_test_split: Whether to create train/test split
+
+        Returns:
+            Dictionary of output file paths
+        &#34;&#34;&#34;
+        os.makedirs(output_dir, exist_ok=True)
+        output_files = {}
+
+        # Export all features
+        features_path = os.path.join(output_dir, &#39;features.json&#39;)
+        with open(features_path, &#39;w&#39;) as f:
+            json.dump(self.features, f, indent=2)
+        output_files[&#39;features&#39;] = features_path
+
+        # Export vocabulary
+        vocab = self.get_vocabulary()
+        vocab_path = os.path.join(output_dir, &#39;vocabulary.json&#39;)
+        with open(vocab_path, &#39;w&#39;) as f:
+            json.dump(vocab, f, indent=2)
+        output_files[&#39;vocabulary&#39;] = vocab_path
+
+        # Export label encoders
+        label_to_id, id_to_label = self.get_label_encoder()
+        labels_path = os.path.join(output_dir, &#39;labels.json&#39;)
+        with open(labels_path, &#39;w&#39;) as f:
+            json.dump({
+                &#39;label_to_id&#39;: label_to_id,
+                &#39;id_to_label&#39;: {str(k): v for k, v in id_to_label.items()},
+            }, f, indent=2)
+        output_files[&#39;labels&#39;] = labels_path
+
+        # Export train/test split
+        if include_test_split:
+            train_data, test_data = self.create_train_test_split()
+
+            train_path = os.path.join(output_dir, &#39;train.json&#39;)
+            with open(train_path, &#39;w&#39;) as f:
+                json.dump(train_data, f, indent=2)
+            output_files[&#39;train&#39;] = train_path
+
+            test_path = os.path.join(output_dir, &#39;test.json&#39;)
+            with open(test_path, &#39;w&#39;) as f:
+                json.dump(test_data, f, indent=2)
+            output_files[&#39;test&#39;] = test_path
+
+        # Export statistics
+        stats_path = os.path.join(output_dir, &#39;statistics.json&#39;)
+        with open(stats_path, &#39;w&#39;) as f:
+            json.dump(self.statistics, f, indent=2)
+        output_files[&#39;statistics&#39;] = stats_path
+
+        return output_files
+
+    def generate_report(self) -&gt; str:
+        &#34;&#34;&#34;Generate a human-readable preprocessing report.&#34;&#34;&#34;
+        if not self.statistics:
+            self.compute_statistics()
+            self.validate_data_quality()
+
+        report = []
+        report.append(&#34;=&#34; * 60)
+        report.append(&#34;FILE ORGANIZATION DATA PREPROCESSING REPORT&#34;)
+        report.append(&#34;=&#34; * 60)
+        report.append(f&#34;\nGenerated: {datetime.now().strftime(&#39;%Y-%m-%d %H:%M:%S&#39;)}\n&#34;)
+
+        # Dataset Overview
+        report.append(&#34;-&#34; * 40)
+        report.append(&#34;DATASET OVERVIEW&#34;)
+        report.append(&#34;-&#34; * 40)
+        report.append(f&#34;Total Records: {self.statistics.get(&#39;total_records&#39;, 0):,}&#34;)
+        report.append(f&#34;Features Extracted: {self.statistics.get(&#39;features_extracted&#39;, 0):,}&#34;)
+
+        # Category Distribution
+        report.append(&#34;\n&#34; + &#34;-&#34; * 40)
+        report.append(&#34;CATEGORY DISTRIBUTION&#34;)
+        report.append(&#34;-&#34; * 40)
+        cats = self.statistics.get(&#39;category_distribution&#39;, {})
+        for cat, count in sorted(cats.items(), key=lambda x: -x[1])[:15]:
+            pct = (count / self.statistics.get(&#39;total_records&#39;, 1)) * 100
+            report.append(f&#34;  {cat:20} {count:8,} ({pct:5.1f}%)&#34;)
+
+        # Pattern Detection
+        report.append(&#34;\n&#34; + &#34;-&#34; * 40)
+        report.append(&#34;PATTERN DETECTION&#34;)
+        report.append(&#34;-&#34; * 40)
+        patterns = self.statistics.get(&#39;pattern_counts&#39;, {})
+        for name, count in patterns.items():
+            report.append(f&#34;  {name:20} {count:8,}&#34;)
+
+        # Metadata Availability
+        report.append(&#34;\n&#34; + &#34;-&#34; * 40)
+        report.append(&#34;METADATA AVAILABILITY&#34;)
+        report.append(&#34;-&#34; * 40)
+        meta = self.statistics.get(&#39;metadata_availability&#39;, {})
+        for name, count in meta.items():
+            pct = (count / self.statistics.get(&#39;total_records&#39;, 1)) * 100
+            report.append(f&#34;  {name:20} {count:8,} ({pct:5.1f}%)&#34;)
+
+        # Top Tokens
+        report.append(&#34;\n&#34; + &#34;-&#34; * 40)
+        report.append(&#34;TOP FILENAME TOKENS&#34;)
+        report.append(&#34;-&#34; * 40)
+        tokens = self.statistics.get(&#39;filename_analysis&#39;, {}).get(&#39;top_tokens&#39;, {})
+        for token, count in list(tokens.items())[:15]:
+            report.append(f&#34;  {token:20} {count:8,}&#34;)
+
+        # Data Quality
+        report.append(&#34;\n&#34; + &#34;-&#34; * 40)
+        report.append(&#34;DATA QUALITY&#34;)
+        report.append(&#34;-&#34; * 40)
+        quality = self.statistics.get(&#39;data_quality&#39;, {})
+        report.append(f&#34;  Quality Score: {quality.get(&#39;quality_score&#39;, 0):.1f}/100&#34;)
+        report.append(f&#34;  Uncategorized: {quality.get(&#39;uncategorized_count&#39;, 0):,}&#34;)
+        report.append(f&#34;  Duplicates: {quality.get(&#39;duplicate_count&#39;, 0):,}&#34;)
+        report.append(f&#34;  Unknown Extensions: {quality.get(&#39;unknown_extension_count&#39;, 0):,}&#34;)
+
+        # Train/Test Split
+        if &#39;train_test_split&#39; in self.statistics:
+            report.append(&#34;\n&#34; + &#34;-&#34; * 40)
+            report.append(&#34;TRAIN/TEST SPLIT&#34;)
+            report.append(&#34;-&#34; * 40)
+            split = self.statistics[&#39;train_test_split&#39;]
+            report.append(f&#34;  Train Size: {split[&#39;train_size&#39;]:,}&#34;)
+            report.append(f&#34;  Test Size: {split[&#39;test_size&#39;]:,}&#34;)
+            report.append(f&#34;  Test Ratio: {split[&#39;test_ratio&#39;]:.1%}&#34;)
+
+        # Vocabulary
+        if &#39;vocabulary&#39; in self.statistics:
+            report.append(&#34;\n&#34; + &#34;-&#34; * 40)
+            report.append(&#34;VOCABULARY&#34;)
+            report.append(&#34;-&#34; * 40)
+            vocab = self.statistics[&#39;vocabulary&#39;]
+            report.append(f&#34;  Size: {vocab[&#39;size&#39;]:,}&#34;)
+            report.append(f&#34;  Min Frequency: {vocab[&#39;min_freq&#39;]}&#34;)
+
+        report.append(&#34;\n&#34; + &#34;=&#34; * 60)
+
+        return &#34;\n&#34;.join(report)</code></pre>
+</details>
+<div class="desc"><p>Main preprocessing pipeline for file organization data.</p>
+<p>Initialize preprocessor.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>report_path</code></strong></dt>
+<dd>Path to organization report JSON</dd>
+</dl></div>
+<h3>Methods</h3>
+<dl>
+<dt id="src.ml.DataPreprocessor.compute_statistics"><code class="name flex">
+<span>def <span class="ident">compute_statistics</span></span>(<span>self) ‑> Dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def compute_statistics(self) -&gt; Dict:
+    &#34;&#34;&#34;Compute dataset statistics.&#34;&#34;&#34;
+    if not self.features:
+        raise ValueError(&#34;No features extracted. Call extract_all_features() first.&#34;)
+
+    # Category distribution
+    categories = Counter(f[&#39;category&#39;] for f in self.features)
+    subcategories = Counter(f[&#39;subcategory&#39;] for f in self.features)
+
+    # Extension distribution
+    extensions = Counter(f[&#39;extension&#39;] for f in self.features)
+
+    # Pattern counts
+    screenshots = sum(1 for f in self.features if f[&#39;is_screenshot&#39;])
+    game_assets = sum(1 for f in self.features if f[&#39;is_game_asset&#39;])
+    documents = sum(1 for f in self.features if f[&#39;is_document&#39;])
+
+    # Metadata availability
+    has_text = sum(1 for f in self.features if f[&#39;has_extracted_text&#39;])
+    has_datetime = sum(1 for f in self.features if f[&#39;has_datetime&#39;])
+    has_gps = sum(1 for f in self.features if f[&#39;has_gps&#39;])
+
+    # Filename analysis
+    avg_filename_length = sum(f[&#39;filename_length&#39;] for f in self.features) / len(self.features)
+    token_counts = Counter()
+    for f in self.features:
+        token_counts.update(f[&#39;filename_tokens&#39;])
+
+    self.statistics.update({
+        &#39;category_distribution&#39;: dict(categories),
+        &#39;subcategory_distribution&#39;: dict(subcategories.most_common(20)),
+        &#39;extension_distribution&#39;: dict(extensions.most_common(20)),
+        &#39;pattern_counts&#39;: {
+            &#39;screenshots&#39;: screenshots,
+            &#39;game_assets&#39;: game_assets,
+            &#39;documents&#39;: documents,
+        },
+        &#39;metadata_availability&#39;: {
+            &#39;has_text&#39;: has_text,
+            &#39;has_datetime&#39;: has_datetime,
+            &#39;has_gps&#39;: has_gps,
+        },
+        &#39;filename_analysis&#39;: {
+            &#39;avg_length&#39;: round(avg_filename_length, 2),
+            &#39;top_tokens&#39;: dict(token_counts.most_common(30)),
+        },
+    })
+
+    return self.statistics</code></pre>
+</details>
+<div class="desc"><p>Compute dataset statistics.</p></div>
+</dd>
+<dt id="src.ml.DataPreprocessor.create_train_test_split"><code class="name flex">
+<span>def <span class="ident">create_train_test_split</span></span>(<span>self,<br>test_ratio: float = 0.2,<br>stratify_by: str = 'category',<br>random_seed: int = 42) ‑> Tuple[List[Dict], List[Dict]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_train_test_split(
+    self,
+    test_ratio: float = 0.2,
+    stratify_by: str = &#34;category&#34;,
+    random_seed: int = 42,
+) -&gt; Tuple[List[Dict], List[Dict]]:
+    &#34;&#34;&#34;Split features into train/test with stratification.&#34;&#34;&#34;
+    from sklearn.model_selection import train_test_split as sklearn_split
+
+    if not self.features:
+        return [], []
+
+    stratify_labels = [f.get(stratify_by, &#34;unknown&#34;) for f in self.features]
+    # sklearn requires at least 2 samples per class for stratification
+    label_counts = Counter(stratify_labels)
+    valid = [lbl for lbl, cnt in label_counts.items() if cnt &gt;= 2]
+    if len(valid) &lt; len(label_counts):
+        logger.warning(
+            &#34;Dropping %d classes with &lt;2 samples from stratification&#34;,
+            len(label_counts) - len(valid),
+        )
+        mask = [lbl in valid for lbl in stratify_labels]
+        features = [f for f, ok in zip(self.features, mask) if ok]
+        stratify_labels = [lbl for lbl, ok in zip(stratify_labels, mask) if ok]
+    else:
+        features = self.features
+
+    if len(features) &lt; 2:
+        return features, []
+
+    train, test = sklearn_split(
+        features,
+        test_size=test_ratio,
+        stratify=stratify_labels,
+        random_state=random_seed,
+    )
+    return train, test</code></pre>
+</details>
+<div class="desc"><p>Split features into train/test with stratification.</p></div>
+</dd>
+<dt id="src.ml.DataPreprocessor.export_for_training"><code class="name flex">
+<span>def <span class="ident">export_for_training</span></span>(<span>self, output_dir: str, include_test_split: bool = True) ‑> Dict[str, str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def export_for_training(
+    self,
+    output_dir: str,
+    include_test_split: bool = True
+) -&gt; Dict[str, str]:
+    &#34;&#34;&#34;Export preprocessed data for ML training.
+
+    Args:
+        output_dir: Directory to save files
+        include_test_split: Whether to create train/test split
+
+    Returns:
+        Dictionary of output file paths
+    &#34;&#34;&#34;
+    os.makedirs(output_dir, exist_ok=True)
+    output_files = {}
+
+    # Export all features
+    features_path = os.path.join(output_dir, &#39;features.json&#39;)
+    with open(features_path, &#39;w&#39;) as f:
+        json.dump(self.features, f, indent=2)
+    output_files[&#39;features&#39;] = features_path
+
+    # Export vocabulary
+    vocab = self.get_vocabulary()
+    vocab_path = os.path.join(output_dir, &#39;vocabulary.json&#39;)
+    with open(vocab_path, &#39;w&#39;) as f:
+        json.dump(vocab, f, indent=2)
+    output_files[&#39;vocabulary&#39;] = vocab_path
+
+    # Export label encoders
+    label_to_id, id_to_label = self.get_label_encoder()
+    labels_path = os.path.join(output_dir, &#39;labels.json&#39;)
+    with open(labels_path, &#39;w&#39;) as f:
+        json.dump({
+            &#39;label_to_id&#39;: label_to_id,
+            &#39;id_to_label&#39;: {str(k): v for k, v in id_to_label.items()},
+        }, f, indent=2)
+    output_files[&#39;labels&#39;] = labels_path
+
+    # Export train/test split
+    if include_test_split:
+        train_data, test_data = self.create_train_test_split()
+
+        train_path = os.path.join(output_dir, &#39;train.json&#39;)
+        with open(train_path, &#39;w&#39;) as f:
+            json.dump(train_data, f, indent=2)
+        output_files[&#39;train&#39;] = train_path
+
+        test_path = os.path.join(output_dir, &#39;test.json&#39;)
+        with open(test_path, &#39;w&#39;) as f:
+            json.dump(test_data, f, indent=2)
+        output_files[&#39;test&#39;] = test_path
+
+    # Export statistics
+    stats_path = os.path.join(output_dir, &#39;statistics.json&#39;)
+    with open(stats_path, &#39;w&#39;) as f:
+        json.dump(self.statistics, f, indent=2)
+    output_files[&#39;statistics&#39;] = stats_path
+
+    return output_files</code></pre>
+</details>
+<div class="desc"><p>Export preprocessed data for ML training.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>output_dir</code></strong></dt>
+<dd>Directory to save files</dd>
+<dt><strong><code>include_test_split</code></strong></dt>
+<dd>Whether to create train/test split</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Dictionary of output file paths</p></div>
+</dd>
+<dt id="src.ml.DataPreprocessor.extract_all_features"><code class="name flex">
+<span>def <span class="ident">extract_all_features</span></span>(<span>self) ‑> List[Dict]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_all_features(self) -&gt; List[Dict]:
+    &#34;&#34;&#34;Extract features from all records.&#34;&#34;&#34;
+    if not self.data:
+        raise ValueError(&#34;No data loaded. Call load_data() first.&#34;)
+
+    results = self.data.get(&#39;results&#39;, [])
+    self.features = []
+
+    for record in results:
+        features = self.feature_extractor.extract_features(record)
+        self.features.append(features)
+
+    self.statistics[&#39;features_extracted&#39;] = len(self.features)
+    return self.features</code></pre>
+</details>
+<div class="desc"><p>Extract features from all records.</p></div>
+</dd>
+<dt id="src.ml.DataPreprocessor.generate_report"><code class="name flex">
+<span>def <span class="ident">generate_report</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_report(self) -&gt; str:
+    &#34;&#34;&#34;Generate a human-readable preprocessing report.&#34;&#34;&#34;
+    if not self.statistics:
+        self.compute_statistics()
+        self.validate_data_quality()
+
+    report = []
+    report.append(&#34;=&#34; * 60)
+    report.append(&#34;FILE ORGANIZATION DATA PREPROCESSING REPORT&#34;)
+    report.append(&#34;=&#34; * 60)
+    report.append(f&#34;\nGenerated: {datetime.now().strftime(&#39;%Y-%m-%d %H:%M:%S&#39;)}\n&#34;)
+
+    # Dataset Overview
+    report.append(&#34;-&#34; * 40)
+    report.append(&#34;DATASET OVERVIEW&#34;)
+    report.append(&#34;-&#34; * 40)
+    report.append(f&#34;Total Records: {self.statistics.get(&#39;total_records&#39;, 0):,}&#34;)
+    report.append(f&#34;Features Extracted: {self.statistics.get(&#39;features_extracted&#39;, 0):,}&#34;)
+
+    # Category Distribution
+    report.append(&#34;\n&#34; + &#34;-&#34; * 40)
+    report.append(&#34;CATEGORY DISTRIBUTION&#34;)
+    report.append(&#34;-&#34; * 40)
+    cats = self.statistics.get(&#39;category_distribution&#39;, {})
+    for cat, count in sorted(cats.items(), key=lambda x: -x[1])[:15]:
+        pct = (count / self.statistics.get(&#39;total_records&#39;, 1)) * 100
+        report.append(f&#34;  {cat:20} {count:8,} ({pct:5.1f}%)&#34;)
+
+    # Pattern Detection
+    report.append(&#34;\n&#34; + &#34;-&#34; * 40)
+    report.append(&#34;PATTERN DETECTION&#34;)
+    report.append(&#34;-&#34; * 40)
+    patterns = self.statistics.get(&#39;pattern_counts&#39;, {})
+    for name, count in patterns.items():
+        report.append(f&#34;  {name:20} {count:8,}&#34;)
+
+    # Metadata Availability
+    report.append(&#34;\n&#34; + &#34;-&#34; * 40)
+    report.append(&#34;METADATA AVAILABILITY&#34;)
+    report.append(&#34;-&#34; * 40)
+    meta = self.statistics.get(&#39;metadata_availability&#39;, {})
+    for name, count in meta.items():
+        pct = (count / self.statistics.get(&#39;total_records&#39;, 1)) * 100
+        report.append(f&#34;  {name:20} {count:8,} ({pct:5.1f}%)&#34;)
+
+    # Top Tokens
+    report.append(&#34;\n&#34; + &#34;-&#34; * 40)
+    report.append(&#34;TOP FILENAME TOKENS&#34;)
+    report.append(&#34;-&#34; * 40)
+    tokens = self.statistics.get(&#39;filename_analysis&#39;, {}).get(&#39;top_tokens&#39;, {})
+    for token, count in list(tokens.items())[:15]:
+        report.append(f&#34;  {token:20} {count:8,}&#34;)
+
+    # Data Quality
+    report.append(&#34;\n&#34; + &#34;-&#34; * 40)
+    report.append(&#34;DATA QUALITY&#34;)
+    report.append(&#34;-&#34; * 40)
+    quality = self.statistics.get(&#39;data_quality&#39;, {})
+    report.append(f&#34;  Quality Score: {quality.get(&#39;quality_score&#39;, 0):.1f}/100&#34;)
+    report.append(f&#34;  Uncategorized: {quality.get(&#39;uncategorized_count&#39;, 0):,}&#34;)
+    report.append(f&#34;  Duplicates: {quality.get(&#39;duplicate_count&#39;, 0):,}&#34;)
+    report.append(f&#34;  Unknown Extensions: {quality.get(&#39;unknown_extension_count&#39;, 0):,}&#34;)
+
+    # Train/Test Split
+    if &#39;train_test_split&#39; in self.statistics:
+        report.append(&#34;\n&#34; + &#34;-&#34; * 40)
+        report.append(&#34;TRAIN/TEST SPLIT&#34;)
+        report.append(&#34;-&#34; * 40)
+        split = self.statistics[&#39;train_test_split&#39;]
+        report.append(f&#34;  Train Size: {split[&#39;train_size&#39;]:,}&#34;)
+        report.append(f&#34;  Test Size: {split[&#39;test_size&#39;]:,}&#34;)
+        report.append(f&#34;  Test Ratio: {split[&#39;test_ratio&#39;]:.1%}&#34;)
+
+    # Vocabulary
+    if &#39;vocabulary&#39; in self.statistics:
+        report.append(&#34;\n&#34; + &#34;-&#34; * 40)
+        report.append(&#34;VOCABULARY&#34;)
+        report.append(&#34;-&#34; * 40)
+        vocab = self.statistics[&#39;vocabulary&#39;]
+        report.append(f&#34;  Size: {vocab[&#39;size&#39;]:,}&#34;)
+        report.append(f&#34;  Min Frequency: {vocab[&#39;min_freq&#39;]}&#34;)
+
+    report.append(&#34;\n&#34; + &#34;=&#34; * 60)
+
+    return &#34;\n&#34;.join(report)</code></pre>
+</details>
+<div class="desc"><p>Generate a human-readable preprocessing report.</p></div>
+</dd>
+<dt id="src.ml.DataPreprocessor.get_label_encoder"><code class="name flex">
+<span>def <span class="ident">get_label_encoder</span></span>(<span>self) ‑> Tuple[Dict[str, int], Dict[int, str]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_label_encoder(self) -&gt; Tuple[Dict[str, int], Dict[int, str]]:
+    &#34;&#34;&#34;Create label encoder for category classification.&#34;&#34;&#34;
+    from sklearn.preprocessing import LabelEncoder
+
+    categories = sorted({f.get(&#34;category&#34;, &#34;uncategorized&#34;) for f in self.features})
+    if not categories:
+        return {}, {}
+
+    le = LabelEncoder()
+    le.fit(categories)
+    label_to_id = {cls: int(le.transform([cls])[0]) for cls in le.classes_}
+    id_to_label = {v: k for k, v in label_to_id.items()}
+    return label_to_id, id_to_label</code></pre>
+</details>
+<div class="desc"><p>Create label encoder for category classification.</p></div>
+</dd>
+<dt id="src.ml.DataPreprocessor.get_vocabulary"><code class="name flex">
+<span>def <span class="ident">get_vocabulary</span></span>(<span>self, min_freq: int = 5) ‑> Dict[str, int]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_vocabulary(self, min_freq: int = 5) -&gt; Dict[str, int]:
+    &#34;&#34;&#34;Build vocabulary from filename tokens with minimum frequency threshold.&#34;&#34;&#34;
+    from sklearn.feature_extraction.text import CountVectorizer
+
+    if not self.features:
+        return {}
+
+    docs = [&#34; &#34;.join(f.get(&#34;filename_tokens&#34;, [])) for f in self.features]
+    docs = [d for d in docs if d.strip()]
+    if not docs:
+        return {}
+
+    vectorizer = CountVectorizer(min_df=min_freq, token_pattern=r&#34;(?u)\b\w+\b&#34;)
+    vectorizer.fit(docs)
+    return {token: idx for idx, token in enumerate(vectorizer.get_feature_names_out())}</code></pre>
+</details>
+<div class="desc"><p>Build vocabulary from filename tokens with minimum frequency threshold.</p></div>
+</dd>
+<dt id="src.ml.DataPreprocessor.load_data"><code class="name flex">
+<span>def <span class="ident">load_data</span></span>(<span>self, report_path: str = None) ‑> Dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_data(self, report_path: str = None) -&gt; Dict:
+    &#34;&#34;&#34;Load organization report data.&#34;&#34;&#34;
+    path = report_path or self.report_path
+    if not path:
+        raise ValueError(&#34;No report path provided&#34;)
+
+    with open(path, &#39;r&#39;) as f:
+        self.data = json.load(f)
+
+    self.statistics[&#39;total_records&#39;] = len(self.data.get(&#39;results&#39;, []))
+    self.statistics[&#39;load_time&#39;] = datetime.now().isoformat()
+    return self.data</code></pre>
+</details>
+<div class="desc"><p>Load organization report data.</p></div>
+</dd>
+<dt id="src.ml.DataPreprocessor.validate_data_quality"><code class="name flex">
+<span>def <span class="ident">validate_data_quality</span></span>(<span>self) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def validate_data_quality(self) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Validate data quality and identify issues.&#34;&#34;&#34;
+    if not self.features:
+        raise ValueError(&#34;No features extracted. Call extract_all_features() first.&#34;)
+
+    issues = {
+        &#39;missing_category&#39;: [],
+        &#39;empty_filename&#39;: [],
+        &#39;duplicate_filenames&#39;: [],
+        &#39;suspicious_extensions&#39;: [],
+    }
+
+    filename_counts = Counter(f[&#39;filename&#39;] for f in self.features)
+
+    for f in self.features:
+        # Check for missing categories
+        if not f[&#39;category&#39;] or f[&#39;category&#39;] == &#39;uncategorized&#39;:
+            issues[&#39;missing_category&#39;].append(f[&#39;filename&#39;])
+
+        # Check for empty filenames
+        if not f[&#39;filename&#39;]:
+            issues[&#39;empty_filename&#39;].append(f[&#39;filepath&#39;])
+
+        # Check for suspicious extensions
+        if f[&#39;extension&#39;] and f[&#39;extension&#39;] not in self.feature_extractor.extension_map:
+            issues[&#39;suspicious_extensions&#39;].append((f[&#39;filename&#39;], f[&#39;extension&#39;]))
+
+    # Find duplicates
+    issues[&#39;duplicate_filenames&#39;] = [
+        name for name, count in filename_counts.items() if count &gt; 1
+    ]
+
+    # Summarize
+    quality_report = {
+        &#39;total_records&#39;: len(self.features),
+        &#39;uncategorized_count&#39;: len(issues[&#39;missing_category&#39;]),
+        &#39;empty_filename_count&#39;: len(issues[&#39;empty_filename&#39;]),
+        &#39;duplicate_count&#39;: len(issues[&#39;duplicate_filenames&#39;]),
+        &#39;unknown_extension_count&#39;: len(issues[&#39;suspicious_extensions&#39;]),
+        &#39;quality_score&#39;: self._compute_quality_score(issues),
+        &#39;issues_sample&#39;: {
+            &#39;uncategorized&#39;: issues[&#39;missing_category&#39;][:10],
+            &#39;duplicates&#39;: issues[&#39;duplicate_filenames&#39;][:10],
+            &#39;unknown_extensions&#39;: list(
+                set(ext for _, ext in issues[&#39;suspicious_extensions&#39;])
+            )[:10],
+        }
+    }
+
+    self.statistics[&#39;data_quality&#39;] = quality_report
+    return quality_report</code></pre>
+</details>
+<div class="desc"><p>Validate data quality and identify issues.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.ml.FileFeatureExtractor"><code class="flex name class">
+<span>class <span class="ident">FileFeatureExtractor</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FileFeatureExtractor:
+    &#34;&#34;&#34;Extract ML features from file metadata.&#34;&#34;&#34;
+
+    def __init__(self):
+        self.extension_map = self._build_extension_map()
+
+    def _build_extension_map(self) -&gt; Dict[str, str]:
+        &#34;&#34;&#34;Build mapping of extensions to general categories.&#34;&#34;&#34;
+        return {
+            # Images
+            &#39;.jpg&#39;: &#39;image&#39;, &#39;.jpeg&#39;: &#39;image&#39;, &#39;.png&#39;: &#39;image&#39;,
+            &#39;.gif&#39;: &#39;image&#39;, &#39;.bmp&#39;: &#39;image&#39;, &#39;.webp&#39;: &#39;image&#39;,
+            &#39;.heic&#39;: &#39;image&#39;, &#39;.heif&#39;: &#39;image&#39;, &#39;.svg&#39;: &#39;image&#39;,
+            &#39;.tiff&#39;: &#39;image&#39;, &#39;.ico&#39;: &#39;image&#39;,
+            # Videos
+            &#39;.mp4&#39;: &#39;video&#39;, &#39;.mov&#39;: &#39;video&#39;, &#39;.avi&#39;: &#39;video&#39;,
+            &#39;.mkv&#39;: &#39;video&#39;, &#39;.webm&#39;: &#39;video&#39;, &#39;.m4v&#39;: &#39;video&#39;,
+            # Audio
+            &#39;.mp3&#39;: &#39;audio&#39;, &#39;.wav&#39;: &#39;audio&#39;, &#39;.ogg&#39;: &#39;audio&#39;,
+            &#39;.flac&#39;: &#39;audio&#39;, &#39;.aac&#39;: &#39;audio&#39;, &#39;.m4a&#39;: &#39;audio&#39;,
+            # Documents
+            &#39;.pdf&#39;: &#39;document&#39;, &#39;.doc&#39;: &#39;document&#39;, &#39;.docx&#39;: &#39;document&#39;,
+            &#39;.txt&#39;: &#39;text&#39;, &#39;.rtf&#39;: &#39;document&#39;, &#39;.odt&#39;: &#39;document&#39;,
+            # Spreadsheets
+            &#39;.xls&#39;: &#39;spreadsheet&#39;, &#39;.xlsx&#39;: &#39;spreadsheet&#39;, &#39;.csv&#39;: &#39;data&#39;,
+            # Code
+            &#39;.py&#39;: &#39;code&#39;, &#39;.js&#39;: &#39;code&#39;, &#39;.ts&#39;: &#39;code&#39;, &#39;.jsx&#39;: &#39;code&#39;,
+            &#39;.tsx&#39;: &#39;code&#39;, &#39;.html&#39;: &#39;code&#39;, &#39;.css&#39;: &#39;code&#39;, &#39;.json&#39;: &#39;data&#39;,
+            &#39;.xml&#39;: &#39;data&#39;, &#39;.yaml&#39;: &#39;data&#39;, &#39;.yml&#39;: &#39;data&#39;,
+            # Archives
+            &#39;.zip&#39;: &#39;archive&#39;, &#39;.tar&#39;: &#39;archive&#39;, &#39;.gz&#39;: &#39;archive&#39;,
+            &#39;.rar&#39;: &#39;archive&#39;, &#39;.7z&#39;: &#39;archive&#39;,
+        }
+
+    def extract_features(self, file_record: Dict) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Extract all features from a file record.&#34;&#34;&#34;
+        filename = file_record.get(&#39;schema&#39;, {}).get(&#39;name&#39;, &#39;&#39;)
+        filepath = file_record.get(&#39;source&#39;, &#39;&#39;)
+        category = file_record.get(&#39;category&#39;, &#39;uncategorized&#39;)
+        subcategory = file_record.get(&#39;subcategory&#39;, &#39;&#39;)
+
+        features = {
+            # Basic features
+            &#39;filename&#39;: filename,
+            &#39;filename_lower&#39;: filename.lower(),
+            &#39;filepath&#39;: filepath,
+            &#39;category&#39;: category,
+            &#39;subcategory&#39;: subcategory,
+
+            # Extension features
+            &#39;extension&#39;: self._get_extension(filename),
+            &#39;extension_category&#39;: self._get_extension_category(filename),
+
+            # Filename pattern features
+            &#39;filename_tokens&#39;: self._tokenize_filename(filename),
+            &#39;filename_length&#39;: len(filename),
+            &#39;has_numbers&#39;: bool(re.search(r&#39;\d&#39;, filename)),
+            &#39;has_underscores&#39;: &#39;_&#39; in filename,
+            &#39;has_dashes&#39;: &#39;-&#39; in filename,
+            &#39;has_spaces&#39;: &#39; &#39; in filename,
+            &#39;starts_with_date&#39;: self._starts_with_date(filename),
+
+            # Pattern detection
+            &#39;is_screenshot&#39;: self._matches_patterns(filename, SCREENSHOT_PATTERNS),
+            &#39;is_game_asset&#39;: self._matches_patterns(filename, GAME_ASSET_PATTERNS),
+            &#39;is_document&#39;: self._matches_patterns(filename, DOCUMENT_PATTERNS),
+
+            # Metadata features
+            &#39;has_extracted_text&#39;: file_record.get(&#39;extracted_text_length&#39;, 0) &gt; 0,
+            &#39;extracted_text_length&#39;: file_record.get(&#39;extracted_text_length&#39;, 0),
+            &#39;has_company_name&#39;: file_record.get(&#39;company_name&#39;) is not None,
+            &#39;has_people_names&#39;: len(file_record.get(&#39;people_names&#39;, [])) &gt; 0,
+            &#39;people_count&#39;: len(file_record.get(&#39;people_names&#39;, [])),
+
+            # Image metadata features
+            &#39;has_datetime&#39;: file_record.get(&#39;image_metadata&#39;, {}).get(&#39;datetime&#39;) is not None,
+            &#39;has_gps&#39;: file_record.get(&#39;image_metadata&#39;, {}).get(&#39;gps_coordinates&#39;) is not None,
+            &#39;has_location&#39;: file_record.get(&#39;image_metadata&#39;, {}).get(&#39;location_name&#39;) is not None,
+
+            # Path features
+            &#39;path_depth&#39;: filepath.count(&#39;/&#39;) if filepath else 0,
+            &#39;parent_folder&#39;: self._get_parent_folder(filepath),
+
+            # Derived features
+            &#39;filename_hash&#39;: self._hash_filename(filename),
+        }
+
+        return features
+
+    def _get_extension(self, filename: str) -&gt; str:
+        &#34;&#34;&#34;Get lowercase file extension.&#34;&#34;&#34;
+        return Path(filename).suffix.lower()
+
+    def _get_extension_category(self, filename: str) -&gt; str:
+        &#34;&#34;&#34;Get category based on extension.&#34;&#34;&#34;
+        ext = self._get_extension(filename)
+        return self.extension_map.get(ext, &#39;other&#39;)
+
+    def _tokenize_filename(self, filename: str) -&gt; List[str]:
+        &#34;&#34;&#34;Tokenize filename into meaningful parts.&#34;&#34;&#34;
+        # Remove extension
+        name = Path(filename).stem
+
+        # Normalize unicode
+        name = unicodedata.normalize(&#39;NFKD&#39;, name)
+
+        # Split on common delimiters
+        tokens = re.split(r&#39;[_\-\s\.]+&#39;, name)
+
+        # Split camelCase
+        expanded_tokens = []
+        for token in tokens:
+            # Split on camelCase boundaries
+            parts = re.findall(r&#39;[A-Z]?[a-z]+|[A-Z]+(?=[A-Z][a-z]|\d|\W|$)|\d+&#39;, token)
+            expanded_tokens.extend(parts if parts else [token])
+
+        # Lowercase and filter
+        return [t.lower() for t in expanded_tokens if t and len(t) &gt; 1]
+
+    def _starts_with_date(self, filename: str) -&gt; bool:
+        &#34;&#34;&#34;Check if filename starts with a date pattern.&#34;&#34;&#34;
+        date_patterns = [
+            r&#39;^\d{8}&#39;,  # YYYYMMDD
+            r&#39;^\d{4}-\d{2}-\d{2}&#39;,  # YYYY-MM-DD
+            r&#39;^\d{2}-\d{2}-\d{4}&#39;,  # MM-DD-YYYY
+            r&#39;^20\d{2}\d{4}&#39;,  # 20YYMMDD
+        ]
+        return any(re.match(p, filename) for p in date_patterns)
+
+    def _matches_patterns(self, filename: str, patterns: List[str]) -&gt; bool:
+        &#34;&#34;&#34;Check if filename matches any of the patterns.&#34;&#34;&#34;
+        filename_lower = filename.lower()
+        return any(re.search(p, filename_lower) for p in patterns)
+
+    def _get_parent_folder(self, filepath: str) -&gt; str:
+        &#34;&#34;&#34;Get immediate parent folder name.&#34;&#34;&#34;
+        if not filepath:
+            return &#39;&#39;
+        parts = Path(filepath).parts
+        return parts[-2] if len(parts) &gt;= 2 else &#39;&#39;
+
+    def _hash_filename(self, filename: str) -&gt; str:
+        &#34;&#34;&#34;Create a hash of the filename for deduplication.&#34;&#34;&#34;
+        return hashlib.sha256(filename.encode()).hexdigest()[:8]</code></pre>
+</details>
+<div class="desc"><p>Extract ML features from file metadata.</p></div>
+<h3>Methods</h3>
+<dl>
+<dt id="src.ml.FileFeatureExtractor.extract_features"><code class="name flex">
+<span>def <span class="ident">extract_features</span></span>(<span>self, file_record: Dict) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_features(self, file_record: Dict) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Extract all features from a file record.&#34;&#34;&#34;
+    filename = file_record.get(&#39;schema&#39;, {}).get(&#39;name&#39;, &#39;&#39;)
+    filepath = file_record.get(&#39;source&#39;, &#39;&#39;)
+    category = file_record.get(&#39;category&#39;, &#39;uncategorized&#39;)
+    subcategory = file_record.get(&#39;subcategory&#39;, &#39;&#39;)
+
+    features = {
+        # Basic features
+        &#39;filename&#39;: filename,
+        &#39;filename_lower&#39;: filename.lower(),
+        &#39;filepath&#39;: filepath,
+        &#39;category&#39;: category,
+        &#39;subcategory&#39;: subcategory,
+
+        # Extension features
+        &#39;extension&#39;: self._get_extension(filename),
+        &#39;extension_category&#39;: self._get_extension_category(filename),
+
+        # Filename pattern features
+        &#39;filename_tokens&#39;: self._tokenize_filename(filename),
+        &#39;filename_length&#39;: len(filename),
+        &#39;has_numbers&#39;: bool(re.search(r&#39;\d&#39;, filename)),
+        &#39;has_underscores&#39;: &#39;_&#39; in filename,
+        &#39;has_dashes&#39;: &#39;-&#39; in filename,
+        &#39;has_spaces&#39;: &#39; &#39; in filename,
+        &#39;starts_with_date&#39;: self._starts_with_date(filename),
+
+        # Pattern detection
+        &#39;is_screenshot&#39;: self._matches_patterns(filename, SCREENSHOT_PATTERNS),
+        &#39;is_game_asset&#39;: self._matches_patterns(filename, GAME_ASSET_PATTERNS),
+        &#39;is_document&#39;: self._matches_patterns(filename, DOCUMENT_PATTERNS),
+
+        # Metadata features
+        &#39;has_extracted_text&#39;: file_record.get(&#39;extracted_text_length&#39;, 0) &gt; 0,
+        &#39;extracted_text_length&#39;: file_record.get(&#39;extracted_text_length&#39;, 0),
+        &#39;has_company_name&#39;: file_record.get(&#39;company_name&#39;) is not None,
+        &#39;has_people_names&#39;: len(file_record.get(&#39;people_names&#39;, [])) &gt; 0,
+        &#39;people_count&#39;: len(file_record.get(&#39;people_names&#39;, [])),
+
+        # Image metadata features
+        &#39;has_datetime&#39;: file_record.get(&#39;image_metadata&#39;, {}).get(&#39;datetime&#39;) is not None,
+        &#39;has_gps&#39;: file_record.get(&#39;image_metadata&#39;, {}).get(&#39;gps_coordinates&#39;) is not None,
+        &#39;has_location&#39;: file_record.get(&#39;image_metadata&#39;, {}).get(&#39;location_name&#39;) is not None,
+
+        # Path features
+        &#39;path_depth&#39;: filepath.count(&#39;/&#39;) if filepath else 0,
+        &#39;parent_folder&#39;: self._get_parent_folder(filepath),
+
+        # Derived features
+        &#39;filename_hash&#39;: self._hash_filename(filename),
+    }
+
+    return features</code></pre>
+</details>
+<div class="desc"><p>Extract all features from a file record.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src" href="../index.html">src</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-submodules">Sub-modules</a></h3>
+<ul>
+<li><code><a title="src.ml.data_preprocessor" href="data_preprocessor.html">src.ml.data_preprocessor</a></code></li>
+<li><code><a title="src.ml.feature_extractor" href="feature_extractor.html">src.ml.feature_extractor</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.ml.DataPreprocessor" href="#src.ml.DataPreprocessor">DataPreprocessor</a></code></h4>
+<ul class="">
+<li><code><a title="src.ml.DataPreprocessor.compute_statistics" href="#src.ml.DataPreprocessor.compute_statistics">compute_statistics</a></code></li>
+<li><code><a title="src.ml.DataPreprocessor.create_train_test_split" href="#src.ml.DataPreprocessor.create_train_test_split">create_train_test_split</a></code></li>
+<li><code><a title="src.ml.DataPreprocessor.export_for_training" href="#src.ml.DataPreprocessor.export_for_training">export_for_training</a></code></li>
+<li><code><a title="src.ml.DataPreprocessor.extract_all_features" href="#src.ml.DataPreprocessor.extract_all_features">extract_all_features</a></code></li>
+<li><code><a title="src.ml.DataPreprocessor.generate_report" href="#src.ml.DataPreprocessor.generate_report">generate_report</a></code></li>
+<li><code><a title="src.ml.DataPreprocessor.get_label_encoder" href="#src.ml.DataPreprocessor.get_label_encoder">get_label_encoder</a></code></li>
+<li><code><a title="src.ml.DataPreprocessor.get_vocabulary" href="#src.ml.DataPreprocessor.get_vocabulary">get_vocabulary</a></code></li>
+<li><code><a title="src.ml.DataPreprocessor.load_data" href="#src.ml.DataPreprocessor.load_data">load_data</a></code></li>
+<li><code><a title="src.ml.DataPreprocessor.validate_data_quality" href="#src.ml.DataPreprocessor.validate_data_quality">validate_data_quality</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.ml.FileFeatureExtractor" href="#src.ml.FileFeatureExtractor">FileFeatureExtractor</a></code></h4>
+<ul class="">
+<li><code><a title="src.ml.FileFeatureExtractor.extract_features" href="#src.ml.FileFeatureExtractor.extract_features">extract_features</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

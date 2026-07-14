@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.organizers.mime_classifier API documentation</title>
+<meta name="description" content="MIME-type and extension based file classification …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.organizers.mime_classifier</code></h1>
+</header>
+<section id="section-intro">
+<p>MIME-type and extension based file classification.</p>
+<p>Maps a file's MIME type and extension to a <code>(category, subcategory,
+schema_type)</code> triple whose category/subcategory key into
+<code>CATEGORY_PATHS</code>. Extracted from <code>scripts/file_organizer.py</code>
+(<code>FileOrganizer.detect_file_category</code> fallback chain and
+<code>FileOrganizer._classify_font</code>).</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="src.organizers.mime_classifier.classify_by_mime"><code class="name flex">
+<span>def <span class="ident">classify_by_mime</span></span>(<span>file_path: pathlib.Path, mime_type: str | None) ‑> Tuple[str, str, str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def classify_by_mime(file_path: Path, mime_type: Optional[str]) -&gt; Classification:
+    &#34;&#34;&#34;Classify a file by MIME type and extension.
+
+    Canonical format-fallback classifier. When ``mime_type`` is provided the
+    MIME branches take precedence; otherwise every supported format is resolved
+    from the extension alone, so callers may pass ``mime_type=None`` (the type
+    organizer does). Always returns a classification, defaulting to
+    ``(&#39;other&#39;, &#39;other&#39;, &#39;CreativeWork&#39;)``. Screenshot detection by name applies
+    only to the image/* MIME branch; extension-only callers that need it should
+    pre-check the filename (as the type organizer does).
+    &#34;&#34;&#34;
+    file_name = file_path.name.lower()
+    file_ext = file_path.suffix.lower()
+
+    # Fonts (extension-only; no competing MIME type)
+    font = classify_font(file_ext)
+    if font is not None:
+        return font
+
+    # Images
+    if mime_type and mime_type.startswith(&#39;image/&#39;):
+        if &#39;screenshot&#39; in file_name or file_name.startswith(&#39;screen&#39;):
+            return (&#39;images&#39;, &#39;screenshots&#39;, &#39;ImageObject&#39;)
+        elif file_ext in [&#39;.jpg&#39;, &#39;.jpeg&#39;, &#39;.heic&#39;]:
+            return (&#39;images&#39;, &#39;photos&#39;, &#39;Photograph&#39;)
+        else:
+            return (&#39;images&#39;, &#39;graphics&#39;, &#39;ImageObject&#39;)
+    elif file_ext in [&#39;.jpg&#39;, &#39;.jpeg&#39;, &#39;.heic&#39;]:
+        return (&#39;images&#39;, &#39;photos&#39;, &#39;Photograph&#39;)
+    elif file_ext in [&#39;.png&#39;, &#39;.gif&#39;, &#39;.bmp&#39;, &#39;.webp&#39;, &#39;.svg&#39;]:
+        return (&#39;images&#39;, &#39;graphics&#39;, &#39;ImageObject&#39;)
+
+    # Documents
+    elif mime_type in [&#39;application/pdf&#39;] or file_ext == &#39;.pdf&#39;:
+        # Check if in research directory
+        if &#39;research&#39; in str(file_path.parent).lower():
+            return (&#39;research&#39;, &#39;papers&#39;, &#39;ScholarlyArticle&#39;)
+        return (&#39;documents&#39;, &#39;pdf&#39;, &#39;DigitalDocument&#39;)
+
+    elif mime_type in [&#39;application/vnd.openxmlformats-officedocument.wordprocessingml.document&#39;,
+                       &#39;application/msword&#39;]:
+        return (&#39;documents&#39;, &#39;word&#39;, &#39;DigitalDocument&#39;)
+
+    elif mime_type in [&#39;application/vnd.openxmlformats-officedocument.spreadsheetml.sheet&#39;,
+                       &#39;application/vnd.ms-excel&#39;]:
+        return (&#39;documents&#39;, &#39;spreadsheets&#39;, &#39;DigitalDocument&#39;)
+
+    elif mime_type in [&#39;application/vnd.openxmlformats-officedocument.presentationml.presentation&#39;,
+                       &#39;application/vnd.ms-powerpoint&#39;]:
+        return (&#39;documents&#39;, &#39;presentations&#39;, &#39;DigitalDocument&#39;)
+
+    # Markdown before the text/ branch so .md keeps its markdown subcategory
+    elif file_ext == &#39;.md&#39;:
+        if &#39;research&#39; in str(file_path.parent).lower():
+            return (&#39;research&#39;, &#39;notes&#39;, &#39;Article&#39;)
+        return (&#39;documents&#39;, &#39;markdown&#39;, &#39;Article&#39;)
+
+    elif mime_type and mime_type.startswith(&#39;text/&#39;):
+        return (&#39;documents&#39;, &#39;text&#39;, &#39;DigitalDocument&#39;)
+
+    elif file_ext in [&#39;.doc&#39;, &#39;.docx&#39;]:
+        return (&#39;documents&#39;, &#39;word&#39;, &#39;DigitalDocument&#39;)
+
+    elif file_ext in [&#39;.xls&#39;, &#39;.xlsx&#39;]:
+        return (&#39;documents&#39;, &#39;spreadsheets&#39;, &#39;DigitalDocument&#39;)
+
+    elif file_ext in [&#39;.ppt&#39;, &#39;.pptx&#39;]:
+        return (&#39;documents&#39;, &#39;presentations&#39;, &#39;DigitalDocument&#39;)
+
+    elif file_ext in [&#39;.txt&#39;, &#39;.rtf&#39;]:
+        return (&#39;documents&#39;, &#39;text&#39;, &#39;DigitalDocument&#39;)
+
+    # Media
+    elif mime_type and mime_type.startswith(&#39;video/&#39;):
+        return (&#39;media&#39;, &#39;videos&#39;, &#39;VideoObject&#39;)
+
+    elif file_ext in [&#39;.mp4&#39;, &#39;.mov&#39;, &#39;.avi&#39;, &#39;.mkv&#39;, &#39;.webm&#39;]:
+        return (&#39;media&#39;, &#39;videos&#39;, &#39;VideoObject&#39;)
+
+    elif mime_type and mime_type.startswith(&#39;audio/&#39;):
+        if &#39;music&#39; in file_name or file_ext in [&#39;.mp3&#39;, &#39;.m4a&#39;, &#39;.flac&#39;]:
+            return (&#39;media&#39;, &#39;music&#39;, &#39;MusicRecording&#39;)
+        return (&#39;media&#39;, &#39;audio&#39;, &#39;AudioObject&#39;)
+
+    elif file_ext in [&#39;.mp3&#39;, &#39;.m4a&#39;, &#39;.flac&#39;]:
+        return (&#39;media&#39;, &#39;music&#39;, &#39;MusicRecording&#39;)
+
+    elif file_ext in [&#39;.wav&#39;, &#39;.ogg&#39;, &#39;.aac&#39;]:
+        return (&#39;media&#39;, &#39;audio&#39;, &#39;AudioObject&#39;)
+
+    # Archives
+    elif mime_type in [&#39;application/zip&#39;, &#39;application/x-zip-compressed&#39;] or file_ext == &#39;.zip&#39;:
+        return (&#39;archives&#39;, &#39;zip&#39;, &#39;DigitalDocument&#39;)
+
+    elif file_ext in _NON_ZIP_ARCHIVE_EXTENSIONS:
+        return (&#39;archives&#39;, &#39;other&#39;, &#39;DigitalDocument&#39;)
+
+    # Software
+    elif file_ext in SOFTWARE_INSTALLER_EXTENSIONS:
+        return (&#39;software&#39;, &#39;installers&#39;, &#39;SoftwareApplication&#39;)
+
+    elif file_ext in SOFTWARE_PACKAGE_EXTENSIONS:
+        return (&#39;software&#39;, &#39;packages&#39;, &#39;SoftwareApplication&#39;)
+
+    # Code
+    elif file_ext == &#39;.py&#39;:
+        return (&#39;code&#39;, &#39;python&#39;, &#39;SoftwareSourceCode&#39;)
+
+    elif file_ext in [&#39;.ts&#39;, &#39;.tsx&#39;]:
+        return (&#39;code&#39;, &#39;typescript&#39;, &#39;SoftwareSourceCode&#39;)
+
+    elif file_ext in [&#39;.js&#39;, &#39;.jsx&#39;, &#39;.mjs&#39;]:
+        return (&#39;code&#39;, &#39;javascript&#39;, &#39;SoftwareSourceCode&#39;)
+
+    elif file_ext in [&#39;.sh&#39;, &#39;.bash&#39;, &#39;.zsh&#39;]:
+        return (&#39;code&#39;, &#39;shell&#39;, &#39;SoftwareSourceCode&#39;)
+
+    elif file_ext in [&#39;.html&#39;, &#39;.css&#39;, &#39;.scss&#39;, &#39;.sass&#39;]:
+        return (&#39;code&#39;, &#39;web&#39;, &#39;SoftwareSourceCode&#39;)
+
+    # Data
+    elif file_ext == &#39;.json&#39;:
+        return (&#39;data&#39;, &#39;json&#39;, &#39;Dataset&#39;)
+
+    elif file_ext == &#39;.csv&#39;:
+        return (&#39;data&#39;, &#39;csv&#39;, &#39;Dataset&#39;)
+
+    elif file_ext in [&#39;.yaml&#39;, &#39;.yml&#39;]:
+        return (&#39;data&#39;, &#39;yaml&#39;, &#39;Dataset&#39;)
+
+    elif file_ext == &#39;.xml&#39;:
+        return (&#39;data&#39;, &#39;xml&#39;, &#39;Dataset&#39;)
+
+    elif file_ext in [&#39;.conf&#39;, &#39;.config&#39;, &#39;.ini&#39;, &#39;.env&#39;, &#39;.toml&#39;]:
+        return (&#39;data&#39;, &#39;config&#39;, &#39;Dataset&#39;)
+
+    elif file_ext in [&#39;.db&#39;, &#39;.sqlite&#39;, &#39;.sqlite3&#39;]:
+        return (&#39;data&#39;, &#39;databases&#39;, &#39;Dataset&#39;)
+
+    # Default
+    return (&#39;other&#39;, &#39;other&#39;, &#39;CreativeWork&#39;)</code></pre>
+</details>
+<div class="desc"><p>Classify a file by MIME type and extension.</p>
+<p>Canonical format-fallback classifier. When <code>mime_type</code> is provided the
+MIME branches take precedence; otherwise every supported format is resolved
+from the extension alone, so callers may pass <code>mime_type=None</code> (the type
+organizer does). Always returns a classification, defaulting to
+<code>('other', 'other', 'CreativeWork')</code>. Screenshot detection by name applies
+only to the image/* MIME branch; extension-only callers that need it should
+pre-check the filename (as the type organizer does).</p></div>
+</dd>
+<dt id="src.organizers.mime_classifier.classify_font"><code class="name flex">
+<span>def <span class="ident">classify_font</span></span>(<span>file_ext: str) ‑> Tuple[str, str, str] | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def classify_font(file_ext: str) -&gt; Optional[Classification]:
+    &#34;&#34;&#34;Classify font files based on extension.
+
+    Returns:
+        Classification triple or None if not a font extension.
+    &#34;&#34;&#34;
+    return FONT_EXTENSIONS.get(file_ext.lower())</code></pre>
+</details>
+<div class="desc"><p>Classify font files based on extension.</p>
+<h2 id="returns">Returns</h2>
+<p>Classification triple or None if not a font extension.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.organizers" href="index.html">src.organizers</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="src.organizers.mime_classifier.classify_by_mime" href="#src.organizers.mime_classifier.classify_by_mime">classify_by_mime</a></code></li>
+<li><code><a title="src.organizers.mime_classifier.classify_font" href="#src.organizers.mime_classifier.classify_font">classify_font</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

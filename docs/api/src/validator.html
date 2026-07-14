@@ -1,0 +1,1096 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.validator API documentation</title>
+<meta name="description" content="Schema.org validation system …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.validator</code></h1>
+</header>
+<section id="section-intro">
+<p>Schema.org validation system.</p>
+<p>Validates Schema.org structured data against specifications,
+checks required properties, verifies data types, and generates
+comprehensive validation reports.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.validator.SchemaValidator"><code class="flex name class">
+<span>class <span class="ident">SchemaValidator</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SchemaValidator:
+    &#34;&#34;&#34;
+    Validates Schema.org structured data.
+
+    Performs comprehensive validation including:
+    - Required property checks
+    - Data type validation
+    - Format validation (URLs, dates, etc.)
+    - Schema.org specification compliance
+    - Google Rich Results compatibility
+    &#34;&#34;&#34;
+
+    # Known Schema.org types and their requirements
+    SCHEMA_TYPES = {
+        &#34;Thing&#34;: {&#34;required&#34;: [], &#34;recommended&#34;: [&#34;name&#34;, &#34;description&#34;]},
+        &#34;CreativeWork&#34;: {&#34;required&#34;: [&#34;name&#34;], &#34;recommended&#34;: [&#34;author&#34;, &#34;datePublished&#34;]},
+        &#34;DigitalDocument&#34;: {&#34;required&#34;: [&#34;name&#34;], &#34;recommended&#34;: [&#34;author&#34;, &#34;encodingFormat&#34;]},
+        &#34;Article&#34;: {&#34;required&#34;: [&#34;headline&#34;], &#34;recommended&#34;: [&#34;author&#34;, &#34;datePublished&#34;, &#34;image&#34;]},
+        &#34;ImageObject&#34;: {&#34;required&#34;: [&#34;contentUrl&#34;], &#34;recommended&#34;: [&#34;name&#34;, &#34;description&#34;]},
+        &#34;VideoObject&#34;: {&#34;required&#34;: [&#34;name&#34;, &#34;uploadDate&#34;], &#34;recommended&#34;: [&#34;description&#34;, &#34;thumbnailUrl&#34;]},
+        &#34;AudioObject&#34;: {&#34;required&#34;: [&#34;name&#34;], &#34;recommended&#34;: [&#34;contentUrl&#34;, &#34;duration&#34;]},
+        &#34;SoftwareSourceCode&#34;: {&#34;required&#34;: [&#34;name&#34;], &#34;recommended&#34;: [&#34;programmingLanguage&#34;, &#34;codeRepository&#34;]},
+        &#34;Dataset&#34;: {&#34;required&#34;: [&#34;name&#34;, &#34;description&#34;], &#34;recommended&#34;: [&#34;creator&#34;, &#34;distribution&#34;]},
+    }
+
+    # Expected property types
+    PROPERTY_TYPES = {
+        &#34;name&#34;: str,
+        &#34;description&#34;: str,
+        &#34;url&#34;: str,
+        &#34;contentUrl&#34;: str,
+        &#34;thumbnailUrl&#34;: str,
+        &#34;dateCreated&#34;: str,
+        &#34;dateModified&#34;: str,
+        &#34;datePublished&#34;: str,
+        &#34;uploadDate&#34;: str,
+        &#34;width&#34;: int,
+        &#34;height&#34;: int,
+        &#34;duration&#34;: str,
+        &#34;encodingFormat&#34;: str,
+        &#34;keywords&#34;: str,
+    }
+
+    def __init__(self):
+        &#34;&#34;&#34;Initialize validator.&#34;&#34;&#34;
+        self.url_pattern = re.compile(
+            r&#39;^https?://&#39;  # http:// or https://
+            r&#39;(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|&#39;  # domain
+            r&#39;localhost|&#39;  # localhost
+            r&#39;\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})&#39;  # IP
+            r&#39;(?::\d+)?&#39;  # optional port
+            r&#39;(?:/?|[/?]\S+)$&#39;, re.IGNORECASE
+        )
+
+        self.date_pattern = re.compile(r&#39;^\d{4}-\d{2}-\d{2}$&#39;)
+        self.datetime_pattern = re.compile(r&#39;^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}&#39;)
+        self.duration_pattern = re.compile(r&#39;^P(?:\d+Y)?(?:\d+M)?(?:\d+D)?(?:T(?:\d+H)?(?:\d+M)?(?:\d+(?:\.\d+)?S)?)?$&#39;)
+
+    def validate(self, schema_data: Dict[str, Any]) -&gt; ValidationReport:
+        &#34;&#34;&#34;
+        Validate Schema.org structured data.
+
+        Args:
+            schema_data: Schema.org data dictionary
+
+        Returns:
+            Validation report
+        &#34;&#34;&#34;
+        schema_type = schema_data.get(&#34;@type&#34;, &#34;Unknown&#34;)
+        report = ValidationReport(schema_type)
+
+        # Validate basic structure
+        self._validate_structure(schema_data, report)
+
+        # Validate required properties
+        self._validate_required_properties(schema_data, report)
+
+        # Validate property types
+        self._validate_property_types(schema_data, report)
+
+        # Validate formats
+        self._validate_formats(schema_data, report)
+
+        # Validate nested schemas
+        self._validate_nested_schemas(schema_data, report)
+
+        # Check recommended properties
+        self._check_recommended_properties(schema_data, report)
+
+        # Google Rich Results checks
+        self._validate_rich_results_compatibility(schema_data, report)
+
+        report.finalize()
+        return report
+
+    def _validate_structure(self, data: Dict[str, Any], report: ValidationReport) -&gt; None:
+        &#34;&#34;&#34;Validate basic structure.&#34;&#34;&#34;
+        if &#34;@context&#34; not in data:
+            report.add_error(
+                &#34;Missing @context property&#34;,
+                &#34;@context&#34;,
+                &#34;Add &#39;@context&#39;: &#39;https://schema.org&#39;&#34;
+            )
+
+        if &#34;@type&#34; not in data:
+            report.add_error(
+                &#34;Missing @type property&#34;,
+                &#34;@type&#34;,
+                &#34;Specify the Schema.org type (e.g., &#39;DigitalDocument&#39;)&#34;
+            )
+        else:
+            schema_type = data[&#34;@type&#34;]
+            if schema_type not in self.SCHEMA_TYPES:
+                report.add_warning(
+                    f&#34;Unknown Schema.org type: {schema_type}&#34;,
+                    &#34;@type&#34;,
+                    &#34;Verify the type exists in Schema.org vocabulary&#34;
+                )
+            else:
+                report.add_success(f&#34;Valid Schema.org type: {schema_type}&#34;)
+
+    def _validate_required_properties(self, data: Dict[str, Any], report: ValidationReport) -&gt; None:
+        &#34;&#34;&#34;Validate required properties.&#34;&#34;&#34;
+        schema_type = data.get(&#34;@type&#34;)
+        if schema_type in self.SCHEMA_TYPES:
+            required = self.SCHEMA_TYPES[schema_type][&#34;required&#34;]
+            for prop in required:
+                if prop not in data:
+                    report.add_error(
+                        f&#34;Missing required property: {prop}&#34;,
+                        prop,
+                        f&#34;Add the &#39;{prop}&#39; property with an appropriate value&#34;
+                    )
+                elif not data[prop]:
+                    report.add_error(
+                        f&#34;Required property is empty: {prop}&#34;,
+                        prop,
+                        f&#34;Provide a value for &#39;{prop}&#39;&#34;
+                    )
+
+    def _validate_property_types(self, data: Dict[str, Any], report: ValidationReport) -&gt; None:
+        &#34;&#34;&#34;Validate property types.&#34;&#34;&#34;
+        for prop, expected_type in self.PROPERTY_TYPES.items():
+            if prop in data:
+                value = data[prop]
+                if not isinstance(value, (expected_type, dict, list)):
+                    report.add_error(
+                        f&#34;Invalid type for {prop}: expected {expected_type.__name__}, got {type(value).__name__}&#34;,
+                        prop,
+                        f&#34;Convert {prop} to {expected_type.__name__}&#34;
+                    )
+
+    def _validate_formats(self, data: Dict[str, Any], report: ValidationReport) -&gt; None:
+        &#34;&#34;&#34;Validate format of specific properties.&#34;&#34;&#34;
+        # Validate URLs
+        url_properties = [&#34;url&#34;, &#34;contentUrl&#34;, &#34;thumbnailUrl&#34;, &#34;codeRepository&#34;, &#34;sameAs&#34;]
+        for prop in url_properties:
+            if prop in data and isinstance(data[prop], str):
+                if not self.url_pattern.match(data[prop]):
+                    report.add_error(
+                        f&#34;Invalid URL format: {prop}&#34;,
+                        prop,
+                        &#34;Use absolute URLs starting with http:// or https://&#34;
+                    )
+
+        # Validate dates
+        date_properties = [&#34;dateCreated&#34;, &#34;dateModified&#34;, &#34;datePublished&#34;, &#34;uploadDate&#34;]
+        for prop in date_properties:
+            if prop in data and isinstance(data[prop], str):
+                value = data[prop]
+                if not (self.date_pattern.match(value) or self.datetime_pattern.match(value)):
+                    report.add_warning(
+                        f&#34;Date format may be invalid: {prop}&#34;,
+                        prop,
+                        &#34;Use ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)&#34;
+                    )
+
+        # Validate duration
+        if &#34;duration&#34; in data and isinstance(data[&#34;duration&#34;], str):
+            if not self.duration_pattern.match(data[&#34;duration&#34;]):
+                report.add_warning(
+                    &#34;Duration format may be invalid&#34;,
+                    &#34;duration&#34;,
+                    &#34;Use ISO 8601 duration format (e.g., PT1H30M for 1 hour 30 minutes)&#34;
+                )
+
+    def _validate_nested_schemas(self, data: Dict[str, Any], report: ValidationReport) -&gt; None:
+        &#34;&#34;&#34;Validate nested schemas.&#34;&#34;&#34;
+        for key, value in data.items():
+            if isinstance(value, dict) and &#34;@type&#34; in value:
+                # Recursively validate nested schema
+                nested_report = self.validate(value)
+                if nested_report.has_errors():
+                    report.add_warning(
+                        f&#34;Nested schema &#39;{key}&#39; has validation errors&#34;,
+                        key,
+                        &#34;Review nested schema validation&#34;
+                    )
+            elif isinstance(value, list):
+                for i, item in enumerate(value):
+                    if isinstance(item, dict) and &#34;@type&#34; in item:
+                        nested_report = self.validate(item)
+                        if nested_report.has_errors():
+                            report.add_warning(
+                                f&#34;Nested schema in &#39;{key}[{i}]&#39; has validation errors&#34;,
+                                key,
+                                &#34;Review nested schema validation&#34;
+                            )
+
+    def _check_recommended_properties(self, data: Dict[str, Any], report: ValidationReport) -&gt; None:
+        &#34;&#34;&#34;Check recommended properties.&#34;&#34;&#34;
+        schema_type = data.get(&#34;@type&#34;)
+        if schema_type in self.SCHEMA_TYPES:
+            recommended = self.SCHEMA_TYPES[schema_type][&#34;recommended&#34;]
+            missing_recommended = []
+            for prop in recommended:
+                if prop not in data:
+                    missing_recommended.append(prop)
+
+            if missing_recommended:
+                report.add_info(
+                    f&#34;Missing recommended properties: {&#39;, &#39;.join(missing_recommended)}&#34;,
+                    suggestion=&#34;Adding these properties improves search visibility&#34;
+                )
+
+    def _validate_rich_results_compatibility(self, data: Dict[str, Any], report: ValidationReport) -&gt; None:
+        &#34;&#34;&#34;Validate Google Rich Results compatibility.&#34;&#34;&#34;
+        schema_type = data.get(&#34;@type&#34;)
+
+        # Article requirements for Google
+        if schema_type in [&#34;Article&#34;, &#34;NewsArticle&#34;, &#34;BlogPosting&#34;]:
+            if &#34;headline&#34; not in data:
+                report.add_error(&#34;Articles require &#39;headline&#39; for Rich Results&#34;, &#34;headline&#34;)
+            if &#34;image&#34; not in data:
+                report.add_warning(&#34;Articles should include &#39;image&#39; for Rich Results&#34;, &#34;image&#34;)
+            if &#34;author&#34; not in data:
+                report.add_warning(&#34;Articles should include &#39;author&#39; for Rich Results&#34;, &#34;author&#34;)
+            if &#34;datePublished&#34; not in data:
+                report.add_warning(&#34;Articles should include &#39;datePublished&#39; for Rich Results&#34;, &#34;datePublished&#34;)
+
+        # Video requirements for Google
+        if schema_type == &#34;VideoObject&#34;:
+            required_video = [&#34;name&#34;, &#34;description&#34;, &#34;thumbnailUrl&#34;, &#34;uploadDate&#34;]
+            for prop in required_video:
+                if prop not in data:
+                    report.add_error(
+                        f&#34;Videos require &#39;{prop}&#39; for Rich Results&#34;,
+                        prop
+                    )
+
+        # Image requirements
+        if schema_type == &#34;ImageObject&#34;:
+            if &#34;contentUrl&#34; not in data:
+                report.add_error(&#34;Images require &#39;contentUrl&#39; for Rich Results&#34;, &#34;contentUrl&#34;)
+
+    def validate_batch(self, schemas: List[Dict[str, Any]]) -&gt; List[ValidationReport]:
+        &#34;&#34;&#34;
+        Validate multiple schemas.
+
+        Args:
+            schemas: List of schema dictionaries
+
+        Returns:
+            List of validation reports
+        &#34;&#34;&#34;
+        return [self.validate(schema) for schema in schemas]
+
+    def generate_summary_report(self, reports: List[ValidationReport]) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Generate summary report for batch validation.
+
+        Args:
+            reports: List of validation reports
+
+        Returns:
+            Summary dictionary
+        &#34;&#34;&#34;
+        total_schemas = len(reports)
+        valid_schemas = sum(1 for r in reports if r.is_valid())
+        total_errors = sum(len(r.get_messages_by_level(ValidationLevel.ERROR)) for r in reports)
+        total_warnings = sum(len(r.get_messages_by_level(ValidationLevel.WARNING)) for r in reports)
+
+        return {
+            &#34;total_schemas&#34;: total_schemas,
+            &#34;valid_schemas&#34;: valid_schemas,
+            &#34;invalid_schemas&#34;: total_schemas - valid_schemas,
+            &#34;success_rate&#34;: (valid_schemas / total_schemas * 100) if total_schemas &gt; 0 else 0,
+            &#34;total_errors&#34;: total_errors,
+            &#34;total_warnings&#34;: total_warnings,
+            &#34;reports&#34;: [r.to_dict() for r in reports]
+        }</code></pre>
+</details>
+<div class="desc"><p>Validates Schema.org structured data.</p>
+<p>Performs comprehensive validation including:
+- Required property checks
+- Data type validation
+- Format validation (URLs, dates, etc.)
+- Schema.org specification compliance
+- Google Rich Results compatibility</p>
+<p>Initialize validator.</p></div>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.validator.SchemaValidator.PROPERTY_TYPES"><code class="name">var <span class="ident">PROPERTY_TYPES</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.validator.SchemaValidator.SCHEMA_TYPES"><code class="name">var <span class="ident">SCHEMA_TYPES</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="src.validator.SchemaValidator.generate_summary_report"><code class="name flex">
+<span>def <span class="ident">generate_summary_report</span></span>(<span>self,<br>reports: List[<a title="src.validator.ValidationReport" href="#src.validator.ValidationReport">ValidationReport</a>]) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_summary_report(self, reports: List[ValidationReport]) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Generate summary report for batch validation.
+
+    Args:
+        reports: List of validation reports
+
+    Returns:
+        Summary dictionary
+    &#34;&#34;&#34;
+    total_schemas = len(reports)
+    valid_schemas = sum(1 for r in reports if r.is_valid())
+    total_errors = sum(len(r.get_messages_by_level(ValidationLevel.ERROR)) for r in reports)
+    total_warnings = sum(len(r.get_messages_by_level(ValidationLevel.WARNING)) for r in reports)
+
+    return {
+        &#34;total_schemas&#34;: total_schemas,
+        &#34;valid_schemas&#34;: valid_schemas,
+        &#34;invalid_schemas&#34;: total_schemas - valid_schemas,
+        &#34;success_rate&#34;: (valid_schemas / total_schemas * 100) if total_schemas &gt; 0 else 0,
+        &#34;total_errors&#34;: total_errors,
+        &#34;total_warnings&#34;: total_warnings,
+        &#34;reports&#34;: [r.to_dict() for r in reports]
+    }</code></pre>
+</details>
+<div class="desc"><p>Generate summary report for batch validation.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>reports</code></strong></dt>
+<dd>List of validation reports</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Summary dictionary</p></div>
+</dd>
+<dt id="src.validator.SchemaValidator.validate"><code class="name flex">
+<span>def <span class="ident">validate</span></span>(<span>self, schema_data: Dict[str, Any]) ‑> <a title="src.validator.ValidationReport" href="#src.validator.ValidationReport">ValidationReport</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def validate(self, schema_data: Dict[str, Any]) -&gt; ValidationReport:
+    &#34;&#34;&#34;
+    Validate Schema.org structured data.
+
+    Args:
+        schema_data: Schema.org data dictionary
+
+    Returns:
+        Validation report
+    &#34;&#34;&#34;
+    schema_type = schema_data.get(&#34;@type&#34;, &#34;Unknown&#34;)
+    report = ValidationReport(schema_type)
+
+    # Validate basic structure
+    self._validate_structure(schema_data, report)
+
+    # Validate required properties
+    self._validate_required_properties(schema_data, report)
+
+    # Validate property types
+    self._validate_property_types(schema_data, report)
+
+    # Validate formats
+    self._validate_formats(schema_data, report)
+
+    # Validate nested schemas
+    self._validate_nested_schemas(schema_data, report)
+
+    # Check recommended properties
+    self._check_recommended_properties(schema_data, report)
+
+    # Google Rich Results checks
+    self._validate_rich_results_compatibility(schema_data, report)
+
+    report.finalize()
+    return report</code></pre>
+</details>
+<div class="desc"><p>Validate Schema.org structured data.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>schema_data</code></strong></dt>
+<dd>Schema.org data dictionary</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Validation report</p></div>
+</dd>
+<dt id="src.validator.SchemaValidator.validate_batch"><code class="name flex">
+<span>def <span class="ident">validate_batch</span></span>(<span>self, schemas: List[Dict[str, Any]]) ‑> List[<a title="src.validator.ValidationReport" href="#src.validator.ValidationReport">ValidationReport</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def validate_batch(self, schemas: List[Dict[str, Any]]) -&gt; List[ValidationReport]:
+    &#34;&#34;&#34;
+    Validate multiple schemas.
+
+    Args:
+        schemas: List of schema dictionaries
+
+    Returns:
+        List of validation reports
+    &#34;&#34;&#34;
+    return [self.validate(schema) for schema in schemas]</code></pre>
+</details>
+<div class="desc"><p>Validate multiple schemas.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>schemas</code></strong></dt>
+<dd>List of schema dictionaries</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>List of validation reports</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.validator.ValidationLevel"><code class="flex name class">
+<span>class <span class="ident">ValidationLevel</span></span>
+<span>(</span><span>*args, **kwds)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ValidationLevel(Enum):
+    &#34;&#34;&#34;Validation message levels.&#34;&#34;&#34;
+    ERROR = &#34;error&#34;
+    WARNING = &#34;warning&#34;
+    INFO = &#34;info&#34;
+    SUCCESS = &#34;success&#34;</code></pre>
+</details>
+<div class="desc"><p>Validation message levels.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.validator.ValidationLevel.ERROR"><code class="name">var <span class="ident">ERROR</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.validator.ValidationLevel.INFO"><code class="name">var <span class="ident">INFO</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.validator.ValidationLevel.SUCCESS"><code class="name">var <span class="ident">SUCCESS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.validator.ValidationLevel.WARNING"><code class="name">var <span class="ident">WARNING</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.validator.ValidationMessage"><code class="flex name class">
+<span>class <span class="ident">ValidationMessage</span></span>
+<span>(</span><span>level: <a title="src.validator.ValidationLevel" href="#src.validator.ValidationLevel">ValidationLevel</a>,<br>message: str,<br>property_name: str | None = None,<br>suggestion: str | None = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ValidationMessage:
+    &#34;&#34;&#34;Represents a validation message.&#34;&#34;&#34;
+
+    def __init__(self, level: ValidationLevel, message: str,
+                 property_name: Optional[str] = None,
+                 suggestion: Optional[str] = None):
+        &#34;&#34;&#34;
+        Initialize validation message.
+
+        Args:
+            level: Message level
+            message: Message text
+            property_name: Property that caused the message
+            suggestion: Suggested fix
+        &#34;&#34;&#34;
+        self.level = level
+        self.message = message
+        self.property_name = property_name
+        self.suggestion = suggestion
+        self.timestamp = datetime.now()
+
+    def to_dict(self) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Convert to dictionary.&#34;&#34;&#34;
+        result = {
+            &#34;level&#34;: self.level.value,
+            &#34;message&#34;: self.message,
+            &#34;timestamp&#34;: self.timestamp.isoformat()
+        }
+        if self.property_name:
+            result[&#34;property&#34;] = self.property_name
+        if self.suggestion:
+            result[&#34;suggestion&#34;] = self.suggestion
+        return result
+
+    def __str__(self) -&gt; str:
+        &#34;&#34;&#34;String representation.&#34;&#34;&#34;
+        prefix = f&#34;[{self.level.value.upper()}]&#34;
+        prop = f&#34; ({self.property_name})&#34; if self.property_name else &#34;&#34;
+        return f&#34;{prefix}{prop}: {self.message}&#34;</code></pre>
+</details>
+<div class="desc"><p>Represents a validation message.</p>
+<p>Initialize validation message.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>level</code></strong></dt>
+<dd>Message level</dd>
+<dt><strong><code>message</code></strong></dt>
+<dd>Message text</dd>
+<dt><strong><code>property_name</code></strong></dt>
+<dd>Property that caused the message</dd>
+<dt><strong><code>suggestion</code></strong></dt>
+<dd>Suggested fix</dd>
+</dl></div>
+<h3>Methods</h3>
+<dl>
+<dt id="src.validator.ValidationMessage.to_dict"><code class="name flex">
+<span>def <span class="ident">to_dict</span></span>(<span>self) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_dict(self) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Convert to dictionary.&#34;&#34;&#34;
+    result = {
+        &#34;level&#34;: self.level.value,
+        &#34;message&#34;: self.message,
+        &#34;timestamp&#34;: self.timestamp.isoformat()
+    }
+    if self.property_name:
+        result[&#34;property&#34;] = self.property_name
+    if self.suggestion:
+        result[&#34;suggestion&#34;] = self.suggestion
+    return result</code></pre>
+</details>
+<div class="desc"><p>Convert to dictionary.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.validator.ValidationReport"><code class="flex name class">
+<span>class <span class="ident">ValidationReport</span></span>
+<span>(</span><span>schema_type: str)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ValidationReport:
+    &#34;&#34;&#34;
+    Comprehensive validation report.
+
+    Tracks validation messages, statistics, and provides
+    detailed reporting capabilities.
+    &#34;&#34;&#34;
+
+    def __init__(self, schema_type: str):
+        &#34;&#34;&#34;
+        Initialize validation report.
+
+        Args:
+            schema_type: Schema.org type being validated
+        &#34;&#34;&#34;
+        self.schema_type = schema_type
+        self.messages: List[ValidationMessage] = []
+        self.start_time = datetime.now()
+        self.end_time: Optional[datetime] = None
+
+    def add_message(self, level: ValidationLevel, message: str,
+                   property_name: Optional[str] = None,
+                   suggestion: Optional[str] = None) -&gt; None:
+        &#34;&#34;&#34;
+        Add validation message.
+
+        Args:
+            level: Message level
+            message: Message text
+            property_name: Property name
+            suggestion: Suggested fix
+        &#34;&#34;&#34;
+        self.messages.append(
+            ValidationMessage(level, message, property_name, suggestion)
+        )
+
+    def add_error(self, message: str, property_name: Optional[str] = None,
+                 suggestion: Optional[str] = None) -&gt; None:
+        &#34;&#34;&#34;Add error message.&#34;&#34;&#34;
+        self.add_message(ValidationLevel.ERROR, message, property_name, suggestion)
+
+    def add_warning(self, message: str, property_name: Optional[str] = None,
+                   suggestion: Optional[str] = None) -&gt; None:
+        &#34;&#34;&#34;Add warning message.&#34;&#34;&#34;
+        self.add_message(ValidationLevel.WARNING, message, property_name, suggestion)
+
+    def add_info(self, message: str, property_name: Optional[str] = None,
+                suggestion: Optional[str] = None) -&gt; None:
+        &#34;&#34;&#34;Add info message.&#34;&#34;&#34;
+        self.add_message(ValidationLevel.INFO, message, property_name, suggestion)
+
+    def add_success(self, message: str) -&gt; None:
+        &#34;&#34;&#34;Add success message.&#34;&#34;&#34;
+        self.add_message(ValidationLevel.SUCCESS, message)
+
+    def finalize(self) -&gt; None:
+        &#34;&#34;&#34;Finalize the report.&#34;&#34;&#34;
+        self.end_time = datetime.now()
+
+    def has_errors(self) -&gt; bool:
+        &#34;&#34;&#34;Check if report has errors.&#34;&#34;&#34;
+        return any(msg.level == ValidationLevel.ERROR for msg in self.messages)
+
+    def has_warnings(self) -&gt; bool:
+        &#34;&#34;&#34;Check if report has warnings.&#34;&#34;&#34;
+        return any(msg.level == ValidationLevel.WARNING for msg in self.messages)
+
+    def is_valid(self) -&gt; bool:
+        &#34;&#34;&#34;Check if validation passed (no errors).&#34;&#34;&#34;
+        return not self.has_errors()
+
+    def get_messages_by_level(self, level: ValidationLevel) -&gt; List[ValidationMessage]:
+        &#34;&#34;&#34;Get messages by level.&#34;&#34;&#34;
+        return [msg for msg in self.messages if msg.level == level]
+
+    def get_statistics(self) -&gt; Dict[str, int]:
+        &#34;&#34;&#34;Get validation statistics.&#34;&#34;&#34;
+        return {
+            &#34;total&#34;: len(self.messages),
+            &#34;errors&#34;: len(self.get_messages_by_level(ValidationLevel.ERROR)),
+            &#34;warnings&#34;: len(self.get_messages_by_level(ValidationLevel.WARNING)),
+            &#34;info&#34;: len(self.get_messages_by_level(ValidationLevel.INFO)),
+            &#34;success&#34;: len(self.get_messages_by_level(ValidationLevel.SUCCESS))
+        }
+
+    def get_duration(self) -&gt; float:
+        &#34;&#34;&#34;Get validation duration in seconds.&#34;&#34;&#34;
+        if self.end_time:
+            return (self.end_time - self.start_time).total_seconds()
+        return (datetime.now() - self.start_time).total_seconds()
+
+    def to_dict(self) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Convert to dictionary.&#34;&#34;&#34;
+        return {
+            &#34;schema_type&#34;: self.schema_type,
+            &#34;valid&#34;: self.is_valid(),
+            &#34;statistics&#34;: self.get_statistics(),
+            &#34;duration&#34;: self.get_duration(),
+            &#34;messages&#34;: [msg.to_dict() for msg in self.messages],
+            &#34;timestamp&#34;: self.start_time.isoformat()
+        }
+
+    def to_json(self, indent: int = 2) -&gt; str:
+        &#34;&#34;&#34;Convert to JSON string.&#34;&#34;&#34;
+        return json.dumps(self.to_dict(), indent=indent)
+
+    def print_summary(self) -&gt; None:
+        &#34;&#34;&#34;Print validation summary.&#34;&#34;&#34;
+        stats = self.get_statistics()
+
+        if self.messages:
+            for msg in self.messages:
+                print(f&#34;  {msg}&#34;)
+
+
+    def __str__(self) -&gt; str:
+        &#34;&#34;&#34;String representation.&#34;&#34;&#34;
+        return f&#34;ValidationReport(type={self.schema_type}, valid={self.is_valid()}, messages={len(self.messages)})&#34;</code></pre>
+</details>
+<div class="desc"><p>Comprehensive validation report.</p>
+<p>Tracks validation messages, statistics, and provides
+detailed reporting capabilities.</p>
+<p>Initialize validation report.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>schema_type</code></strong></dt>
+<dd>Schema.org type being validated</dd>
+</dl></div>
+<h3>Methods</h3>
+<dl>
+<dt id="src.validator.ValidationReport.add_error"><code class="name flex">
+<span>def <span class="ident">add_error</span></span>(<span>self,<br>message: str,<br>property_name: str | None = None,<br>suggestion: str | None = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_error(self, message: str, property_name: Optional[str] = None,
+             suggestion: Optional[str] = None) -&gt; None:
+    &#34;&#34;&#34;Add error message.&#34;&#34;&#34;
+    self.add_message(ValidationLevel.ERROR, message, property_name, suggestion)</code></pre>
+</details>
+<div class="desc"><p>Add error message.</p></div>
+</dd>
+<dt id="src.validator.ValidationReport.add_info"><code class="name flex">
+<span>def <span class="ident">add_info</span></span>(<span>self,<br>message: str,<br>property_name: str | None = None,<br>suggestion: str | None = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_info(self, message: str, property_name: Optional[str] = None,
+            suggestion: Optional[str] = None) -&gt; None:
+    &#34;&#34;&#34;Add info message.&#34;&#34;&#34;
+    self.add_message(ValidationLevel.INFO, message, property_name, suggestion)</code></pre>
+</details>
+<div class="desc"><p>Add info message.</p></div>
+</dd>
+<dt id="src.validator.ValidationReport.add_message"><code class="name flex">
+<span>def <span class="ident">add_message</span></span>(<span>self,<br>level: <a title="src.validator.ValidationLevel" href="#src.validator.ValidationLevel">ValidationLevel</a>,<br>message: str,<br>property_name: str | None = None,<br>suggestion: str | None = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_message(self, level: ValidationLevel, message: str,
+               property_name: Optional[str] = None,
+               suggestion: Optional[str] = None) -&gt; None:
+    &#34;&#34;&#34;
+    Add validation message.
+
+    Args:
+        level: Message level
+        message: Message text
+        property_name: Property name
+        suggestion: Suggested fix
+    &#34;&#34;&#34;
+    self.messages.append(
+        ValidationMessage(level, message, property_name, suggestion)
+    )</code></pre>
+</details>
+<div class="desc"><p>Add validation message.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>level</code></strong></dt>
+<dd>Message level</dd>
+<dt><strong><code>message</code></strong></dt>
+<dd>Message text</dd>
+<dt><strong><code>property_name</code></strong></dt>
+<dd>Property name</dd>
+<dt><strong><code>suggestion</code></strong></dt>
+<dd>Suggested fix</dd>
+</dl></div>
+</dd>
+<dt id="src.validator.ValidationReport.add_success"><code class="name flex">
+<span>def <span class="ident">add_success</span></span>(<span>self, message: str) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_success(self, message: str) -&gt; None:
+    &#34;&#34;&#34;Add success message.&#34;&#34;&#34;
+    self.add_message(ValidationLevel.SUCCESS, message)</code></pre>
+</details>
+<div class="desc"><p>Add success message.</p></div>
+</dd>
+<dt id="src.validator.ValidationReport.add_warning"><code class="name flex">
+<span>def <span class="ident">add_warning</span></span>(<span>self,<br>message: str,<br>property_name: str | None = None,<br>suggestion: str | None = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_warning(self, message: str, property_name: Optional[str] = None,
+               suggestion: Optional[str] = None) -&gt; None:
+    &#34;&#34;&#34;Add warning message.&#34;&#34;&#34;
+    self.add_message(ValidationLevel.WARNING, message, property_name, suggestion)</code></pre>
+</details>
+<div class="desc"><p>Add warning message.</p></div>
+</dd>
+<dt id="src.validator.ValidationReport.finalize"><code class="name flex">
+<span>def <span class="ident">finalize</span></span>(<span>self) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def finalize(self) -&gt; None:
+    &#34;&#34;&#34;Finalize the report.&#34;&#34;&#34;
+    self.end_time = datetime.now()</code></pre>
+</details>
+<div class="desc"><p>Finalize the report.</p></div>
+</dd>
+<dt id="src.validator.ValidationReport.get_duration"><code class="name flex">
+<span>def <span class="ident">get_duration</span></span>(<span>self) ‑> float</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_duration(self) -&gt; float:
+    &#34;&#34;&#34;Get validation duration in seconds.&#34;&#34;&#34;
+    if self.end_time:
+        return (self.end_time - self.start_time).total_seconds()
+    return (datetime.now() - self.start_time).total_seconds()</code></pre>
+</details>
+<div class="desc"><p>Get validation duration in seconds.</p></div>
+</dd>
+<dt id="src.validator.ValidationReport.get_messages_by_level"><code class="name flex">
+<span>def <span class="ident">get_messages_by_level</span></span>(<span>self,<br>level: <a title="src.validator.ValidationLevel" href="#src.validator.ValidationLevel">ValidationLevel</a>) ‑> List[<a title="src.validator.ValidationMessage" href="#src.validator.ValidationMessage">ValidationMessage</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_messages_by_level(self, level: ValidationLevel) -&gt; List[ValidationMessage]:
+    &#34;&#34;&#34;Get messages by level.&#34;&#34;&#34;
+    return [msg for msg in self.messages if msg.level == level]</code></pre>
+</details>
+<div class="desc"><p>Get messages by level.</p></div>
+</dd>
+<dt id="src.validator.ValidationReport.get_statistics"><code class="name flex">
+<span>def <span class="ident">get_statistics</span></span>(<span>self) ‑> Dict[str, int]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_statistics(self) -&gt; Dict[str, int]:
+    &#34;&#34;&#34;Get validation statistics.&#34;&#34;&#34;
+    return {
+        &#34;total&#34;: len(self.messages),
+        &#34;errors&#34;: len(self.get_messages_by_level(ValidationLevel.ERROR)),
+        &#34;warnings&#34;: len(self.get_messages_by_level(ValidationLevel.WARNING)),
+        &#34;info&#34;: len(self.get_messages_by_level(ValidationLevel.INFO)),
+        &#34;success&#34;: len(self.get_messages_by_level(ValidationLevel.SUCCESS))
+    }</code></pre>
+</details>
+<div class="desc"><p>Get validation statistics.</p></div>
+</dd>
+<dt id="src.validator.ValidationReport.has_errors"><code class="name flex">
+<span>def <span class="ident">has_errors</span></span>(<span>self) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def has_errors(self) -&gt; bool:
+    &#34;&#34;&#34;Check if report has errors.&#34;&#34;&#34;
+    return any(msg.level == ValidationLevel.ERROR for msg in self.messages)</code></pre>
+</details>
+<div class="desc"><p>Check if report has errors.</p></div>
+</dd>
+<dt id="src.validator.ValidationReport.has_warnings"><code class="name flex">
+<span>def <span class="ident">has_warnings</span></span>(<span>self) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def has_warnings(self) -&gt; bool:
+    &#34;&#34;&#34;Check if report has warnings.&#34;&#34;&#34;
+    return any(msg.level == ValidationLevel.WARNING for msg in self.messages)</code></pre>
+</details>
+<div class="desc"><p>Check if report has warnings.</p></div>
+</dd>
+<dt id="src.validator.ValidationReport.is_valid"><code class="name flex">
+<span>def <span class="ident">is_valid</span></span>(<span>self) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_valid(self) -&gt; bool:
+    &#34;&#34;&#34;Check if validation passed (no errors).&#34;&#34;&#34;
+    return not self.has_errors()</code></pre>
+</details>
+<div class="desc"><p>Check if validation passed (no errors).</p></div>
+</dd>
+<dt id="src.validator.ValidationReport.print_summary"><code class="name flex">
+<span>def <span class="ident">print_summary</span></span>(<span>self) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def print_summary(self) -&gt; None:
+    &#34;&#34;&#34;Print validation summary.&#34;&#34;&#34;
+    stats = self.get_statistics()
+
+    if self.messages:
+        for msg in self.messages:
+            print(f&#34;  {msg}&#34;)</code></pre>
+</details>
+<div class="desc"><p>Print validation summary.</p></div>
+</dd>
+<dt id="src.validator.ValidationReport.to_dict"><code class="name flex">
+<span>def <span class="ident">to_dict</span></span>(<span>self) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_dict(self) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Convert to dictionary.&#34;&#34;&#34;
+    return {
+        &#34;schema_type&#34;: self.schema_type,
+        &#34;valid&#34;: self.is_valid(),
+        &#34;statistics&#34;: self.get_statistics(),
+        &#34;duration&#34;: self.get_duration(),
+        &#34;messages&#34;: [msg.to_dict() for msg in self.messages],
+        &#34;timestamp&#34;: self.start_time.isoformat()
+    }</code></pre>
+</details>
+<div class="desc"><p>Convert to dictionary.</p></div>
+</dd>
+<dt id="src.validator.ValidationReport.to_json"><code class="name flex">
+<span>def <span class="ident">to_json</span></span>(<span>self, indent: int = 2) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_json(self, indent: int = 2) -&gt; str:
+    &#34;&#34;&#34;Convert to JSON string.&#34;&#34;&#34;
+    return json.dumps(self.to_dict(), indent=indent)</code></pre>
+</details>
+<div class="desc"><p>Convert to JSON string.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src" href="index.html">src</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.validator.SchemaValidator" href="#src.validator.SchemaValidator">SchemaValidator</a></code></h4>
+<ul class="">
+<li><code><a title="src.validator.SchemaValidator.PROPERTY_TYPES" href="#src.validator.SchemaValidator.PROPERTY_TYPES">PROPERTY_TYPES</a></code></li>
+<li><code><a title="src.validator.SchemaValidator.SCHEMA_TYPES" href="#src.validator.SchemaValidator.SCHEMA_TYPES">SCHEMA_TYPES</a></code></li>
+<li><code><a title="src.validator.SchemaValidator.generate_summary_report" href="#src.validator.SchemaValidator.generate_summary_report">generate_summary_report</a></code></li>
+<li><code><a title="src.validator.SchemaValidator.validate" href="#src.validator.SchemaValidator.validate">validate</a></code></li>
+<li><code><a title="src.validator.SchemaValidator.validate_batch" href="#src.validator.SchemaValidator.validate_batch">validate_batch</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.validator.ValidationLevel" href="#src.validator.ValidationLevel">ValidationLevel</a></code></h4>
+<ul class="">
+<li><code><a title="src.validator.ValidationLevel.ERROR" href="#src.validator.ValidationLevel.ERROR">ERROR</a></code></li>
+<li><code><a title="src.validator.ValidationLevel.INFO" href="#src.validator.ValidationLevel.INFO">INFO</a></code></li>
+<li><code><a title="src.validator.ValidationLevel.SUCCESS" href="#src.validator.ValidationLevel.SUCCESS">SUCCESS</a></code></li>
+<li><code><a title="src.validator.ValidationLevel.WARNING" href="#src.validator.ValidationLevel.WARNING">WARNING</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.validator.ValidationMessage" href="#src.validator.ValidationMessage">ValidationMessage</a></code></h4>
+<ul class="">
+<li><code><a title="src.validator.ValidationMessage.to_dict" href="#src.validator.ValidationMessage.to_dict">to_dict</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.validator.ValidationReport" href="#src.validator.ValidationReport">ValidationReport</a></code></h4>
+<ul class="">
+<li><code><a title="src.validator.ValidationReport.add_error" href="#src.validator.ValidationReport.add_error">add_error</a></code></li>
+<li><code><a title="src.validator.ValidationReport.add_info" href="#src.validator.ValidationReport.add_info">add_info</a></code></li>
+<li><code><a title="src.validator.ValidationReport.add_message" href="#src.validator.ValidationReport.add_message">add_message</a></code></li>
+<li><code><a title="src.validator.ValidationReport.add_success" href="#src.validator.ValidationReport.add_success">add_success</a></code></li>
+<li><code><a title="src.validator.ValidationReport.add_warning" href="#src.validator.ValidationReport.add_warning">add_warning</a></code></li>
+<li><code><a title="src.validator.ValidationReport.finalize" href="#src.validator.ValidationReport.finalize">finalize</a></code></li>
+<li><code><a title="src.validator.ValidationReport.get_duration" href="#src.validator.ValidationReport.get_duration">get_duration</a></code></li>
+<li><code><a title="src.validator.ValidationReport.get_messages_by_level" href="#src.validator.ValidationReport.get_messages_by_level">get_messages_by_level</a></code></li>
+<li><code><a title="src.validator.ValidationReport.get_statistics" href="#src.validator.ValidationReport.get_statistics">get_statistics</a></code></li>
+<li><code><a title="src.validator.ValidationReport.has_errors" href="#src.validator.ValidationReport.has_errors">has_errors</a></code></li>
+<li><code><a title="src.validator.ValidationReport.has_warnings" href="#src.validator.ValidationReport.has_warnings">has_warnings</a></code></li>
+<li><code><a title="src.validator.ValidationReport.is_valid" href="#src.validator.ValidationReport.is_valid">is_valid</a></code></li>
+<li><code><a title="src.validator.ValidationReport.print_summary" href="#src.validator.ValidationReport.print_summary">print_summary</a></code></li>
+<li><code><a title="src.validator.ValidationReport.to_dict" href="#src.validator.ValidationReport.to_dict">to_dict</a></code></li>
+<li><code><a title="src.validator.ValidationReport.to_json" href="#src.validator.ValidationReport.to_json">to_json</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

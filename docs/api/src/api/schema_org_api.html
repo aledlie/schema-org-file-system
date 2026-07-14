@@ -1,0 +1,703 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.api.schema_org_api API documentation</title>
+<meta name="description" content="Schema.org REST API endpoints …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.api.schema_org_api</code></h1>
+</header>
+<section id="section-intro">
+<p>Schema.org REST API endpoints.</p>
+<p>Provides JSON-LD representations of entities in schema.org format.
+Supports single entity retrieval and bulk export with filtering.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="src.api.schema_org_api.export_all_entities_schema_org"><code class="name flex">
+<span>async def <span class="ident">export_all_entities_schema_org</span></span>(<span>params: api.schema_org_models.BulkExportParams = Depends(dependency=None, use_cache=True, scope=None),<br>db: sqlalchemy.orm.session.Session = Depends(dependency=&lt;function get_db&gt;, use_cache=True, scope=None)) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/api/schema-org/export&#34;, response_model=Dict[str, Any])
+async def export_all_entities_schema_org(
+    params: BulkExportParams = Depends(),
+    db: Session = Depends(get_db)
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Export all entities as schema.org JSON-LD @graph document.
+
+    Args:
+        params: Export parameters (entity_types)
+
+    Returns:
+        JSON-LD document with @context and @graph keys containing all matching entities
+    &#34;&#34;&#34;
+    entity_types_list = [t.strip().lower() for t in params.entity_types.split(&#34;,&#34;)]
+
+    entity_classes = []
+    if &#34;all&#34; in entity_types_list or &#34;file&#34; in entity_types_list:
+        entity_classes.append(File)
+    if &#34;all&#34; in entity_types_list or &#34;category&#34; in entity_types_list:
+        entity_classes.append(Category)
+    if &#34;all&#34; in entity_types_list or &#34;company&#34; in entity_types_list:
+        entity_classes.append(Company)
+    if &#34;all&#34; in entity_types_list or &#34;person&#34; in entity_types_list:
+        entity_classes.append(Person)
+    if &#34;all&#34; in entity_types_list or &#34;location&#34; in entity_types_list:
+        entity_classes.append(Location)
+
+    exporter = SchemaOrgExporter(db)
+    return exporter.get_graph_document(entity_classes=entity_classes or None)</code></pre>
+</details>
+<div class="desc"><p>Export all entities as schema.org JSON-LD @graph document.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>params</code></strong></dt>
+<dd>Export parameters (entity_types)</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>JSON-LD document with @context and @graph keys containing all matching entities</p></div>
+</dd>
+<dt id="src.api.schema_org_api.get_categories_schema_org_bulk"><code class="name flex">
+<span>async def <span class="ident">get_categories_schema_org_bulk</span></span>(<span>params: api.schema_org_models.CategoryFilterParams = Depends(dependency=None, use_cache=True, scope=None),<br>db: sqlalchemy.orm.session.Session = Depends(dependency=&lt;function get_db&gt;, use_cache=True, scope=None)) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/api/categories/schema-org/bulk&#34;, response_model=Dict[str, Any])
+async def get_categories_schema_org_bulk(
+    params: CategoryFilterParams = Depends(),
+    db: Session = Depends(get_db)
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get multiple Categories as schema.org JSON-LD.
+
+    Args:
+        params: Pagination and filter parameters
+
+    Returns:
+        JSON-LD document with @context and @graph containing matching Category entities
+    &#34;&#34;&#34;
+    query = db.query(Category)
+
+    if params.level is not None:
+        query = query.filter(Category.level == params.level)
+
+    categories = query.options(
+        selectinload(Category.files),
+        joinedload(Category.parent),
+        selectinload(Category.subcategories),
+    ).offset(params.skip).limit(params.limit).all()
+    return {
+        &#34;@context&#34;: get_context_document()[&#34;@context&#34;],
+        &#34;@graph&#34;: [category.to_schema_org() for category in categories],
+    }</code></pre>
+</details>
+<div class="desc"><p>Get multiple Categories as schema.org JSON-LD.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>params</code></strong></dt>
+<dd>Pagination and filter parameters</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>JSON-LD document with @context and @graph containing matching Category entities</p></div>
+</dd>
+<dt id="src.api.schema_org_api.get_category_schema_org"><code class="name flex">
+<span>async def <span class="ident">get_category_schema_org</span></span>(<span>category_id: int,<br>db: sqlalchemy.orm.session.Session = Depends(dependency=&lt;function get_db&gt;, use_cache=True, scope=None)) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/api/categories/{category_id}/schema-org&#34;, response_model=Dict[str, Any])
+async def get_category_schema_org(
+    category_id: int,
+    db: Session = Depends(get_db)
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get Category as schema.org JSON-LD (DefinedTerm).
+
+    Returns:
+        Category entity as schema.org JSON-LD
+    &#34;&#34;&#34;
+    category = db.query(Category).filter(Category.id == category_id).first()
+    if not category:
+        raise HTTPException(status_code=404, detail=f&#34;Category {category_id} not found&#34;)
+
+    return category.to_schema_org()</code></pre>
+</details>
+<div class="desc"><p>Get Category as schema.org JSON-LD (DefinedTerm).</p>
+<h2 id="returns">Returns</h2>
+<p>Category entity as schema.org JSON-LD</p></div>
+</dd>
+<dt id="src.api.schema_org_api.get_companies_schema_org_bulk"><code class="name flex">
+<span>async def <span class="ident">get_companies_schema_org_bulk</span></span>(<span>params: api.schema_org_models.CompanyFilterParams = Depends(dependency=None, use_cache=True, scope=None),<br>db: sqlalchemy.orm.session.Session = Depends(dependency=&lt;function get_db&gt;, use_cache=True, scope=None)) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/api/companies/schema-org/bulk&#34;, response_model=Dict[str, Any])
+async def get_companies_schema_org_bulk(
+    params: CompanyFilterParams = Depends(),
+    db: Session = Depends(get_db)
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get multiple Companies as schema.org JSON-LD.
+
+    Args:
+        params: Pagination and filter parameters
+
+    Returns:
+        JSON-LD document with @context and @graph containing matching Company entities
+    &#34;&#34;&#34;
+    query = db.query(Company)
+
+    if params.industry:
+        query = query.filter(Company.industry == params.industry)
+
+    companies = query.options(
+        selectinload(Company.files),
+    ).offset(params.skip).limit(params.limit).all()
+    return {
+        &#34;@context&#34;: get_context_document()[&#34;@context&#34;],
+        &#34;@graph&#34;: [company.to_schema_org() for company in companies],
+    }</code></pre>
+</details>
+<div class="desc"><p>Get multiple Companies as schema.org JSON-LD.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>params</code></strong></dt>
+<dd>Pagination and filter parameters</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>JSON-LD document with @context and @graph containing matching Company entities</p></div>
+</dd>
+<dt id="src.api.schema_org_api.get_company_by_name_schema_org"><code class="name flex">
+<span>async def <span class="ident">get_company_by_name_schema_org</span></span>(<span>name: str,<br>db: sqlalchemy.orm.session.Session = Depends(dependency=&lt;function get_db&gt;, use_cache=True, scope=None)) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/api/companies/schema-org/by-name/{name}&#34;, response_model=Dict[str, Any])
+async def get_company_by_name_schema_org(
+    name: str,
+    db: Session = Depends(get_db)
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get Company by name as schema.org JSON-LD.
+
+    Args:
+        name: Company name
+
+    Returns:
+        Company entity as schema.org JSON-LD
+    &#34;&#34;&#34;
+    company = db.query(Company).filter(Company.normalized_name == name.lower().strip()).first()
+    if not company:
+        raise HTTPException(status_code=404, detail=f&#34;Company &#39;{name}&#39; not found&#34;)
+
+    return company.to_schema_org()</code></pre>
+</details>
+<div class="desc"><p>Get Company by name as schema.org JSON-LD.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong></dt>
+<dd>Company name</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Company entity as schema.org JSON-LD</p></div>
+</dd>
+<dt id="src.api.schema_org_api.get_company_schema_org"><code class="name flex">
+<span>async def <span class="ident">get_company_schema_org</span></span>(<span>company_id: int,<br>db: sqlalchemy.orm.session.Session = Depends(dependency=&lt;function get_db&gt;, use_cache=True, scope=None)) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/api/companies/{company_id}/schema-org&#34;, response_model=Dict[str, Any])
+async def get_company_schema_org(
+    company_id: int,
+    db: Session = Depends(get_db)
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get Company as schema.org JSON-LD (Organization).
+
+    Returns:
+        Company entity as schema.org JSON-LD
+    &#34;&#34;&#34;
+    company = db.query(Company).filter(Company.id == company_id).first()
+    if not company:
+        raise HTTPException(status_code=404, detail=f&#34;Company {company_id} not found&#34;)
+
+    return company.to_schema_org()</code></pre>
+</details>
+<div class="desc"><p>Get Company as schema.org JSON-LD (Organization).</p>
+<h2 id="returns">Returns</h2>
+<p>Company entity as schema.org JSON-LD</p></div>
+</dd>
+<dt id="src.api.schema_org_api.get_db"><code class="name flex">
+<span>def <span class="ident">get_db</span></span>(<span>) ‑> sqlalchemy.orm.session.Session</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_db() -&gt; Session:
+    &#34;&#34;&#34;Get database session.&#34;&#34;&#34;
+    session = get_session()
+    try:
+        yield session
+    finally:
+        session.close()</code></pre>
+</details>
+<div class="desc"><p>Get database session.</p></div>
+</dd>
+<dt id="src.api.schema_org_api.get_file_schema_org"><code class="name flex">
+<span>async def <span class="ident">get_file_schema_org</span></span>(<span>file_id: str,<br>db: sqlalchemy.orm.session.Session = Depends(dependency=&lt;function get_db&gt;, use_cache=True, scope=None)) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/api/files/{file_id}/schema-org&#34;, response_model=Dict[str, Any])
+async def get_file_schema_org(
+    file_id: str,
+    db: Session = Depends(get_db)
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get File as schema.org JSON-LD.
+
+    Returns:
+        File entity as schema.org JSON-LD with @context, @type, @id
+    &#34;&#34;&#34;
+    file = db.query(File).filter(File.id == file_id).first()
+    if not file:
+        raise HTTPException(status_code=404, detail=f&#34;File {file_id} not found&#34;)
+
+    return file.to_schema_org()</code></pre>
+</details>
+<div class="desc"><p>Get File as schema.org JSON-LD.</p>
+<h2 id="returns">Returns</h2>
+<p>File entity as schema.org JSON-LD with @context, @type, @id</p></div>
+</dd>
+<dt id="src.api.schema_org_api.get_files_schema_org_bulk"><code class="name flex">
+<span>async def <span class="ident">get_files_schema_org_bulk</span></span>(<span>params: api.schema_org_models.FileFilterParams = Depends(dependency=None, use_cache=True, scope=None),<br>db: sqlalchemy.orm.session.Session = Depends(dependency=&lt;function get_db&gt;, use_cache=True, scope=None)) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/api/files/schema-org/bulk&#34;, response_model=Dict[str, Any])
+async def get_files_schema_org_bulk(
+    params: FileFilterParams = Depends(),
+    db: Session = Depends(get_db)
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get multiple Files as schema.org JSON-LD.
+
+    Args:
+        params: Pagination and filter parameters
+
+    Returns:
+        JSON-LD document with @context and @graph containing matching File entities
+    &#34;&#34;&#34;
+    query = db.query(File)
+
+    if params.mime_type:
+        query = query.filter(File.mime_type == params.mime_type)
+
+    files = query.options(
+        selectinload(File.categories),
+        selectinload(File.companies),
+        selectinload(File.people),
+        selectinload(File.locations),
+    ).offset(params.skip).limit(params.limit).all()
+    return {
+        &#34;@context&#34;: get_context_document()[&#34;@context&#34;],
+        &#34;@graph&#34;: [file.to_schema_org() for file in files],
+    }</code></pre>
+</details>
+<div class="desc"><p>Get multiple Files as schema.org JSON-LD.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>params</code></strong></dt>
+<dd>Pagination and filter parameters</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>JSON-LD document with @context and @graph containing matching File entities</p></div>
+</dd>
+<dt id="src.api.schema_org_api.get_full_graph_document"><code class="name flex">
+<span>async def <span class="ident">get_full_graph_document</span></span>(<span>db: sqlalchemy.orm.session.Session = Depends(dependency=&lt;function get_db&gt;, use_cache=True, scope=None)) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/api/schema-org/graph&#34;, response_model=Dict[str, Any])
+async def get_full_graph_document(
+    db: Session = Depends(get_db)
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Return a full JSON-LD @graph document for all entity types.
+
+    Returns:
+        JSON-LD document with @context and @graph containing all entities
+    &#34;&#34;&#34;
+    exporter = SchemaOrgExporter(db)
+    return exporter.get_graph_document()</code></pre>
+</details>
+<div class="desc"><p>Return a full JSON-LD @graph document for all entity types.</p>
+<h2 id="returns">Returns</h2>
+<p>JSON-LD document with @context and @graph containing all entities</p></div>
+</dd>
+<dt id="src.api.schema_org_api.get_location_by_name_schema_org"><code class="name flex">
+<span>async def <span class="ident">get_location_by_name_schema_org</span></span>(<span>name: str,<br>db: sqlalchemy.orm.session.Session = Depends(dependency=&lt;function get_db&gt;, use_cache=True, scope=None)) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/api/locations/schema-org/by-name/{name}&#34;, response_model=Dict[str, Any])
+async def get_location_by_name_schema_org(
+    name: str,
+    db: Session = Depends(get_db)
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get Location by name as schema.org JSON-LD.
+
+    Args:
+        name: Location name
+
+    Returns:
+        Location entity as schema.org JSON-LD
+    &#34;&#34;&#34;
+    location = db.query(Location).filter(Location.name == name).first()
+    if not location:
+        raise HTTPException(status_code=404, detail=f&#34;Location &#39;{name}&#39; not found&#34;)
+
+    return location.to_schema_org()</code></pre>
+</details>
+<div class="desc"><p>Get Location by name as schema.org JSON-LD.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong></dt>
+<dd>Location name</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Location entity as schema.org JSON-LD</p></div>
+</dd>
+<dt id="src.api.schema_org_api.get_location_schema_org"><code class="name flex">
+<span>async def <span class="ident">get_location_schema_org</span></span>(<span>location_id: int,<br>db: sqlalchemy.orm.session.Session = Depends(dependency=&lt;function get_db&gt;, use_cache=True, scope=None)) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/api/locations/{location_id}/schema-org&#34;, response_model=Dict[str, Any])
+async def get_location_schema_org(
+    location_id: int,
+    db: Session = Depends(get_db)
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get Location as schema.org JSON-LD (Place).
+
+    Returns:
+        Location entity as schema.org JSON-LD
+    &#34;&#34;&#34;
+    location = db.query(Location).filter(Location.id == location_id).first()
+    if not location:
+        raise HTTPException(status_code=404, detail=f&#34;Location {location_id} not found&#34;)
+
+    return location.to_schema_org()</code></pre>
+</details>
+<div class="desc"><p>Get Location as schema.org JSON-LD (Place).</p>
+<h2 id="returns">Returns</h2>
+<p>Location entity as schema.org JSON-LD</p></div>
+</dd>
+<dt id="src.api.schema_org_api.get_locations_schema_org_bulk"><code class="name flex">
+<span>async def <span class="ident">get_locations_schema_org_bulk</span></span>(<span>params: api.schema_org_models.LocationFilterParams = Depends(dependency=None, use_cache=True, scope=None),<br>db: sqlalchemy.orm.session.Session = Depends(dependency=&lt;function get_db&gt;, use_cache=True, scope=None)) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/api/locations/schema-org/bulk&#34;, response_model=Dict[str, Any])
+async def get_locations_schema_org_bulk(
+    params: LocationFilterParams = Depends(),
+    db: Session = Depends(get_db)
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get multiple Locations as schema.org JSON-LD.
+
+    Args:
+        params: Pagination and filter parameters
+
+    Returns:
+        JSON-LD document with @context and @graph containing matching Location entities
+    &#34;&#34;&#34;
+    query = db.query(Location)
+
+    if params.country:
+        query = query.filter(Location.country == params.country)
+
+    locations = query.options(
+        selectinload(Location.files),
+    ).offset(params.skip).limit(params.limit).all()
+    return {
+        &#34;@context&#34;: get_context_document()[&#34;@context&#34;],
+        &#34;@graph&#34;: [location.to_schema_org() for location in locations],
+    }</code></pre>
+</details>
+<div class="desc"><p>Get multiple Locations as schema.org JSON-LD.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>params</code></strong></dt>
+<dd>Pagination and filter parameters</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>JSON-LD document with @context and @graph containing matching Location entities</p></div>
+</dd>
+<dt id="src.api.schema_org_api.get_people_schema_org_bulk"><code class="name flex">
+<span>async def <span class="ident">get_people_schema_org_bulk</span></span>(<span>params: api.schema_org_models.PersonFilterParams = Depends(dependency=None, use_cache=True, scope=None),<br>db: sqlalchemy.orm.session.Session = Depends(dependency=&lt;function get_db&gt;, use_cache=True, scope=None)) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/api/people/schema-org/bulk&#34;, response_model=Dict[str, Any])
+async def get_people_schema_org_bulk(
+    params: PersonFilterParams = Depends(),
+    db: Session = Depends(get_db)
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get multiple People as schema.org JSON-LD.
+
+    Args:
+        params: Pagination and filter parameters
+
+    Returns:
+        JSON-LD document with @context and @graph containing matching Person entities
+    &#34;&#34;&#34;
+    query = db.query(Person)
+
+    if params.role:
+        query = query.filter(Person.role == params.role)
+
+    people = query.options(
+        selectinload(Person.files),
+    ).offset(params.skip).limit(params.limit).all()
+    return {
+        &#34;@context&#34;: get_context_document()[&#34;@context&#34;],
+        &#34;@graph&#34;: [person.to_schema_org() for person in people],
+    }</code></pre>
+</details>
+<div class="desc"><p>Get multiple People as schema.org JSON-LD.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>params</code></strong></dt>
+<dd>Pagination and filter parameters</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>JSON-LD document with @context and @graph containing matching Person entities</p></div>
+</dd>
+<dt id="src.api.schema_org_api.get_person_by_name_schema_org"><code class="name flex">
+<span>async def <span class="ident">get_person_by_name_schema_org</span></span>(<span>name: str,<br>db: sqlalchemy.orm.session.Session = Depends(dependency=&lt;function get_db&gt;, use_cache=True, scope=None)) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/api/people/schema-org/by-name/{name}&#34;, response_model=Dict[str, Any])
+async def get_person_by_name_schema_org(
+    name: str,
+    db: Session = Depends(get_db)
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get Person by name as schema.org JSON-LD.
+
+    Args:
+        name: Person name
+
+    Returns:
+        Person entity as schema.org JSON-LD
+    &#34;&#34;&#34;
+    person = db.query(Person).filter(Person.normalized_name == name.lower().strip()).first()
+    if not person:
+        raise HTTPException(status_code=404, detail=f&#34;Person &#39;{name}&#39; not found&#34;)
+
+    return person.to_schema_org()</code></pre>
+</details>
+<div class="desc"><p>Get Person by name as schema.org JSON-LD.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong></dt>
+<dd>Person name</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Person entity as schema.org JSON-LD</p></div>
+</dd>
+<dt id="src.api.schema_org_api.get_person_schema_org"><code class="name flex">
+<span>async def <span class="ident">get_person_schema_org</span></span>(<span>person_id: int,<br>db: sqlalchemy.orm.session.Session = Depends(dependency=&lt;function get_db&gt;, use_cache=True, scope=None)) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/api/people/{person_id}/schema-org&#34;, response_model=Dict[str, Any])
+async def get_person_schema_org(
+    person_id: int,
+    db: Session = Depends(get_db)
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get Person as schema.org JSON-LD.
+
+    Returns:
+        Person entity as schema.org JSON-LD
+    &#34;&#34;&#34;
+    person = db.query(Person).filter(Person.id == person_id).first()
+    if not person:
+        raise HTTPException(status_code=404, detail=f&#34;Person {person_id} not found&#34;)
+
+    return person.to_schema_org()</code></pre>
+</details>
+<div class="desc"><p>Get Person as schema.org JSON-LD.</p>
+<h2 id="returns">Returns</h2>
+<p>Person entity as schema.org JSON-LD</p></div>
+</dd>
+<dt id="src.api.schema_org_api.get_schema_context"><code class="name flex">
+<span>async def <span class="ident">get_schema_context</span></span>(<span>) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/schema/context&#34;, response_model=Dict[str, Any])
+async def get_schema_context() -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Return the JSON-LD @context document for this API.
+
+    Returns:
+        Standalone JSON-LD context document mapping all schema.org and custom terms
+    &#34;&#34;&#34;
+    return get_context_document()</code></pre>
+</details>
+<div class="desc"><p>Return the JSON-LD @context document for this API.</p>
+<h2 id="returns">Returns</h2>
+<p>Standalone JSON-LD context document mapping all schema.org and custom terms</p></div>
+</dd>
+<dt id="src.api.schema_org_api.health_check"><code class="name flex">
+<span>async def <span class="ident">health_check</span></span>(<span>) ‑> Dict[str, str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@app.get(&#34;/health&#34;)
+async def health_check() -&gt; Dict[str, str]:
+    &#34;&#34;&#34;Health check endpoint.&#34;&#34;&#34;
+    return {&#34;status&#34;: &#34;ok&#34;}</code></pre>
+</details>
+<div class="desc"><p>Health check endpoint.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.api" href="index.html">src.api</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="src.api.schema_org_api.export_all_entities_schema_org" href="#src.api.schema_org_api.export_all_entities_schema_org">export_all_entities_schema_org</a></code></li>
+<li><code><a title="src.api.schema_org_api.get_categories_schema_org_bulk" href="#src.api.schema_org_api.get_categories_schema_org_bulk">get_categories_schema_org_bulk</a></code></li>
+<li><code><a title="src.api.schema_org_api.get_category_schema_org" href="#src.api.schema_org_api.get_category_schema_org">get_category_schema_org</a></code></li>
+<li><code><a title="src.api.schema_org_api.get_companies_schema_org_bulk" href="#src.api.schema_org_api.get_companies_schema_org_bulk">get_companies_schema_org_bulk</a></code></li>
+<li><code><a title="src.api.schema_org_api.get_company_by_name_schema_org" href="#src.api.schema_org_api.get_company_by_name_schema_org">get_company_by_name_schema_org</a></code></li>
+<li><code><a title="src.api.schema_org_api.get_company_schema_org" href="#src.api.schema_org_api.get_company_schema_org">get_company_schema_org</a></code></li>
+<li><code><a title="src.api.schema_org_api.get_db" href="#src.api.schema_org_api.get_db">get_db</a></code></li>
+<li><code><a title="src.api.schema_org_api.get_file_schema_org" href="#src.api.schema_org_api.get_file_schema_org">get_file_schema_org</a></code></li>
+<li><code><a title="src.api.schema_org_api.get_files_schema_org_bulk" href="#src.api.schema_org_api.get_files_schema_org_bulk">get_files_schema_org_bulk</a></code></li>
+<li><code><a title="src.api.schema_org_api.get_full_graph_document" href="#src.api.schema_org_api.get_full_graph_document">get_full_graph_document</a></code></li>
+<li><code><a title="src.api.schema_org_api.get_location_by_name_schema_org" href="#src.api.schema_org_api.get_location_by_name_schema_org">get_location_by_name_schema_org</a></code></li>
+<li><code><a title="src.api.schema_org_api.get_location_schema_org" href="#src.api.schema_org_api.get_location_schema_org">get_location_schema_org</a></code></li>
+<li><code><a title="src.api.schema_org_api.get_locations_schema_org_bulk" href="#src.api.schema_org_api.get_locations_schema_org_bulk">get_locations_schema_org_bulk</a></code></li>
+<li><code><a title="src.api.schema_org_api.get_people_schema_org_bulk" href="#src.api.schema_org_api.get_people_schema_org_bulk">get_people_schema_org_bulk</a></code></li>
+<li><code><a title="src.api.schema_org_api.get_person_by_name_schema_org" href="#src.api.schema_org_api.get_person_by_name_schema_org">get_person_by_name_schema_org</a></code></li>
+<li><code><a title="src.api.schema_org_api.get_person_schema_org" href="#src.api.schema_org_api.get_person_schema_org">get_person_schema_org</a></code></li>
+<li><code><a title="src.api.schema_org_api.get_schema_context" href="#src.api.schema_org_api.get_schema_context">get_schema_context</a></code></li>
+<li><code><a title="src.api.schema_org_api.health_check" href="#src.api.schema_org_api.health_check">health_check</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

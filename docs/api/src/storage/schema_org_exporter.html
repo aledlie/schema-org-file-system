@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.storage.schema_org_exporter API documentation</title>
+<meta name="description" content="Unified service for exporting entities to schema.org JSON-LD in various formats …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.storage.schema_org_exporter</code></h1>
+</header>
+<section id="section-intro">
+<p>Unified service for exporting entities to schema.org JSON-LD in various formats.</p>
+<p>Supports three output formats:
+- json
+: JSON array, pretty-printed by default
+- ndjson : Newline-delimited JSON (one entity per line, streaming-friendly)
+- graph
+: JSON-LD @graph structure (recommended for multiple entity types)</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.storage.schema_org_exporter.SchemaOrgExporter"><code class="flex name class">
+<span>class <span class="ident">SchemaOrgExporter</span></span>
+<span>(</span><span>session: sqlalchemy.orm.session.Session, use_core: bool = True)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SchemaOrgExporter:
+    &#34;&#34;&#34;Export schema.org JSON-LD for one or more entity types.
+
+    Usage::
+
+        exporter = SchemaOrgExporter(session)
+        exporter.export_to_file(&#34;out.json&#34;, entity_classes=[File, Category])
+        exporter.export_to_ndjson(&#34;out.ndjson&#34;, entity_classes=[File])
+        exporter.export_with_graph(&#34;out-graph.json&#34;)
+
+    Records are collected via Core column queries (default) instead of ORM
+    hydration — byte-identical output (both paths share the JSON-LD builders in
+    ``models.py``) but ~3x faster for large bulk exports by avoiding per-entity
+    ORM object construction. Unknown entity types fall back to ORM automatically.
+    Pass ``use_core=False`` to force the ORM path.
+    &#34;&#34;&#34;
+
+    def __init__(self, session: Session, use_core: bool = True) -&gt; None:
+        self._session = session
+        self._use_core = use_core
+
+    # ------------------------------------------------------------------
+    # Public interface
+    # ------------------------------------------------------------------
+
+    def export_to_file(
+        self,
+        output_path: Union[str, Path],
+        entity_classes: Optional[List[Type[SchemaOrgSerializable]]] = None,
+        pretty: bool = True,
+    ) -&gt; int:
+        &#34;&#34;&#34;Export entities to a JSON file (array of JSON-LD objects).
+
+        Args:
+            output_path: Destination file path.
+            entity_classes: List of SQLAlchemy model classes to export.
+                Defaults to all registered entity types when None.
+            pretty: Whether to pretty-print (indent=2).
+
+        Returns:
+            Total number of entities written.
+        &#34;&#34;&#34;
+        with open(output_path, &#34;w&#34;, encoding=&#34;utf-8&#34;) as fh:
+            return self._stream_array(
+                fh, self._iter_records(entity_classes), pretty=pretty, indent_level=1
+            )
+
+    def export_to_ndjson(
+        self,
+        output_path: Union[str, Path],
+        entity_classes: Optional[List[Type[SchemaOrgSerializable]]] = None,
+    ) -&gt; int:
+        &#34;&#34;&#34;Export entities to a newline-delimited JSON file.
+
+        Each entity is serialized to a single line and written as it is produced,
+        so memory stays flat regardless of export size. Suitable for streaming
+        and large-scale processing.
+
+        Args:
+            output_path: Destination file path.
+            entity_classes: List of SQLAlchemy model classes to export.
+
+        Returns:
+            Total number of entities written.
+        &#34;&#34;&#34;
+        count = 0
+        with open(output_path, &#34;w&#34;, encoding=&#34;utf-8&#34;) as fh:
+            for rec in self._iter_records(entity_classes):
+                fh.write(json.dumps(rec, separators=(&#34;,&#34;, &#34;:&#34;)))
+                fh.write(&#34;\n&#34;)
+                count += 1
+        return count
+
+    def export_with_graph(
+        self,
+        output_path: Union[str, Path],
+        entity_classes: Optional[List[Type[SchemaOrgSerializable]]] = None,
+        pretty: bool = True,
+    ) -&gt; int:
+        &#34;&#34;&#34;Export entities as a JSON-LD @graph document.
+
+        The output structure is::
+
+            {
+                &#34;@context&#34;: &#34;https://schema.org&#34;,
+                &#34;@graph&#34;: [ ... ]
+            }
+
+        Each entity in @graph omits its own @context (it is hoisted to the
+        document root).
+
+        Args:
+            output_path: Destination file path.
+            entity_classes: List of SQLAlchemy model classes to export.
+            pretty: Whether to pretty-print (indent=2).
+
+        Returns:
+            Total number of entities written.
+        &#34;&#34;&#34;
+        context = json.dumps(SCHEMA_ORG_CONTEXT)
+        with open(output_path, &#34;w&#34;, encoding=&#34;utf-8&#34;) as fh:
+            if pretty:
+                fh.write(&#39;{\n  &#34;@context&#34;: &#39; + context + &#39;,\n  &#34;@graph&#34;: &#39;)
+                count = self._stream_array(
+                    fh, self._iter_records(entity_classes),
+                    pretty=True, indent_level=2, strip_context=True,
+                )
+                fh.write(&#34;\n}&#34;)
+            else:
+                fh.write(&#39;{&#34;@context&#34;:&#39; + context + &#39;,&#34;@graph&#34;:&#39;)
+                count = self._stream_array(
+                    fh, self._iter_records(entity_classes),
+                    pretty=False, indent_level=2, strip_context=True,
+                )
+                fh.write(&#34;}&#34;)
+        return count
+
+    def get_graph_document(
+        self,
+        entity_classes: Optional[List[Type[SchemaOrgSerializable]]] = None,
+    ) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Return a JSON-LD @graph document as a Python dict (no I/O).
+
+        Useful for in-memory use, REST API responses, etc.
+
+        Args:
+            entity_classes: List of SQLAlchemy model classes to export.
+
+        Returns:
+            Dict with &#34;@context&#34; and &#34;@graph&#34; keys.
+        &#34;&#34;&#34;
+        records = self._collect_records(entity_classes)
+        graph_nodes = [{k: v for k, v in rec.items() if k != &#34;@context&#34;} for rec in records]
+        return {
+            &#34;@context&#34;: SCHEMA_ORG_CONTEXT,
+            &#34;@graph&#34;: graph_nodes,
+        }
+
+    # ------------------------------------------------------------------
+    # Filtering helpers
+    # ------------------------------------------------------------------
+
+    def export_entities_filtered(
+        self,
+        output_path: Union[str, Path],
+        entity_class: Type[SchemaOrgSerializable],
+        entity_ids: Sequence[Any],
+        pretty: bool = True,
+    ) -&gt; int:
+        &#34;&#34;&#34;Export a filtered subset of entities by primary key.
+
+        Args:
+            output_path: Destination file path.
+            entity_class: SQLAlchemy model class to query.
+            entity_ids: Primary key values to include.
+            pretty: Whether to pretty-print.
+
+        Returns:
+            Number of entities written.
+        &#34;&#34;&#34;
+        with open(output_path, &#34;w&#34;, encoding=&#34;utf-8&#34;) as fh:
+            return self._stream_array(
+                fh, self._iter_filtered_records(entity_class, entity_ids),
+                pretty=pretty, indent_level=1,
+            )
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+
+    @staticmethod
+    def _stream_array(
+        fh,
+        records: Iterable[Dict[str, Any]],
+        *,
+        pretty: bool,
+        indent_level: int = 1,
+        strip_context: bool = False,
+    ) -&gt; int:
+        &#34;&#34;&#34;Write ``records`` to ``fh`` as a JSON array, one record at a time.
+
+        Streams so peak memory stays flat regardless of record count (only one
+        record is dumped at a time). Output parses identically to
+        ``json.dumps(list(records))``. ``pretty`` indents 2 spaces per level;
+        ``indent_level`` is the nesting depth of the array&#39;s elements (1 for a
+        top-level array, 2 for a nested ``@graph``). ``strip_context`` drops each
+        record&#39;s ``@context`` key (for ``@graph`` nodes). Returns the count.
+        &#34;&#34;&#34;
+        count = 0
+        if pretty:
+            elem_pad = &#34;  &#34; * indent_level
+            fh.write(&#34;[&#34;)
+            for rec in records:
+                if strip_context and &#34;@context&#34; in rec:
+                    rec = {k: v for k, v in rec.items() if k != &#34;@context&#34;}
+                fh.write(&#34;,\n&#34; if count else &#34;\n&#34;)
+                block = json.dumps(rec, indent=2)
+                fh.write(&#34;\n&#34;.join(elem_pad + line for line in block.split(&#34;\n&#34;)))
+                count += 1
+            if count:
+                fh.write(&#34;\n&#34; + &#34;  &#34; * (indent_level - 1))
+            fh.write(&#34;]&#34;)
+        else:
+            fh.write(&#34;[&#34;)
+            for rec in records:
+                if strip_context and &#34;@context&#34; in rec:
+                    rec = {k: v for k, v in rec.items() if k != &#34;@context&#34;}
+                if count:
+                    fh.write(&#34;,&#34;)
+                fh.write(json.dumps(rec, separators=(&#34;,&#34;, &#34;:&#34;)))
+                count += 1
+            fh.write(&#34;]&#34;)
+        return count
+
+    def _collect_records(
+        self,
+        entity_classes: Optional[List[Type[SchemaOrgSerializable]]],
+    ) -&gt; List[Dict[str, Any]]:
+        &#34;&#34;&#34;Materialize all records into a list (for in-memory callers).&#34;&#34;&#34;
+        return list(self._iter_records(entity_classes))
+
+    def _iter_records(
+        self,
+        entity_classes: Optional[List[Type[SchemaOrgSerializable]]],
+    ) -&gt; Iterator[Dict[str, Any]]:
+        &#34;&#34;&#34;Lazily yield JSON-LD dicts for each entity class, one at a time.
+
+        The lazy form lets the streaming writers hold at most one record in
+        memory. Dispatches to the Core-query path (default) or the ORM path.
+        &#34;&#34;&#34;
+        if entity_classes is None:
+            entity_classes = self._default_entity_classes()
+        if self._use_core:
+            yield from self._iter_records_core(entity_classes)
+        else:
+            yield from self._iter_records_orm(entity_classes)
+
+    def _iter_records_orm(
+        self,
+        entity_classes: List[Type[SchemaOrgSerializable]],
+    ) -&gt; Iterator[Dict[str, Any]]:
+        &#34;&#34;&#34;ORM path: hydrate each entity and call its ``to_schema_org()``.&#34;&#34;&#34;
+        load_options = self._build_load_options()
+        for cls in entity_classes:
+            opts = load_options.get(cls, [])
+            q = self._session.query(cls)
+            if opts:
+                q = q.options(*opts)
+            for row in q.all():
+                yield row.to_schema_org()
+
+    # ------------------------------------------------------------------
+    # Core-query collection (use_core=True)
+    # ------------------------------------------------------------------
+
+    def _iter_records_core(
+        self,
+        entity_classes: List[Type[SchemaOrgSerializable]],
+    ) -&gt; Iterator[Dict[str, Any]]:
+        &#34;&#34;&#34;Core path: build JSON-LD from column queries, skipping ORM hydration.
+
+        Each entity&#39;s dict comes from the shared ``build_*_jsonld`` functions in
+        ``models.py`` (the same ones ``to_schema_org()`` delegates to), so output
+        is identical to the ORM path. Unknown types fall back to ORM.
+        &#34;&#34;&#34;
+        from . import models as m
+
+        iterators = {
+            m.File: lambda: self._iter_core_file_records(),
+            m.Category: lambda: self._iter_core_category_records(),
+            m.Company: lambda: self._iter_core_simple_records(m.Company, m.build_company_jsonld),
+            m.Person: lambda: self._iter_core_simple_records(m.Person, m.build_person_jsonld),
+            m.Location: lambda: self._iter_core_simple_records(m.Location, m.build_location_jsonld),
+        }
+        for cls in entity_classes:
+            it = iterators.get(cls)
+            if it is not None:
+                yield from it()
+            else:  # unknown type: fall back to ORM serialization
+                for row in self._session.query(cls).all():
+                    yield row.to_schema_org()
+
+    def _iter_filtered_records(
+        self,
+        entity_class: Type[SchemaOrgSerializable],
+        entity_ids: Sequence[Any],
+    ) -&gt; Iterator[Dict[str, Any]]:
+        &#34;&#34;&#34;Yield records for a subset of one entity class, by primary key.
+
+        Uses the Core path (relationship refs scoped to the subset — see
+        ``_load_file_refs``) for File and the relationship-free entities;
+        Category and unknown types use ORM ``to_schema_org()`` (identical output).
+        &#34;&#34;&#34;
+        from . import models as m
+
+        if self._use_core and entity_class is m.File:
+            yield from self._iter_core_file_records(file_ids=set(entity_ids))
+        elif self._use_core and entity_class is m.Company:
+            yield from self._iter_core_simple_records(m.Company, m.build_company_jsonld, entity_ids)
+        elif self._use_core and entity_class is m.Person:
+            yield from self._iter_core_simple_records(m.Person, m.build_person_jsonld, entity_ids)
+        elif self._use_core and entity_class is m.Location:
+            yield from self._iter_core_simple_records(
+                m.Location, m.build_location_jsonld, entity_ids
+            )
+        else:
+            pk = entity_class.__mapper__.primary_key[0]
+            for row in self._session.query(entity_class).filter(pk.in_(entity_ids)).all():
+                yield row.to_schema_org()
+
+    def _iter_core_simple_records(
+        self, cls, build_fn, pk_ids: Optional[Sequence[Any]] = None
+    ) -&gt; Iterator[Dict[str, Any]]:
+        &#34;&#34;&#34;Yield records for an entity whose serialization reads no relationships.
+
+        ``pk_ids`` optionally scopes the query to those primary keys.
+        &#34;&#34;&#34;
+        stmt = select(cls)
+        if pk_ids is not None:
+            stmt = stmt.where(cls.__mapper__.primary_key[0].in_(pk_ids))
+        for row in self._session.execute(stmt).scalars():
+            yield build_fn(row)
+
+    def _iter_core_file_records(
+        self, file_ids: Optional[set] = None
+    ) -&gt; Iterator[Dict[str, Any]]:
+        &#34;&#34;&#34;Yield File records, streaming rows in batches to keep memory flat.
+
+        Selects only the columns the JSON-LD builder reads (lightweight ``Row``s,
+        no ORM File construction) and fetches them with ``yield_per`` so peak
+        memory does not scale with file count. Relationship refs are pre-loaded
+        into lookup maps (bounded by the number of related entities, not files);
+        ``file_ids`` scopes both the file query and the ref loading to a subset.
+        &#34;&#34;&#34;
+        from . import models as m
+
+        F = m.File
+        columns = (
+            F.id, F.canonical_id, F.filename, F.schema_type, F.mime_type,
+            F.created_at, F.modified_at, F.file_size, F.original_path,
+            F.extracted_text, F.detected_language, F.image_width, F.image_height,
+            F.has_faces, F.exif_datetime, F.gps_latitude, F.gps_longitude,
+            F.schema_data,
+        )
+
+        cats = self._load_file_refs(m.file_categories.c.category_id, m.Category, file_ids)
+        comps = self._load_file_refs(m.file_companies.c.company_id, m.Company, file_ids)
+        ppl = self._load_file_refs(m.file_people.c.person_id, m.Person, file_ids)
+        locs = self._load_file_refs(m.file_locations.c.location_id, m.Location, file_ids)
+
+        empty: tuple = ()
+        stmt = select(*columns)
+        if file_ids is not None:
+            stmt = stmt.where(F.id.in_(file_ids))
+        stmt = stmt.execution_options(yield_per=_STREAM_BATCH)
+        for f in self._session.execute(stmt):
+            fid = f.id
+            yield m.build_file_jsonld(
+                f,
+                cats.get(fid, empty),
+                comps.get(fid, empty),
+                ppl.get(fid, empty),
+                locs.get(fid, empty),
+            )
+
+    def _iter_core_category_records(self) -&gt; Iterator[Dict[str, Any]]:
+        &#34;&#34;&#34;Yield Category records, resolving parent/subcategory refs in-memory.
+
+        Categories are loaded fully (a first pass is needed to resolve parent and
+        subcategory refs); their count is modest relative to files.
+        &#34;&#34;&#34;
+        from . import models as m
+
+        rows = list(self._session.execute(
+            select(m.Category).order_by(m.Category.id)
+        ).scalars())
+        ref = {r.id: _EntityRef(f&#34;urn:uuid:{r.canonical_id}&#34;, r.name) for r in rows}
+
+        children: Dict[Any, list] = {}
+        for r in rows:
+            if r.parent_id is not None:
+                children.setdefault(r.parent_id, []).append(ref[r.id])
+
+        for r in rows:
+            parent = ref.get(r.parent_id) if r.parent_id is not None else None
+            yield m.build_category_jsonld(r, parent, children.get(r.id, ()))
+
+    def _load_file_refs(
+        self, target_id_col, target_cls, file_ids: Optional[set] = None
+    ) -&gt; Dict[Any, list]:
+        &#34;&#34;&#34;Map file_id -&gt; ordered list of _EntityRef for one association table.
+
+        Association rows are read in natural (insertion) order to match the order
+        the ORM relationship yields, which the JSON-LD builders depend on (e.g.
+        the first category becomes ``mainEntityOfPage``) — do not add ORDER BY.
+        Only targets actually referenced are loaded; ``file_ids`` scopes the
+        associations to a subset so filtered exports stay cheap.
+        &#34;&#34;&#34;
+        assoc = target_id_col.table
+        assoc_stmt = select(assoc.c.file_id, target_id_col)
+        if file_ids is not None:
+            assoc_stmt = assoc_stmt.where(assoc.c.file_id.in_(file_ids))
+        pairs = list(self._session.execute(assoc_stmt))
+        if not pairs:
+            return {}
+
+        ref_stmt = select(target_cls.id, target_cls.canonical_id, target_cls.name)
+        if file_ids is not None:
+            # Scoped export: load only the referenced targets. (For a full export
+            # we load all targets unfiltered — an IN() over every referenced id
+            # could exceed SQLite&#39;s bound-parameter limit.)
+            needed = {target_id for _, target_id in pairs}
+            ref_stmt = ref_stmt.where(target_cls.id.in_(needed))
+        refs = {
+            tid: _EntityRef(f&#34;urn:uuid:{canon}&#34;, name)
+            for tid, canon, name in self._session.execute(ref_stmt)
+        }
+        result: Dict[Any, list] = {}
+        for file_id, target_id in pairs:
+            result.setdefault(file_id, []).append(refs[target_id])
+        return result
+
+    # ------------------------------------------------------------------
+    # Context document helpers (S8)
+    # ------------------------------------------------------------------
+
+    def get_context_document(self) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Return the JSON-LD @context document as a Python dict.
+
+        Delegates to :mod:`storage.schema_org_context`.
+
+        Returns:
+            Dict containing the standalone @context document.
+        &#34;&#34;&#34;
+        from .schema_org_context import get_context_document
+        return get_context_document()
+
+    def export_context(
+        self,
+        output_path: Union[str, Path],
+        pretty: bool = True,
+    ) -&gt; None:
+        &#34;&#34;&#34;Save the JSON-LD @context document to a file.
+
+        Args:
+            output_path: Destination file path.
+            pretty: Whether to pretty-print (indent=2).
+        &#34;&#34;&#34;
+        from .schema_org_context import export_context
+        export_context(output_path, pretty=pretty)
+
+    @staticmethod
+    def _build_load_options() -&gt; Dict[Type, List]:
+        &#34;&#34;&#34;Return per-entity selectinload options to avoid N+1 queries.&#34;&#34;&#34;
+        from .models import File, Category, Company, Person, Location
+        return {
+            File: [
+                selectinload(File.categories),
+                selectinload(File.companies),
+                selectinload(File.people),
+                selectinload(File.locations),
+            ],
+            Category: [
+                selectinload(Category.files),
+                joinedload(Category.parent),
+                selectinload(Category.subcategories),
+            ],
+            Company: [selectinload(Company.files)],
+            Person: [selectinload(Person.files)],
+            Location: [selectinload(Location.files)],
+        }
+
+    @staticmethod
+    def _default_entity_classes() -&gt; List[Type[SchemaOrgSerializable]]:
+        &#34;&#34;&#34;Return the canonical set of entity classes for full exports.&#34;&#34;&#34;
+        # Import here to avoid circular imports at module load time
+        from .models import File, Category, Company, Person, Location
+        return [File, Category, Company, Person, Location]</code></pre>
+</details>
+<div class="desc"><p>Export schema.org JSON-LD for one or more entity types.</p>
+<p>Usage::</p>
+<pre><code>exporter = SchemaOrgExporter(session)
+exporter.export_to_file("out.json", entity_classes=[File, Category])
+exporter.export_to_ndjson("out.ndjson", entity_classes=[File])
+exporter.export_with_graph("out-graph.json")
+</code></pre>
+<p>Records are collected via Core column queries (default) instead of ORM
+hydration — byte-identical output (both paths share the JSON-LD builders in
+<code>models.py</code>) but ~3x faster for large bulk exports by avoiding per-entity
+ORM object construction. Unknown entity types fall back to ORM automatically.
+Pass <code>use_core=False</code> to force the ORM path.</p></div>
+<h3>Methods</h3>
+<dl>
+<dt id="src.storage.schema_org_exporter.SchemaOrgExporter.export_context"><code class="name flex">
+<span>def <span class="ident">export_context</span></span>(<span>self, output_path: pathlib.Path | str, pretty: bool = True) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def export_context(
+    self,
+    output_path: Union[str, Path],
+    pretty: bool = True,
+) -&gt; None:
+    &#34;&#34;&#34;Save the JSON-LD @context document to a file.
+
+    Args:
+        output_path: Destination file path.
+        pretty: Whether to pretty-print (indent=2).
+    &#34;&#34;&#34;
+    from .schema_org_context import export_context
+    export_context(output_path, pretty=pretty)</code></pre>
+</details>
+<div class="desc"><p>Save the JSON-LD @context document to a file.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>output_path</code></strong></dt>
+<dd>Destination file path.</dd>
+<dt><strong><code>pretty</code></strong></dt>
+<dd>Whether to pretty-print (indent=2).</dd>
+</dl></div>
+</dd>
+<dt id="src.storage.schema_org_exporter.SchemaOrgExporter.export_entities_filtered"><code class="name flex">
+<span>def <span class="ident">export_entities_filtered</span></span>(<span>self,<br>output_path: pathlib.Path | str,<br>entity_class: Type[<a title="src.storage.schema_org_base.SchemaOrgSerializable" href="schema_org_base.html#src.storage.schema_org_base.SchemaOrgSerializable">SchemaOrgSerializable</a>],<br>entity_ids: Sequence[Any],<br>pretty: bool = True) ‑> int</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def export_entities_filtered(
+    self,
+    output_path: Union[str, Path],
+    entity_class: Type[SchemaOrgSerializable],
+    entity_ids: Sequence[Any],
+    pretty: bool = True,
+) -&gt; int:
+    &#34;&#34;&#34;Export a filtered subset of entities by primary key.
+
+    Args:
+        output_path: Destination file path.
+        entity_class: SQLAlchemy model class to query.
+        entity_ids: Primary key values to include.
+        pretty: Whether to pretty-print.
+
+    Returns:
+        Number of entities written.
+    &#34;&#34;&#34;
+    with open(output_path, &#34;w&#34;, encoding=&#34;utf-8&#34;) as fh:
+        return self._stream_array(
+            fh, self._iter_filtered_records(entity_class, entity_ids),
+            pretty=pretty, indent_level=1,
+        )</code></pre>
+</details>
+<div class="desc"><p>Export a filtered subset of entities by primary key.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>output_path</code></strong></dt>
+<dd>Destination file path.</dd>
+<dt><strong><code>entity_class</code></strong></dt>
+<dd>SQLAlchemy model class to query.</dd>
+<dt><strong><code>entity_ids</code></strong></dt>
+<dd>Primary key values to include.</dd>
+<dt><strong><code>pretty</code></strong></dt>
+<dd>Whether to pretty-print.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Number of entities written.</p></div>
+</dd>
+<dt id="src.storage.schema_org_exporter.SchemaOrgExporter.export_to_file"><code class="name flex">
+<span>def <span class="ident">export_to_file</span></span>(<span>self,<br>output_path: pathlib.Path | str,<br>entity_classes: List[Type[<a title="src.storage.schema_org_base.SchemaOrgSerializable" href="schema_org_base.html#src.storage.schema_org_base.SchemaOrgSerializable">SchemaOrgSerializable</a>]] | None = None,<br>pretty: bool = True) ‑> int</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def export_to_file(
+    self,
+    output_path: Union[str, Path],
+    entity_classes: Optional[List[Type[SchemaOrgSerializable]]] = None,
+    pretty: bool = True,
+) -&gt; int:
+    &#34;&#34;&#34;Export entities to a JSON file (array of JSON-LD objects).
+
+    Args:
+        output_path: Destination file path.
+        entity_classes: List of SQLAlchemy model classes to export.
+            Defaults to all registered entity types when None.
+        pretty: Whether to pretty-print (indent=2).
+
+    Returns:
+        Total number of entities written.
+    &#34;&#34;&#34;
+    with open(output_path, &#34;w&#34;, encoding=&#34;utf-8&#34;) as fh:
+        return self._stream_array(
+            fh, self._iter_records(entity_classes), pretty=pretty, indent_level=1
+        )</code></pre>
+</details>
+<div class="desc"><p>Export entities to a JSON file (array of JSON-LD objects).</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>output_path</code></strong></dt>
+<dd>Destination file path.</dd>
+<dt><strong><code>entity_classes</code></strong></dt>
+<dd>List of SQLAlchemy model classes to export.
+Defaults to all registered entity types when None.</dd>
+<dt><strong><code>pretty</code></strong></dt>
+<dd>Whether to pretty-print (indent=2).</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Total number of entities written.</p></div>
+</dd>
+<dt id="src.storage.schema_org_exporter.SchemaOrgExporter.export_to_ndjson"><code class="name flex">
+<span>def <span class="ident">export_to_ndjson</span></span>(<span>self,<br>output_path: pathlib.Path | str,<br>entity_classes: List[Type[<a title="src.storage.schema_org_base.SchemaOrgSerializable" href="schema_org_base.html#src.storage.schema_org_base.SchemaOrgSerializable">SchemaOrgSerializable</a>]] | None = None) ‑> int</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def export_to_ndjson(
+    self,
+    output_path: Union[str, Path],
+    entity_classes: Optional[List[Type[SchemaOrgSerializable]]] = None,
+) -&gt; int:
+    &#34;&#34;&#34;Export entities to a newline-delimited JSON file.
+
+    Each entity is serialized to a single line and written as it is produced,
+    so memory stays flat regardless of export size. Suitable for streaming
+    and large-scale processing.
+
+    Args:
+        output_path: Destination file path.
+        entity_classes: List of SQLAlchemy model classes to export.
+
+    Returns:
+        Total number of entities written.
+    &#34;&#34;&#34;
+    count = 0
+    with open(output_path, &#34;w&#34;, encoding=&#34;utf-8&#34;) as fh:
+        for rec in self._iter_records(entity_classes):
+            fh.write(json.dumps(rec, separators=(&#34;,&#34;, &#34;:&#34;)))
+            fh.write(&#34;\n&#34;)
+            count += 1
+    return count</code></pre>
+</details>
+<div class="desc"><p>Export entities to a newline-delimited JSON file.</p>
+<p>Each entity is serialized to a single line and written as it is produced,
+so memory stays flat regardless of export size. Suitable for streaming
+and large-scale processing.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>output_path</code></strong></dt>
+<dd>Destination file path.</dd>
+<dt><strong><code>entity_classes</code></strong></dt>
+<dd>List of SQLAlchemy model classes to export.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Total number of entities written.</p></div>
+</dd>
+<dt id="src.storage.schema_org_exporter.SchemaOrgExporter.export_with_graph"><code class="name flex">
+<span>def <span class="ident">export_with_graph</span></span>(<span>self,<br>output_path: pathlib.Path | str,<br>entity_classes: List[Type[<a title="src.storage.schema_org_base.SchemaOrgSerializable" href="schema_org_base.html#src.storage.schema_org_base.SchemaOrgSerializable">SchemaOrgSerializable</a>]] | None = None,<br>pretty: bool = True) ‑> int</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def export_with_graph(
+    self,
+    output_path: Union[str, Path],
+    entity_classes: Optional[List[Type[SchemaOrgSerializable]]] = None,
+    pretty: bool = True,
+) -&gt; int:
+    &#34;&#34;&#34;Export entities as a JSON-LD @graph document.
+
+    The output structure is::
+
+        {
+            &#34;@context&#34;: &#34;https://schema.org&#34;,
+            &#34;@graph&#34;: [ ... ]
+        }
+
+    Each entity in @graph omits its own @context (it is hoisted to the
+    document root).
+
+    Args:
+        output_path: Destination file path.
+        entity_classes: List of SQLAlchemy model classes to export.
+        pretty: Whether to pretty-print (indent=2).
+
+    Returns:
+        Total number of entities written.
+    &#34;&#34;&#34;
+    context = json.dumps(SCHEMA_ORG_CONTEXT)
+    with open(output_path, &#34;w&#34;, encoding=&#34;utf-8&#34;) as fh:
+        if pretty:
+            fh.write(&#39;{\n  &#34;@context&#34;: &#39; + context + &#39;,\n  &#34;@graph&#34;: &#39;)
+            count = self._stream_array(
+                fh, self._iter_records(entity_classes),
+                pretty=True, indent_level=2, strip_context=True,
+            )
+            fh.write(&#34;\n}&#34;)
+        else:
+            fh.write(&#39;{&#34;@context&#34;:&#39; + context + &#39;,&#34;@graph&#34;:&#39;)
+            count = self._stream_array(
+                fh, self._iter_records(entity_classes),
+                pretty=False, indent_level=2, strip_context=True,
+            )
+            fh.write(&#34;}&#34;)
+    return count</code></pre>
+</details>
+<div class="desc"><p>Export entities as a JSON-LD @graph document.</p>
+<p>The output structure is::</p>
+<pre><code>{
+    "@context": "https://schema.org",
+    "@graph": [ ... ]
+}
+</code></pre>
+<p>Each entity in @graph omits its own @context (it is hoisted to the
+document root).</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>output_path</code></strong></dt>
+<dd>Destination file path.</dd>
+<dt><strong><code>entity_classes</code></strong></dt>
+<dd>List of SQLAlchemy model classes to export.</dd>
+<dt><strong><code>pretty</code></strong></dt>
+<dd>Whether to pretty-print (indent=2).</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Total number of entities written.</p></div>
+</dd>
+<dt id="src.storage.schema_org_exporter.SchemaOrgExporter.get_context_document"><code class="name flex">
+<span>def <span class="ident">get_context_document</span></span>(<span>self) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_context_document(self) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Return the JSON-LD @context document as a Python dict.
+
+    Delegates to :mod:`storage.schema_org_context`.
+
+    Returns:
+        Dict containing the standalone @context document.
+    &#34;&#34;&#34;
+    from .schema_org_context import get_context_document
+    return get_context_document()</code></pre>
+</details>
+<div class="desc"><p>Return the JSON-LD @context document as a Python dict.</p>
+<p>Delegates to :mod:<code>storage.schema_org_context</code>.</p>
+<h2 id="returns">Returns</h2>
+<p>Dict containing the standalone @context document.</p></div>
+</dd>
+<dt id="src.storage.schema_org_exporter.SchemaOrgExporter.get_graph_document"><code class="name flex">
+<span>def <span class="ident">get_graph_document</span></span>(<span>self,<br>entity_classes: List[Type[<a title="src.storage.schema_org_base.SchemaOrgSerializable" href="schema_org_base.html#src.storage.schema_org_base.SchemaOrgSerializable">SchemaOrgSerializable</a>]] | None = None) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_graph_document(
+    self,
+    entity_classes: Optional[List[Type[SchemaOrgSerializable]]] = None,
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Return a JSON-LD @graph document as a Python dict (no I/O).
+
+    Useful for in-memory use, REST API responses, etc.
+
+    Args:
+        entity_classes: List of SQLAlchemy model classes to export.
+
+    Returns:
+        Dict with &#34;@context&#34; and &#34;@graph&#34; keys.
+    &#34;&#34;&#34;
+    records = self._collect_records(entity_classes)
+    graph_nodes = [{k: v for k, v in rec.items() if k != &#34;@context&#34;} for rec in records]
+    return {
+        &#34;@context&#34;: SCHEMA_ORG_CONTEXT,
+        &#34;@graph&#34;: graph_nodes,
+    }</code></pre>
+</details>
+<div class="desc"><p>Return a JSON-LD @graph document as a Python dict (no I/O).</p>
+<p>Useful for in-memory use, REST API responses, etc.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>entity_classes</code></strong></dt>
+<dd>List of SQLAlchemy model classes to export.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Dict with "@context" and "@graph" keys.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.storage" href="index.html">src.storage</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.storage.schema_org_exporter.SchemaOrgExporter" href="#src.storage.schema_org_exporter.SchemaOrgExporter">SchemaOrgExporter</a></code></h4>
+<ul class="">
+<li><code><a title="src.storage.schema_org_exporter.SchemaOrgExporter.export_context" href="#src.storage.schema_org_exporter.SchemaOrgExporter.export_context">export_context</a></code></li>
+<li><code><a title="src.storage.schema_org_exporter.SchemaOrgExporter.export_entities_filtered" href="#src.storage.schema_org_exporter.SchemaOrgExporter.export_entities_filtered">export_entities_filtered</a></code></li>
+<li><code><a title="src.storage.schema_org_exporter.SchemaOrgExporter.export_to_file" href="#src.storage.schema_org_exporter.SchemaOrgExporter.export_to_file">export_to_file</a></code></li>
+<li><code><a title="src.storage.schema_org_exporter.SchemaOrgExporter.export_to_ndjson" href="#src.storage.schema_org_exporter.SchemaOrgExporter.export_to_ndjson">export_to_ndjson</a></code></li>
+<li><code><a title="src.storage.schema_org_exporter.SchemaOrgExporter.export_with_graph" href="#src.storage.schema_org_exporter.SchemaOrgExporter.export_with_graph">export_with_graph</a></code></li>
+<li><code><a title="src.storage.schema_org_exporter.SchemaOrgExporter.get_context_document" href="#src.storage.schema_org_exporter.SchemaOrgExporter.get_context_document">get_context_document</a></code></li>
+<li><code><a title="src.storage.schema_org_exporter.SchemaOrgExporter.get_graph_document" href="#src.storage.schema_org_exporter.SchemaOrgExporter.get_graph_document">get_graph_document</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

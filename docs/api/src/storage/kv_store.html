@@ -1,0 +1,2003 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.storage.kv_store API documentation</title>
+<meta name="description" content="Key-Value storage for flexible, schema-less data …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.storage.kv_store</code></h1>
+</header>
+<section id="section-intro">
+<p>Key-Value storage for flexible, schema-less data.</p>
+<p>Provides a Redis-like interface using SQLite for persistence.
+Supports namespacing, TTL, and JSON values.</p>
+<p>Design allows easy migration to Redis/Memcached in the future.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="src.storage.kv_store.get_kv_store"><code class="name flex">
+<span>def <span class="ident">get_kv_store</span></span>(<span>db_path: str = 'results/file_organization.db') ‑> <a title="src.storage.kv_store.KeyValueStorage" href="#src.storage.kv_store.KeyValueStorage">KeyValueStorage</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_kv_store(db_path: str = &#39;results/file_organization.db&#39;) -&gt; KeyValueStorage:
+    &#34;&#34;&#34;Get a KeyValueStorage instance.&#34;&#34;&#34;
+    return KeyValueStorage(db_path)</code></pre>
+</details>
+<div class="desc"><p>Get a KeyValueStorage instance.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.storage.kv_store.KeyValueStorage"><code class="flex name class">
+<span>class <span class="ident">KeyValueStorage</span></span>
+<span>(</span><span>db_path: str = 'results/file_organization.db')</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class KeyValueStorage:
+    &#34;&#34;&#34;
+    Key-Value storage with namespace support.
+
+    Features:
+    - Namespace isolation (like Redis databases)
+    - TTL support for automatic expiration
+    - JSON value serialization
+    - Atomic increment/decrement operations
+    - Pattern-based key scanning
+
+    Can be swapped with Redis by implementing the same interface.
+    &#34;&#34;&#34;
+
+    # Default namespaces
+    NAMESPACE_CACHE = &#39;cache&#39;           # Temporary cached data
+    NAMESPACE_CONFIG = &#39;config&#39;         # Configuration values
+    NAMESPACE_METADATA = &#39;metadata&#39;     # File metadata overflow
+    NAMESPACE_STATS = &#39;stats&#39;           # Statistics and counters
+    NAMESPACE_SESSION = &#39;session&#39;       # Session-specific data
+    NAMESPACE_FEATURE = &#39;feature&#39;       # Feature flags
+
+    def __init__(self, db_path: str = &#39;results/file_organization.db&#39;):
+        &#34;&#34;&#34;
+        Initialize key-value storage.
+
+        Args:
+            db_path: Path to SQLite database (shared with graph store)
+        &#34;&#34;&#34;
+        self.db_path = db_path
+        self.engine = create_engine(f&#39;sqlite:///{db_path}&#39;, echo=False)
+
+        # SQLite optimizations
+        @event.listens_for(self.engine, &#34;connect&#34;)
+        def set_sqlite_pragma(dbapi_connection: Any, connection_record: Any) -&gt; None:
+            cursor = dbapi_connection.cursor()
+            cursor.execute(&#34;PRAGMA foreign_keys=ON&#34;)
+            cursor.execute(&#34;PRAGMA journal_mode=WAL&#34;)
+            cursor.close()
+
+        # Create tables
+        Base.metadata.create_all(self.engine)
+
+        self.SessionLocal = sessionmaker(bind=self.engine)
+
+    def get_session(self) -&gt; Session:
+        &#34;&#34;&#34;Get a database session.&#34;&#34;&#34;
+        return self.SessionLocal()
+
+    @contextmanager
+    def session_scope(self) -&gt; Generator[Session, None, None]:
+        &#34;&#34;&#34;Provide a transactional scope around a series of operations.&#34;&#34;&#34;
+        session = self.get_session()
+        try:
+            yield session
+            session.commit()
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            session.close()
+
+    # =========================================================================
+    # Basic Operations
+    # =========================================================================
+
+    def get(
+        self,
+        key: str,
+        namespace: str = NAMESPACE_CACHE,
+        default: Any = None
+    ) -&gt; Any:
+        &#34;&#34;&#34;
+        Get a value by key.
+
+        Args:
+            key: The key to retrieve
+            namespace: Namespace for the key
+            default: Default value if key doesn&#39;t exist
+
+        Returns:
+            The value or default
+        &#34;&#34;&#34;
+        with self.session_scope() as session:
+            record = session.query(KeyValueStore).filter(
+                and_(
+                    KeyValueStore.namespace == namespace,
+                    KeyValueStore.key == key
+                )
+            ).first()
+
+            if not record:
+                return default
+
+            # Check TTL
+            if record.expires_at and record.expires_at &lt; utcnow():
+                session.delete(record)
+                return default
+
+            return record.value
+
+    def set(
+        self,
+        key: str,
+        value: Any,
+        namespace: str = NAMESPACE_CACHE,
+        ttl_seconds: int = None,
+        file_id: str = None
+    ) -&gt; bool:
+        &#34;&#34;&#34;
+        Set a value.
+
+        Args:
+            key: The key to set
+            value: The value (will be JSON serialized)
+            namespace: Namespace for the key
+            ttl_seconds: Time-to-live in seconds (None for permanent)
+            file_id: Optional file association
+
+        Returns:
+            True if successful
+        &#34;&#34;&#34;
+        with self.session_scope() as session:
+            # Calculate expiration
+            expires_at = None
+            if ttl_seconds:
+                expires_at = utcnow() + timedelta(seconds=ttl_seconds)
+
+            # Determine value type
+            value_type = self._get_value_type(value)
+
+            # Check if exists
+            record = session.query(KeyValueStore).filter(
+                and_(
+                    KeyValueStore.namespace == namespace,
+                    KeyValueStore.key == key
+                )
+            ).first()
+
+            if record:
+                record.value = value
+                record.value_type = value_type
+                record.expires_at = expires_at
+                record.file_id = file_id
+                record.updated_at = utcnow()
+            else:
+                record = KeyValueStore(
+                    namespace=namespace,
+                    key=key,
+                    value=value,
+                    value_type=value_type,
+                    expires_at=expires_at,
+                    file_id=file_id
+                )
+                session.add(record)
+
+            return True
+
+    def delete(self, key: str, namespace: str = NAMESPACE_CACHE) -&gt; bool:
+        &#34;&#34;&#34;
+        Delete a key.
+
+        Args:
+            key: The key to delete
+            namespace: Namespace for the key
+
+        Returns:
+            True if key existed and was deleted
+        &#34;&#34;&#34;
+        with self.session_scope() as session:
+            result = session.query(KeyValueStore).filter(
+                and_(
+                    KeyValueStore.namespace == namespace,
+                    KeyValueStore.key == key
+                )
+            ).delete()
+            return result &gt; 0
+
+    def exists(self, key: str, namespace: str = NAMESPACE_CACHE) -&gt; bool:
+        &#34;&#34;&#34;
+        Check if a key exists.
+
+        Args:
+            key: The key to check
+            namespace: Namespace for the key
+
+        Returns:
+            True if key exists and hasn&#39;t expired
+        &#34;&#34;&#34;
+        with self.session_scope() as session:
+            record = session.query(KeyValueStore).filter(
+                and_(
+                    KeyValueStore.namespace == namespace,
+                    KeyValueStore.key == key
+                )
+            ).first()
+
+            if not record:
+                return False
+
+            # Check TTL
+            if record.expires_at and record.expires_at &lt; utcnow():
+                session.delete(record)
+                return False
+
+            return True
+
+    # =========================================================================
+    # Batch Operations
+    # =========================================================================
+
+    def mget(
+        self,
+        keys: List[str],
+        namespace: str = NAMESPACE_CACHE
+    ) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Get multiple values at once.
+
+        Args:
+            keys: List of keys to retrieve
+            namespace: Namespace for the keys
+
+        Returns:
+            Dictionary of key -&gt; value (missing keys omitted)
+        &#34;&#34;&#34;
+        with self.session_scope() as session:
+            records = session.query(KeyValueStore).filter(
+                and_(
+                    KeyValueStore.namespace == namespace,
+                    KeyValueStore.key.in_(keys)
+                )
+            ).all()
+
+            now = utcnow()
+            result = {}
+
+            for record in records:
+                if record.expires_at and record.expires_at &lt; now:
+                    session.delete(record)
+                    continue
+                result[record.key] = record.value
+
+            return result
+
+    def mset(
+        self,
+        mapping: Dict[str, Any],
+        namespace: str = NAMESPACE_CACHE,
+        ttl_seconds: int = None
+    ) -&gt; bool:
+        &#34;&#34;&#34;
+        Set multiple values at once.
+
+        Args:
+            mapping: Dictionary of key -&gt; value
+            namespace: Namespace for the keys
+            ttl_seconds: Optional TTL for all keys
+
+        Returns:
+            True if successful
+        &#34;&#34;&#34;
+        for key, value in mapping.items():
+            self.set(key, value, namespace, ttl_seconds)
+        return True
+
+    # =========================================================================
+    # Counter Operations
+    # =========================================================================
+
+    def incr(
+        self,
+        key: str,
+        amount: int = 1,
+        namespace: str = NAMESPACE_STATS
+    ) -&gt; int:
+        &#34;&#34;&#34;
+        Increment a counter.
+
+        Args:
+            key: The counter key
+            amount: Amount to increment by
+            namespace: Namespace for the counter
+
+        Returns:
+            New counter value
+        &#34;&#34;&#34;
+        with self.session_scope() as session:
+            record = session.query(KeyValueStore).filter(
+                and_(
+                    KeyValueStore.namespace == namespace,
+                    KeyValueStore.key == key
+                )
+            ).first()
+
+            if record:
+                current = record.value or 0
+                record.value = current + amount
+                record.updated_at = utcnow()
+                return record.value
+            else:
+                record = KeyValueStore(
+                    namespace=namespace,
+                    key=key,
+                    value=amount,
+                    value_type=&#39;int&#39;
+                )
+                session.add(record)
+                return amount
+
+    def decr(
+        self,
+        key: str,
+        amount: int = 1,
+        namespace: str = NAMESPACE_STATS
+    ) -&gt; int:
+        &#34;&#34;&#34;
+        Decrement a counter.
+
+        Args:
+            key: The counter key
+            amount: Amount to decrement by
+            namespace: Namespace for the counter
+
+        Returns:
+            New counter value
+        &#34;&#34;&#34;
+        return self.incr(key, -amount, namespace)
+
+    def incrby_float(
+        self,
+        key: str,
+        amount: float,
+        namespace: str = NAMESPACE_STATS
+    ) -&gt; float:
+        &#34;&#34;&#34;
+        Increment a float counter.
+
+        Args:
+            key: The counter key
+            amount: Amount to increment by
+            namespace: Namespace for the counter
+
+        Returns:
+            New counter value
+        &#34;&#34;&#34;
+        with self.session_scope() as session:
+            record = session.query(KeyValueStore).filter(
+                and_(
+                    KeyValueStore.namespace == namespace,
+                    KeyValueStore.key == key
+                )
+            ).first()
+
+            if record:
+                current = float(record.value or 0)
+                record.value = current + amount
+                record.value_type = &#39;float&#39;
+                record.updated_at = utcnow()
+                return record.value
+            else:
+                record = KeyValueStore(
+                    namespace=namespace,
+                    key=key,
+                    value=amount,
+                    value_type=&#39;float&#39;
+                )
+                session.add(record)
+                return amount
+
+    # =========================================================================
+    # Scan and Pattern Matching
+    # =========================================================================
+
+    def keys(
+        self,
+        pattern: str = &#39;*&#39;,
+        namespace: str = NAMESPACE_CACHE
+    ) -&gt; List[str]:
+        &#34;&#34;&#34;
+        Get all keys matching a pattern.
+
+        Args:
+            pattern: Glob-style pattern (* for wildcard)
+            namespace: Namespace to search
+
+        Returns:
+            List of matching keys
+        &#34;&#34;&#34;
+        with self.session_scope() as session:
+            query = session.query(KeyValueStore.key).filter(
+                KeyValueStore.namespace == namespace
+            )
+
+            if pattern != &#39;*&#39;:
+                # Convert glob to SQL LIKE
+                sql_pattern = pattern.replace(&#39;*&#39;, &#39;%&#39;).replace(&#39;?&#39;, &#39;_&#39;)
+                query = query.filter(KeyValueStore.key.like(sql_pattern))
+
+            return [row[0] for row in query.all()]
+
+    def scan(
+        self,
+        namespace: str = NAMESPACE_CACHE,
+        match: str = None,
+        count: int = 100,
+        cursor: int = 0
+    ) -&gt; tuple:
+        &#34;&#34;&#34;
+        Incrementally iterate over keys.
+
+        Args:
+            namespace: Namespace to scan
+            match: Optional pattern to match
+            count: Number of keys to return
+            cursor: Position to start from
+
+        Returns:
+            Tuple of (next_cursor, list of keys)
+        &#34;&#34;&#34;
+        with self.session_scope() as session:
+            query = session.query(KeyValueStore.key, KeyValueStore.id).filter(
+                KeyValueStore.namespace == namespace
+            )
+
+            if match:
+                sql_pattern = match.replace(&#39;*&#39;, &#39;%&#39;).replace(&#39;?&#39;, &#39;_&#39;)
+                query = query.filter(KeyValueStore.key.like(sql_pattern))
+
+            query = query.filter(KeyValueStore.id &gt; cursor)\
+                .order_by(KeyValueStore.id)\
+                .limit(count)
+
+            results = query.all()
+
+            if not results:
+                return (0, [])
+
+            keys = [row[0] for row in results]
+            next_cursor = results[-1][1]
+
+            # Check if there are more
+            more = session.query(KeyValueStore.id).filter(
+                and_(
+                    KeyValueStore.namespace == namespace,
+                    KeyValueStore.id &gt; next_cursor
+                )
+            ).first()
+
+            if not more:
+                next_cursor = 0
+
+            return (next_cursor, keys)
+
+    # =========================================================================
+    # Hash Operations (nested dictionaries)
+    # =========================================================================
+
+    def hget(
+        self,
+        name: str,
+        key: str,
+        namespace: str = NAMESPACE_METADATA
+    ) -&gt; Any:
+        &#34;&#34;&#34;
+        Get a field from a hash.
+
+        Args:
+            name: Hash name
+            key: Field key
+            namespace: Namespace
+
+        Returns:
+            Field value or None
+        &#34;&#34;&#34;
+        hash_key = f&#34;{name}:{key}&#34;
+        return self.get(hash_key, namespace)
+
+    def hset(
+        self,
+        name: str,
+        key: str,
+        value: Any,
+        namespace: str = NAMESPACE_METADATA
+    ) -&gt; bool:
+        &#34;&#34;&#34;
+        Set a field in a hash.
+
+        Args:
+            name: Hash name
+            key: Field key
+            value: Field value
+            namespace: Namespace
+
+        Returns:
+            True if successful
+        &#34;&#34;&#34;
+        hash_key = f&#34;{name}:{key}&#34;
+        return self.set(hash_key, value, namespace)
+
+    def hgetall(
+        self,
+        name: str,
+        namespace: str = NAMESPACE_METADATA
+    ) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Get all fields from a hash.
+
+        Args:
+            name: Hash name
+            namespace: Namespace
+
+        Returns:
+            Dictionary of field -&gt; value
+        &#34;&#34;&#34;
+        pattern = f&#34;{name}:*&#34;
+        keys = self.keys(pattern, namespace)
+
+        result = {}
+        for key in keys:
+            field = key[len(name) + 1:]  # Remove &#34;name:&#34; prefix
+            result[field] = self.get(key, namespace)
+
+        return result
+
+    def hdel(
+        self,
+        name: str,
+        *keys: str,
+        namespace: str = NAMESPACE_METADATA
+    ) -&gt; int:
+        &#34;&#34;&#34;
+        Delete fields from a hash.
+
+        Args:
+            name: Hash name
+            *keys: Field keys to delete
+            namespace: Namespace
+
+        Returns:
+            Number of fields deleted
+        &#34;&#34;&#34;
+        count = 0
+        for key in keys:
+            hash_key = f&#34;{name}:{key}&#34;
+            if self.delete(hash_key, namespace):
+                count += 1
+        return count
+
+    # =========================================================================
+    # TTL Operations
+    # =========================================================================
+
+    def ttl(self, key: str, namespace: str = NAMESPACE_CACHE) -&gt; Optional[int]:
+        &#34;&#34;&#34;
+        Get remaining TTL for a key.
+
+        Args:
+            key: The key
+            namespace: Namespace
+
+        Returns:
+            Seconds remaining, -1 if no TTL, None if key doesn&#39;t exist
+        &#34;&#34;&#34;
+        with self.session_scope() as session:
+            record = session.query(KeyValueStore).filter(
+                and_(
+                    KeyValueStore.namespace == namespace,
+                    KeyValueStore.key == key
+                )
+            ).first()
+
+            if not record:
+                return None
+
+            if not record.expires_at:
+                return -1
+
+            remaining = (record.expires_at - utcnow()).total_seconds()
+            return max(0, int(remaining))
+
+    def expire(
+        self,
+        key: str,
+        seconds: int,
+        namespace: str = NAMESPACE_CACHE
+    ) -&gt; bool:
+        &#34;&#34;&#34;
+        Set TTL on an existing key.
+
+        Args:
+            key: The key
+            seconds: TTL in seconds
+            namespace: Namespace
+
+        Returns:
+            True if key exists and TTL was set
+        &#34;&#34;&#34;
+        with self.session_scope() as session:
+            record = session.query(KeyValueStore).filter(
+                and_(
+                    KeyValueStore.namespace == namespace,
+                    KeyValueStore.key == key
+                )
+            ).first()
+
+            if not record:
+                return False
+
+            record.expires_at = utcnow() + timedelta(seconds=seconds)
+            return True
+
+    def persist(self, key: str, namespace: str = NAMESPACE_CACHE) -&gt; bool:
+        &#34;&#34;&#34;
+        Remove TTL from a key, making it permanent.
+
+        Args:
+            key: The key
+            namespace: Namespace
+
+        Returns:
+            True if key exists and TTL was removed
+        &#34;&#34;&#34;
+        with self.session_scope() as session:
+            record = session.query(KeyValueStore).filter(
+                and_(
+                    KeyValueStore.namespace == namespace,
+                    KeyValueStore.key == key
+                )
+            ).first()
+
+            if not record:
+                return False
+
+            record.expires_at = None
+            return True
+
+    # =========================================================================
+    # Cleanup Operations
+    # =========================================================================
+
+    def cleanup_expired(self) -&gt; int:
+        &#34;&#34;&#34;
+        Remove all expired keys.
+
+        Returns:
+            Number of keys removed
+        &#34;&#34;&#34;
+        with self.session_scope() as session:
+            result = session.query(KeyValueStore).filter(
+                and_(
+                    KeyValueStore.expires_at.isnot(None),
+                    KeyValueStore.expires_at &lt; utcnow()
+                )
+            ).delete()
+            return result
+
+    def flush_namespace(self, namespace: str) -&gt; int:
+        &#34;&#34;&#34;
+        Delete all keys in a namespace.
+
+        Args:
+            namespace: Namespace to flush
+
+        Returns:
+            Number of keys deleted
+        &#34;&#34;&#34;
+        with self.session_scope() as session:
+            result = session.query(KeyValueStore).filter(
+                KeyValueStore.namespace == namespace
+            ).delete()
+            return result
+
+    def flush_all(self) -&gt; int:
+        &#34;&#34;&#34;
+        Delete all keys in all namespaces.
+
+        Returns:
+            Number of keys deleted
+        &#34;&#34;&#34;
+        with self.session_scope() as session:
+            result = session.query(KeyValueStore).delete()
+            return result
+
+    # =========================================================================
+    # Utility Methods
+    # =========================================================================
+
+    def _get_value_type(self, value: Any) -&gt; str:
+        &#34;&#34;&#34;Determine the type of a value.&#34;&#34;&#34;
+        if isinstance(value, bool):
+            return &#39;bool&#39;
+        elif isinstance(value, int):
+            return &#39;int&#39;
+        elif isinstance(value, float):
+            return &#39;float&#39;
+        elif isinstance(value, str):
+            return &#39;string&#39;
+        elif isinstance(value, (dict, list)):
+            return &#39;json&#39;
+        else:
+            return &#39;json&#39;
+
+    def info(self) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Get storage statistics.
+
+        Returns:
+            Dictionary with stats
+        &#34;&#34;&#34;
+        with self.session_scope() as session:
+            total = session.query(func.count(KeyValueStore.id)).scalar()
+
+            by_namespace = session.query(
+                KeyValueStore.namespace,
+                func.count(KeyValueStore.id)
+            ).group_by(KeyValueStore.namespace).all()
+
+            expired = session.query(func.count(KeyValueStore.id)).filter(
+                and_(
+                    KeyValueStore.expires_at.isnot(None),
+                    KeyValueStore.expires_at &lt; utcnow()
+                )
+            ).scalar()
+
+            return {
+                &#39;total_keys&#39;: total,
+                &#39;by_namespace&#39;: {ns: count for ns, count in by_namespace},
+                &#39;expired_keys&#39;: expired
+            }</code></pre>
+</details>
+<div class="desc"><p>Key-Value storage with namespace support.</p>
+<p>Features:
+- Namespace isolation (like Redis databases)
+- TTL support for automatic expiration
+- JSON value serialization
+- Atomic increment/decrement operations
+- Pattern-based key scanning</p>
+<p>Can be swapped with Redis by implementing the same interface.</p>
+<p>Initialize key-value storage.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>db_path</code></strong></dt>
+<dd>Path to SQLite database (shared with graph store)</dd>
+</dl></div>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.storage.kv_store.KeyValueStorage.NAMESPACE_CACHE"><code class="name">var <span class="ident">NAMESPACE_CACHE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.NAMESPACE_CONFIG"><code class="name">var <span class="ident">NAMESPACE_CONFIG</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.NAMESPACE_FEATURE"><code class="name">var <span class="ident">NAMESPACE_FEATURE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.NAMESPACE_METADATA"><code class="name">var <span class="ident">NAMESPACE_METADATA</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.NAMESPACE_SESSION"><code class="name">var <span class="ident">NAMESPACE_SESSION</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.NAMESPACE_STATS"><code class="name">var <span class="ident">NAMESPACE_STATS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="src.storage.kv_store.KeyValueStorage.cleanup_expired"><code class="name flex">
+<span>def <span class="ident">cleanup_expired</span></span>(<span>self) ‑> int</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cleanup_expired(self) -&gt; int:
+    &#34;&#34;&#34;
+    Remove all expired keys.
+
+    Returns:
+        Number of keys removed
+    &#34;&#34;&#34;
+    with self.session_scope() as session:
+        result = session.query(KeyValueStore).filter(
+            and_(
+                KeyValueStore.expires_at.isnot(None),
+                KeyValueStore.expires_at &lt; utcnow()
+            )
+        ).delete()
+        return result</code></pre>
+</details>
+<div class="desc"><p>Remove all expired keys.</p>
+<h2 id="returns">Returns</h2>
+<p>Number of keys removed</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.decr"><code class="name flex">
+<span>def <span class="ident">decr</span></span>(<span>self, key: str, amount: int = 1, namespace: str = 'stats') ‑> int</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def decr(
+    self,
+    key: str,
+    amount: int = 1,
+    namespace: str = NAMESPACE_STATS
+) -&gt; int:
+    &#34;&#34;&#34;
+    Decrement a counter.
+
+    Args:
+        key: The counter key
+        amount: Amount to decrement by
+        namespace: Namespace for the counter
+
+    Returns:
+        New counter value
+    &#34;&#34;&#34;
+    return self.incr(key, -amount, namespace)</code></pre>
+</details>
+<div class="desc"><p>Decrement a counter.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>key</code></strong></dt>
+<dd>The counter key</dd>
+<dt><strong><code>amount</code></strong></dt>
+<dd>Amount to decrement by</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace for the counter</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>New counter value</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.delete"><code class="name flex">
+<span>def <span class="ident">delete</span></span>(<span>self, key: str, namespace: str = 'cache') ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def delete(self, key: str, namespace: str = NAMESPACE_CACHE) -&gt; bool:
+    &#34;&#34;&#34;
+    Delete a key.
+
+    Args:
+        key: The key to delete
+        namespace: Namespace for the key
+
+    Returns:
+        True if key existed and was deleted
+    &#34;&#34;&#34;
+    with self.session_scope() as session:
+        result = session.query(KeyValueStore).filter(
+            and_(
+                KeyValueStore.namespace == namespace,
+                KeyValueStore.key == key
+            )
+        ).delete()
+        return result &gt; 0</code></pre>
+</details>
+<div class="desc"><p>Delete a key.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>key</code></strong></dt>
+<dd>The key to delete</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace for the key</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>True if key existed and was deleted</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.exists"><code class="name flex">
+<span>def <span class="ident">exists</span></span>(<span>self, key: str, namespace: str = 'cache') ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def exists(self, key: str, namespace: str = NAMESPACE_CACHE) -&gt; bool:
+    &#34;&#34;&#34;
+    Check if a key exists.
+
+    Args:
+        key: The key to check
+        namespace: Namespace for the key
+
+    Returns:
+        True if key exists and hasn&#39;t expired
+    &#34;&#34;&#34;
+    with self.session_scope() as session:
+        record = session.query(KeyValueStore).filter(
+            and_(
+                KeyValueStore.namespace == namespace,
+                KeyValueStore.key == key
+            )
+        ).first()
+
+        if not record:
+            return False
+
+        # Check TTL
+        if record.expires_at and record.expires_at &lt; utcnow():
+            session.delete(record)
+            return False
+
+        return True</code></pre>
+</details>
+<div class="desc"><p>Check if a key exists.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>key</code></strong></dt>
+<dd>The key to check</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace for the key</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>True if key exists and hasn't expired</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.expire"><code class="name flex">
+<span>def <span class="ident">expire</span></span>(<span>self, key: str, seconds: int, namespace: str = 'cache') ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def expire(
+    self,
+    key: str,
+    seconds: int,
+    namespace: str = NAMESPACE_CACHE
+) -&gt; bool:
+    &#34;&#34;&#34;
+    Set TTL on an existing key.
+
+    Args:
+        key: The key
+        seconds: TTL in seconds
+        namespace: Namespace
+
+    Returns:
+        True if key exists and TTL was set
+    &#34;&#34;&#34;
+    with self.session_scope() as session:
+        record = session.query(KeyValueStore).filter(
+            and_(
+                KeyValueStore.namespace == namespace,
+                KeyValueStore.key == key
+            )
+        ).first()
+
+        if not record:
+            return False
+
+        record.expires_at = utcnow() + timedelta(seconds=seconds)
+        return True</code></pre>
+</details>
+<div class="desc"><p>Set TTL on an existing key.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>key</code></strong></dt>
+<dd>The key</dd>
+<dt><strong><code>seconds</code></strong></dt>
+<dd>TTL in seconds</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>True if key exists and TTL was set</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.flush_all"><code class="name flex">
+<span>def <span class="ident">flush_all</span></span>(<span>self) ‑> int</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def flush_all(self) -&gt; int:
+    &#34;&#34;&#34;
+    Delete all keys in all namespaces.
+
+    Returns:
+        Number of keys deleted
+    &#34;&#34;&#34;
+    with self.session_scope() as session:
+        result = session.query(KeyValueStore).delete()
+        return result</code></pre>
+</details>
+<div class="desc"><p>Delete all keys in all namespaces.</p>
+<h2 id="returns">Returns</h2>
+<p>Number of keys deleted</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.flush_namespace"><code class="name flex">
+<span>def <span class="ident">flush_namespace</span></span>(<span>self, namespace: str) ‑> int</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def flush_namespace(self, namespace: str) -&gt; int:
+    &#34;&#34;&#34;
+    Delete all keys in a namespace.
+
+    Args:
+        namespace: Namespace to flush
+
+    Returns:
+        Number of keys deleted
+    &#34;&#34;&#34;
+    with self.session_scope() as session:
+        result = session.query(KeyValueStore).filter(
+            KeyValueStore.namespace == namespace
+        ).delete()
+        return result</code></pre>
+</details>
+<div class="desc"><p>Delete all keys in a namespace.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace to flush</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Number of keys deleted</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.get"><code class="name flex">
+<span>def <span class="ident">get</span></span>(<span>self, key: str, namespace: str = 'cache', default: Any = None) ‑> Any</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get(
+    self,
+    key: str,
+    namespace: str = NAMESPACE_CACHE,
+    default: Any = None
+) -&gt; Any:
+    &#34;&#34;&#34;
+    Get a value by key.
+
+    Args:
+        key: The key to retrieve
+        namespace: Namespace for the key
+        default: Default value if key doesn&#39;t exist
+
+    Returns:
+        The value or default
+    &#34;&#34;&#34;
+    with self.session_scope() as session:
+        record = session.query(KeyValueStore).filter(
+            and_(
+                KeyValueStore.namespace == namespace,
+                KeyValueStore.key == key
+            )
+        ).first()
+
+        if not record:
+            return default
+
+        # Check TTL
+        if record.expires_at and record.expires_at &lt; utcnow():
+            session.delete(record)
+            return default
+
+        return record.value</code></pre>
+</details>
+<div class="desc"><p>Get a value by key.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>key</code></strong></dt>
+<dd>The key to retrieve</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace for the key</dd>
+<dt><strong><code>default</code></strong></dt>
+<dd>Default value if key doesn't exist</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>The value or default</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.get_session"><code class="name flex">
+<span>def <span class="ident">get_session</span></span>(<span>self) ‑> sqlalchemy.orm.session.Session</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_session(self) -&gt; Session:
+    &#34;&#34;&#34;Get a database session.&#34;&#34;&#34;
+    return self.SessionLocal()</code></pre>
+</details>
+<div class="desc"><p>Get a database session.</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.hdel"><code class="name flex">
+<span>def <span class="ident">hdel</span></span>(<span>self, name: str, *keys: str, namespace: str = 'metadata') ‑> int</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def hdel(
+    self,
+    name: str,
+    *keys: str,
+    namespace: str = NAMESPACE_METADATA
+) -&gt; int:
+    &#34;&#34;&#34;
+    Delete fields from a hash.
+
+    Args:
+        name: Hash name
+        *keys: Field keys to delete
+        namespace: Namespace
+
+    Returns:
+        Number of fields deleted
+    &#34;&#34;&#34;
+    count = 0
+    for key in keys:
+        hash_key = f&#34;{name}:{key}&#34;
+        if self.delete(hash_key, namespace):
+            count += 1
+    return count</code></pre>
+</details>
+<div class="desc"><p>Delete fields from a hash.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong></dt>
+<dd>Hash name</dd>
+<dt><strong><code>*keys</code></strong></dt>
+<dd>Field keys to delete</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Number of fields deleted</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.hget"><code class="name flex">
+<span>def <span class="ident">hget</span></span>(<span>self, name: str, key: str, namespace: str = 'metadata') ‑> Any</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def hget(
+    self,
+    name: str,
+    key: str,
+    namespace: str = NAMESPACE_METADATA
+) -&gt; Any:
+    &#34;&#34;&#34;
+    Get a field from a hash.
+
+    Args:
+        name: Hash name
+        key: Field key
+        namespace: Namespace
+
+    Returns:
+        Field value or None
+    &#34;&#34;&#34;
+    hash_key = f&#34;{name}:{key}&#34;
+    return self.get(hash_key, namespace)</code></pre>
+</details>
+<div class="desc"><p>Get a field from a hash.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong></dt>
+<dd>Hash name</dd>
+<dt><strong><code>key</code></strong></dt>
+<dd>Field key</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Field value or None</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.hgetall"><code class="name flex">
+<span>def <span class="ident">hgetall</span></span>(<span>self, name: str, namespace: str = 'metadata') ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def hgetall(
+    self,
+    name: str,
+    namespace: str = NAMESPACE_METADATA
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get all fields from a hash.
+
+    Args:
+        name: Hash name
+        namespace: Namespace
+
+    Returns:
+        Dictionary of field -&gt; value
+    &#34;&#34;&#34;
+    pattern = f&#34;{name}:*&#34;
+    keys = self.keys(pattern, namespace)
+
+    result = {}
+    for key in keys:
+        field = key[len(name) + 1:]  # Remove &#34;name:&#34; prefix
+        result[field] = self.get(key, namespace)
+
+    return result</code></pre>
+</details>
+<div class="desc"><p>Get all fields from a hash.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong></dt>
+<dd>Hash name</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Dictionary of field -&gt; value</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.hset"><code class="name flex">
+<span>def <span class="ident">hset</span></span>(<span>self, name: str, key: str, value: Any, namespace: str = 'metadata') ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def hset(
+    self,
+    name: str,
+    key: str,
+    value: Any,
+    namespace: str = NAMESPACE_METADATA
+) -&gt; bool:
+    &#34;&#34;&#34;
+    Set a field in a hash.
+
+    Args:
+        name: Hash name
+        key: Field key
+        value: Field value
+        namespace: Namespace
+
+    Returns:
+        True if successful
+    &#34;&#34;&#34;
+    hash_key = f&#34;{name}:{key}&#34;
+    return self.set(hash_key, value, namespace)</code></pre>
+</details>
+<div class="desc"><p>Set a field in a hash.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong></dt>
+<dd>Hash name</dd>
+<dt><strong><code>key</code></strong></dt>
+<dd>Field key</dd>
+<dt><strong><code>value</code></strong></dt>
+<dd>Field value</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>True if successful</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.incr"><code class="name flex">
+<span>def <span class="ident">incr</span></span>(<span>self, key: str, amount: int = 1, namespace: str = 'stats') ‑> int</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def incr(
+    self,
+    key: str,
+    amount: int = 1,
+    namespace: str = NAMESPACE_STATS
+) -&gt; int:
+    &#34;&#34;&#34;
+    Increment a counter.
+
+    Args:
+        key: The counter key
+        amount: Amount to increment by
+        namespace: Namespace for the counter
+
+    Returns:
+        New counter value
+    &#34;&#34;&#34;
+    with self.session_scope() as session:
+        record = session.query(KeyValueStore).filter(
+            and_(
+                KeyValueStore.namespace == namespace,
+                KeyValueStore.key == key
+            )
+        ).first()
+
+        if record:
+            current = record.value or 0
+            record.value = current + amount
+            record.updated_at = utcnow()
+            return record.value
+        else:
+            record = KeyValueStore(
+                namespace=namespace,
+                key=key,
+                value=amount,
+                value_type=&#39;int&#39;
+            )
+            session.add(record)
+            return amount</code></pre>
+</details>
+<div class="desc"><p>Increment a counter.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>key</code></strong></dt>
+<dd>The counter key</dd>
+<dt><strong><code>amount</code></strong></dt>
+<dd>Amount to increment by</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace for the counter</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>New counter value</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.incrby_float"><code class="name flex">
+<span>def <span class="ident">incrby_float</span></span>(<span>self, key: str, amount: float, namespace: str = 'stats') ‑> float</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def incrby_float(
+    self,
+    key: str,
+    amount: float,
+    namespace: str = NAMESPACE_STATS
+) -&gt; float:
+    &#34;&#34;&#34;
+    Increment a float counter.
+
+    Args:
+        key: The counter key
+        amount: Amount to increment by
+        namespace: Namespace for the counter
+
+    Returns:
+        New counter value
+    &#34;&#34;&#34;
+    with self.session_scope() as session:
+        record = session.query(KeyValueStore).filter(
+            and_(
+                KeyValueStore.namespace == namespace,
+                KeyValueStore.key == key
+            )
+        ).first()
+
+        if record:
+            current = float(record.value or 0)
+            record.value = current + amount
+            record.value_type = &#39;float&#39;
+            record.updated_at = utcnow()
+            return record.value
+        else:
+            record = KeyValueStore(
+                namespace=namespace,
+                key=key,
+                value=amount,
+                value_type=&#39;float&#39;
+            )
+            session.add(record)
+            return amount</code></pre>
+</details>
+<div class="desc"><p>Increment a float counter.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>key</code></strong></dt>
+<dd>The counter key</dd>
+<dt><strong><code>amount</code></strong></dt>
+<dd>Amount to increment by</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace for the counter</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>New counter value</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.info"><code class="name flex">
+<span>def <span class="ident">info</span></span>(<span>self) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def info(self) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get storage statistics.
+
+    Returns:
+        Dictionary with stats
+    &#34;&#34;&#34;
+    with self.session_scope() as session:
+        total = session.query(func.count(KeyValueStore.id)).scalar()
+
+        by_namespace = session.query(
+            KeyValueStore.namespace,
+            func.count(KeyValueStore.id)
+        ).group_by(KeyValueStore.namespace).all()
+
+        expired = session.query(func.count(KeyValueStore.id)).filter(
+            and_(
+                KeyValueStore.expires_at.isnot(None),
+                KeyValueStore.expires_at &lt; utcnow()
+            )
+        ).scalar()
+
+        return {
+            &#39;total_keys&#39;: total,
+            &#39;by_namespace&#39;: {ns: count for ns, count in by_namespace},
+            &#39;expired_keys&#39;: expired
+        }</code></pre>
+</details>
+<div class="desc"><p>Get storage statistics.</p>
+<h2 id="returns">Returns</h2>
+<p>Dictionary with stats</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.keys"><code class="name flex">
+<span>def <span class="ident">keys</span></span>(<span>self, pattern: str = '*', namespace: str = 'cache') ‑> List[str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def keys(
+    self,
+    pattern: str = &#39;*&#39;,
+    namespace: str = NAMESPACE_CACHE
+) -&gt; List[str]:
+    &#34;&#34;&#34;
+    Get all keys matching a pattern.
+
+    Args:
+        pattern: Glob-style pattern (* for wildcard)
+        namespace: Namespace to search
+
+    Returns:
+        List of matching keys
+    &#34;&#34;&#34;
+    with self.session_scope() as session:
+        query = session.query(KeyValueStore.key).filter(
+            KeyValueStore.namespace == namespace
+        )
+
+        if pattern != &#39;*&#39;:
+            # Convert glob to SQL LIKE
+            sql_pattern = pattern.replace(&#39;*&#39;, &#39;%&#39;).replace(&#39;?&#39;, &#39;_&#39;)
+            query = query.filter(KeyValueStore.key.like(sql_pattern))
+
+        return [row[0] for row in query.all()]</code></pre>
+</details>
+<div class="desc"><p>Get all keys matching a pattern.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>pattern</code></strong></dt>
+<dd>Glob-style pattern (* for wildcard)</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace to search</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>List of matching keys</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.mget"><code class="name flex">
+<span>def <span class="ident">mget</span></span>(<span>self, keys: List[str], namespace: str = 'cache') ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mget(
+    self,
+    keys: List[str],
+    namespace: str = NAMESPACE_CACHE
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get multiple values at once.
+
+    Args:
+        keys: List of keys to retrieve
+        namespace: Namespace for the keys
+
+    Returns:
+        Dictionary of key -&gt; value (missing keys omitted)
+    &#34;&#34;&#34;
+    with self.session_scope() as session:
+        records = session.query(KeyValueStore).filter(
+            and_(
+                KeyValueStore.namespace == namespace,
+                KeyValueStore.key.in_(keys)
+            )
+        ).all()
+
+        now = utcnow()
+        result = {}
+
+        for record in records:
+            if record.expires_at and record.expires_at &lt; now:
+                session.delete(record)
+                continue
+            result[record.key] = record.value
+
+        return result</code></pre>
+</details>
+<div class="desc"><p>Get multiple values at once.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>keys</code></strong></dt>
+<dd>List of keys to retrieve</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace for the keys</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Dictionary of key -&gt; value (missing keys omitted)</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.mset"><code class="name flex">
+<span>def <span class="ident">mset</span></span>(<span>self, mapping: Dict[str, Any], namespace: str = 'cache', ttl_seconds: int = None) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def mset(
+    self,
+    mapping: Dict[str, Any],
+    namespace: str = NAMESPACE_CACHE,
+    ttl_seconds: int = None
+) -&gt; bool:
+    &#34;&#34;&#34;
+    Set multiple values at once.
+
+    Args:
+        mapping: Dictionary of key -&gt; value
+        namespace: Namespace for the keys
+        ttl_seconds: Optional TTL for all keys
+
+    Returns:
+        True if successful
+    &#34;&#34;&#34;
+    for key, value in mapping.items():
+        self.set(key, value, namespace, ttl_seconds)
+    return True</code></pre>
+</details>
+<div class="desc"><p>Set multiple values at once.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>mapping</code></strong></dt>
+<dd>Dictionary of key -&gt; value</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace for the keys</dd>
+<dt><strong><code>ttl_seconds</code></strong></dt>
+<dd>Optional TTL for all keys</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>True if successful</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.persist"><code class="name flex">
+<span>def <span class="ident">persist</span></span>(<span>self, key: str, namespace: str = 'cache') ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def persist(self, key: str, namespace: str = NAMESPACE_CACHE) -&gt; bool:
+    &#34;&#34;&#34;
+    Remove TTL from a key, making it permanent.
+
+    Args:
+        key: The key
+        namespace: Namespace
+
+    Returns:
+        True if key exists and TTL was removed
+    &#34;&#34;&#34;
+    with self.session_scope() as session:
+        record = session.query(KeyValueStore).filter(
+            and_(
+                KeyValueStore.namespace == namespace,
+                KeyValueStore.key == key
+            )
+        ).first()
+
+        if not record:
+            return False
+
+        record.expires_at = None
+        return True</code></pre>
+</details>
+<div class="desc"><p>Remove TTL from a key, making it permanent.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>key</code></strong></dt>
+<dd>The key</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>True if key exists and TTL was removed</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.scan"><code class="name flex">
+<span>def <span class="ident">scan</span></span>(<span>self,<br>namespace: str = 'cache',<br>match: str = None,<br>count: int = 100,<br>cursor: int = 0) ‑> tuple</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def scan(
+    self,
+    namespace: str = NAMESPACE_CACHE,
+    match: str = None,
+    count: int = 100,
+    cursor: int = 0
+) -&gt; tuple:
+    &#34;&#34;&#34;
+    Incrementally iterate over keys.
+
+    Args:
+        namespace: Namespace to scan
+        match: Optional pattern to match
+        count: Number of keys to return
+        cursor: Position to start from
+
+    Returns:
+        Tuple of (next_cursor, list of keys)
+    &#34;&#34;&#34;
+    with self.session_scope() as session:
+        query = session.query(KeyValueStore.key, KeyValueStore.id).filter(
+            KeyValueStore.namespace == namespace
+        )
+
+        if match:
+            sql_pattern = match.replace(&#39;*&#39;, &#39;%&#39;).replace(&#39;?&#39;, &#39;_&#39;)
+            query = query.filter(KeyValueStore.key.like(sql_pattern))
+
+        query = query.filter(KeyValueStore.id &gt; cursor)\
+            .order_by(KeyValueStore.id)\
+            .limit(count)
+
+        results = query.all()
+
+        if not results:
+            return (0, [])
+
+        keys = [row[0] for row in results]
+        next_cursor = results[-1][1]
+
+        # Check if there are more
+        more = session.query(KeyValueStore.id).filter(
+            and_(
+                KeyValueStore.namespace == namespace,
+                KeyValueStore.id &gt; next_cursor
+            )
+        ).first()
+
+        if not more:
+            next_cursor = 0
+
+        return (next_cursor, keys)</code></pre>
+</details>
+<div class="desc"><p>Incrementally iterate over keys.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace to scan</dd>
+<dt><strong><code>match</code></strong></dt>
+<dd>Optional pattern to match</dd>
+<dt><strong><code>count</code></strong></dt>
+<dd>Number of keys to return</dd>
+<dt><strong><code>cursor</code></strong></dt>
+<dd>Position to start from</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Tuple of (next_cursor, list of keys)</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.session_scope"><code class="name flex">
+<span>def <span class="ident">session_scope</span></span>(<span>self) ‑> Generator[sqlalchemy.orm.session.Session, None, None]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@contextmanager
+def session_scope(self) -&gt; Generator[Session, None, None]:
+    &#34;&#34;&#34;Provide a transactional scope around a series of operations.&#34;&#34;&#34;
+    session = self.get_session()
+    try:
+        yield session
+        session.commit()
+    except Exception:
+        session.rollback()
+        raise
+    finally:
+        session.close()</code></pre>
+</details>
+<div class="desc"><p>Provide a transactional scope around a series of operations.</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.set"><code class="name flex">
+<span>def <span class="ident">set</span></span>(<span>self,<br>key: str,<br>value: Any,<br>namespace: str = 'cache',<br>ttl_seconds: int = None,<br>file_id: str = None) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set(
+    self,
+    key: str,
+    value: Any,
+    namespace: str = NAMESPACE_CACHE,
+    ttl_seconds: int = None,
+    file_id: str = None
+) -&gt; bool:
+    &#34;&#34;&#34;
+    Set a value.
+
+    Args:
+        key: The key to set
+        value: The value (will be JSON serialized)
+        namespace: Namespace for the key
+        ttl_seconds: Time-to-live in seconds (None for permanent)
+        file_id: Optional file association
+
+    Returns:
+        True if successful
+    &#34;&#34;&#34;
+    with self.session_scope() as session:
+        # Calculate expiration
+        expires_at = None
+        if ttl_seconds:
+            expires_at = utcnow() + timedelta(seconds=ttl_seconds)
+
+        # Determine value type
+        value_type = self._get_value_type(value)
+
+        # Check if exists
+        record = session.query(KeyValueStore).filter(
+            and_(
+                KeyValueStore.namespace == namespace,
+                KeyValueStore.key == key
+            )
+        ).first()
+
+        if record:
+            record.value = value
+            record.value_type = value_type
+            record.expires_at = expires_at
+            record.file_id = file_id
+            record.updated_at = utcnow()
+        else:
+            record = KeyValueStore(
+                namespace=namespace,
+                key=key,
+                value=value,
+                value_type=value_type,
+                expires_at=expires_at,
+                file_id=file_id
+            )
+            session.add(record)
+
+        return True</code></pre>
+</details>
+<div class="desc"><p>Set a value.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>key</code></strong></dt>
+<dd>The key to set</dd>
+<dt><strong><code>value</code></strong></dt>
+<dd>The value (will be JSON serialized)</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace for the key</dd>
+<dt><strong><code>ttl_seconds</code></strong></dt>
+<dd>Time-to-live in seconds (None for permanent)</dd>
+<dt><strong><code>file_id</code></strong></dt>
+<dd>Optional file association</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>True if successful</p></div>
+</dd>
+<dt id="src.storage.kv_store.KeyValueStorage.ttl"><code class="name flex">
+<span>def <span class="ident">ttl</span></span>(<span>self, key: str, namespace: str = 'cache') ‑> int | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def ttl(self, key: str, namespace: str = NAMESPACE_CACHE) -&gt; Optional[int]:
+    &#34;&#34;&#34;
+    Get remaining TTL for a key.
+
+    Args:
+        key: The key
+        namespace: Namespace
+
+    Returns:
+        Seconds remaining, -1 if no TTL, None if key doesn&#39;t exist
+    &#34;&#34;&#34;
+    with self.session_scope() as session:
+        record = session.query(KeyValueStore).filter(
+            and_(
+                KeyValueStore.namespace == namespace,
+                KeyValueStore.key == key
+            )
+        ).first()
+
+        if not record:
+            return None
+
+        if not record.expires_at:
+            return -1
+
+        remaining = (record.expires_at - utcnow()).total_seconds()
+        return max(0, int(remaining))</code></pre>
+</details>
+<div class="desc"><p>Get remaining TTL for a key.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>key</code></strong></dt>
+<dd>The key</dd>
+<dt><strong><code>namespace</code></strong></dt>
+<dd>Namespace</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Seconds remaining, -1 if no TTL, None if key doesn't exist</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.storage" href="index.html">src.storage</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="src.storage.kv_store.get_kv_store" href="#src.storage.kv_store.get_kv_store">get_kv_store</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.storage.kv_store.KeyValueStorage" href="#src.storage.kv_store.KeyValueStorage">KeyValueStorage</a></code></h4>
+<ul class="two-column">
+<li><code><a title="src.storage.kv_store.KeyValueStorage.NAMESPACE_CACHE" href="#src.storage.kv_store.KeyValueStorage.NAMESPACE_CACHE">NAMESPACE_CACHE</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.NAMESPACE_CONFIG" href="#src.storage.kv_store.KeyValueStorage.NAMESPACE_CONFIG">NAMESPACE_CONFIG</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.NAMESPACE_FEATURE" href="#src.storage.kv_store.KeyValueStorage.NAMESPACE_FEATURE">NAMESPACE_FEATURE</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.NAMESPACE_METADATA" href="#src.storage.kv_store.KeyValueStorage.NAMESPACE_METADATA">NAMESPACE_METADATA</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.NAMESPACE_SESSION" href="#src.storage.kv_store.KeyValueStorage.NAMESPACE_SESSION">NAMESPACE_SESSION</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.NAMESPACE_STATS" href="#src.storage.kv_store.KeyValueStorage.NAMESPACE_STATS">NAMESPACE_STATS</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.cleanup_expired" href="#src.storage.kv_store.KeyValueStorage.cleanup_expired">cleanup_expired</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.decr" href="#src.storage.kv_store.KeyValueStorage.decr">decr</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.delete" href="#src.storage.kv_store.KeyValueStorage.delete">delete</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.exists" href="#src.storage.kv_store.KeyValueStorage.exists">exists</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.expire" href="#src.storage.kv_store.KeyValueStorage.expire">expire</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.flush_all" href="#src.storage.kv_store.KeyValueStorage.flush_all">flush_all</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.flush_namespace" href="#src.storage.kv_store.KeyValueStorage.flush_namespace">flush_namespace</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.get" href="#src.storage.kv_store.KeyValueStorage.get">get</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.get_session" href="#src.storage.kv_store.KeyValueStorage.get_session">get_session</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.hdel" href="#src.storage.kv_store.KeyValueStorage.hdel">hdel</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.hget" href="#src.storage.kv_store.KeyValueStorage.hget">hget</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.hgetall" href="#src.storage.kv_store.KeyValueStorage.hgetall">hgetall</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.hset" href="#src.storage.kv_store.KeyValueStorage.hset">hset</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.incr" href="#src.storage.kv_store.KeyValueStorage.incr">incr</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.incrby_float" href="#src.storage.kv_store.KeyValueStorage.incrby_float">incrby_float</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.info" href="#src.storage.kv_store.KeyValueStorage.info">info</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.keys" href="#src.storage.kv_store.KeyValueStorage.keys">keys</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.mget" href="#src.storage.kv_store.KeyValueStorage.mget">mget</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.mset" href="#src.storage.kv_store.KeyValueStorage.mset">mset</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.persist" href="#src.storage.kv_store.KeyValueStorage.persist">persist</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.scan" href="#src.storage.kv_store.KeyValueStorage.scan">scan</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.session_scope" href="#src.storage.kv_store.KeyValueStorage.session_scope">session_scope</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.set" href="#src.storage.kv_store.KeyValueStorage.set">set</a></code></li>
+<li><code><a title="src.storage.kv_store.KeyValueStorage.ttl" href="#src.storage.kv_store.KeyValueStorage.ttl">ttl</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

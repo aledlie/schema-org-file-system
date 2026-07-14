@@ -1,0 +1,1362 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.organizers.name_organizer API documentation</title>
+<meta name="description" content="File Organization by Name and Path
+Organizes files based purely on filename patterns and filepath information.
+No content analysis, OCR, or AI vision …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.organizers.name_organizer</code></h1>
+</header>
+<section id="section-intro">
+<p>File Organization by Name and Path
+Organizes files based purely on filename patterns and filepath information.
+No content analysis, OCR, or AI vision processing.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="src.organizers.name_organizer.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main():
+    &#34;&#34;&#34;Standalone entry point (argument definitions shared with organize-files).&#34;&#34;&#34;
+    sys.path.insert(0, str(Path(__file__).parent.parent.parent))
+    from src.cli import add_name_arguments
+    from src.cli_inputs import NameInputs
+
+    parser = argparse.ArgumentParser(
+        description=&#39;Organize files by name and path patterns only&#39;,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=&#39;&#39;&#39;
+Examples:
+  # Dry run (preview only)
+  organize-files name --dry-run --source ~/Documents/Uncategorized
+
+  # Organize files
+  organize-files name --source ~/Documents/Uncategorized
+
+  # Recursive with limit
+  organize-files name --source ~/Documents --recursive --limit 500
+
+  # Custom base path
+  organize-files name --base-path ~/MyFiles --source ~/Downloads
+        &#39;&#39;&#39;
+    )
+    add_name_arguments(parser)
+    run(NameInputs.from_namespace(parser.parse_args()))</code></pre>
+</details>
+<div class="desc"><p>Standalone entry point (argument definitions shared with organize-files).</p></div>
+</dd>
+<dt id="src.organizers.name_organizer.run"><code class="name flex">
+<span>def <span class="ident">run</span></span>(<span>args: NameInputs)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run(args: &#34;NameInputs&#34;) -&gt; None:
+    &#34;&#34;&#34;Typed entry point: organize by name patterns from validated CLI inputs.
+
+    ``args`` is the frozen ``src.cli_inputs.NameInputs`` dataclass built
+    from the options ``src.cli.add_name_arguments`` defines (the single
+    source for this command, shared with the unified CLI).
+    &#34;&#34;&#34;
+    organizer = FileNameOrganizer(
+        base_path=args.base_path,
+        dry_run=args.dry_run
+    )
+
+    for source_dir in args.sources:
+        organizer.organize_directory(
+            source_dir=source_dir,
+            recursive=args.recursive,
+            limit=args.limit
+        )</code></pre>
+</details>
+<div class="desc"><p>Typed entry point: organize by name patterns from validated CLI inputs.</p>
+<p><code>args</code> is the frozen <code><a title="src.cli_inputs.NameInputs" href="../cli_inputs.html#src.cli_inputs.NameInputs">NameInputs</a></code> dataclass built
+from the options <code><a title="src.cli.add_name_arguments" href="../cli.html#src.cli.add_name_arguments">add_name_arguments()</a></code> defines (the single
+source for this command, shared with the unified CLI).</p></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.organizers.name_organizer.FileNameOrganizer"><code class="flex name class">
+<span>class <span class="ident">FileNameOrganizer</span></span>
+<span>(</span><span>base_path: str, dry_run: bool = False)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FileNameOrganizer:
+    &#34;&#34;&#34;Organize files based on filename and path patterns only.&#34;&#34;&#34;
+
+    def __init__(self, base_path: str, dry_run: bool = False):
+        self.base_path = Path(base_path).expanduser()
+        self.dry_run = dry_run
+        self.stats = {
+            &#39;total_files&#39;: 0,
+            &#39;moved_files&#39;: 0,
+            &#39;skipped_files&#39;: 0,
+            &#39;errors&#39;: 0,
+            &#39;by_category&#39;: {}
+        }
+
+        # Extension mappings
+        self.extension_map = {
+            # Images
+            &#39;images&#39;: {
+                &#39;png&#39;, &#39;jpg&#39;, &#39;jpeg&#39;, &#39;gif&#39;, &#39;bmp&#39;, &#39;webp&#39;, &#39;ico&#39;,
+                &#39;svg&#39;, &#39;heic&#39;, &#39;heif&#39;, &#39;tiff&#39;, &#39;tif&#39;, &#39;raw&#39;
+            },
+            # Videos
+            &#39;videos&#39;: {
+                &#39;mp4&#39;, &#39;mov&#39;, &#39;avi&#39;, &#39;mkv&#39;, &#39;wmv&#39;, &#39;flv&#39;, &#39;webm&#39;,
+                &#39;m4v&#39;, &#39;mpg&#39;, &#39;mpeg&#39;, &#39;3gp&#39;
+            },
+            # Audio
+            &#39;audio&#39;: {
+                &#39;mp3&#39;, &#39;wav&#39;, &#39;flac&#39;, &#39;aac&#39;, &#39;m4a&#39;, &#39;ogg&#39;, &#39;wma&#39;,
+                &#39;opus&#39;, &#39;aiff&#39;, &#39;ape&#39;
+            },
+            # Documents
+            &#39;documents&#39;: {
+                &#39;pdf&#39;, &#39;doc&#39;, &#39;docx&#39;, &#39;txt&#39;, &#39;rtf&#39;, &#39;odt&#39;, &#39;pages&#39;,
+                &#39;tex&#39;, &#39;md&#39;, &#39;markdown&#39;
+            },
+            # Spreadsheets
+            &#39;spreadsheets&#39;: {
+                &#39;xls&#39;, &#39;xlsx&#39;, &#39;csv&#39;, &#39;tsv&#39;, &#39;ods&#39;, &#39;numbers&#39;
+            },
+            # Presentations
+            &#39;presentations&#39;: {
+                &#39;ppt&#39;, &#39;pptx&#39;, &#39;key&#39;, &#39;odp&#39;
+            },
+            # Code
+            &#39;code&#39;: {
+                &#39;py&#39;, &#39;js&#39;, &#39;ts&#39;, &#39;jsx&#39;, &#39;tsx&#39;, &#39;java&#39;, &#39;c&#39;, &#39;cpp&#39;,
+                &#39;h&#39;, &#39;hpp&#39;, &#39;cs&#39;, &#39;go&#39;, &#39;rs&#39;, &#39;rb&#39;, &#39;php&#39;, &#39;swift&#39;,
+                &#39;kt&#39;, &#39;scala&#39;, &#39;r&#39;, &#39;sh&#39;, &#39;bash&#39;, &#39;zsh&#39;, &#39;fish&#39;,
+                &#39;html&#39;, &#39;css&#39;, &#39;scss&#39;, &#39;sass&#39;, &#39;less&#39;
+            },
+            # Data
+            &#39;data&#39;: {
+                &#39;json&#39;, &#39;xml&#39;, &#39;yaml&#39;, &#39;yml&#39;, &#39;toml&#39;, &#39;ini&#39;, &#39;cfg&#39;,
+                &#39;conf&#39;, &#39;config&#39;, &#39;plist&#39;, &#39;sql&#39;, &#39;db&#39;, &#39;sqlite&#39;
+            },
+            # Archives
+            &#39;archives&#39;: {
+                &#39;zip&#39;, &#39;tar&#39;, &#39;gz&#39;, &#39;bz2&#39;, &#39;xz&#39;, &#39;rar&#39;, &#39;7z&#39;, &#39;dmg&#39;,
+                &#39;pkg&#39;, &#39;deb&#39;, &#39;rpm&#39;, &#39;iso&#39;
+            },
+            # Certificates &amp; Keys
+            &#39;certificates&#39;: {
+                &#39;pem&#39;, &#39;key&#39;, &#39;crt&#39;, &#39;cer&#39;, &#39;p12&#39;, &#39;pfx&#39;, &#39;pub&#39;
+            },
+            # Game files
+            &#39;game_files&#39;: {
+                &#39;sav&#39;, &#39;save&#39;, &#39;dat&#39;
+            },
+            # Design
+            &#39;design&#39;: {
+                &#39;ai&#39;, &#39;psd&#39;, &#39;sketch&#39;, &#39;fig&#39;, &#39;xd&#39;, &#39;afdesign&#39;,
+                &#39;afphoto&#39;, &#39;afpub&#39;
+            },
+            # 3D
+            &#39;3d&#39;: {
+                &#39;blend&#39;, &#39;obj&#39;, &#39;fbx&#39;, &#39;dae&#39;, &#39;stl&#39;, &#39;3ds&#39;, &#39;max&#39;,
+                &#39;c4d&#39;, &#39;ma&#39;, &#39;mb&#39;
+            }
+        }
+
+        # Filename pattern categories
+        self.filename_patterns = {
+            # Artifact/build files (to be trashed)
+            &#39;artifacts_trash&#39;: [
+                r&#39;\.pyc$&#39;,
+                r&#39;\.pyo$&#39;,
+                r&#39;\.pyd$&#39;,
+                r&#39;__pycache__&#39;,
+                r&#39;\.egg-info$&#39;,
+                r&#39;\.dist-info$&#39;,
+                r&#39;\.so$&#39;,
+                r&#39;\.dylib$&#39;,
+                r&#39;\.dll$&#39;,
+                r&#39;\.o$&#39;,
+                r&#39;\.a$&#39;,
+                r&#39;\.lib$&#39;,
+                r&#39;\.node$&#39;,
+                r&#39;\.bcmap$&#39;,
+                r&#39;\.noe$&#39;,
+                r&#39;\.pfb$&#39;,
+                r&#39;\.otf$&#39;,
+                r&#39;\.ttf$&#39;,
+                r&#39;\.woff$&#39;,
+                r&#39;\.woff2$&#39;,
+                r&#39;\.eot$&#39;,
+                r&#39;\.proto$&#39;,
+                r&#39;\.def$&#39;,
+                r&#39;\.lark$&#39;,
+                r&#39;\.icns$&#39;,
+                r&#39;\.pack$&#39;,
+                r&#39;\.rev$&#39;,
+                r&#39;\.sample$&#39;,
+                r&#39;^\.DS_Store$&#39;,
+                r&#39;^\.npmignore&#39;,
+                r&#39;^\.gitignore&#39;,
+                r&#39;^\.coveragerc&#39;,
+                r&#39;^\.jshintrc&#39;,
+                r&#39;^\.babelrc&#39;,
+                r&#39;^\.hgeol$&#39;,
+                r&#39;^\.flake8$&#39;,
+                r&#39;\.cjs$&#39;,
+                r&#39;\.mjs$&#39;,
+                r&#39;\.d\.ts$&#39;,
+                r&#39;\.d\.cts$&#39;,
+                r&#39;\.d\.mts$&#39;,
+                r&#39;\.min\.js$&#39;,
+                r&#39;\.min\.css$&#39;,
+                r&#39;\.umd\.js$&#39;,
+                r&#39;\.esm\.js$&#39;,
+                r&#39;\.browser\.js$&#39;,
+                r&#39;\.worker\.js$&#39;,
+                r&#39;\.webworker\.js$&#39;,
+            ],
+            # Technical/build files
+            &#39;technical_build&#39;: [
+                r&#39;^tsserver$&#39;,
+                r&#39;^tsc$&#39;,
+                r&#39;^tsx$&#39;,
+                r&#39;^esbuild$&#39;,
+                r&#39;^node-which$&#39;,
+                r&#39;^mammoth$&#39;,
+                r&#39;^pdf-parse$&#39;,
+                r&#39;^\.eslintrc&#39;,
+                r&#39;^\.nycrc&#39;,
+                r&#39;^\.editorconfig&#39;,
+                r&#39;^\.travis\.yml$&#39;,
+                r&#39;^makefile$&#39;,
+                r&#39;\.tpl$&#39;,
+            ],
+            # LICENSE files
+            &#39;license_files&#39;: [
+                r&#39;^LICENSE&#39;,
+                r&#39;^license$&#39;,
+            ],
+            # README and documentation files
+            &#39;readme_files&#39;: [
+                r&#39;^README&#39;,
+                r&#39;^readme&#39;,
+                r&#39;^CHANGELOG&#39;,
+                r&#39;^changelog&#39;,
+                r&#39;^HISTORY&#39;,
+                r&#39;^History&#39;,
+                r&#39;^SECURITY\.md$&#39;,
+                r&#39;^CONTRIBUTING&#39;,
+                r&#39;^AUTHORS&#39;,
+                r&#39;^CONTRIBUTORS&#39;,
+            ],
+            # Technical documentation and templates
+            &#39;technical_docs&#39;: [
+                r&#39;^ISSUE_TEMPLATE&#39;,
+                r&#39;^PULL_REQUEST_TEMPLATE&#39;,
+                r&#39;^Bug_report&#39;,
+                r&#39;exception.*\.txt$&#39;,
+                r&#39;settings\.txt$&#39;,
+                r&#39;credits\.txt$&#39;,
+            ],
+            # Log files
+            &#39;log_files&#39;: [
+                r&#39;\.log$&#39;,
+                r&#39;^.*\.log\.&#39;,
+            ],
+            # AI-Generated images
+            &#39;ai_generated&#39;: [
+                r&#39;^ChatGPT Image&#39;,
+                r&#39;^DALL-E&#39;,
+                r&#39;^Midjourney&#39;,
+                r&#39;^Stable Diffusion&#39;,
+                r&#39;^AI Generated&#39;,
+            ],
+            # Screenshots
+            &#39;screenshots&#39;: [
+                r&#39;^screenshot[_\s]&#39;,
+                r&#39;^screen[_\s]?shot&#39;,
+                r&#39;^capture[_\s]&#39;,
+                r&#39;^scrnshot&#39;,
+                r&#39;^Screen Shot&#39;,
+            ],
+            # WhatsApp images
+            &#39;whatsapp&#39;: [
+                r&#39;^WhatsApp Image&#39;,
+                r&#39;^WhatsApp Video&#39;,
+                r&#39;^WA\d+&#39;,
+            ],
+            # Camera photos
+            &#39;camera_photos&#39;: [
+                r&#39;^IMG_\d+&#39;,
+                r&#39;^PXL_\d+&#39;,
+                r&#39;^DSC_\d+&#39;,
+                r&#39;^DCIM_\d+&#39;,
+                r&#39;^\d{8}_\d{6}&#39;,  # YYYYMMDD_HHMMSS
+                r&#39;^\d{14}&#39;,        # YYYYMMDDHHMMSS
+                r&#39;^\d{8}_[A-Za-z]+_\d{6}&#39;,  # YYYYMMDD_Location_HHMMSS
+            ],
+            # Social media downloads
+            &#39;social_media&#39;: [
+                r&#39;^\d+_\d+_\d+_\d+_\d+_n\.(jpg|jpeg)&#39;,  # Facebook pattern
+                r&#39;^unnamed\(\d+\)&#39;,
+                r&#39;-EDIT\.jpg$&#39;,
+                r&#39;-EDIT-EDIT&#39;,
+            ],
+            # Web templates
+            &#39;web_templates&#39;: [
+                r&#39;-webflow-template&#39;,
+                r&#39;-elderlycare-x-&#39;,
+                r&#39;-icon-purple-&#39;,
+                r&#39;-decoration-image-&#39;,
+            ],
+            # Game assets
+            &#39;game_assets&#39;: {
+                &#39;sprites&#39;: [
+                    r&#39;^\d+_f\.png$&#39;,      # Frame files
+                    r&#39;^\d+_f_\d+\.png$&#39;,
+                    r&#39;^char_[a-z]_\d+&#39;,   # Character sprites
+                    r&#39;^l_[a-z]\d+&#39;,       # Leg sprites
+                    r&#39;^c_[A-Z]{2}_&#39;,      # Compass sprites
+                    r&#39;^c_rug_&#39;,           # Rug sprites
+                    r&#39;^feet_&#39;,
+                    r&#39;^drake_&#39;,
+                    r&#39;^trap_&#39;,
+                    r&#39;^frame\d+&#39;,         # Frame files
+                    r&#39;^arm_&#39;,             # Arm sprites
+                    r&#39;^leg&#39;,              # Leg sprites
+                    r&#39;^legs_&#39;,
+                    r&#39;^torso_&#39;,           # Torso sprites
+                    r&#39;^wing_&#39;,            # Wing sprites
+                    r&#39;^head_&#39;,            # Head sprites
+                    r&#39;^tail_&#39;,            # Tail sprites
+                    r&#39;^item\d+&#39;,          # Item sprites
+                    r&#39;^grass_&#39;,           # Grass sprites
+                    r&#39;^shoulders_&#39;,       # Shoulder sprites
+                ],
+                &#39;textures&#39;: [
+                    r&#39;^shadingOcclusion&#39;,
+                    r&#39;^bg_&#39;,
+                    r&#39;^texture-&#39;,
+                ],
+                &#39;ui&#39;: [
+                    r&#39;^stat_&#39;,
+                    r&#39;^hp_mp_&#39;,
+                    r&#39;^book_&#39;,
+                    r&#39;^cur_&#39;,
+                    r&#39;^name_\d+&#39;,
+                    r&#39;^drop_\d+&#39;,
+                    r&#39;^medium_\d+&#39;,
+                    r&#39;^settings_&#39;,
+                    r&#39;^container_&#39;,
+                ],
+                &#39;fonts&#39;: [
+                    r&#39;^cp437-&#39;,
+                ],
+                &#39;items&#39;: [
+                    r&#39;^boomerang&#39;,
+                    r&#39;^cube&#39;,
+                    r&#39;^magic_hater&#39;,
+                ],
+            },
+            # Location/timezone files
+            &#39;location_data&#39;: [
+                r&#39;^[A-Z][a-z]+_[A-Z][a-z]+$&#39;,  # Port_Moresby
+                r&#39;^[A-Z][a-z]+_\d{8}_\d{6}$&#39;,  # City_timestamp
+            ],
+            # Generic numbered files
+            &#39;numbered_generic&#39;: [
+                r&#39;^\d+\.png$&#39;,
+                r&#39;^\d+_\d+\.png$&#39;,
+            ],
+            # Logos (branding)
+            &#39;logos&#39;: [
+                r&#39;logo&#39;,
+                r&#39;-logo&#39;,
+                r&#39;_logo&#39;,
+                r&#39;logo-&#39;,
+                r&#39;logo_&#39;,
+            ],
+            # Icons
+            &#39;icons&#39;: [
+                r&#39;-icon-&#39;,
+                r&#39;^icon[-_]&#39;,
+                r&#39;fav\.png$&#39;,
+            ],
+            # Calendar/date
+            &#39;calendar&#39;: [
+                r&#39;^calendar-&#39;,
+                r&#39;-check-\d+\.svg$&#39;,
+            ],
+            # Medical
+            &#39;medical&#39;: [
+                r&#39;^medication-&#39;,
+            ],
+            # Emoji
+            &#39;emoji&#39;: [
+                r&#39;^1f\d{3}\.png$&#39;,  # Unicode emoji
+            ],
+        }
+
+        # Filepath pattern categories
+        self.filepath_patterns = {
+            &#39;game_assets&#39;: [
+                r&#39;/GameAssets/&#39;,
+                r&#39;/game[-_]assets/&#39;,
+                r&#39;/games?/&#39;,
+            ],
+            &#39;downloads&#39;: [
+                r&#39;/Downloads/&#39;,
+                r&#39;/downloads/&#39;,
+            ],
+            &#39;documents&#39;: [
+                r&#39;/Documents/&#39;,
+                r&#39;/docs?/&#39;,
+            ],
+            &#39;pictures&#39;: [
+                r&#39;/Pictures/&#39;,
+                r&#39;/Photos/&#39;,
+                r&#39;/images?/&#39;,
+            ],
+            &#39;desktop&#39;: [
+                r&#39;/Desktop/&#39;,
+            ],
+        }
+
+    def categorize_by_extension(self, file_path: Path) -&gt; Optional[Tuple[str, str]]:
+        &#34;&#34;&#34;
+        Categorize file by extension.
+        Returns (category, subcategory) or None.
+        &#34;&#34;&#34;
+        # Check for .map files specifically (source maps)
+        if file_path.name.endswith(&#39;.js.map&#39;):
+            return (&#39;Technical&#39;, &#39;JavaScript&#39;)
+        elif file_path.name.endswith(&#39;.css.map&#39;):
+            return (&#39;Technical&#39;, &#39;JavaScript&#39;)
+        elif file_path.name.endswith(&#39;.ts.map&#39;):
+            return (&#39;Technical&#39;, &#39;JavaScript&#39;)
+
+        ext = file_path.suffix.lower().lstrip(&#39;.&#39;)
+
+        for category, extensions in self.extension_map.items():
+            if ext in extensions:
+                # Map to destination paths
+                if category == &#39;images&#39;:
+                    return (&#39;Media/Photos&#39;, &#39;Other&#39;)
+                elif category == &#39;videos&#39;:
+                    return (&#39;Media/Videos&#39;, &#39;Recordings&#39;)
+                elif category == &#39;audio&#39;:
+                    return (&#39;Media/Audio&#39;, &#39;Other&#39;)
+                elif category == &#39;documents&#39;:
+                    return (&#39;Documents&#39;, &#39;General&#39;)
+                elif category == &#39;spreadsheets&#39;:
+                    return (&#39;Data&#39;, &#39;Spreadsheets&#39;)
+                elif category == &#39;presentations&#39;:
+                    return (&#39;Documents&#39;, &#39;Presentations&#39;)
+                elif category == &#39;code&#39;:
+                    return (&#39;Technical&#39;, &#39;Code&#39;)
+                elif category == &#39;data&#39;:
+                    return (&#39;Data&#39;, &#39;Configs&#39;)
+                elif category == &#39;archives&#39;:
+                    return (&#39;Data&#39;, &#39;Archives&#39;)
+                elif category == &#39;certificates&#39;:
+                    return (&#39;Technical&#39;, &#39;Certificates&#39;)
+                elif category == &#39;game_files&#39;:
+                    return (&#39;GameAssets&#39;, &#39;SaveFiles&#39;)
+                elif category == &#39;design&#39;:
+                    return (&#39;Creative&#39;, &#39;Design&#39;)
+                elif category == &#39;3d&#39;:
+                    return (&#39;Creative&#39;, &#39;3D&#39;)
+
+        return None
+
+    def categorize_by_filename(self, file_path: Path) -&gt; Optional[Tuple[str, str]]:
+        &#34;&#34;&#34;
+        Categorize file by filename patterns.
+        Returns (category, subcategory) or None.
+        &#34;&#34;&#34;
+        filename = file_path.name
+
+        # Check artifacts/build files FIRST (highest priority - to be trashed)
+        for pattern in self.filename_patterns[&#39;artifacts_trash&#39;]:
+            if re.search(pattern, filename, re.IGNORECASE):
+                return (&#39;.Trash&#39;, &#39;BuildArtifacts&#39;)
+
+        # Check technical/build files (high priority)
+        for pattern in self.filename_patterns[&#39;technical_build&#39;]:
+            if re.search(pattern, filename, re.IGNORECASE):
+                return (&#39;Technical/Code&#39;, &#39;Other&#39;)
+
+        # Check LICENSE files
+        for pattern in self.filename_patterns[&#39;license_files&#39;]:
+            if re.search(pattern, filename, re.IGNORECASE):
+                return (&#39;Technical/Code&#39;, &#39;Other&#39;)
+
+        # Check README and documentation files
+        for pattern in self.filename_patterns[&#39;readme_files&#39;]:
+            if re.search(pattern, filename, re.IGNORECASE):
+                return (&#39;Technical&#39;, &#39;ReadMes&#39;)
+
+        # Check log files (higher priority than technical docs)
+        for pattern in self.filename_patterns[&#39;log_files&#39;]:
+            if re.search(pattern, filename, re.IGNORECASE):
+                return (&#39;Technical&#39;, &#39;Logs&#39;)
+
+        # Check technical documentation and templates
+        for pattern in self.filename_patterns[&#39;technical_docs&#39;]:
+            if re.search(pattern, filename, re.IGNORECASE):
+                return (&#39;Technical&#39;, &#39;Other&#39;)
+
+        # Check AI-generated images (highest priority for these)
+        for pattern in self.filename_patterns[&#39;ai_generated&#39;]:
+            if re.search(pattern, filename, re.IGNORECASE):
+                return (&#39;AI-Generated&#39;, &#39;Images&#39;)
+
+        # Check screenshots
+        for pattern in self.filename_patterns[&#39;screenshots&#39;]:
+            if re.search(pattern, filename, re.IGNORECASE):
+                return (&#39;Media/Photos&#39;, &#39;Screenshots&#39;)
+
+        # Check WhatsApp
+        for pattern in self.filename_patterns[&#39;whatsapp&#39;]:
+            if re.search(pattern, filename, re.IGNORECASE):
+                return (&#39;Media/Photos&#39;, &#39;WhatsApp&#39;)
+
+        # Check camera photos
+        for pattern in self.filename_patterns[&#39;camera_photos&#39;]:
+            if re.search(pattern, filename):
+                return (&#39;Media/Photos&#39;, &#39;Camera&#39;)
+
+        # Check social media
+        for pattern in self.filename_patterns[&#39;social_media&#39;]:
+            if re.search(pattern, filename):
+                return (&#39;Media/Photos&#39;, &#39;Social_Media&#39;)
+
+        # Check web templates
+        for pattern in self.filename_patterns[&#39;web_templates&#39;]:
+            if re.search(pattern, filename, re.IGNORECASE):
+                return (&#39;Creative&#39;, &#39;WebTemplates&#39;)
+
+        # Check game assets (priority order matters)
+        game_patterns = self.filename_patterns[&#39;game_assets&#39;]
+
+        # Check if image extension (for Games subdirectory in Media/Photos)
+        is_image = file_path.suffix.lower() in [&#39;.png&#39;, &#39;.jpg&#39;, &#39;.jpeg&#39;, &#39;.gif&#39;, &#39;.bmp&#39;, &#39;.webp&#39;]
+
+        for pattern in game_patterns[&#39;sprites&#39;]:
+            if re.search(pattern, filename):
+                if is_image:
+                    return (&#39;Media/Photos&#39;, &#39;Games&#39;)
+                return (&#39;GameAssets&#39;, &#39;Sprites&#39;)
+
+        for pattern in game_patterns[&#39;textures&#39;]:
+            if re.search(pattern, filename):
+                if is_image:
+                    return (&#39;Media/Photos&#39;, &#39;Games&#39;)
+                return (&#39;GameAssets&#39;, &#39;Textures&#39;)
+
+        for pattern in game_patterns[&#39;ui&#39;]:
+            if re.search(pattern, filename):
+                if is_image:
+                    return (&#39;Media/Photos&#39;, &#39;Games&#39;)
+                return (&#39;GameAssets&#39;, &#39;UI&#39;)
+
+        for pattern in game_patterns[&#39;fonts&#39;]:
+            if re.search(pattern, filename):
+                if is_image:
+                    return (&#39;Media/Photos&#39;, &#39;Games&#39;)
+                return (&#39;GameAssets&#39;, &#39;Fonts&#39;)
+
+        for pattern in game_patterns[&#39;items&#39;]:
+            if re.search(pattern, filename):
+                if is_image:
+                    return (&#39;Media/Photos&#39;, &#39;Games&#39;)
+                return (&#39;GameAssets&#39;, &#39;Items&#39;)
+
+        # Check logos (higher priority than icons)
+        for pattern in self.filename_patterns[&#39;logos&#39;]:
+            if re.search(pattern, filename, re.IGNORECASE):
+                return (&#39;Creative&#39;, &#39;Branding&#39;)
+
+        # Check icons
+        for pattern in self.filename_patterns[&#39;icons&#39;]:
+            if re.search(pattern, filename, re.IGNORECASE):
+                return (&#39;Creative&#39;, &#39;Icons&#39;)
+
+        # Check calendar
+        for pattern in self.filename_patterns[&#39;calendar&#39;]:
+            if re.search(pattern, filename, re.IGNORECASE):
+                return (&#39;Creative&#39;, &#39;Icons&#39;)
+
+        # Check medical
+        for pattern in self.filename_patterns[&#39;medical&#39;]:
+            if re.search(pattern, filename, re.IGNORECASE):
+                return (&#39;Medical&#39;, &#39;General&#39;)
+
+        # Check emoji
+        for pattern in self.filename_patterns[&#39;emoji&#39;]:
+            if re.search(pattern, filename):
+                return (&#39;Creative&#39;, &#39;Emoji&#39;)
+
+        # Check location data
+        for pattern in self.filename_patterns[&#39;location_data&#39;]:
+            if re.search(pattern, filename):
+                return (&#39;Data&#39;, &#39;LocationData&#39;)
+
+        # Check generic numbered files (low priority)
+        for pattern in self.filename_patterns[&#39;numbered_generic&#39;]:
+            if re.search(pattern, filename):
+                # Could be game assets
+                return (&#39;GameAssets&#39;, &#39;Sprites&#39;)
+
+        return None
+
+    def categorize_by_filepath(self, file_path: Path) -&gt; Optional[Tuple[str, str]]:
+        &#34;&#34;&#34;
+        Categorize file by filepath patterns.
+        Returns (category, subcategory) or None.
+        &#34;&#34;&#34;
+        filepath_str = str(file_path)
+
+        for category, patterns in self.filepath_patterns.items():
+            for pattern in patterns:
+                if re.search(pattern, filepath_str):
+                    if category == &#39;game_assets&#39;:
+                        return (&#39;GameAssets&#39;, &#39;Other&#39;)
+                    # Add more filepath-based categorization as needed
+
+        return None
+
+    def categorize_file(self, file_path: Path) -&gt; Tuple[str, str]:
+        &#34;&#34;&#34;
+        Categorize a file using filename and path patterns.
+        Returns (category, subcategory).
+        Priority: filename patterns &gt; extension &gt; filepath &gt; uncategorized
+        &#34;&#34;&#34;
+        # Priority 1: Filename patterns (most specific)
+        result = self.categorize_by_filename(file_path)
+        if result:
+            return result
+
+        # Priority 2: Extension
+        result = self.categorize_by_extension(file_path)
+        if result:
+            return result
+
+        # Priority 3: Filepath
+        result = self.categorize_by_filepath(file_path)
+        if result:
+            return result
+
+        # Default: Uncategorized
+        return (&#39;Uncategorized&#39;, &#39;Other&#39;)
+
+    def get_destination_path(self, category: str, subcategory: str, filename: str) -&gt; Path:
+        &#34;&#34;&#34;Get the full destination path for a file.&#34;&#34;&#34;
+        return self.base_path / category / subcategory / filename
+
+    def move_file(self, source: Path, destination: Path) -&gt; bool:
+        &#34;&#34;&#34;Move a file to its destination.&#34;&#34;&#34;
+        try:
+            # Create destination directory
+            destination.parent.mkdir(parents=True, exist_ok=True)
+
+            # Handle duplicates — delegate to the shared incrementing counter
+            if destination.exists():
+                destination = resolve_collision(destination)
+
+            if self.dry_run:
+                print(f&#34;  [DRY RUN] Would move to: {destination}&#34;)
+            else:
+                shutil.move(str(source), str(destination))
+                print(f&#34;  ✓ Moved to: {destination}&#34;)
+
+            return True
+        except Exception as e:
+            print(f&#34;  ✗ Error moving file: {e}&#34;)
+            return False
+
+    def organize_directory(self, source_dir: str, recursive: bool = False, limit: int = None):
+        &#34;&#34;&#34;Organize files in a directory.&#34;&#34;&#34;
+        source_path = Path(source_dir).expanduser()
+
+        if not source_path.exists():
+            print(f&#34;Error: Source directory does not exist: {source_path}&#34;)
+            return
+
+        print(&#34;=&#34; * 60)
+        print(&#34;File Organization by Name and Path&#34;)
+        print(&#34;=&#34; * 60)
+        print()
+        print(f&#34;Source: {source_path}&#34;)
+        print(f&#34;Base path: {self.base_path}&#34;)
+        print(f&#34;Recursive: {recursive}&#34;)
+        print(f&#34;Dry run: {self.dry_run}&#34;)
+        if limit:
+            print(f&#34;Limit: {limit} files&#34;)
+        print()
+
+        # Collect files
+        if recursive:
+            files = list(source_path.rglob(&#39;*&#39;))
+        else:
+            files = list(source_path.glob(&#39;*&#39;))
+
+        # Filter to files only
+        files = [f for f in files if f.is_file()]
+
+        # Apply limit
+        if limit:
+            files = files[:limit]
+
+        self.stats[&#39;total_files&#39;] = len(files)
+
+        print(f&#34;Found {len(files)} files to process&#34;)
+        print()
+
+        # Process files
+        for i, file_path in enumerate(files, 1):
+            print(f&#34;[{i}/{len(files)}] {file_path.name}&#34;)
+
+            try:
+                # Categorize
+                category, subcategory = self.categorize_file(file_path)
+
+                # Get destination
+                destination = self.get_destination_path(category, subcategory, file_path.name)
+
+                print(f&#34;  Category: {category}/{subcategory}&#34;)
+
+                # Skip if already in correct location
+                if file_path.parent == destination.parent:
+                    print(f&#34;  → Already in correct location&#34;)
+                    self.stats[&#39;skipped_files&#39;] += 1
+                    continue
+
+                # Move file
+                if self.move_file(file_path, destination):
+                    self.stats[&#39;moved_files&#39;] += 1
+
+                    # Update category stats
+                    cat_key = f&#34;{category}/{subcategory}&#34;
+                    self.stats[&#39;by_category&#39;][cat_key] = self.stats[&#39;by_category&#39;].get(cat_key, 0) + 1
+                else:
+                    self.stats[&#39;errors&#39;] += 1
+
+            except Exception as e:
+                print(f&#34;  ✗ Error processing file: {e}&#34;)
+                self.stats[&#39;errors&#39;] += 1
+
+            print()
+
+        # Print summary
+        self.print_summary()
+
+    def print_summary(self):
+        &#34;&#34;&#34;Print organization summary.&#34;&#34;&#34;
+        print()
+        print(&#34;=&#34; * 60)
+        print(&#34;SUMMARY&#34;)
+        print(&#34;=&#34; * 60)
+        print()
+        print(f&#34;Total files: {self.stats[&#39;total_files&#39;]}&#34;)
+        print(f&#34;Moved: {self.stats[&#39;moved_files&#39;]}&#34;)
+        print(f&#34;Skipped (already in place): {self.stats[&#39;skipped_files&#39;]}&#34;)
+        print(f&#34;Errors: {self.stats[&#39;errors&#39;]}&#34;)
+        print()
+
+        if self.stats[&#39;by_category&#39;]:
+            print(&#34;Files by category:&#34;)
+            for category, count in sorted(self.stats[&#39;by_category&#39;].items()):
+                print(f&#34;  {category}: {count}&#34;)
+
+        # Save report
+        if not self.dry_run and self.stats[&#39;moved_files&#39;] &gt; 0:
+            self.save_report()
+
+    def save_report(self):
+        &#34;&#34;&#34;Save organization report to JSON.&#34;&#34;&#34;
+        results_dir = Path(__file__).resolve().parents[2] / &#39;results&#39;
+        results_dir.mkdir(exist_ok=True)
+
+        timestamp = datetime.now().strftime(&#39;%Y%m%d_%H%M%S&#39;)
+        report_file = results_dir / f&#39;name_organization_report_{timestamp}.json&#39;
+
+        report = {
+            &#39;timestamp&#39;: timestamp,
+            &#39;base_path&#39;: str(self.base_path),
+            &#39;stats&#39;: self.stats,
+        }
+
+        with open(report_file, &#39;w&#39;) as f:
+            json.dump(report, f, indent=2)
+
+        print()
+        print(f&#34;Report saved: {report_file}&#34;)</code></pre>
+</details>
+<div class="desc"><p>Organize files based on filename and path patterns only.</p></div>
+<h3>Methods</h3>
+<dl>
+<dt id="src.organizers.name_organizer.FileNameOrganizer.categorize_by_extension"><code class="name flex">
+<span>def <span class="ident">categorize_by_extension</span></span>(<span>self, file_path: pathlib.Path) ‑> Tuple[str, str] | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def categorize_by_extension(self, file_path: Path) -&gt; Optional[Tuple[str, str]]:
+    &#34;&#34;&#34;
+    Categorize file by extension.
+    Returns (category, subcategory) or None.
+    &#34;&#34;&#34;
+    # Check for .map files specifically (source maps)
+    if file_path.name.endswith(&#39;.js.map&#39;):
+        return (&#39;Technical&#39;, &#39;JavaScript&#39;)
+    elif file_path.name.endswith(&#39;.css.map&#39;):
+        return (&#39;Technical&#39;, &#39;JavaScript&#39;)
+    elif file_path.name.endswith(&#39;.ts.map&#39;):
+        return (&#39;Technical&#39;, &#39;JavaScript&#39;)
+
+    ext = file_path.suffix.lower().lstrip(&#39;.&#39;)
+
+    for category, extensions in self.extension_map.items():
+        if ext in extensions:
+            # Map to destination paths
+            if category == &#39;images&#39;:
+                return (&#39;Media/Photos&#39;, &#39;Other&#39;)
+            elif category == &#39;videos&#39;:
+                return (&#39;Media/Videos&#39;, &#39;Recordings&#39;)
+            elif category == &#39;audio&#39;:
+                return (&#39;Media/Audio&#39;, &#39;Other&#39;)
+            elif category == &#39;documents&#39;:
+                return (&#39;Documents&#39;, &#39;General&#39;)
+            elif category == &#39;spreadsheets&#39;:
+                return (&#39;Data&#39;, &#39;Spreadsheets&#39;)
+            elif category == &#39;presentations&#39;:
+                return (&#39;Documents&#39;, &#39;Presentations&#39;)
+            elif category == &#39;code&#39;:
+                return (&#39;Technical&#39;, &#39;Code&#39;)
+            elif category == &#39;data&#39;:
+                return (&#39;Data&#39;, &#39;Configs&#39;)
+            elif category == &#39;archives&#39;:
+                return (&#39;Data&#39;, &#39;Archives&#39;)
+            elif category == &#39;certificates&#39;:
+                return (&#39;Technical&#39;, &#39;Certificates&#39;)
+            elif category == &#39;game_files&#39;:
+                return (&#39;GameAssets&#39;, &#39;SaveFiles&#39;)
+            elif category == &#39;design&#39;:
+                return (&#39;Creative&#39;, &#39;Design&#39;)
+            elif category == &#39;3d&#39;:
+                return (&#39;Creative&#39;, &#39;3D&#39;)
+
+    return None</code></pre>
+</details>
+<div class="desc"><p>Categorize file by extension.
+Returns (category, subcategory) or None.</p></div>
+</dd>
+<dt id="src.organizers.name_organizer.FileNameOrganizer.categorize_by_filename"><code class="name flex">
+<span>def <span class="ident">categorize_by_filename</span></span>(<span>self, file_path: pathlib.Path) ‑> Tuple[str, str] | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def categorize_by_filename(self, file_path: Path) -&gt; Optional[Tuple[str, str]]:
+    &#34;&#34;&#34;
+    Categorize file by filename patterns.
+    Returns (category, subcategory) or None.
+    &#34;&#34;&#34;
+    filename = file_path.name
+
+    # Check artifacts/build files FIRST (highest priority - to be trashed)
+    for pattern in self.filename_patterns[&#39;artifacts_trash&#39;]:
+        if re.search(pattern, filename, re.IGNORECASE):
+            return (&#39;.Trash&#39;, &#39;BuildArtifacts&#39;)
+
+    # Check technical/build files (high priority)
+    for pattern in self.filename_patterns[&#39;technical_build&#39;]:
+        if re.search(pattern, filename, re.IGNORECASE):
+            return (&#39;Technical/Code&#39;, &#39;Other&#39;)
+
+    # Check LICENSE files
+    for pattern in self.filename_patterns[&#39;license_files&#39;]:
+        if re.search(pattern, filename, re.IGNORECASE):
+            return (&#39;Technical/Code&#39;, &#39;Other&#39;)
+
+    # Check README and documentation files
+    for pattern in self.filename_patterns[&#39;readme_files&#39;]:
+        if re.search(pattern, filename, re.IGNORECASE):
+            return (&#39;Technical&#39;, &#39;ReadMes&#39;)
+
+    # Check log files (higher priority than technical docs)
+    for pattern in self.filename_patterns[&#39;log_files&#39;]:
+        if re.search(pattern, filename, re.IGNORECASE):
+            return (&#39;Technical&#39;, &#39;Logs&#39;)
+
+    # Check technical documentation and templates
+    for pattern in self.filename_patterns[&#39;technical_docs&#39;]:
+        if re.search(pattern, filename, re.IGNORECASE):
+            return (&#39;Technical&#39;, &#39;Other&#39;)
+
+    # Check AI-generated images (highest priority for these)
+    for pattern in self.filename_patterns[&#39;ai_generated&#39;]:
+        if re.search(pattern, filename, re.IGNORECASE):
+            return (&#39;AI-Generated&#39;, &#39;Images&#39;)
+
+    # Check screenshots
+    for pattern in self.filename_patterns[&#39;screenshots&#39;]:
+        if re.search(pattern, filename, re.IGNORECASE):
+            return (&#39;Media/Photos&#39;, &#39;Screenshots&#39;)
+
+    # Check WhatsApp
+    for pattern in self.filename_patterns[&#39;whatsapp&#39;]:
+        if re.search(pattern, filename, re.IGNORECASE):
+            return (&#39;Media/Photos&#39;, &#39;WhatsApp&#39;)
+
+    # Check camera photos
+    for pattern in self.filename_patterns[&#39;camera_photos&#39;]:
+        if re.search(pattern, filename):
+            return (&#39;Media/Photos&#39;, &#39;Camera&#39;)
+
+    # Check social media
+    for pattern in self.filename_patterns[&#39;social_media&#39;]:
+        if re.search(pattern, filename):
+            return (&#39;Media/Photos&#39;, &#39;Social_Media&#39;)
+
+    # Check web templates
+    for pattern in self.filename_patterns[&#39;web_templates&#39;]:
+        if re.search(pattern, filename, re.IGNORECASE):
+            return (&#39;Creative&#39;, &#39;WebTemplates&#39;)
+
+    # Check game assets (priority order matters)
+    game_patterns = self.filename_patterns[&#39;game_assets&#39;]
+
+    # Check if image extension (for Games subdirectory in Media/Photos)
+    is_image = file_path.suffix.lower() in [&#39;.png&#39;, &#39;.jpg&#39;, &#39;.jpeg&#39;, &#39;.gif&#39;, &#39;.bmp&#39;, &#39;.webp&#39;]
+
+    for pattern in game_patterns[&#39;sprites&#39;]:
+        if re.search(pattern, filename):
+            if is_image:
+                return (&#39;Media/Photos&#39;, &#39;Games&#39;)
+            return (&#39;GameAssets&#39;, &#39;Sprites&#39;)
+
+    for pattern in game_patterns[&#39;textures&#39;]:
+        if re.search(pattern, filename):
+            if is_image:
+                return (&#39;Media/Photos&#39;, &#39;Games&#39;)
+            return (&#39;GameAssets&#39;, &#39;Textures&#39;)
+
+    for pattern in game_patterns[&#39;ui&#39;]:
+        if re.search(pattern, filename):
+            if is_image:
+                return (&#39;Media/Photos&#39;, &#39;Games&#39;)
+            return (&#39;GameAssets&#39;, &#39;UI&#39;)
+
+    for pattern in game_patterns[&#39;fonts&#39;]:
+        if re.search(pattern, filename):
+            if is_image:
+                return (&#39;Media/Photos&#39;, &#39;Games&#39;)
+            return (&#39;GameAssets&#39;, &#39;Fonts&#39;)
+
+    for pattern in game_patterns[&#39;items&#39;]:
+        if re.search(pattern, filename):
+            if is_image:
+                return (&#39;Media/Photos&#39;, &#39;Games&#39;)
+            return (&#39;GameAssets&#39;, &#39;Items&#39;)
+
+    # Check logos (higher priority than icons)
+    for pattern in self.filename_patterns[&#39;logos&#39;]:
+        if re.search(pattern, filename, re.IGNORECASE):
+            return (&#39;Creative&#39;, &#39;Branding&#39;)
+
+    # Check icons
+    for pattern in self.filename_patterns[&#39;icons&#39;]:
+        if re.search(pattern, filename, re.IGNORECASE):
+            return (&#39;Creative&#39;, &#39;Icons&#39;)
+
+    # Check calendar
+    for pattern in self.filename_patterns[&#39;calendar&#39;]:
+        if re.search(pattern, filename, re.IGNORECASE):
+            return (&#39;Creative&#39;, &#39;Icons&#39;)
+
+    # Check medical
+    for pattern in self.filename_patterns[&#39;medical&#39;]:
+        if re.search(pattern, filename, re.IGNORECASE):
+            return (&#39;Medical&#39;, &#39;General&#39;)
+
+    # Check emoji
+    for pattern in self.filename_patterns[&#39;emoji&#39;]:
+        if re.search(pattern, filename):
+            return (&#39;Creative&#39;, &#39;Emoji&#39;)
+
+    # Check location data
+    for pattern in self.filename_patterns[&#39;location_data&#39;]:
+        if re.search(pattern, filename):
+            return (&#39;Data&#39;, &#39;LocationData&#39;)
+
+    # Check generic numbered files (low priority)
+    for pattern in self.filename_patterns[&#39;numbered_generic&#39;]:
+        if re.search(pattern, filename):
+            # Could be game assets
+            return (&#39;GameAssets&#39;, &#39;Sprites&#39;)
+
+    return None</code></pre>
+</details>
+<div class="desc"><p>Categorize file by filename patterns.
+Returns (category, subcategory) or None.</p></div>
+</dd>
+<dt id="src.organizers.name_organizer.FileNameOrganizer.categorize_by_filepath"><code class="name flex">
+<span>def <span class="ident">categorize_by_filepath</span></span>(<span>self, file_path: pathlib.Path) ‑> Tuple[str, str] | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def categorize_by_filepath(self, file_path: Path) -&gt; Optional[Tuple[str, str]]:
+    &#34;&#34;&#34;
+    Categorize file by filepath patterns.
+    Returns (category, subcategory) or None.
+    &#34;&#34;&#34;
+    filepath_str = str(file_path)
+
+    for category, patterns in self.filepath_patterns.items():
+        for pattern in patterns:
+            if re.search(pattern, filepath_str):
+                if category == &#39;game_assets&#39;:
+                    return (&#39;GameAssets&#39;, &#39;Other&#39;)
+                # Add more filepath-based categorization as needed
+
+    return None</code></pre>
+</details>
+<div class="desc"><p>Categorize file by filepath patterns.
+Returns (category, subcategory) or None.</p></div>
+</dd>
+<dt id="src.organizers.name_organizer.FileNameOrganizer.categorize_file"><code class="name flex">
+<span>def <span class="ident">categorize_file</span></span>(<span>self, file_path: pathlib.Path) ‑> Tuple[str, str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def categorize_file(self, file_path: Path) -&gt; Tuple[str, str]:
+    &#34;&#34;&#34;
+    Categorize a file using filename and path patterns.
+    Returns (category, subcategory).
+    Priority: filename patterns &gt; extension &gt; filepath &gt; uncategorized
+    &#34;&#34;&#34;
+    # Priority 1: Filename patterns (most specific)
+    result = self.categorize_by_filename(file_path)
+    if result:
+        return result
+
+    # Priority 2: Extension
+    result = self.categorize_by_extension(file_path)
+    if result:
+        return result
+
+    # Priority 3: Filepath
+    result = self.categorize_by_filepath(file_path)
+    if result:
+        return result
+
+    # Default: Uncategorized
+    return (&#39;Uncategorized&#39;, &#39;Other&#39;)</code></pre>
+</details>
+<div class="desc"><p>Categorize a file using filename and path patterns.
+Returns (category, subcategory).
+Priority: filename patterns &gt; extension &gt; filepath &gt; uncategorized</p></div>
+</dd>
+<dt id="src.organizers.name_organizer.FileNameOrganizer.get_destination_path"><code class="name flex">
+<span>def <span class="ident">get_destination_path</span></span>(<span>self, category: str, subcategory: str, filename: str) ‑> pathlib.Path</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_destination_path(self, category: str, subcategory: str, filename: str) -&gt; Path:
+    &#34;&#34;&#34;Get the full destination path for a file.&#34;&#34;&#34;
+    return self.base_path / category / subcategory / filename</code></pre>
+</details>
+<div class="desc"><p>Get the full destination path for a file.</p></div>
+</dd>
+<dt id="src.organizers.name_organizer.FileNameOrganizer.move_file"><code class="name flex">
+<span>def <span class="ident">move_file</span></span>(<span>self, source: pathlib.Path, destination: pathlib.Path) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def move_file(self, source: Path, destination: Path) -&gt; bool:
+    &#34;&#34;&#34;Move a file to its destination.&#34;&#34;&#34;
+    try:
+        # Create destination directory
+        destination.parent.mkdir(parents=True, exist_ok=True)
+
+        # Handle duplicates — delegate to the shared incrementing counter
+        if destination.exists():
+            destination = resolve_collision(destination)
+
+        if self.dry_run:
+            print(f&#34;  [DRY RUN] Would move to: {destination}&#34;)
+        else:
+            shutil.move(str(source), str(destination))
+            print(f&#34;  ✓ Moved to: {destination}&#34;)
+
+        return True
+    except Exception as e:
+        print(f&#34;  ✗ Error moving file: {e}&#34;)
+        return False</code></pre>
+</details>
+<div class="desc"><p>Move a file to its destination.</p></div>
+</dd>
+<dt id="src.organizers.name_organizer.FileNameOrganizer.organize_directory"><code class="name flex">
+<span>def <span class="ident">organize_directory</span></span>(<span>self, source_dir: str, recursive: bool = False, limit: int = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def organize_directory(self, source_dir: str, recursive: bool = False, limit: int = None):
+    &#34;&#34;&#34;Organize files in a directory.&#34;&#34;&#34;
+    source_path = Path(source_dir).expanduser()
+
+    if not source_path.exists():
+        print(f&#34;Error: Source directory does not exist: {source_path}&#34;)
+        return
+
+    print(&#34;=&#34; * 60)
+    print(&#34;File Organization by Name and Path&#34;)
+    print(&#34;=&#34; * 60)
+    print()
+    print(f&#34;Source: {source_path}&#34;)
+    print(f&#34;Base path: {self.base_path}&#34;)
+    print(f&#34;Recursive: {recursive}&#34;)
+    print(f&#34;Dry run: {self.dry_run}&#34;)
+    if limit:
+        print(f&#34;Limit: {limit} files&#34;)
+    print()
+
+    # Collect files
+    if recursive:
+        files = list(source_path.rglob(&#39;*&#39;))
+    else:
+        files = list(source_path.glob(&#39;*&#39;))
+
+    # Filter to files only
+    files = [f for f in files if f.is_file()]
+
+    # Apply limit
+    if limit:
+        files = files[:limit]
+
+    self.stats[&#39;total_files&#39;] = len(files)
+
+    print(f&#34;Found {len(files)} files to process&#34;)
+    print()
+
+    # Process files
+    for i, file_path in enumerate(files, 1):
+        print(f&#34;[{i}/{len(files)}] {file_path.name}&#34;)
+
+        try:
+            # Categorize
+            category, subcategory = self.categorize_file(file_path)
+
+            # Get destination
+            destination = self.get_destination_path(category, subcategory, file_path.name)
+
+            print(f&#34;  Category: {category}/{subcategory}&#34;)
+
+            # Skip if already in correct location
+            if file_path.parent == destination.parent:
+                print(f&#34;  → Already in correct location&#34;)
+                self.stats[&#39;skipped_files&#39;] += 1
+                continue
+
+            # Move file
+            if self.move_file(file_path, destination):
+                self.stats[&#39;moved_files&#39;] += 1
+
+                # Update category stats
+                cat_key = f&#34;{category}/{subcategory}&#34;
+                self.stats[&#39;by_category&#39;][cat_key] = self.stats[&#39;by_category&#39;].get(cat_key, 0) + 1
+            else:
+                self.stats[&#39;errors&#39;] += 1
+
+        except Exception as e:
+            print(f&#34;  ✗ Error processing file: {e}&#34;)
+            self.stats[&#39;errors&#39;] += 1
+
+        print()
+
+    # Print summary
+    self.print_summary()</code></pre>
+</details>
+<div class="desc"><p>Organize files in a directory.</p></div>
+</dd>
+<dt id="src.organizers.name_organizer.FileNameOrganizer.print_summary"><code class="name flex">
+<span>def <span class="ident">print_summary</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def print_summary(self):
+    &#34;&#34;&#34;Print organization summary.&#34;&#34;&#34;
+    print()
+    print(&#34;=&#34; * 60)
+    print(&#34;SUMMARY&#34;)
+    print(&#34;=&#34; * 60)
+    print()
+    print(f&#34;Total files: {self.stats[&#39;total_files&#39;]}&#34;)
+    print(f&#34;Moved: {self.stats[&#39;moved_files&#39;]}&#34;)
+    print(f&#34;Skipped (already in place): {self.stats[&#39;skipped_files&#39;]}&#34;)
+    print(f&#34;Errors: {self.stats[&#39;errors&#39;]}&#34;)
+    print()
+
+    if self.stats[&#39;by_category&#39;]:
+        print(&#34;Files by category:&#34;)
+        for category, count in sorted(self.stats[&#39;by_category&#39;].items()):
+            print(f&#34;  {category}: {count}&#34;)
+
+    # Save report
+    if not self.dry_run and self.stats[&#39;moved_files&#39;] &gt; 0:
+        self.save_report()</code></pre>
+</details>
+<div class="desc"><p>Print organization summary.</p></div>
+</dd>
+<dt id="src.organizers.name_organizer.FileNameOrganizer.save_report"><code class="name flex">
+<span>def <span class="ident">save_report</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save_report(self):
+    &#34;&#34;&#34;Save organization report to JSON.&#34;&#34;&#34;
+    results_dir = Path(__file__).resolve().parents[2] / &#39;results&#39;
+    results_dir.mkdir(exist_ok=True)
+
+    timestamp = datetime.now().strftime(&#39;%Y%m%d_%H%M%S&#39;)
+    report_file = results_dir / f&#39;name_organization_report_{timestamp}.json&#39;
+
+    report = {
+        &#39;timestamp&#39;: timestamp,
+        &#39;base_path&#39;: str(self.base_path),
+        &#39;stats&#39;: self.stats,
+    }
+
+    with open(report_file, &#39;w&#39;) as f:
+        json.dump(report, f, indent=2)
+
+    print()
+    print(f&#34;Report saved: {report_file}&#34;)</code></pre>
+</details>
+<div class="desc"><p>Save organization report to JSON.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.organizers" href="index.html">src.organizers</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="src.organizers.name_organizer.main" href="#src.organizers.name_organizer.main">main</a></code></li>
+<li><code><a title="src.organizers.name_organizer.run" href="#src.organizers.name_organizer.run">run</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.organizers.name_organizer.FileNameOrganizer" href="#src.organizers.name_organizer.FileNameOrganizer">FileNameOrganizer</a></code></h4>
+<ul class="">
+<li><code><a title="src.organizers.name_organizer.FileNameOrganizer.categorize_by_extension" href="#src.organizers.name_organizer.FileNameOrganizer.categorize_by_extension">categorize_by_extension</a></code></li>
+<li><code><a title="src.organizers.name_organizer.FileNameOrganizer.categorize_by_filename" href="#src.organizers.name_organizer.FileNameOrganizer.categorize_by_filename">categorize_by_filename</a></code></li>
+<li><code><a title="src.organizers.name_organizer.FileNameOrganizer.categorize_by_filepath" href="#src.organizers.name_organizer.FileNameOrganizer.categorize_by_filepath">categorize_by_filepath</a></code></li>
+<li><code><a title="src.organizers.name_organizer.FileNameOrganizer.categorize_file" href="#src.organizers.name_organizer.FileNameOrganizer.categorize_file">categorize_file</a></code></li>
+<li><code><a title="src.organizers.name_organizer.FileNameOrganizer.get_destination_path" href="#src.organizers.name_organizer.FileNameOrganizer.get_destination_path">get_destination_path</a></code></li>
+<li><code><a title="src.organizers.name_organizer.FileNameOrganizer.move_file" href="#src.organizers.name_organizer.FileNameOrganizer.move_file">move_file</a></code></li>
+<li><code><a title="src.organizers.name_organizer.FileNameOrganizer.organize_directory" href="#src.organizers.name_organizer.FileNameOrganizer.organize_directory">organize_directory</a></code></li>
+<li><code><a title="src.organizers.name_organizer.FileNameOrganizer.print_summary" href="#src.organizers.name_organizer.FileNameOrganizer.print_summary">print_summary</a></code></li>
+<li><code><a title="src.organizers.name_organizer.FileNameOrganizer.save_report" href="#src.organizers.name_organizer.FileNameOrganizer.save_report">save_report</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

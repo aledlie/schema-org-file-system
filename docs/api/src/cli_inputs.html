@@ -1,0 +1,631 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.cli_inputs API documentation</title>
+<meta name="description" content="Typed input contracts for forwarded organize-files subcommands …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.cli_inputs</code></h1>
+</header>
+<section id="section-intro">
+<p>Typed input contracts for forwarded organize-files subcommands.</p>
+<p>Each dataclass mirrors one <code>add_*_arguments</code> definition in <code>src/cli.py</code>
+(the single source for that command's options). Converting the parsed
+Namespace through <code>from_namespace()</code> at the CLI boundary makes parser &lt;-&gt;
+consumer drift fail loudly with a named-field error instead of an
+<code>AttributeError</code> deep inside the target's <code>run()</code>, and gives the
+<code>run()</code> signatures a concrete type mypy can check.</p>
+<p><code>tests/unit/test_cli_inputs.py</code> locks each parser definition to its
+dataclass in both directions.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.cli_inputs.CLIInputError"><code class="flex name class">
+<span>class <span class="ident">CLIInputError</span></span>
+<span>(</span><span>*args, **kwargs)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CLIInputError(TypeError):
+    &#34;&#34;&#34;Parsed arguments do not match the command&#39;s typed input contract.&#34;&#34;&#34;</code></pre>
+</details>
+<div class="desc"><p>Parsed arguments do not match the command's typed input contract.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>builtins.TypeError</li>
+<li>builtins.Exception</li>
+<li>builtins.BaseException</li>
+</ul>
+</dd>
+<dt id="src.cli_inputs.CommandInputs"><code class="flex name class">
+<span>class <span class="ident">CommandInputs</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class CommandInputs:
+    &#34;&#34;&#34;Base class providing strict Namespace -&gt; dataclass conversion.&#34;&#34;&#34;
+
+    @classmethod
+    def from_namespace(cls: Type[_T], namespace: argparse.Namespace) -&gt; _T:
+        &#34;&#34;&#34;Build the typed inputs, rejecting any missing/unexpected field.&#34;&#34;&#34;
+        values = {
+            key: value
+            for key, value in vars(namespace).items()
+            if key not in _NAMESPACE_BOOKKEEPING
+        }
+        expected = {field.name for field in fields(cls)}
+        missing = sorted(expected - values.keys())
+        unexpected = sorted(values.keys() - expected)
+        if missing or unexpected:
+            raise CLIInputError(
+                f&#34;{cls.__name__} does not match the parsed arguments &#34;
+                f&#34;(missing: {missing}, unexpected: {unexpected}); keep it in &#34;
+                f&#34;sync with its add_*_arguments definition in src/cli.py&#34;
+            )
+        return cls(**values)</code></pre>
+</details>
+<div class="desc"><p>Base class providing strict Namespace -&gt; dataclass conversion.</p></div>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="src.cli_inputs.ContentInputs" href="#src.cli_inputs.ContentInputs">ContentInputs</a></li>
+<li><a title="src.cli_inputs.EvaluateInputs" href="#src.cli_inputs.EvaluateInputs">EvaluateInputs</a></li>
+<li><a title="src.cli_inputs.NameInputs" href="#src.cli_inputs.NameInputs">NameInputs</a></li>
+<li><a title="src.cli_inputs.PreprocessInputs" href="#src.cli_inputs.PreprocessInputs">PreprocessInputs</a></li>
+<li><a title="src.cli_inputs.TimelineInputs" href="#src.cli_inputs.TimelineInputs">TimelineInputs</a></li>
+<li><a title="src.cli_inputs.TypeInputs" href="#src.cli_inputs.TypeInputs">TypeInputs</a></li>
+<li><a title="src.cli_inputs.UpdateSiteInputs" href="#src.cli_inputs.UpdateSiteInputs">UpdateSiteInputs</a></li>
+</ul>
+<h3>Static methods</h3>
+<dl>
+<dt id="src.cli_inputs.CommandInputs.from_namespace"><code class="name flex">
+<span>def <span class="ident">from_namespace</span></span>(<span>namespace: argparse.Namespace) ‑> ~_T</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Build the typed inputs, rejecting any missing/unexpected field.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.cli_inputs.ContentInputs"><code class="flex name class">
+<span>class <span class="ident">ContentInputs</span></span>
+<span>(</span><span>sources: List[str],<br>base_path: str,<br>dry_run: bool,<br>limit: int | None,<br>report: str | None,<br>force: bool,<br>no_cost_tracking: bool,<br>cost_report: str,<br>check_deps: bool,<br>skip_health_check: bool,<br>sentry_dsn: str | None,<br>no_sentry: bool,<br>db_path: str,<br>no_db: bool,<br>run_migration: bool)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class ContentInputs(CommandInputs):
+    &#34;&#34;&#34;organize-files content (src.cli.add_content_arguments).&#34;&#34;&#34;
+
+    sources: List[str]
+    base_path: str
+    dry_run: bool
+    limit: Optional[int]
+    report: Optional[str]
+    force: bool
+    no_cost_tracking: bool
+    cost_report: str
+    check_deps: bool
+    skip_health_check: bool
+    sentry_dsn: Optional[str]
+    no_sentry: bool
+    db_path: str
+    no_db: bool
+    run_migration: bool</code></pre>
+</details>
+<div class="desc"><p>organize-files content (src.cli.add_content_arguments).</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="src.cli_inputs.CommandInputs" href="#src.cli_inputs.CommandInputs">CommandInputs</a></li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="src.cli_inputs.ContentInputs.base_path"><code class="name">var <span class="ident">base_path</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.ContentInputs.check_deps"><code class="name">var <span class="ident">check_deps</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.ContentInputs.cost_report"><code class="name">var <span class="ident">cost_report</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.ContentInputs.db_path"><code class="name">var <span class="ident">db_path</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.ContentInputs.dry_run"><code class="name">var <span class="ident">dry_run</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.ContentInputs.force"><code class="name">var <span class="ident">force</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.ContentInputs.limit"><code class="name">var <span class="ident">limit</span> : int | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.ContentInputs.no_cost_tracking"><code class="name">var <span class="ident">no_cost_tracking</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.ContentInputs.no_db"><code class="name">var <span class="ident">no_db</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.ContentInputs.no_sentry"><code class="name">var <span class="ident">no_sentry</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.ContentInputs.report"><code class="name">var <span class="ident">report</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.ContentInputs.run_migration"><code class="name">var <span class="ident">run_migration</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.ContentInputs.sentry_dsn"><code class="name">var <span class="ident">sentry_dsn</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.ContentInputs.skip_health_check"><code class="name">var <span class="ident">skip_health_check</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.ContentInputs.sources"><code class="name">var <span class="ident">sources</span> : List[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="src.cli_inputs.CommandInputs" href="#src.cli_inputs.CommandInputs">CommandInputs</a></b></code>:
+<ul class="hlist">
+<li><code><a title="src.cli_inputs.CommandInputs.from_namespace" href="#src.cli_inputs.CommandInputs.from_namespace">from_namespace</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="src.cli_inputs.EvaluateInputs"><code class="flex name class">
+<span>class <span class="ident">EvaluateInputs</span></span>
+<span>(</span><span>test_data: str, output: str, classifier: str, min_support: int | None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class EvaluateInputs(CommandInputs):
+    &#34;&#34;&#34;organize-files evaluate (src.cli.add_evaluate_arguments).&#34;&#34;&#34;
+
+    test_data: str
+    output: str
+    classifier: str
+    min_support: Optional[int]</code></pre>
+</details>
+<div class="desc"><p>organize-files evaluate (src.cli.add_evaluate_arguments).</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="src.cli_inputs.CommandInputs" href="#src.cli_inputs.CommandInputs">CommandInputs</a></li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="src.cli_inputs.EvaluateInputs.classifier"><code class="name">var <span class="ident">classifier</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.EvaluateInputs.min_support"><code class="name">var <span class="ident">min_support</span> : int | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.EvaluateInputs.output"><code class="name">var <span class="ident">output</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.EvaluateInputs.test_data"><code class="name">var <span class="ident">test_data</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="src.cli_inputs.CommandInputs" href="#src.cli_inputs.CommandInputs">CommandInputs</a></b></code>:
+<ul class="hlist">
+<li><code><a title="src.cli_inputs.CommandInputs.from_namespace" href="#src.cli_inputs.CommandInputs.from_namespace">from_namespace</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="src.cli_inputs.NameInputs"><code class="flex name class">
+<span>class <span class="ident">NameInputs</span></span>
+<span>(</span><span>sources: List[str],<br>base_path: str,<br>recursive: bool,<br>dry_run: bool,<br>limit: int | None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class NameInputs(CommandInputs):
+    &#34;&#34;&#34;organize-files name (src.cli.add_name_arguments).&#34;&#34;&#34;
+
+    sources: List[str]
+    base_path: str
+    recursive: bool
+    dry_run: bool
+    limit: Optional[int]</code></pre>
+</details>
+<div class="desc"><p>organize-files name (src.cli.add_name_arguments).</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="src.cli_inputs.CommandInputs" href="#src.cli_inputs.CommandInputs">CommandInputs</a></li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="src.cli_inputs.NameInputs.base_path"><code class="name">var <span class="ident">base_path</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.NameInputs.dry_run"><code class="name">var <span class="ident">dry_run</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.NameInputs.limit"><code class="name">var <span class="ident">limit</span> : int | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.NameInputs.recursive"><code class="name">var <span class="ident">recursive</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.NameInputs.sources"><code class="name">var <span class="ident">sources</span> : List[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="src.cli_inputs.CommandInputs" href="#src.cli_inputs.CommandInputs">CommandInputs</a></b></code>:
+<ul class="hlist">
+<li><code><a title="src.cli_inputs.CommandInputs.from_namespace" href="#src.cli_inputs.CommandInputs.from_namespace">from_namespace</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="src.cli_inputs.PreprocessInputs"><code class="flex name class">
+<span>class <span class="ident">PreprocessInputs</span></span>
+<span>(</span><span>input: str, output: str, test_ratio: float, min_freq: int, report_only: bool)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class PreprocessInputs(CommandInputs):
+    &#34;&#34;&#34;organize-files preprocess (src.cli.add_preprocess_arguments).&#34;&#34;&#34;
+
+    input: str
+    output: str
+    test_ratio: float
+    min_freq: int
+    report_only: bool</code></pre>
+</details>
+<div class="desc"><p>organize-files preprocess (src.cli.add_preprocess_arguments).</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="src.cli_inputs.CommandInputs" href="#src.cli_inputs.CommandInputs">CommandInputs</a></li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="src.cli_inputs.PreprocessInputs.input"><code class="name">var <span class="ident">input</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.PreprocessInputs.min_freq"><code class="name">var <span class="ident">min_freq</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.PreprocessInputs.output"><code class="name">var <span class="ident">output</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.PreprocessInputs.report_only"><code class="name">var <span class="ident">report_only</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.PreprocessInputs.test_ratio"><code class="name">var <span class="ident">test_ratio</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="src.cli_inputs.CommandInputs" href="#src.cli_inputs.CommandInputs">CommandInputs</a></b></code>:
+<ul class="hlist">
+<li><code><a title="src.cli_inputs.CommandInputs.from_namespace" href="#src.cli_inputs.CommandInputs.from_namespace">from_namespace</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="src.cli_inputs.TimelineInputs"><code class="flex name class">
+<span>class <span class="ident">TimelineInputs</span></span>
+<span>(</span><span>db_path: str | None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class TimelineInputs(CommandInputs):
+    &#34;&#34;&#34;organize-files timeline (src.cli.add_timeline_arguments).&#34;&#34;&#34;
+
+    db_path: Optional[str]</code></pre>
+</details>
+<div class="desc"><p>organize-files timeline (src.cli.add_timeline_arguments).</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="src.cli_inputs.CommandInputs" href="#src.cli_inputs.CommandInputs">CommandInputs</a></li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="src.cli_inputs.TimelineInputs.db_path"><code class="name">var <span class="ident">db_path</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="src.cli_inputs.CommandInputs" href="#src.cli_inputs.CommandInputs">CommandInputs</a></b></code>:
+<ul class="hlist">
+<li><code><a title="src.cli_inputs.CommandInputs.from_namespace" href="#src.cli_inputs.CommandInputs.from_namespace">from_namespace</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="src.cli_inputs.TypeInputs"><code class="flex name class">
+<span>class <span class="ident">TypeInputs</span></span>
+<span>(</span><span>sources: List[str], base_path: str, dry_run: bool)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class TypeInputs(CommandInputs):
+    &#34;&#34;&#34;organize-files type (src.cli.add_type_arguments).&#34;&#34;&#34;
+
+    sources: List[str]
+    base_path: str
+    dry_run: bool</code></pre>
+</details>
+<div class="desc"><p>organize-files type (src.cli.add_type_arguments).</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="src.cli_inputs.CommandInputs" href="#src.cli_inputs.CommandInputs">CommandInputs</a></li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="src.cli_inputs.TypeInputs.base_path"><code class="name">var <span class="ident">base_path</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.TypeInputs.dry_run"><code class="name">var <span class="ident">dry_run</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.TypeInputs.sources"><code class="name">var <span class="ident">sources</span> : List[str]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="src.cli_inputs.CommandInputs" href="#src.cli_inputs.CommandInputs">CommandInputs</a></b></code>:
+<ul class="hlist">
+<li><code><a title="src.cli_inputs.CommandInputs.from_namespace" href="#src.cli_inputs.CommandInputs.from_namespace">from_namespace</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+<dt id="src.cli_inputs.UpdateSiteInputs"><code class="flex name class">
+<span>class <span class="ident">UpdateSiteInputs</span></span>
+<span>(</span><span>results_dir: str, site_dir: str, report: str | None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass(frozen=True)
+class UpdateSiteInputs(CommandInputs):
+    &#34;&#34;&#34;organize-files update-site (src.cli.add_update_site_arguments).&#34;&#34;&#34;
+
+    results_dir: str
+    site_dir: str
+    report: Optional[str]</code></pre>
+</details>
+<div class="desc"><p>organize-files update-site (src.cli.add_update_site_arguments).</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="src.cli_inputs.CommandInputs" href="#src.cli_inputs.CommandInputs">CommandInputs</a></li>
+</ul>
+<h3>Instance variables</h3>
+<dl>
+<dt id="src.cli_inputs.UpdateSiteInputs.report"><code class="name">var <span class="ident">report</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.UpdateSiteInputs.results_dir"><code class="name">var <span class="ident">results_dir</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cli_inputs.UpdateSiteInputs.site_dir"><code class="name">var <span class="ident">site_dir</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Inherited members</h3>
+<ul class="hlist">
+<li><code><b><a title="src.cli_inputs.CommandInputs" href="#src.cli_inputs.CommandInputs">CommandInputs</a></b></code>:
+<ul class="hlist">
+<li><code><a title="src.cli_inputs.CommandInputs.from_namespace" href="#src.cli_inputs.CommandInputs.from_namespace">from_namespace</a></code></li>
+</ul>
+</li>
+</ul>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src" href="index.html">src</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.cli_inputs.CLIInputError" href="#src.cli_inputs.CLIInputError">CLIInputError</a></code></h4>
+</li>
+<li>
+<h4><code><a title="src.cli_inputs.CommandInputs" href="#src.cli_inputs.CommandInputs">CommandInputs</a></code></h4>
+<ul class="">
+<li><code><a title="src.cli_inputs.CommandInputs.from_namespace" href="#src.cli_inputs.CommandInputs.from_namespace">from_namespace</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.cli_inputs.ContentInputs" href="#src.cli_inputs.ContentInputs">ContentInputs</a></code></h4>
+<ul class="two-column">
+<li><code><a title="src.cli_inputs.ContentInputs.base_path" href="#src.cli_inputs.ContentInputs.base_path">base_path</a></code></li>
+<li><code><a title="src.cli_inputs.ContentInputs.check_deps" href="#src.cli_inputs.ContentInputs.check_deps">check_deps</a></code></li>
+<li><code><a title="src.cli_inputs.ContentInputs.cost_report" href="#src.cli_inputs.ContentInputs.cost_report">cost_report</a></code></li>
+<li><code><a title="src.cli_inputs.ContentInputs.db_path" href="#src.cli_inputs.ContentInputs.db_path">db_path</a></code></li>
+<li><code><a title="src.cli_inputs.ContentInputs.dry_run" href="#src.cli_inputs.ContentInputs.dry_run">dry_run</a></code></li>
+<li><code><a title="src.cli_inputs.ContentInputs.force" href="#src.cli_inputs.ContentInputs.force">force</a></code></li>
+<li><code><a title="src.cli_inputs.ContentInputs.limit" href="#src.cli_inputs.ContentInputs.limit">limit</a></code></li>
+<li><code><a title="src.cli_inputs.ContentInputs.no_cost_tracking" href="#src.cli_inputs.ContentInputs.no_cost_tracking">no_cost_tracking</a></code></li>
+<li><code><a title="src.cli_inputs.ContentInputs.no_db" href="#src.cli_inputs.ContentInputs.no_db">no_db</a></code></li>
+<li><code><a title="src.cli_inputs.ContentInputs.no_sentry" href="#src.cli_inputs.ContentInputs.no_sentry">no_sentry</a></code></li>
+<li><code><a title="src.cli_inputs.ContentInputs.report" href="#src.cli_inputs.ContentInputs.report">report</a></code></li>
+<li><code><a title="src.cli_inputs.ContentInputs.run_migration" href="#src.cli_inputs.ContentInputs.run_migration">run_migration</a></code></li>
+<li><code><a title="src.cli_inputs.ContentInputs.sentry_dsn" href="#src.cli_inputs.ContentInputs.sentry_dsn">sentry_dsn</a></code></li>
+<li><code><a title="src.cli_inputs.ContentInputs.skip_health_check" href="#src.cli_inputs.ContentInputs.skip_health_check">skip_health_check</a></code></li>
+<li><code><a title="src.cli_inputs.ContentInputs.sources" href="#src.cli_inputs.ContentInputs.sources">sources</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.cli_inputs.EvaluateInputs" href="#src.cli_inputs.EvaluateInputs">EvaluateInputs</a></code></h4>
+<ul class="">
+<li><code><a title="src.cli_inputs.EvaluateInputs.classifier" href="#src.cli_inputs.EvaluateInputs.classifier">classifier</a></code></li>
+<li><code><a title="src.cli_inputs.EvaluateInputs.min_support" href="#src.cli_inputs.EvaluateInputs.min_support">min_support</a></code></li>
+<li><code><a title="src.cli_inputs.EvaluateInputs.output" href="#src.cli_inputs.EvaluateInputs.output">output</a></code></li>
+<li><code><a title="src.cli_inputs.EvaluateInputs.test_data" href="#src.cli_inputs.EvaluateInputs.test_data">test_data</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.cli_inputs.NameInputs" href="#src.cli_inputs.NameInputs">NameInputs</a></code></h4>
+<ul class="">
+<li><code><a title="src.cli_inputs.NameInputs.base_path" href="#src.cli_inputs.NameInputs.base_path">base_path</a></code></li>
+<li><code><a title="src.cli_inputs.NameInputs.dry_run" href="#src.cli_inputs.NameInputs.dry_run">dry_run</a></code></li>
+<li><code><a title="src.cli_inputs.NameInputs.limit" href="#src.cli_inputs.NameInputs.limit">limit</a></code></li>
+<li><code><a title="src.cli_inputs.NameInputs.recursive" href="#src.cli_inputs.NameInputs.recursive">recursive</a></code></li>
+<li><code><a title="src.cli_inputs.NameInputs.sources" href="#src.cli_inputs.NameInputs.sources">sources</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.cli_inputs.PreprocessInputs" href="#src.cli_inputs.PreprocessInputs">PreprocessInputs</a></code></h4>
+<ul class="">
+<li><code><a title="src.cli_inputs.PreprocessInputs.input" href="#src.cli_inputs.PreprocessInputs.input">input</a></code></li>
+<li><code><a title="src.cli_inputs.PreprocessInputs.min_freq" href="#src.cli_inputs.PreprocessInputs.min_freq">min_freq</a></code></li>
+<li><code><a title="src.cli_inputs.PreprocessInputs.output" href="#src.cli_inputs.PreprocessInputs.output">output</a></code></li>
+<li><code><a title="src.cli_inputs.PreprocessInputs.report_only" href="#src.cli_inputs.PreprocessInputs.report_only">report_only</a></code></li>
+<li><code><a title="src.cli_inputs.PreprocessInputs.test_ratio" href="#src.cli_inputs.PreprocessInputs.test_ratio">test_ratio</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.cli_inputs.TimelineInputs" href="#src.cli_inputs.TimelineInputs">TimelineInputs</a></code></h4>
+<ul class="">
+<li><code><a title="src.cli_inputs.TimelineInputs.db_path" href="#src.cli_inputs.TimelineInputs.db_path">db_path</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.cli_inputs.TypeInputs" href="#src.cli_inputs.TypeInputs">TypeInputs</a></code></h4>
+<ul class="">
+<li><code><a title="src.cli_inputs.TypeInputs.base_path" href="#src.cli_inputs.TypeInputs.base_path">base_path</a></code></li>
+<li><code><a title="src.cli_inputs.TypeInputs.dry_run" href="#src.cli_inputs.TypeInputs.dry_run">dry_run</a></code></li>
+<li><code><a title="src.cli_inputs.TypeInputs.sources" href="#src.cli_inputs.TypeInputs.sources">sources</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.cli_inputs.UpdateSiteInputs" href="#src.cli_inputs.UpdateSiteInputs">UpdateSiteInputs</a></code></h4>
+<ul class="">
+<li><code><a title="src.cli_inputs.UpdateSiteInputs.report" href="#src.cli_inputs.UpdateSiteInputs.report">report</a></code></li>
+<li><code><a title="src.cli_inputs.UpdateSiteInputs.results_dir" href="#src.cli_inputs.UpdateSiteInputs.results_dir">results_dir</a></code></li>
+<li><code><a title="src.cli_inputs.UpdateSiteInputs.site_dir" href="#src.cli_inputs.UpdateSiteInputs.site_dir">site_dir</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,881 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.storage.schema_org_variants API documentation</title>
+<meta name="description" content="Alternative schema.org representations for entities in different contexts …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.storage.schema_org_variants</code></h1>
+</header>
+<section id="section-intro">
+<p>Alternative schema.org representations for entities in different contexts.</p>
+<p>Provides variant serializations for cases where a single entity may need
+to be represented differently depending on the consumer:
+- CategoryVariants: DefinedTerm or simplified Intangible
+- PersonVariants: Person with contextual relationships
+- FileVariants: CreativeWork or media-type-specific MediaObject</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.storage.schema_org_variants.CategoryVariants"><code class="flex name class">
+<span>class <span class="ident">CategoryVariants</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CategoryVariants:
+    &#34;&#34;&#34;Alternative representations for Category entities.&#34;&#34;&#34;
+
+    @staticmethod
+    def to_defined_term(
+        canonical_id: str,
+        name: str,
+        description: Optional[str] = None,
+        full_path: Optional[str] = None,
+        parent_iri: Optional[str] = None,
+        children_iris: Optional[Dict[str, str]] = None,
+        file_count: int = 0,
+        icon: Optional[str] = None,
+        color: Optional[str] = None,
+    ) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Serialize a category as a schema.org DefinedTerm (primary representation).
+
+        Args:
+            canonical_id: Canonical UUID used to build the @id IRI.
+            name: Human-readable category name.
+            description: Optional description or definition.
+            full_path: Hierarchical path (e.g. &#34;Legal/Contracts&#34;).
+            parent_iri: @id IRI of the parent DefinedTerm, if any.
+            children_iris: Mapping of child IRI -&gt; child name, if any.
+            file_count: Number of files in this category.
+            icon: Optional icon/emoji.
+            color: Optional hex color string.
+
+        Returns:
+            JSON-LD dict with @context, @type DefinedTerm.
+        &#34;&#34;&#34;
+        result: Dict[str, Any] = {
+            &#34;@context&#34;: SCHEMA_ORG_CONTEXT,
+            &#34;@type&#34;: &#34;DefinedTerm&#34;,
+            &#34;@id&#34;: f&#34;urn:uuid:{canonical_id}&#34;,
+            &#34;name&#34;: name,
+            &#34;inDefinedTermSet&#34;: {
+                &#34;@type&#34;: &#34;DefinedTermSet&#34;,
+                &#34;@id&#34;: &#34;urn:uuid:categories-taxonomy&#34;,
+                &#34;name&#34;: &#34;File Organization Categories&#34;,
+            },
+        }
+
+        result[&#34;definition&#34;] = description if description else f&#34;Category: {name}&#34;
+
+        if full_path:
+            result[&#34;identifier&#34;] = full_path.lower().replace(&#34;/&#34;, &#34;-&#34;)
+
+        if parent_iri:
+            result[&#34;broader&#34;] = {
+                &#34;@type&#34;: &#34;DefinedTerm&#34;,
+                &#34;@id&#34;: parent_iri,
+            }
+
+        if children_iris:
+            result[&#34;narrower&#34;] = [
+                {&#34;@type&#34;: &#34;DefinedTerm&#34;, &#34;@id&#34;: iri, &#34;name&#34;: child_name}
+                for iri, child_name in children_iris.items()
+            ]
+
+        result[&#34;fileCount&#34;] = file_count
+
+        if icon:
+            result[&#34;icon&#34;] = icon
+
+        if color:
+            result[&#34;color&#34;] = color
+
+        return result
+
+    @staticmethod
+    def to_intangible(
+        canonical_id: str,
+        name: str,
+        description: Optional[str] = None,
+    ) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Serialize a category as a simplified schema.org Intangible.
+
+        Useful for lightweight consumers that do not need full taxonomy context.
+
+        Args:
+            canonical_id: Canonical UUID used to build the @id IRI.
+            name: Human-readable category name.
+            description: Optional description.
+
+        Returns:
+            JSON-LD dict with @context, @type Intangible.
+        &#34;&#34;&#34;
+        result: Dict[str, Any] = {
+            &#34;@context&#34;: SCHEMA_ORG_CONTEXT,
+            &#34;@type&#34;: &#34;Intangible&#34;,
+            &#34;@id&#34;: f&#34;urn:uuid:{canonical_id}&#34;,
+            &#34;name&#34;: name,
+        }
+
+        if description:
+            result[&#34;description&#34;] = description
+
+        return result</code></pre>
+</details>
+<div class="desc"><p>Alternative representations for Category entities.</p></div>
+<h3>Static methods</h3>
+<dl>
+<dt id="src.storage.schema_org_variants.CategoryVariants.to_defined_term"><code class="name flex">
+<span>def <span class="ident">to_defined_term</span></span>(<span>canonical_id: str,<br>name: str,<br>description: str | None = None,<br>full_path: str | None = None,<br>parent_iri: str | None = None,<br>children_iris: Dict[str, str] | None = None,<br>file_count: int = 0,<br>icon: str | None = None,<br>color: str | None = None) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def to_defined_term(
+    canonical_id: str,
+    name: str,
+    description: Optional[str] = None,
+    full_path: Optional[str] = None,
+    parent_iri: Optional[str] = None,
+    children_iris: Optional[Dict[str, str]] = None,
+    file_count: int = 0,
+    icon: Optional[str] = None,
+    color: Optional[str] = None,
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Serialize a category as a schema.org DefinedTerm (primary representation).
+
+    Args:
+        canonical_id: Canonical UUID used to build the @id IRI.
+        name: Human-readable category name.
+        description: Optional description or definition.
+        full_path: Hierarchical path (e.g. &#34;Legal/Contracts&#34;).
+        parent_iri: @id IRI of the parent DefinedTerm, if any.
+        children_iris: Mapping of child IRI -&gt; child name, if any.
+        file_count: Number of files in this category.
+        icon: Optional icon/emoji.
+        color: Optional hex color string.
+
+    Returns:
+        JSON-LD dict with @context, @type DefinedTerm.
+    &#34;&#34;&#34;
+    result: Dict[str, Any] = {
+        &#34;@context&#34;: SCHEMA_ORG_CONTEXT,
+        &#34;@type&#34;: &#34;DefinedTerm&#34;,
+        &#34;@id&#34;: f&#34;urn:uuid:{canonical_id}&#34;,
+        &#34;name&#34;: name,
+        &#34;inDefinedTermSet&#34;: {
+            &#34;@type&#34;: &#34;DefinedTermSet&#34;,
+            &#34;@id&#34;: &#34;urn:uuid:categories-taxonomy&#34;,
+            &#34;name&#34;: &#34;File Organization Categories&#34;,
+        },
+    }
+
+    result[&#34;definition&#34;] = description if description else f&#34;Category: {name}&#34;
+
+    if full_path:
+        result[&#34;identifier&#34;] = full_path.lower().replace(&#34;/&#34;, &#34;-&#34;)
+
+    if parent_iri:
+        result[&#34;broader&#34;] = {
+            &#34;@type&#34;: &#34;DefinedTerm&#34;,
+            &#34;@id&#34;: parent_iri,
+        }
+
+    if children_iris:
+        result[&#34;narrower&#34;] = [
+            {&#34;@type&#34;: &#34;DefinedTerm&#34;, &#34;@id&#34;: iri, &#34;name&#34;: child_name}
+            for iri, child_name in children_iris.items()
+        ]
+
+    result[&#34;fileCount&#34;] = file_count
+
+    if icon:
+        result[&#34;icon&#34;] = icon
+
+    if color:
+        result[&#34;color&#34;] = color
+
+    return result</code></pre>
+</details>
+<div class="desc"><p>Serialize a category as a schema.org DefinedTerm (primary representation).</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>canonical_id</code></strong></dt>
+<dd>Canonical UUID used to build the @id IRI.</dd>
+<dt><strong><code>name</code></strong></dt>
+<dd>Human-readable category name.</dd>
+<dt><strong><code>description</code></strong></dt>
+<dd>Optional description or definition.</dd>
+<dt><strong><code>full_path</code></strong></dt>
+<dd>Hierarchical path (e.g. "Legal/Contracts").</dd>
+<dt><strong><code>parent_iri</code></strong></dt>
+<dd>@id IRI of the parent DefinedTerm, if any.</dd>
+<dt><strong><code>children_iris</code></strong></dt>
+<dd>Mapping of child IRI -&gt; child name, if any.</dd>
+<dt><strong><code>file_count</code></strong></dt>
+<dd>Number of files in this category.</dd>
+<dt><strong><code>icon</code></strong></dt>
+<dd>Optional icon/emoji.</dd>
+<dt><strong><code>color</code></strong></dt>
+<dd>Optional hex color string.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>JSON-LD dict with @context, @type DefinedTerm.</p></div>
+</dd>
+<dt id="src.storage.schema_org_variants.CategoryVariants.to_intangible"><code class="name flex">
+<span>def <span class="ident">to_intangible</span></span>(<span>canonical_id: str, name: str, description: str | None = None) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def to_intangible(
+    canonical_id: str,
+    name: str,
+    description: Optional[str] = None,
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Serialize a category as a simplified schema.org Intangible.
+
+    Useful for lightweight consumers that do not need full taxonomy context.
+
+    Args:
+        canonical_id: Canonical UUID used to build the @id IRI.
+        name: Human-readable category name.
+        description: Optional description.
+
+    Returns:
+        JSON-LD dict with @context, @type Intangible.
+    &#34;&#34;&#34;
+    result: Dict[str, Any] = {
+        &#34;@context&#34;: SCHEMA_ORG_CONTEXT,
+        &#34;@type&#34;: &#34;Intangible&#34;,
+        &#34;@id&#34;: f&#34;urn:uuid:{canonical_id}&#34;,
+        &#34;name&#34;: name,
+    }
+
+    if description:
+        result[&#34;description&#34;] = description
+
+    return result</code></pre>
+</details>
+<div class="desc"><p>Serialize a category as a simplified schema.org Intangible.</p>
+<p>Useful for lightweight consumers that do not need full taxonomy context.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>canonical_id</code></strong></dt>
+<dd>Canonical UUID used to build the @id IRI.</dd>
+<dt><strong><code>name</code></strong></dt>
+<dd>Human-readable category name.</dd>
+<dt><strong><code>description</code></strong></dt>
+<dd>Optional description.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>JSON-LD dict with @context, @type Intangible.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.storage.schema_org_variants.FileVariants"><code class="flex name class">
+<span>class <span class="ident">FileVariants</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FileVariants:
+    &#34;&#34;&#34;Alternative representations for File entities.&#34;&#34;&#34;
+
+    @staticmethod
+    def to_creative_work(
+        iri: str,
+        name: str,
+        encoding_format: Optional[str] = None,
+        content_size: Optional[int] = None,
+        date_created: Optional[str] = None,
+        date_modified: Optional[str] = None,
+        url: Optional[str] = None,
+        text: Optional[str] = None,
+        about_iris: Optional[List[Dict[str, str]]] = None,
+        mentions: Optional[List[Dict[str, str]]] = None,
+    ) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Serialize a file as a generic schema.org CreativeWork.
+
+        Args:
+            iri: @id IRI for this file.
+            name: File name.
+            encoding_format: MIME type string.
+            content_size: Size in bytes.
+            date_created: ISO-8601 datetime string.
+            date_modified: ISO-8601 datetime string.
+            url: Original file path / URL.
+            text: Extracted text excerpt (will be truncated to 2000 chars).
+            about_iris: List of {&#34;@type&#34;, &#34;@id&#34;, &#34;name&#34;} dicts for category refs.
+            mentions: List of {&#34;@type&#34;, &#34;@id&#34;, &#34;name&#34;} dicts for entity mentions.
+
+        Returns:
+            JSON-LD dict with @context, @type CreativeWork.
+        &#34;&#34;&#34;
+        result: Dict[str, Any] = {
+            &#34;@context&#34;: SCHEMA_ORG_CONTEXT,
+            &#34;@type&#34;: &#34;CreativeWork&#34;,
+            &#34;@id&#34;: iri,
+            &#34;name&#34;: name,
+        }
+
+        if encoding_format:
+            result[&#34;encodingFormat&#34;] = encoding_format
+
+        if content_size is not None:
+            result[&#34;contentSize&#34;] = str(content_size)
+
+        if date_created:
+            result[&#34;dateCreated&#34;] = date_created
+
+        if date_modified:
+            result[&#34;dateModified&#34;] = date_modified
+
+        if url:
+            result[&#34;url&#34;] = url
+
+        if text:
+            result[&#34;text&#34;] = text[:2000]
+
+        if about_iris:
+            result[&#34;mainEntityOfPage&#34;] = about_iris[0]
+            if len(about_iris) &gt; 1:
+                result[&#34;about&#34;] = about_iris[1:]
+
+        if mentions:
+            result[&#34;mentions&#34;] = mentions
+
+        return result
+
+    @staticmethod
+    def to_media_object(
+        iri: str,
+        name: str,
+        schema_type: str,
+        encoding_format: Optional[str] = None,
+        content_size: Optional[int] = None,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        duration: Optional[str] = None,
+        date_created: Optional[str] = None,
+        url: Optional[str] = None,
+        content_location: Optional[Dict[str, Any]] = None,
+    ) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Serialize a file as a media-specific schema.org MediaObject subtype.
+
+        Args:
+            iri: @id IRI for this file.
+            name: File name.
+            schema_type: One of ImageObject, VideoObject, AudioObject.
+            encoding_format: MIME type.
+            content_size: Size in bytes.
+            width: Width in pixels (images/video).
+            height: Height in pixels (images/video).
+            duration: ISO-8601 duration (audio/video).
+            date_created: ISO-8601 datetime string.
+            url: Original file path / URL.
+            content_location: Nested Place dict with geo coordinates.
+
+        Returns:
+            JSON-LD dict with @context, @type set to schema_type.
+        &#34;&#34;&#34;
+        result: Dict[str, Any] = {
+            &#34;@context&#34;: SCHEMA_ORG_CONTEXT,
+            &#34;@type&#34;: schema_type,
+            &#34;@id&#34;: iri,
+            &#34;name&#34;: name,
+        }
+
+        if encoding_format:
+            result[&#34;encodingFormat&#34;] = encoding_format
+
+        if content_size is not None:
+            result[&#34;contentSize&#34;] = str(content_size)
+
+        if width is not None:
+            result[&#34;width&#34;] = width
+
+        if height is not None:
+            result[&#34;height&#34;] = height
+
+        if duration:
+            result[&#34;duration&#34;] = duration
+
+        if date_created:
+            result[&#34;dateCreated&#34;] = date_created
+
+        if url:
+            result[&#34;url&#34;] = url
+
+        if content_location:
+            result[&#34;contentLocation&#34;] = content_location
+
+        return result</code></pre>
+</details>
+<div class="desc"><p>Alternative representations for File entities.</p></div>
+<h3>Static methods</h3>
+<dl>
+<dt id="src.storage.schema_org_variants.FileVariants.to_creative_work"><code class="name flex">
+<span>def <span class="ident">to_creative_work</span></span>(<span>iri: str,<br>name: str,<br>encoding_format: str | None = None,<br>content_size: int | None = None,<br>date_created: str | None = None,<br>date_modified: str | None = None,<br>url: str | None = None,<br>text: str | None = None,<br>about_iris: List[Dict[str, str]] | None = None,<br>mentions: List[Dict[str, str]] | None = None) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def to_creative_work(
+    iri: str,
+    name: str,
+    encoding_format: Optional[str] = None,
+    content_size: Optional[int] = None,
+    date_created: Optional[str] = None,
+    date_modified: Optional[str] = None,
+    url: Optional[str] = None,
+    text: Optional[str] = None,
+    about_iris: Optional[List[Dict[str, str]]] = None,
+    mentions: Optional[List[Dict[str, str]]] = None,
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Serialize a file as a generic schema.org CreativeWork.
+
+    Args:
+        iri: @id IRI for this file.
+        name: File name.
+        encoding_format: MIME type string.
+        content_size: Size in bytes.
+        date_created: ISO-8601 datetime string.
+        date_modified: ISO-8601 datetime string.
+        url: Original file path / URL.
+        text: Extracted text excerpt (will be truncated to 2000 chars).
+        about_iris: List of {&#34;@type&#34;, &#34;@id&#34;, &#34;name&#34;} dicts for category refs.
+        mentions: List of {&#34;@type&#34;, &#34;@id&#34;, &#34;name&#34;} dicts for entity mentions.
+
+    Returns:
+        JSON-LD dict with @context, @type CreativeWork.
+    &#34;&#34;&#34;
+    result: Dict[str, Any] = {
+        &#34;@context&#34;: SCHEMA_ORG_CONTEXT,
+        &#34;@type&#34;: &#34;CreativeWork&#34;,
+        &#34;@id&#34;: iri,
+        &#34;name&#34;: name,
+    }
+
+    if encoding_format:
+        result[&#34;encodingFormat&#34;] = encoding_format
+
+    if content_size is not None:
+        result[&#34;contentSize&#34;] = str(content_size)
+
+    if date_created:
+        result[&#34;dateCreated&#34;] = date_created
+
+    if date_modified:
+        result[&#34;dateModified&#34;] = date_modified
+
+    if url:
+        result[&#34;url&#34;] = url
+
+    if text:
+        result[&#34;text&#34;] = text[:2000]
+
+    if about_iris:
+        result[&#34;mainEntityOfPage&#34;] = about_iris[0]
+        if len(about_iris) &gt; 1:
+            result[&#34;about&#34;] = about_iris[1:]
+
+    if mentions:
+        result[&#34;mentions&#34;] = mentions
+
+    return result</code></pre>
+</details>
+<div class="desc"><p>Serialize a file as a generic schema.org CreativeWork.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>iri</code></strong></dt>
+<dd>@id IRI for this file.</dd>
+<dt><strong><code>name</code></strong></dt>
+<dd>File name.</dd>
+<dt><strong><code>encoding_format</code></strong></dt>
+<dd>MIME type string.</dd>
+<dt><strong><code>content_size</code></strong></dt>
+<dd>Size in bytes.</dd>
+<dt><strong><code>date_created</code></strong></dt>
+<dd>ISO-8601 datetime string.</dd>
+<dt><strong><code>date_modified</code></strong></dt>
+<dd>ISO-8601 datetime string.</dd>
+<dt><strong><code>url</code></strong></dt>
+<dd>Original file path / URL.</dd>
+<dt><strong><code>text</code></strong></dt>
+<dd>Extracted text excerpt (will be truncated to 2000 chars).</dd>
+<dt><strong><code>about_iris</code></strong></dt>
+<dd>List of {"@type", "@id", "name"} dicts for category refs.</dd>
+<dt><strong><code>mentions</code></strong></dt>
+<dd>List of {"@type", "@id", "name"} dicts for entity mentions.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>JSON-LD dict with @context, @type CreativeWork.</p></div>
+</dd>
+<dt id="src.storage.schema_org_variants.FileVariants.to_media_object"><code class="name flex">
+<span>def <span class="ident">to_media_object</span></span>(<span>iri: str,<br>name: str,<br>schema_type: str,<br>encoding_format: str | None = None,<br>content_size: int | None = None,<br>width: int | None = None,<br>height: int | None = None,<br>duration: str | None = None,<br>date_created: str | None = None,<br>url: str | None = None,<br>content_location: Dict[str, Any] | None = None) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def to_media_object(
+    iri: str,
+    name: str,
+    schema_type: str,
+    encoding_format: Optional[str] = None,
+    content_size: Optional[int] = None,
+    width: Optional[int] = None,
+    height: Optional[int] = None,
+    duration: Optional[str] = None,
+    date_created: Optional[str] = None,
+    url: Optional[str] = None,
+    content_location: Optional[Dict[str, Any]] = None,
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Serialize a file as a media-specific schema.org MediaObject subtype.
+
+    Args:
+        iri: @id IRI for this file.
+        name: File name.
+        schema_type: One of ImageObject, VideoObject, AudioObject.
+        encoding_format: MIME type.
+        content_size: Size in bytes.
+        width: Width in pixels (images/video).
+        height: Height in pixels (images/video).
+        duration: ISO-8601 duration (audio/video).
+        date_created: ISO-8601 datetime string.
+        url: Original file path / URL.
+        content_location: Nested Place dict with geo coordinates.
+
+    Returns:
+        JSON-LD dict with @context, @type set to schema_type.
+    &#34;&#34;&#34;
+    result: Dict[str, Any] = {
+        &#34;@context&#34;: SCHEMA_ORG_CONTEXT,
+        &#34;@type&#34;: schema_type,
+        &#34;@id&#34;: iri,
+        &#34;name&#34;: name,
+    }
+
+    if encoding_format:
+        result[&#34;encodingFormat&#34;] = encoding_format
+
+    if content_size is not None:
+        result[&#34;contentSize&#34;] = str(content_size)
+
+    if width is not None:
+        result[&#34;width&#34;] = width
+
+    if height is not None:
+        result[&#34;height&#34;] = height
+
+    if duration:
+        result[&#34;duration&#34;] = duration
+
+    if date_created:
+        result[&#34;dateCreated&#34;] = date_created
+
+    if url:
+        result[&#34;url&#34;] = url
+
+    if content_location:
+        result[&#34;contentLocation&#34;] = content_location
+
+    return result</code></pre>
+</details>
+<div class="desc"><p>Serialize a file as a media-specific schema.org MediaObject subtype.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>iri</code></strong></dt>
+<dd>@id IRI for this file.</dd>
+<dt><strong><code>name</code></strong></dt>
+<dd>File name.</dd>
+<dt><strong><code>schema_type</code></strong></dt>
+<dd>One of ImageObject, VideoObject, AudioObject.</dd>
+<dt><strong><code>encoding_format</code></strong></dt>
+<dd>MIME type.</dd>
+<dt><strong><code>content_size</code></strong></dt>
+<dd>Size in bytes.</dd>
+<dt><strong><code>width</code></strong></dt>
+<dd>Width in pixels (images/video).</dd>
+<dt><strong><code>height</code></strong></dt>
+<dd>Height in pixels (images/video).</dd>
+<dt><strong><code>duration</code></strong></dt>
+<dd>ISO-8601 duration (audio/video).</dd>
+<dt><strong><code>date_created</code></strong></dt>
+<dd>ISO-8601 datetime string.</dd>
+<dt><strong><code>url</code></strong></dt>
+<dd>Original file path / URL.</dd>
+<dt><strong><code>content_location</code></strong></dt>
+<dd>Nested Place dict with geo coordinates.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>JSON-LD dict with @context, @type set to schema_type.</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.storage.schema_org_variants.PersonVariants"><code class="flex name class">
+<span>class <span class="ident">PersonVariants</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PersonVariants:
+    &#34;&#34;&#34;Alternative representations for Person entities.&#34;&#34;&#34;
+
+    @staticmethod
+    def to_person_with_context(
+        canonical_id: str,
+        name: str,
+        email: Optional[str] = None,
+        job_title: Optional[str] = None,
+        works_for_iri: Optional[str] = None,
+        works_for_name: Optional[str] = None,
+        work_location_iri: Optional[str] = None,
+        work_location_name: Optional[str] = None,
+        mention_count: int = 0,
+    ) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Serialize a person with optional organizational relationships.
+
+        Args:
+            canonical_id: Canonical UUID used to build the @id IRI.
+            name: Full name.
+            email: Optional email address.
+            job_title: Optional job title / role.
+            works_for_iri: @id IRI of the employing Organization, if known.
+            works_for_name: Name of the employing Organization, if known.
+            work_location_iri: @id IRI of the work Place, if known.
+            work_location_name: Name of the work Place, if known.
+            mention_count: Number of file mentions.
+
+        Returns:
+            JSON-LD dict with @context, @type Person.
+        &#34;&#34;&#34;
+        result: Dict[str, Any] = {
+            &#34;@context&#34;: SCHEMA_ORG_CONTEXT,
+            &#34;@type&#34;: &#34;Person&#34;,
+            &#34;@id&#34;: f&#34;urn:uuid:{canonical_id}&#34;,
+            &#34;name&#34;: name,
+            &#34;mentionCount&#34;: mention_count,
+        }
+
+        if email:
+            result[&#34;email&#34;] = email
+
+        if job_title:
+            result[&#34;jobTitle&#34;] = job_title
+
+        if works_for_iri or works_for_name:
+            works_for: Dict[str, Any] = {&#34;@type&#34;: &#34;Organization&#34;}
+            if works_for_iri:
+                works_for[&#34;@id&#34;] = works_for_iri
+            if works_for_name:
+                works_for[&#34;name&#34;] = works_for_name
+            result[&#34;worksFor&#34;] = works_for
+
+        if work_location_iri or work_location_name:
+            work_location: Dict[str, Any] = {&#34;@type&#34;: &#34;Place&#34;}
+            if work_location_iri:
+                work_location[&#34;@id&#34;] = work_location_iri
+            if work_location_name:
+                work_location[&#34;name&#34;] = work_location_name
+            result[&#34;workLocation&#34;] = work_location
+
+        return result</code></pre>
+</details>
+<div class="desc"><p>Alternative representations for Person entities.</p></div>
+<h3>Static methods</h3>
+<dl>
+<dt id="src.storage.schema_org_variants.PersonVariants.to_person_with_context"><code class="name flex">
+<span>def <span class="ident">to_person_with_context</span></span>(<span>canonical_id: str,<br>name: str,<br>email: str | None = None,<br>job_title: str | None = None,<br>works_for_iri: str | None = None,<br>works_for_name: str | None = None,<br>work_location_iri: str | None = None,<br>work_location_name: str | None = None,<br>mention_count: int = 0) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def to_person_with_context(
+    canonical_id: str,
+    name: str,
+    email: Optional[str] = None,
+    job_title: Optional[str] = None,
+    works_for_iri: Optional[str] = None,
+    works_for_name: Optional[str] = None,
+    work_location_iri: Optional[str] = None,
+    work_location_name: Optional[str] = None,
+    mention_count: int = 0,
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Serialize a person with optional organizational relationships.
+
+    Args:
+        canonical_id: Canonical UUID used to build the @id IRI.
+        name: Full name.
+        email: Optional email address.
+        job_title: Optional job title / role.
+        works_for_iri: @id IRI of the employing Organization, if known.
+        works_for_name: Name of the employing Organization, if known.
+        work_location_iri: @id IRI of the work Place, if known.
+        work_location_name: Name of the work Place, if known.
+        mention_count: Number of file mentions.
+
+    Returns:
+        JSON-LD dict with @context, @type Person.
+    &#34;&#34;&#34;
+    result: Dict[str, Any] = {
+        &#34;@context&#34;: SCHEMA_ORG_CONTEXT,
+        &#34;@type&#34;: &#34;Person&#34;,
+        &#34;@id&#34;: f&#34;urn:uuid:{canonical_id}&#34;,
+        &#34;name&#34;: name,
+        &#34;mentionCount&#34;: mention_count,
+    }
+
+    if email:
+        result[&#34;email&#34;] = email
+
+    if job_title:
+        result[&#34;jobTitle&#34;] = job_title
+
+    if works_for_iri or works_for_name:
+        works_for: Dict[str, Any] = {&#34;@type&#34;: &#34;Organization&#34;}
+        if works_for_iri:
+            works_for[&#34;@id&#34;] = works_for_iri
+        if works_for_name:
+            works_for[&#34;name&#34;] = works_for_name
+        result[&#34;worksFor&#34;] = works_for
+
+    if work_location_iri or work_location_name:
+        work_location: Dict[str, Any] = {&#34;@type&#34;: &#34;Place&#34;}
+        if work_location_iri:
+            work_location[&#34;@id&#34;] = work_location_iri
+        if work_location_name:
+            work_location[&#34;name&#34;] = work_location_name
+        result[&#34;workLocation&#34;] = work_location
+
+    return result</code></pre>
+</details>
+<div class="desc"><p>Serialize a person with optional organizational relationships.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>canonical_id</code></strong></dt>
+<dd>Canonical UUID used to build the @id IRI.</dd>
+<dt><strong><code>name</code></strong></dt>
+<dd>Full name.</dd>
+<dt><strong><code>email</code></strong></dt>
+<dd>Optional email address.</dd>
+<dt><strong><code>job_title</code></strong></dt>
+<dd>Optional job title / role.</dd>
+<dt><strong><code>works_for_iri</code></strong></dt>
+<dd>@id IRI of the employing Organization, if known.</dd>
+<dt><strong><code>works_for_name</code></strong></dt>
+<dd>Name of the employing Organization, if known.</dd>
+<dt><strong><code>work_location_iri</code></strong></dt>
+<dd>@id IRI of the work Place, if known.</dd>
+<dt><strong><code>work_location_name</code></strong></dt>
+<dd>Name of the work Place, if known.</dd>
+<dt><strong><code>mention_count</code></strong></dt>
+<dd>Number of file mentions.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>JSON-LD dict with @context, @type Person.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.storage" href="index.html">src.storage</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.storage.schema_org_variants.CategoryVariants" href="#src.storage.schema_org_variants.CategoryVariants">CategoryVariants</a></code></h4>
+<ul class="">
+<li><code><a title="src.storage.schema_org_variants.CategoryVariants.to_defined_term" href="#src.storage.schema_org_variants.CategoryVariants.to_defined_term">to_defined_term</a></code></li>
+<li><code><a title="src.storage.schema_org_variants.CategoryVariants.to_intangible" href="#src.storage.schema_org_variants.CategoryVariants.to_intangible">to_intangible</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.storage.schema_org_variants.FileVariants" href="#src.storage.schema_org_variants.FileVariants">FileVariants</a></code></h4>
+<ul class="">
+<li><code><a title="src.storage.schema_org_variants.FileVariants.to_creative_work" href="#src.storage.schema_org_variants.FileVariants.to_creative_work">to_creative_work</a></code></li>
+<li><code><a title="src.storage.schema_org_variants.FileVariants.to_media_object" href="#src.storage.schema_org_variants.FileVariants.to_media_object">to_media_object</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.storage.schema_org_variants.PersonVariants" href="#src.storage.schema_org_variants.PersonVariants">PersonVariants</a></code></h4>
+<ul class="">
+<li><code><a title="src.storage.schema_org_variants.PersonVariants.to_person_with_context" href="#src.storage.schema_org_variants.PersonVariants.to_person_with_context">to_person_with_context</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

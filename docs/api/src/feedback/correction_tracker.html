@@ -1,0 +1,1288 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.feedback.correction_tracker API documentation</title>
+<meta name="description" content="Correction feedback storage for miscategorized files …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.feedback.correction_tracker</code></h1>
+</header>
+<section id="section-intro">
+<p>Correction feedback storage for miscategorized files.</p>
+<p>Stores user corrections in a persistent JSON hashmap keyed
+by file hash, learns filename-pattern -&gt; category associations from them, and
+serves suggestions/rules back to the organizer.</p>
+<p>Structure:
+{
+"corrections": {
+"<file_hash>": {
+"original_path": "/path/to/original/file.ext",
+"assigned_destination": "/path/to/wrong/destination/file.ext",
+"correct_destination": "/path/to/correct/destination/file.ext",
+"assigned_category": "wrong_category",
+"correct_category": "correct_category",
+"assigned_subcategory": "wrong_subcategory",
+"correct_subcategory": "correct_subcategory",
+"filename": "file.ext",
+"file_extension": ".ext",
+"correction_date": "2025-12-09T10:00:00",
+"correction_reason": "user description of why this was wrong",
+"filename_patterns": ["pattern1", "pattern2"],
+"content_hints": ["hint1", "hint2"]
+}
+},
+"category_rules": {
+"pattern -&gt; category": count
+},
+"learned_patterns": {
+"filename_pattern": {
+"correct_category": "category",
+"correct_subcategory": "subcategory",
+"confidence": 0.95,
+"sample_count": 10
+}
+},
+"statistics": {
+"total_corrections": 100,
+"corrections_by_category": {"category": count},
+"most_common_mistakes": [{"from": "cat1", "to": "cat2", "count": 5}]
+}
+}</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="src.feedback.correction_tracker.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main():
+    &#34;&#34;&#34;Command-line interface for the correction feedback system.&#34;&#34;&#34;
+    import argparse
+
+    parser = argparse.ArgumentParser(
+        description=&#34;Correction Feedback System for File Organizer&#34;
+    )
+    subparsers = parser.add_subparsers(dest=&#34;command&#34;, help=&#34;Commands&#34;)
+
+    # Add correction
+    add_parser = subparsers.add_parser(&#34;add&#34;, help=&#34;Add a correction&#34;)
+    add_parser.add_argument(&#34;--file&#34;, required=True, help=&#34;Original file path&#34;)
+    add_parser.add_argument(&#34;--assigned-dest&#34;, required=True, help=&#34;Where organizer put the file&#34;)
+    add_parser.add_argument(&#34;--correct-dest&#34;, required=True, help=&#34;Correct destination&#34;)
+    add_parser.add_argument(&#34;--assigned-cat&#34;, required=True, help=&#34;Assigned category&#34;)
+    add_parser.add_argument(&#34;--correct-cat&#34;, required=True, help=&#34;Correct category&#34;)
+    add_parser.add_argument(&#34;--assigned-subcat&#34;, help=&#34;Assigned subcategory&#34;)
+    add_parser.add_argument(&#34;--correct-subcat&#34;, help=&#34;Correct subcategory&#34;)
+    add_parser.add_argument(&#34;--reason&#34;, help=&#34;Why this was wrong&#34;)
+    add_parser.add_argument(&#34;--hints&#34;, nargs=&#34;+&#34;, help=&#34;Content hints for correct category&#34;)
+
+    # Check file
+    check_parser = subparsers.add_parser(&#34;check&#34;, help=&#34;Check if a file has a correction&#34;)
+    check_parser.add_argument(&#34;file&#34;, help=&#34;File path to check&#34;)
+
+    # Get suggestion
+    suggest_parser = subparsers.add_parser(&#34;suggest&#34;, help=&#34;Get category suggestion for a filename&#34;)
+    suggest_parser.add_argument(&#34;filename&#34;, help=&#34;Filename to check&#34;)
+    suggest_parser.add_argument(&#34;--current-cat&#34;, help=&#34;Current category&#34;)
+
+    # Statistics
+    subparsers.add_parser(&#34;stats&#34;, help=&#34;Show correction statistics&#34;)
+
+    # Export rules
+    subparsers.add_parser(&#34;export-rules&#34;, help=&#34;Export learned rules as JSON&#34;)
+
+    # List corrections
+    list_parser = subparsers.add_parser(&#34;list&#34;, help=&#34;List corrections&#34;)
+    list_parser.add_argument(&#34;--category&#34;, help=&#34;Filter by correct category&#34;)
+    list_parser.add_argument(&#34;--limit&#34;, type=int, default=20, help=&#34;Max results&#34;)
+
+    args = parser.parse_args()
+
+    system = CorrectionFeedbackSystem()
+
+    if args.command == &#34;add&#34;:
+        file_hash = system.add_correction(
+            file_path=args.file,
+            assigned_destination=args.assigned_dest,
+            correct_destination=args.correct_dest,
+            assigned_category=args.assigned_cat,
+            correct_category=args.correct_cat,
+            assigned_subcategory=args.assigned_subcat,
+            correct_subcategory=args.correct_subcat,
+            correction_reason=args.reason,
+            content_hints=args.hints
+        )
+        print(f&#34;Correction added with hash: {file_hash}&#34;)
+
+    elif args.command == &#34;check&#34;:
+        correction = system.check_file(args.file)
+        if correction:
+            print(json.dumps(correction, indent=2))
+        else:
+            print(&#34;No correction found for this file&#34;)
+
+    elif args.command == &#34;suggest&#34;:
+        suggestion = system.get_suggestion(args.filename, args.current_cat)
+        if suggestion:
+            print(json.dumps(suggestion, indent=2))
+        else:
+            print(&#34;No suggestion available&#34;)
+
+    elif args.command == &#34;stats&#34;:
+        stats = system.get_statistics()
+        print(json.dumps(stats, indent=2))
+
+    elif args.command == &#34;export-rules&#34;:
+        rules = system.export_rules()
+        print(json.dumps(rules, indent=2))
+
+    elif args.command == &#34;list&#34;:
+        if args.category:
+            corrections = system.get_corrections_for_category(args.category)
+        else:
+            corrections = [
+                {**c, &#34;hash&#34;: h}
+                for h, c in list(system.data[&#34;corrections&#34;].items())[:args.limit]
+            ]
+
+        for c in corrections[:args.limit]:
+            print(f&#34;\n{c[&#39;hash&#39;][:12]}...&#34;)
+            print(f&#34;  File: {c[&#39;filename&#39;]}&#34;)
+            print(f&#34;  {c[&#39;assigned_category&#39;]} -&gt; {c[&#39;correct_category&#39;]}&#34;)
+            if c.get(&#39;correction_reason&#39;):
+                print(f&#34;  Reason: {c[&#39;correction_reason&#39;]}&#34;)
+
+    else:
+        parser.print_help()</code></pre>
+</details>
+<div class="desc"><p>Command-line interface for the correction feedback system.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.feedback.correction_tracker.CorrectionFeedbackSystem"><code class="flex name class">
+<span>class <span class="ident">CorrectionFeedbackSystem</span></span>
+<span>(</span><span>feedback_file: str = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CorrectionFeedbackSystem:
+    &#34;&#34;&#34;Manages correction feedback for file categorization improvements.&#34;&#34;&#34;
+
+    def __init__(self, feedback_file: str = None):
+        &#34;&#34;&#34;Initialize the feedback system.
+
+        Args:
+            feedback_file: Path to the JSON file storing corrections.
+                          Defaults to ~/.schema-org-file-system/corrections.json
+        &#34;&#34;&#34;
+        if feedback_file is None:
+            home = Path.home()
+            config_dir = home / &#34;.schema-org-file-system&#34;
+            config_dir.mkdir(exist_ok=True)
+            feedback_file = str(config_dir / &#34;corrections.json&#34;)
+
+        self.feedback_file = feedback_file
+        self.data = self._load_data()
+
+    def _load_data(self) -&gt; Dict:
+        &#34;&#34;&#34;Load existing corrections from file.&#34;&#34;&#34;
+        if os.path.exists(self.feedback_file):
+            try:
+                with open(self.feedback_file, &#39;r&#39;) as f:
+                    return json.load(f)
+            except (json.JSONDecodeError, IOError):
+                pass
+
+        return {
+            &#34;corrections&#34;: {},
+            &#34;category_rules&#34;: {},
+            &#34;learned_patterns&#34;: {},
+            &#34;statistics&#34;: {
+                &#34;total_corrections&#34;: 0,
+                &#34;corrections_by_category&#34;: {},
+                &#34;most_common_mistakes&#34;: []
+            },
+            &#34;metadata&#34;: {
+                &#34;created&#34;: datetime.now().isoformat(),
+                &#34;last_updated&#34;: datetime.now().isoformat(),
+                &#34;version&#34;: &#34;1.0&#34;
+            }
+        }
+
+    def _save_data(self) -&gt; None:
+        &#34;&#34;&#34;Save corrections to file.&#34;&#34;&#34;
+        self.data[&#34;metadata&#34;][&#34;last_updated&#34;] = datetime.now().isoformat()
+        with open(self.feedback_file, &#39;w&#39;) as f:
+            json.dump(self.data, f, indent=2)
+
+    @staticmethod
+    def compute_file_hash(file_path: str) -&gt; str:
+        &#34;&#34;&#34;Compute SHA-256 hash of a file.
+
+        Args:
+            file_path: Path to the file
+
+        Returns:
+            Hexadecimal hash string
+        &#34;&#34;&#34;
+        sha256_hash = hashlib.sha256()
+        try:
+            with open(file_path, &#34;rb&#34;) as f:
+                # Read in chunks for large files
+                for chunk in iter(lambda: f.read(8192), b&#34;&#34;):
+                    sha256_hash.update(chunk)
+            return sha256_hash.hexdigest()
+        except (IOError, OSError):
+            # Fallback to path-based hash if file can&#39;t be read
+            return hashlib.sha256(file_path.encode()).hexdigest()
+
+    @staticmethod
+    def extract_filename_patterns(filename: str) -&gt; List[str]:
+        &#34;&#34;&#34;Extract categorizable patterns from a filename.
+
+        Args:
+            filename: The filename to analyze
+
+        Returns:
+            List of patterns found
+        &#34;&#34;&#34;
+        patterns = []
+        name_lower = filename.lower()
+
+        # Common patterns
+        pattern_checks = [
+            (r&#39;^screenshot&#39;, &#39;screenshot_prefix&#39;),
+            (r&#39;^img_&#39;, &#39;img_prefix&#39;),
+            (r&#39;^pxl_&#39;, &#39;pixel_prefix&#39;),
+            (r&#39;^dsc_&#39;, &#39;dsc_prefix&#39;),
+            (r&#39;frame\d*&#39;, &#39;frame_pattern&#39;),
+            (r&#39;sprite&#39;, &#39;sprite_keyword&#39;),
+            (r&#39;texture&#39;, &#39;texture_keyword&#39;),
+            (r&#39;audio|sound|sfx&#39;, &#39;audio_keyword&#39;),
+            (r&#39;music|bgm|ost&#39;, &#39;music_keyword&#39;),
+            (r&#39;icon&#39;, &#39;icon_keyword&#39;),
+            (r&#39;button&#39;, &#39;button_keyword&#39;),
+            (r&#39;tile&#39;, &#39;tile_keyword&#39;),
+            (r&#39;wall|floor|door&#39;, &#39;environment_keyword&#39;),
+            (r&#39;character|player|enemy&#39;, &#39;character_keyword&#39;),
+            (r&#39;weapon|sword|bow|axe&#39;, &#39;weapon_keyword&#39;),
+            (r&#39;item|potion|scroll&#39;, &#39;item_keyword&#39;),
+            (r&#39;ui_|gui_|hud_&#39;, &#39;ui_prefix&#39;),
+            (r&#39;\d{8}_\d{6}&#39;, &#39;timestamp_pattern&#39;),
+            (r&#39;whatsapp&#39;, &#39;whatsapp_keyword&#39;),
+            (r&#39;chatgpt&#39;, &#39;chatgpt_keyword&#39;),
+            (r&#39;invoice|receipt&#39;, &#39;financial_keyword&#39;),
+            (r&#39;contract|agreement&#39;, &#39;legal_keyword&#39;),
+            (r&#39;resume|cv&#39;, &#39;employment_keyword&#39;),
+        ]
+
+        for pattern, label in pattern_checks:
+            if re.search(pattern, name_lower):
+                patterns.append(label)
+
+        # Extract file extension
+        ext = Path(filename).suffix.lower()
+        if ext:
+            patterns.append(f&#34;ext:{ext}&#34;)
+
+        return patterns
+
+    def add_correction(
+        self,
+        file_path: str,
+        assigned_destination: str,
+        correct_destination: str,
+        assigned_category: str,
+        correct_category: str,
+        assigned_subcategory: str = None,
+        correct_subcategory: str = None,
+        correction_reason: str = None,
+        content_hints: List[str] = None
+    ) -&gt; str:
+        &#34;&#34;&#34;Add a correction for a miscategorized file.
+
+        Args:
+            file_path: Original path of the file
+            assigned_destination: Where the organizer put the file
+            correct_destination: Where the file should have gone
+            assigned_category: Category assigned by organizer
+            correct_category: Correct category
+            assigned_subcategory: Subcategory assigned by organizer
+            correct_subcategory: Correct subcategory
+            correction_reason: User&#39;s explanation of why this was wrong
+            content_hints: Keywords from file content that should indicate correct category
+
+        Returns:
+            The file hash used as the key
+        &#34;&#34;&#34;
+        # Compute file hash (use destination if original doesn&#39;t exist)
+        if os.path.exists(assigned_destination):
+            file_hash = self.compute_file_hash(assigned_destination)
+        elif os.path.exists(file_path):
+            file_hash = self.compute_file_hash(file_path)
+        else:
+            file_hash = hashlib.sha256(file_path.encode()).hexdigest()
+
+        filename = os.path.basename(file_path)
+        filename_patterns = self.extract_filename_patterns(filename)
+
+        correction = {
+            &#34;original_path&#34;: file_path,
+            &#34;assigned_destination&#34;: assigned_destination,
+            &#34;correct_destination&#34;: correct_destination,
+            &#34;assigned_category&#34;: assigned_category,
+            &#34;correct_category&#34;: correct_category,
+            &#34;assigned_subcategory&#34;: assigned_subcategory,
+            &#34;correct_subcategory&#34;: correct_subcategory,
+            &#34;filename&#34;: filename,
+            &#34;file_extension&#34;: Path(filename).suffix.lower(),
+            &#34;correction_date&#34;: datetime.now().isoformat(),
+            &#34;correction_reason&#34;: correction_reason,
+            &#34;filename_patterns&#34;: filename_patterns,
+            &#34;content_hints&#34;: content_hints or []
+        }
+
+        self.data[&#34;corrections&#34;][file_hash] = correction
+
+        # Update statistics
+        self._update_statistics(assigned_category, correct_category)
+
+        # Update learned patterns
+        self._update_learned_patterns(filename_patterns, correct_category, correct_subcategory)
+
+        self._save_data()
+
+        return file_hash
+
+    def _update_statistics(self, assigned_category: str, correct_category: str) -&gt; None:
+        &#34;&#34;&#34;Update correction statistics.&#34;&#34;&#34;
+        stats = self.data[&#34;statistics&#34;]
+        stats[&#34;total_corrections&#34;] += 1
+
+        # Track corrections by category
+        if correct_category not in stats[&#34;corrections_by_category&#34;]:
+            stats[&#34;corrections_by_category&#34;][correct_category] = 0
+        stats[&#34;corrections_by_category&#34;][correct_category] += 1
+
+        # Track common mistakes
+        found = False
+        for mistake in stats[&#34;most_common_mistakes&#34;]:
+            if mistake[&#34;from&#34;] == assigned_category and mistake[&#34;to&#34;] == correct_category:
+                mistake[&#34;count&#34;] += 1
+                found = True
+                break
+
+        if not found:
+            stats[&#34;most_common_mistakes&#34;].append({
+                &#34;from&#34;: assigned_category,
+                &#34;to&#34;: correct_category,
+                &#34;count&#34;: 1
+            })
+
+        # Sort by count
+        stats[&#34;most_common_mistakes&#34;].sort(key=lambda x: -x[&#34;count&#34;])
+        # Keep top 20
+        stats[&#34;most_common_mistakes&#34;] = stats[&#34;most_common_mistakes&#34;][:20]
+
+    def _update_learned_patterns(
+        self,
+        patterns: List[str],
+        correct_category: str,
+        correct_subcategory: str
+    ) -&gt; None:
+        &#34;&#34;&#34;Update learned patterns from corrections.&#34;&#34;&#34;
+        for pattern in patterns:
+            if pattern not in self.data[&#34;learned_patterns&#34;]:
+                self.data[&#34;learned_patterns&#34;][pattern] = {
+                    &#34;categories&#34;: {},
+                    &#34;subcategories&#34;: {}
+                }
+
+            learned = self.data[&#34;learned_patterns&#34;][pattern]
+
+            # Update category counts
+            if correct_category not in learned[&#34;categories&#34;]:
+                learned[&#34;categories&#34;][correct_category] = 0
+            learned[&#34;categories&#34;][correct_category] += 1
+
+            # Update subcategory counts
+            if correct_subcategory:
+                if correct_subcategory not in learned[&#34;subcategories&#34;]:
+                    learned[&#34;subcategories&#34;][correct_subcategory] = 0
+                learned[&#34;subcategories&#34;][correct_subcategory] += 1
+
+    def get_suggestion(self, filename: str, current_category: str = None) -&gt; Optional[Dict]:
+        &#34;&#34;&#34;Get a category suggestion based on learned patterns.
+
+        Args:
+            filename: The filename to check
+            current_category: The currently assigned category
+
+        Returns:
+            Dictionary with suggested category and confidence, or None
+        &#34;&#34;&#34;
+        patterns = self.extract_filename_patterns(filename)
+
+        category_votes = defaultdict(float)
+        subcategory_votes = defaultdict(float)
+
+        for pattern in patterns:
+            if pattern in self.data[&#34;learned_patterns&#34;]:
+                learned = self.data[&#34;learned_patterns&#34;][pattern]
+
+                # Weight by occurrence count
+                for cat, count in learned[&#34;categories&#34;].items():
+                    category_votes[cat] += count
+
+                for subcat, count in learned[&#34;subcategories&#34;].items():
+                    subcategory_votes[subcat] += count
+
+        if not category_votes:
+            return None
+
+        # Find best category
+        total_votes = sum(category_votes.values())
+        best_category = max(category_votes.items(), key=lambda x: x[1])
+        confidence = best_category[1] / total_votes if total_votes &gt; 0 else 0
+
+        # Find best subcategory
+        best_subcategory = None
+        if subcategory_votes:
+            best_subcategory = max(subcategory_votes.items(), key=lambda x: x[1])[0]
+
+        # Only suggest if confidence is above threshold and different from current
+        if confidence &gt;= 0.6 and best_category[0] != current_category:
+            return {
+                &#34;suggested_category&#34;: best_category[0],
+                &#34;suggested_subcategory&#34;: best_subcategory,
+                &#34;confidence&#34;: round(confidence, 3),
+                &#34;matching_patterns&#34;: patterns,
+                &#34;sample_count&#34;: int(best_category[1])
+            }
+
+        return None
+
+    def get_correction_by_hash(self, file_hash: str) -&gt; Optional[Dict]:
+        &#34;&#34;&#34;Get a correction by file hash.
+
+        Args:
+            file_hash: The SHA-256 hash of the file
+
+        Returns:
+            The correction record or None
+        &#34;&#34;&#34;
+        return self.data[&#34;corrections&#34;].get(file_hash)
+
+    def check_file(self, file_path: str) -&gt; Optional[Dict]:
+        &#34;&#34;&#34;Check if a file has a correction recorded.
+
+        Args:
+            file_path: Path to the file
+
+        Returns:
+            The correction record if found, None otherwise
+        &#34;&#34;&#34;
+        if os.path.exists(file_path):
+            file_hash = self.compute_file_hash(file_path)
+            return self.get_correction_by_hash(file_hash)
+        return None
+
+    def get_corrections_for_category(self, category: str) -&gt; List[Dict]:
+        &#34;&#34;&#34;Get all corrections where files should have been in a category.
+
+        Args:
+            category: The correct category to filter by
+
+        Returns:
+            List of correction records
+        &#34;&#34;&#34;
+        return [
+            {**correction, &#34;hash&#34;: hash_key}
+            for hash_key, correction in self.data[&#34;corrections&#34;].items()
+            if correction[&#34;correct_category&#34;] == category
+        ]
+
+    def get_mistake_patterns(self, from_category: str, to_category: str) -&gt; List[Dict]:
+        &#34;&#34;&#34;Get corrections where files were miscategorized from one category to another.
+
+        Args:
+            from_category: The incorrectly assigned category
+            to_category: The correct category
+
+        Returns:
+            List of correction records
+        &#34;&#34;&#34;
+        return [
+            {**correction, &#34;hash&#34;: hash_key}
+            for hash_key, correction in self.data[&#34;corrections&#34;].items()
+            if correction[&#34;assigned_category&#34;] == from_category
+            and correction[&#34;correct_category&#34;] == to_category
+        ]
+
+    def export_rules(self) -&gt; Dict:
+        &#34;&#34;&#34;Export learned rules for integration with the file organizer.
+
+        Returns:
+            Dictionary of rules that can be applied to improve categorization
+        &#34;&#34;&#34;
+        rules = {
+            &#34;pattern_rules&#34;: [],
+            &#34;content_rules&#34;: [],
+            &#34;extension_rules&#34;: {}
+        }
+
+        # Extract high-confidence pattern rules
+        for pattern, data in self.data[&#34;learned_patterns&#34;].items():
+            if data[&#34;categories&#34;]:
+                total = sum(data[&#34;categories&#34;].values())
+                best_cat = max(data[&#34;categories&#34;].items(), key=lambda x: x[1])
+                confidence = best_cat[1] / total
+
+                if total &gt;= 3 and confidence &gt;= 0.7:
+                    best_subcat = None
+                    if data[&#34;subcategories&#34;]:
+                        best_subcat = max(data[&#34;subcategories&#34;].items(), key=lambda x: x[1])[0]
+
+                    rules[&#34;pattern_rules&#34;].append({
+                        &#34;pattern&#34;: pattern,
+                        &#34;category&#34;: best_cat[0],
+                        &#34;subcategory&#34;: best_subcat,
+                        &#34;confidence&#34;: round(confidence, 3),
+                        &#34;sample_count&#34;: total
+                    })
+
+        # Sort by sample count
+        rules[&#34;pattern_rules&#34;].sort(key=lambda x: -x[&#34;sample_count&#34;])
+
+        # Extract content hint rules
+        content_hints = defaultdict(lambda: defaultdict(int))
+        for correction in self.data[&#34;corrections&#34;].values():
+            for hint in correction.get(&#34;content_hints&#34;, []):
+                content_hints[hint][correction[&#34;correct_category&#34;]] += 1
+
+        for hint, categories in content_hints.items():
+            total = sum(categories.values())
+            best_cat = max(categories.items(), key=lambda x: x[1])
+            confidence = best_cat[1] / total
+
+            if total &gt;= 2 and confidence &gt;= 0.7:
+                rules[&#34;content_rules&#34;].append({
+                    &#34;hint&#34;: hint,
+                    &#34;category&#34;: best_cat[0],
+                    &#34;confidence&#34;: round(confidence, 3),
+                    &#34;sample_count&#34;: total
+                })
+
+        rules[&#34;content_rules&#34;].sort(key=lambda x: -x[&#34;sample_count&#34;])
+
+        return rules
+
+    def get_statistics(self) -&gt; Dict:
+        &#34;&#34;&#34;Get correction statistics.
+
+        Returns:
+            Statistics dictionary
+        &#34;&#34;&#34;
+        return {
+            **self.data[&#34;statistics&#34;],
+            &#34;total_patterns_learned&#34;: len(self.data[&#34;learned_patterns&#34;]),
+            &#34;last_updated&#34;: self.data[&#34;metadata&#34;][&#34;last_updated&#34;]
+        }
+
+    def remove_correction(self, file_hash: str) -&gt; bool:
+        &#34;&#34;&#34;Remove a correction by hash.
+
+        Args:
+            file_hash: The hash of the correction to remove
+
+        Returns:
+            True if removed, False if not found
+        &#34;&#34;&#34;
+        if file_hash in self.data[&#34;corrections&#34;]:
+            del self.data[&#34;corrections&#34;][file_hash]
+            self._save_data()
+            return True
+        return False
+
+    def clear_all(self) -&gt; None:
+        &#34;&#34;&#34;Clear all corrections (use with caution).&#34;&#34;&#34;
+        self.data = {
+            &#34;corrections&#34;: {},
+            &#34;category_rules&#34;: {},
+            &#34;learned_patterns&#34;: {},
+            &#34;statistics&#34;: {
+                &#34;total_corrections&#34;: 0,
+                &#34;corrections_by_category&#34;: {},
+                &#34;most_common_mistakes&#34;: []
+            },
+            &#34;metadata&#34;: {
+                &#34;created&#34;: datetime.now().isoformat(),
+                &#34;last_updated&#34;: datetime.now().isoformat(),
+                &#34;version&#34;: &#34;1.0&#34;
+            }
+        }
+        self._save_data()</code></pre>
+</details>
+<div class="desc"><p>Manages correction feedback for file categorization improvements.</p>
+<p>Initialize the feedback system.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>feedback_file</code></strong></dt>
+<dd>Path to the JSON file storing corrections.
+Defaults to ~/.schema-org-file-system/corrections.json</dd>
+</dl></div>
+<h3>Static methods</h3>
+<dl>
+<dt id="src.feedback.correction_tracker.CorrectionFeedbackSystem.compute_file_hash"><code class="name flex">
+<span>def <span class="ident">compute_file_hash</span></span>(<span>file_path: str) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def compute_file_hash(file_path: str) -&gt; str:
+    &#34;&#34;&#34;Compute SHA-256 hash of a file.
+
+    Args:
+        file_path: Path to the file
+
+    Returns:
+        Hexadecimal hash string
+    &#34;&#34;&#34;
+    sha256_hash = hashlib.sha256()
+    try:
+        with open(file_path, &#34;rb&#34;) as f:
+            # Read in chunks for large files
+            for chunk in iter(lambda: f.read(8192), b&#34;&#34;):
+                sha256_hash.update(chunk)
+        return sha256_hash.hexdigest()
+    except (IOError, OSError):
+        # Fallback to path-based hash if file can&#39;t be read
+        return hashlib.sha256(file_path.encode()).hexdigest()</code></pre>
+</details>
+<div class="desc"><p>Compute SHA-256 hash of a file.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_path</code></strong></dt>
+<dd>Path to the file</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Hexadecimal hash string</p></div>
+</dd>
+<dt id="src.feedback.correction_tracker.CorrectionFeedbackSystem.extract_filename_patterns"><code class="name flex">
+<span>def <span class="ident">extract_filename_patterns</span></span>(<span>filename: str) ‑> List[str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def extract_filename_patterns(filename: str) -&gt; List[str]:
+    &#34;&#34;&#34;Extract categorizable patterns from a filename.
+
+    Args:
+        filename: The filename to analyze
+
+    Returns:
+        List of patterns found
+    &#34;&#34;&#34;
+    patterns = []
+    name_lower = filename.lower()
+
+    # Common patterns
+    pattern_checks = [
+        (r&#39;^screenshot&#39;, &#39;screenshot_prefix&#39;),
+        (r&#39;^img_&#39;, &#39;img_prefix&#39;),
+        (r&#39;^pxl_&#39;, &#39;pixel_prefix&#39;),
+        (r&#39;^dsc_&#39;, &#39;dsc_prefix&#39;),
+        (r&#39;frame\d*&#39;, &#39;frame_pattern&#39;),
+        (r&#39;sprite&#39;, &#39;sprite_keyword&#39;),
+        (r&#39;texture&#39;, &#39;texture_keyword&#39;),
+        (r&#39;audio|sound|sfx&#39;, &#39;audio_keyword&#39;),
+        (r&#39;music|bgm|ost&#39;, &#39;music_keyword&#39;),
+        (r&#39;icon&#39;, &#39;icon_keyword&#39;),
+        (r&#39;button&#39;, &#39;button_keyword&#39;),
+        (r&#39;tile&#39;, &#39;tile_keyword&#39;),
+        (r&#39;wall|floor|door&#39;, &#39;environment_keyword&#39;),
+        (r&#39;character|player|enemy&#39;, &#39;character_keyword&#39;),
+        (r&#39;weapon|sword|bow|axe&#39;, &#39;weapon_keyword&#39;),
+        (r&#39;item|potion|scroll&#39;, &#39;item_keyword&#39;),
+        (r&#39;ui_|gui_|hud_&#39;, &#39;ui_prefix&#39;),
+        (r&#39;\d{8}_\d{6}&#39;, &#39;timestamp_pattern&#39;),
+        (r&#39;whatsapp&#39;, &#39;whatsapp_keyword&#39;),
+        (r&#39;chatgpt&#39;, &#39;chatgpt_keyword&#39;),
+        (r&#39;invoice|receipt&#39;, &#39;financial_keyword&#39;),
+        (r&#39;contract|agreement&#39;, &#39;legal_keyword&#39;),
+        (r&#39;resume|cv&#39;, &#39;employment_keyword&#39;),
+    ]
+
+    for pattern, label in pattern_checks:
+        if re.search(pattern, name_lower):
+            patterns.append(label)
+
+    # Extract file extension
+    ext = Path(filename).suffix.lower()
+    if ext:
+        patterns.append(f&#34;ext:{ext}&#34;)
+
+    return patterns</code></pre>
+</details>
+<div class="desc"><p>Extract categorizable patterns from a filename.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>filename</code></strong></dt>
+<dd>The filename to analyze</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>List of patterns found</p></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="src.feedback.correction_tracker.CorrectionFeedbackSystem.add_correction"><code class="name flex">
+<span>def <span class="ident">add_correction</span></span>(<span>self,<br>file_path: str,<br>assigned_destination: str,<br>correct_destination: str,<br>assigned_category: str,<br>correct_category: str,<br>assigned_subcategory: str = None,<br>correct_subcategory: str = None,<br>correction_reason: str = None,<br>content_hints: List[str] = None) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_correction(
+    self,
+    file_path: str,
+    assigned_destination: str,
+    correct_destination: str,
+    assigned_category: str,
+    correct_category: str,
+    assigned_subcategory: str = None,
+    correct_subcategory: str = None,
+    correction_reason: str = None,
+    content_hints: List[str] = None
+) -&gt; str:
+    &#34;&#34;&#34;Add a correction for a miscategorized file.
+
+    Args:
+        file_path: Original path of the file
+        assigned_destination: Where the organizer put the file
+        correct_destination: Where the file should have gone
+        assigned_category: Category assigned by organizer
+        correct_category: Correct category
+        assigned_subcategory: Subcategory assigned by organizer
+        correct_subcategory: Correct subcategory
+        correction_reason: User&#39;s explanation of why this was wrong
+        content_hints: Keywords from file content that should indicate correct category
+
+    Returns:
+        The file hash used as the key
+    &#34;&#34;&#34;
+    # Compute file hash (use destination if original doesn&#39;t exist)
+    if os.path.exists(assigned_destination):
+        file_hash = self.compute_file_hash(assigned_destination)
+    elif os.path.exists(file_path):
+        file_hash = self.compute_file_hash(file_path)
+    else:
+        file_hash = hashlib.sha256(file_path.encode()).hexdigest()
+
+    filename = os.path.basename(file_path)
+    filename_patterns = self.extract_filename_patterns(filename)
+
+    correction = {
+        &#34;original_path&#34;: file_path,
+        &#34;assigned_destination&#34;: assigned_destination,
+        &#34;correct_destination&#34;: correct_destination,
+        &#34;assigned_category&#34;: assigned_category,
+        &#34;correct_category&#34;: correct_category,
+        &#34;assigned_subcategory&#34;: assigned_subcategory,
+        &#34;correct_subcategory&#34;: correct_subcategory,
+        &#34;filename&#34;: filename,
+        &#34;file_extension&#34;: Path(filename).suffix.lower(),
+        &#34;correction_date&#34;: datetime.now().isoformat(),
+        &#34;correction_reason&#34;: correction_reason,
+        &#34;filename_patterns&#34;: filename_patterns,
+        &#34;content_hints&#34;: content_hints or []
+    }
+
+    self.data[&#34;corrections&#34;][file_hash] = correction
+
+    # Update statistics
+    self._update_statistics(assigned_category, correct_category)
+
+    # Update learned patterns
+    self._update_learned_patterns(filename_patterns, correct_category, correct_subcategory)
+
+    self._save_data()
+
+    return file_hash</code></pre>
+</details>
+<div class="desc"><p>Add a correction for a miscategorized file.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_path</code></strong></dt>
+<dd>Original path of the file</dd>
+<dt><strong><code>assigned_destination</code></strong></dt>
+<dd>Where the organizer put the file</dd>
+<dt><strong><code>correct_destination</code></strong></dt>
+<dd>Where the file should have gone</dd>
+<dt><strong><code>assigned_category</code></strong></dt>
+<dd>Category assigned by organizer</dd>
+<dt><strong><code>correct_category</code></strong></dt>
+<dd>Correct category</dd>
+<dt><strong><code>assigned_subcategory</code></strong></dt>
+<dd>Subcategory assigned by organizer</dd>
+<dt><strong><code>correct_subcategory</code></strong></dt>
+<dd>Correct subcategory</dd>
+<dt><strong><code>correction_reason</code></strong></dt>
+<dd>User's explanation of why this was wrong</dd>
+<dt><strong><code>content_hints</code></strong></dt>
+<dd>Keywords from file content that should indicate correct category</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>The file hash used as the key</p></div>
+</dd>
+<dt id="src.feedback.correction_tracker.CorrectionFeedbackSystem.check_file"><code class="name flex">
+<span>def <span class="ident">check_file</span></span>(<span>self, file_path: str) ‑> Dict | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def check_file(self, file_path: str) -&gt; Optional[Dict]:
+    &#34;&#34;&#34;Check if a file has a correction recorded.
+
+    Args:
+        file_path: Path to the file
+
+    Returns:
+        The correction record if found, None otherwise
+    &#34;&#34;&#34;
+    if os.path.exists(file_path):
+        file_hash = self.compute_file_hash(file_path)
+        return self.get_correction_by_hash(file_hash)
+    return None</code></pre>
+</details>
+<div class="desc"><p>Check if a file has a correction recorded.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_path</code></strong></dt>
+<dd>Path to the file</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>The correction record if found, None otherwise</p></div>
+</dd>
+<dt id="src.feedback.correction_tracker.CorrectionFeedbackSystem.clear_all"><code class="name flex">
+<span>def <span class="ident">clear_all</span></span>(<span>self) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def clear_all(self) -&gt; None:
+    &#34;&#34;&#34;Clear all corrections (use with caution).&#34;&#34;&#34;
+    self.data = {
+        &#34;corrections&#34;: {},
+        &#34;category_rules&#34;: {},
+        &#34;learned_patterns&#34;: {},
+        &#34;statistics&#34;: {
+            &#34;total_corrections&#34;: 0,
+            &#34;corrections_by_category&#34;: {},
+            &#34;most_common_mistakes&#34;: []
+        },
+        &#34;metadata&#34;: {
+            &#34;created&#34;: datetime.now().isoformat(),
+            &#34;last_updated&#34;: datetime.now().isoformat(),
+            &#34;version&#34;: &#34;1.0&#34;
+        }
+    }
+    self._save_data()</code></pre>
+</details>
+<div class="desc"><p>Clear all corrections (use with caution).</p></div>
+</dd>
+<dt id="src.feedback.correction_tracker.CorrectionFeedbackSystem.export_rules"><code class="name flex">
+<span>def <span class="ident">export_rules</span></span>(<span>self) ‑> Dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def export_rules(self) -&gt; Dict:
+    &#34;&#34;&#34;Export learned rules for integration with the file organizer.
+
+    Returns:
+        Dictionary of rules that can be applied to improve categorization
+    &#34;&#34;&#34;
+    rules = {
+        &#34;pattern_rules&#34;: [],
+        &#34;content_rules&#34;: [],
+        &#34;extension_rules&#34;: {}
+    }
+
+    # Extract high-confidence pattern rules
+    for pattern, data in self.data[&#34;learned_patterns&#34;].items():
+        if data[&#34;categories&#34;]:
+            total = sum(data[&#34;categories&#34;].values())
+            best_cat = max(data[&#34;categories&#34;].items(), key=lambda x: x[1])
+            confidence = best_cat[1] / total
+
+            if total &gt;= 3 and confidence &gt;= 0.7:
+                best_subcat = None
+                if data[&#34;subcategories&#34;]:
+                    best_subcat = max(data[&#34;subcategories&#34;].items(), key=lambda x: x[1])[0]
+
+                rules[&#34;pattern_rules&#34;].append({
+                    &#34;pattern&#34;: pattern,
+                    &#34;category&#34;: best_cat[0],
+                    &#34;subcategory&#34;: best_subcat,
+                    &#34;confidence&#34;: round(confidence, 3),
+                    &#34;sample_count&#34;: total
+                })
+
+    # Sort by sample count
+    rules[&#34;pattern_rules&#34;].sort(key=lambda x: -x[&#34;sample_count&#34;])
+
+    # Extract content hint rules
+    content_hints = defaultdict(lambda: defaultdict(int))
+    for correction in self.data[&#34;corrections&#34;].values():
+        for hint in correction.get(&#34;content_hints&#34;, []):
+            content_hints[hint][correction[&#34;correct_category&#34;]] += 1
+
+    for hint, categories in content_hints.items():
+        total = sum(categories.values())
+        best_cat = max(categories.items(), key=lambda x: x[1])
+        confidence = best_cat[1] / total
+
+        if total &gt;= 2 and confidence &gt;= 0.7:
+            rules[&#34;content_rules&#34;].append({
+                &#34;hint&#34;: hint,
+                &#34;category&#34;: best_cat[0],
+                &#34;confidence&#34;: round(confidence, 3),
+                &#34;sample_count&#34;: total
+            })
+
+    rules[&#34;content_rules&#34;].sort(key=lambda x: -x[&#34;sample_count&#34;])
+
+    return rules</code></pre>
+</details>
+<div class="desc"><p>Export learned rules for integration with the file organizer.</p>
+<h2 id="returns">Returns</h2>
+<p>Dictionary of rules that can be applied to improve categorization</p></div>
+</dd>
+<dt id="src.feedback.correction_tracker.CorrectionFeedbackSystem.get_correction_by_hash"><code class="name flex">
+<span>def <span class="ident">get_correction_by_hash</span></span>(<span>self, file_hash: str) ‑> Dict | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_correction_by_hash(self, file_hash: str) -&gt; Optional[Dict]:
+    &#34;&#34;&#34;Get a correction by file hash.
+
+    Args:
+        file_hash: The SHA-256 hash of the file
+
+    Returns:
+        The correction record or None
+    &#34;&#34;&#34;
+    return self.data[&#34;corrections&#34;].get(file_hash)</code></pre>
+</details>
+<div class="desc"><p>Get a correction by file hash.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_hash</code></strong></dt>
+<dd>The SHA-256 hash of the file</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>The correction record or None</p></div>
+</dd>
+<dt id="src.feedback.correction_tracker.CorrectionFeedbackSystem.get_corrections_for_category"><code class="name flex">
+<span>def <span class="ident">get_corrections_for_category</span></span>(<span>self, category: str) ‑> List[Dict]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_corrections_for_category(self, category: str) -&gt; List[Dict]:
+    &#34;&#34;&#34;Get all corrections where files should have been in a category.
+
+    Args:
+        category: The correct category to filter by
+
+    Returns:
+        List of correction records
+    &#34;&#34;&#34;
+    return [
+        {**correction, &#34;hash&#34;: hash_key}
+        for hash_key, correction in self.data[&#34;corrections&#34;].items()
+        if correction[&#34;correct_category&#34;] == category
+    ]</code></pre>
+</details>
+<div class="desc"><p>Get all corrections where files should have been in a category.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>category</code></strong></dt>
+<dd>The correct category to filter by</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>List of correction records</p></div>
+</dd>
+<dt id="src.feedback.correction_tracker.CorrectionFeedbackSystem.get_mistake_patterns"><code class="name flex">
+<span>def <span class="ident">get_mistake_patterns</span></span>(<span>self, from_category: str, to_category: str) ‑> List[Dict]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_mistake_patterns(self, from_category: str, to_category: str) -&gt; List[Dict]:
+    &#34;&#34;&#34;Get corrections where files were miscategorized from one category to another.
+
+    Args:
+        from_category: The incorrectly assigned category
+        to_category: The correct category
+
+    Returns:
+        List of correction records
+    &#34;&#34;&#34;
+    return [
+        {**correction, &#34;hash&#34;: hash_key}
+        for hash_key, correction in self.data[&#34;corrections&#34;].items()
+        if correction[&#34;assigned_category&#34;] == from_category
+        and correction[&#34;correct_category&#34;] == to_category
+    ]</code></pre>
+</details>
+<div class="desc"><p>Get corrections where files were miscategorized from one category to another.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>from_category</code></strong></dt>
+<dd>The incorrectly assigned category</dd>
+<dt><strong><code>to_category</code></strong></dt>
+<dd>The correct category</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>List of correction records</p></div>
+</dd>
+<dt id="src.feedback.correction_tracker.CorrectionFeedbackSystem.get_statistics"><code class="name flex">
+<span>def <span class="ident">get_statistics</span></span>(<span>self) ‑> Dict</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_statistics(self) -&gt; Dict:
+    &#34;&#34;&#34;Get correction statistics.
+
+    Returns:
+        Statistics dictionary
+    &#34;&#34;&#34;
+    return {
+        **self.data[&#34;statistics&#34;],
+        &#34;total_patterns_learned&#34;: len(self.data[&#34;learned_patterns&#34;]),
+        &#34;last_updated&#34;: self.data[&#34;metadata&#34;][&#34;last_updated&#34;]
+    }</code></pre>
+</details>
+<div class="desc"><p>Get correction statistics.</p>
+<h2 id="returns">Returns</h2>
+<p>Statistics dictionary</p></div>
+</dd>
+<dt id="src.feedback.correction_tracker.CorrectionFeedbackSystem.get_suggestion"><code class="name flex">
+<span>def <span class="ident">get_suggestion</span></span>(<span>self, filename: str, current_category: str = None) ‑> Dict | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_suggestion(self, filename: str, current_category: str = None) -&gt; Optional[Dict]:
+    &#34;&#34;&#34;Get a category suggestion based on learned patterns.
+
+    Args:
+        filename: The filename to check
+        current_category: The currently assigned category
+
+    Returns:
+        Dictionary with suggested category and confidence, or None
+    &#34;&#34;&#34;
+    patterns = self.extract_filename_patterns(filename)
+
+    category_votes = defaultdict(float)
+    subcategory_votes = defaultdict(float)
+
+    for pattern in patterns:
+        if pattern in self.data[&#34;learned_patterns&#34;]:
+            learned = self.data[&#34;learned_patterns&#34;][pattern]
+
+            # Weight by occurrence count
+            for cat, count in learned[&#34;categories&#34;].items():
+                category_votes[cat] += count
+
+            for subcat, count in learned[&#34;subcategories&#34;].items():
+                subcategory_votes[subcat] += count
+
+    if not category_votes:
+        return None
+
+    # Find best category
+    total_votes = sum(category_votes.values())
+    best_category = max(category_votes.items(), key=lambda x: x[1])
+    confidence = best_category[1] / total_votes if total_votes &gt; 0 else 0
+
+    # Find best subcategory
+    best_subcategory = None
+    if subcategory_votes:
+        best_subcategory = max(subcategory_votes.items(), key=lambda x: x[1])[0]
+
+    # Only suggest if confidence is above threshold and different from current
+    if confidence &gt;= 0.6 and best_category[0] != current_category:
+        return {
+            &#34;suggested_category&#34;: best_category[0],
+            &#34;suggested_subcategory&#34;: best_subcategory,
+            &#34;confidence&#34;: round(confidence, 3),
+            &#34;matching_patterns&#34;: patterns,
+            &#34;sample_count&#34;: int(best_category[1])
+        }
+
+    return None</code></pre>
+</details>
+<div class="desc"><p>Get a category suggestion based on learned patterns.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>filename</code></strong></dt>
+<dd>The filename to check</dd>
+<dt><strong><code>current_category</code></strong></dt>
+<dd>The currently assigned category</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Dictionary with suggested category and confidence, or None</p></div>
+</dd>
+<dt id="src.feedback.correction_tracker.CorrectionFeedbackSystem.remove_correction"><code class="name flex">
+<span>def <span class="ident">remove_correction</span></span>(<span>self, file_hash: str) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_correction(self, file_hash: str) -&gt; bool:
+    &#34;&#34;&#34;Remove a correction by hash.
+
+    Args:
+        file_hash: The hash of the correction to remove
+
+    Returns:
+        True if removed, False if not found
+    &#34;&#34;&#34;
+    if file_hash in self.data[&#34;corrections&#34;]:
+        del self.data[&#34;corrections&#34;][file_hash]
+        self._save_data()
+        return True
+    return False</code></pre>
+</details>
+<div class="desc"><p>Remove a correction by hash.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_hash</code></strong></dt>
+<dd>The hash of the correction to remove</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>True if removed, False if not found</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.feedback" href="index.html">src.feedback</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="src.feedback.correction_tracker.main" href="#src.feedback.correction_tracker.main">main</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.feedback.correction_tracker.CorrectionFeedbackSystem" href="#src.feedback.correction_tracker.CorrectionFeedbackSystem">CorrectionFeedbackSystem</a></code></h4>
+<ul class="">
+<li><code><a title="src.feedback.correction_tracker.CorrectionFeedbackSystem.add_correction" href="#src.feedback.correction_tracker.CorrectionFeedbackSystem.add_correction">add_correction</a></code></li>
+<li><code><a title="src.feedback.correction_tracker.CorrectionFeedbackSystem.check_file" href="#src.feedback.correction_tracker.CorrectionFeedbackSystem.check_file">check_file</a></code></li>
+<li><code><a title="src.feedback.correction_tracker.CorrectionFeedbackSystem.clear_all" href="#src.feedback.correction_tracker.CorrectionFeedbackSystem.clear_all">clear_all</a></code></li>
+<li><code><a title="src.feedback.correction_tracker.CorrectionFeedbackSystem.compute_file_hash" href="#src.feedback.correction_tracker.CorrectionFeedbackSystem.compute_file_hash">compute_file_hash</a></code></li>
+<li><code><a title="src.feedback.correction_tracker.CorrectionFeedbackSystem.export_rules" href="#src.feedback.correction_tracker.CorrectionFeedbackSystem.export_rules">export_rules</a></code></li>
+<li><code><a title="src.feedback.correction_tracker.CorrectionFeedbackSystem.extract_filename_patterns" href="#src.feedback.correction_tracker.CorrectionFeedbackSystem.extract_filename_patterns">extract_filename_patterns</a></code></li>
+<li><code><a title="src.feedback.correction_tracker.CorrectionFeedbackSystem.get_correction_by_hash" href="#src.feedback.correction_tracker.CorrectionFeedbackSystem.get_correction_by_hash">get_correction_by_hash</a></code></li>
+<li><code><a title="src.feedback.correction_tracker.CorrectionFeedbackSystem.get_corrections_for_category" href="#src.feedback.correction_tracker.CorrectionFeedbackSystem.get_corrections_for_category">get_corrections_for_category</a></code></li>
+<li><code><a title="src.feedback.correction_tracker.CorrectionFeedbackSystem.get_mistake_patterns" href="#src.feedback.correction_tracker.CorrectionFeedbackSystem.get_mistake_patterns">get_mistake_patterns</a></code></li>
+<li><code><a title="src.feedback.correction_tracker.CorrectionFeedbackSystem.get_statistics" href="#src.feedback.correction_tracker.CorrectionFeedbackSystem.get_statistics">get_statistics</a></code></li>
+<li><code><a title="src.feedback.correction_tracker.CorrectionFeedbackSystem.get_suggestion" href="#src.feedback.correction_tracker.CorrectionFeedbackSystem.get_suggestion">get_suggestion</a></code></li>
+<li><code><a title="src.feedback.correction_tracker.CorrectionFeedbackSystem.remove_correction" href="#src.feedback.correction_tracker.CorrectionFeedbackSystem.remove_correction">remove_correction</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

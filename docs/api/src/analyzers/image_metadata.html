@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.analyzers.image_metadata API documentation</title>
+<meta name="description" content="Image metadata parsing: EXIF, GPS coordinates, timestamps, and reverse geocoding.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.analyzers.image_metadata</code></h1>
+</header>
+<section id="section-intro">
+<p>Image metadata parsing: EXIF, GPS coordinates, timestamps, and reverse geocoding.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.analyzers.image_metadata.ImageMetadataParser"><code class="flex name class">
+<span>class <span class="ident">ImageMetadataParser</span></span>
+<span>(</span><span>cost_calculator: Any = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ImageMetadataParser:
+    &#34;&#34;&#34;Parses image metadata including EXIF, GPS, and timestamps.&#34;&#34;&#34;
+
+    def __init__(self, cost_calculator: Any = None) -&gt; None:
+        &#34;&#34;&#34;
+        Initialize the metadata parser.
+
+        Args:
+            cost_calculator: Optional cost calculator for tracking usage costs
+        &#34;&#34;&#34;
+        self.metadata_available = METADATA_AVAILABLE
+        self.geocoder = None
+        self.cost_calculator = cost_calculator
+
+        if self.metadata_available:
+            try:
+                self.geocoder = Nominatim(user_agent=&#34;file_organizer_v1.0&#34;, timeout=5)
+            except Exception as e:
+                print(f&#34;Warning: Could not initialize geocoder: {e}&#34;)
+                self.geocoder = None
+
+    def extract_exif_data(self, image_path: Path) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Extract EXIF data from an image.
+
+        Returns:
+            Dictionary with EXIF data
+        &#34;&#34;&#34;
+        if not self.metadata_available:
+            return {}
+
+        exif_data: Dict[str, Any] = {}
+        try:
+            image = Image.open(image_path)
+            exif = image._getexif()  # type: ignore[attr-defined]
+            if exif:
+                for tag_id, value in exif.items():
+                    tag = TAGS.get(tag_id, tag_id)
+                    exif_data[tag] = value
+        except Exception as e:
+            print(f&#34;  EXIF extraction error: {e}&#34;)
+
+        if not exif_data:
+            exif_data = self._extract_exif_via_piexif(image_path)
+
+        return exif_data
+
+    def _extract_exif_via_piexif(self, image_path: Path) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Fallback EXIF read via piexif, normalized to the same shape as the
+        PIL path: tag names as keys, ASCII bytes decoded to str, and the GPS
+        IFD nested under &#34;GPSInfo&#34; keyed by numeric GPS tag ids.&#34;&#34;&#34;
+        if not PIEXIF_AVAILABLE:
+            return {}
+
+        try:
+            exif_dict = piexif.load(str(image_path))
+        except Exception:
+            return {}
+
+        def decode(value: Any) -&gt; Any:
+            if isinstance(value, bytes):
+                try:
+                    return value.decode(&#34;utf-8&#34;).rstrip(&#34;\x00&#34;)
+                except UnicodeDecodeError:
+                    return value
+            return value
+
+        exif_data: Dict[str, Any] = {}
+        for ifd in (&#34;0th&#34;, &#34;Exif&#34;):
+            for tag_id, value in (exif_dict.get(ifd) or {}).items():
+                tag = TAGS.get(tag_id, tag_id)
+                exif_data.setdefault(tag, decode(value))
+
+        gps = exif_dict.get(&#34;GPS&#34;) or {}
+        if gps:
+            exif_data[&#34;GPSInfo&#34;] = {tag_id: decode(value) for tag_id, value in gps.items()}
+
+        return exif_data
+
+    def extract_datetime(
+        self, image_path: Path, exif_data: Optional[Dict[str, Any]] = None
+    ) -&gt; Optional[datetime]:
+        &#34;&#34;&#34;
+        Extract the datetime when the photo was taken.
+
+        Args:
+            image_path: Path to the image file
+            exif_data: Pre-extracted EXIF data to avoid redundant Image.open() calls
+
+        Returns:
+            datetime object or None
+        &#34;&#34;&#34;
+        if exif_data is None:
+            exif_data = self.extract_exif_data(image_path)
+        return self._extract_datetime_from_exif(exif_data)
+
+    def _extract_datetime_from_exif(self, exif_data: Dict[str, Any]) -&gt; Optional[datetime]:
+        for tag in (&#34;DateTimeOriginal&#34;, &#34;DateTimeDigitized&#34;, &#34;DateTime&#34;):
+            if tag in exif_data:
+                try:
+                    return datetime.strptime(str(exif_data[tag]), &#34;%Y:%m:%d %H:%M:%S&#34;)
+                except (ValueError, TypeError):
+                    continue
+        return None
+
+    def extract_gps_coordinates(
+        self, image_path: Path, exif_data: Optional[Dict[str, Any]] = None
+    ) -&gt; Optional[Tuple[float, float]]:
+        &#34;&#34;&#34;
+        Extract GPS coordinates from image EXIF data.
+
+        Args:
+            image_path: Path to the image file
+            exif_data: Pre-extracted EXIF data to avoid redundant Image.open() calls
+
+        Returns:
+            Tuple of (latitude, longitude) or None
+        &#34;&#34;&#34;
+        if not self.metadata_available:
+            return None
+        if exif_data is None:
+            exif_data = self.extract_exif_data(image_path)
+        coords = self._extract_gps_from_exif(exif_data)
+        if coords is None and not isinstance(exif_data.get(&#34;GPSInfo&#34;), dict):
+            # PIL sometimes surfaces GPSInfo as a bare IFD offset (int) even
+            # when the file carries GPS data; retry that part via piexif.
+            fallback = self._extract_exif_via_piexif(image_path)
+            if isinstance(fallback.get(&#34;GPSInfo&#34;), dict):
+                coords = self._extract_gps_from_exif({&#34;GPSInfo&#34;: fallback[&#34;GPSInfo&#34;]})
+        return coords
+
+    def _extract_gps_from_exif(self, exif_data: Dict[str, Any]) -&gt; Optional[Tuple[float, float]]:
+        try:
+            raw_gps = exif_data.get(&#34;GPSInfo&#34;)
+            # GPSInfo can be a bare IFD offset (int) on some files; only a
+            # dict payload is usable. Non-dict values are skipped silently.
+            if not raw_gps or not isinstance(raw_gps, dict):
+                return None
+
+            gps_info: Dict[str, Any] = {
+                GPSTAGS.get(tag_id, tag_id): value
+                for tag_id, value in raw_gps.items()
+            }
+
+            if not gps_info:
+                return None
+
+            lat = self._convert_to_degrees(gps_info.get(&#34;GPSLatitude&#34;))
+            lon = self._convert_to_degrees(gps_info.get(&#34;GPSLongitude&#34;))
+
+            if lat is None or lon is None:
+                return None
+
+            if gps_info.get(&#34;GPSLatitudeRef&#34;) == &#34;S&#34;:
+                lat = -lat
+            if gps_info.get(&#34;GPSLongitudeRef&#34;) == &#34;W&#34;:
+                lon = -lon
+
+            return (lat, lon)
+
+        except Exception as e:
+            print(f&#34;  GPS extraction error: {e}&#34;)
+            return None
+
+    def _convert_to_degrees(self, value: Any) -&gt; Optional[float]:
+        &#34;&#34;&#34;
+        Convert GPS coordinates to decimal degrees.
+
+        Args:
+            value: (degrees, minutes, seconds) where each component is either
+                a (numerator, denominator) pair (piexif) or a number /
+                PIL IFDRational (modern Pillow).
+
+        Returns:
+            Decimal degrees or None
+        &#34;&#34;&#34;
+        if not value:
+            return None
+
+        def part(component: Any) -&gt; float:
+            try:
+                return float(component)  # float, int, PIL IFDRational
+            except TypeError:
+                return float(component[0]) / float(component[1])  # (num, den)
+
+        try:
+            d, m, s = (part(value[i]) for i in range(3))
+            return d + (m / 60.0) + (s / 3600.0)
+        except (IndexError, TypeError, ZeroDivisionError, ValueError):
+            return None
+
+    def get_location_name(self, coordinates: Tuple[float, float]) -&gt; Optional[str]:
+        &#34;&#34;&#34;
+        Get location name from GPS coordinates using reverse geocoding.
+
+        Args:
+            coordinates: Tuple of (latitude, longitude)
+
+        Returns:
+            Location name (city, state, country) or None
+        &#34;&#34;&#34;
+        if not self.geocoder:
+            return None
+
+        ctx = CostTracker(self.cost_calculator, &#34;nominatim_geocoding&#34;) if self.cost_calculator else nullcontext()
+        with ctx:
+            try:
+                lat, lon = coordinates
+                location = self.geocoder.reverse(f&#34;{lat}, {lon}&#34;, exactly_one=True)
+
+                if location and location.raw.get(&#34;address&#34;):
+                    address = location.raw[&#34;address&#34;]
+                    parts = []
+
+                    city = (
+                        address.get(&#34;city&#34;)
+                        or address.get(&#34;town&#34;)
+                        or address.get(&#34;village&#34;)
+                        or address.get(&#34;county&#34;)
+                    )
+                    if city:
+                        parts.append(city)
+
+                    state = address.get(&#34;state&#34;) or address.get(&#34;region&#34;)
+                    if state:
+                        parts.append(state)
+
+                    country = address.get(&#34;country&#34;)
+                    if country:
+                        parts.append(country)
+
+                    if parts:
+                        return &#34;, &#34;.join(parts)
+
+            except (GeocoderTimedOut, GeocoderServiceError) as e:
+                print(f&#34;  Geocoding error: {e}&#34;)
+            except Exception as e:
+                print(f&#34;  Location lookup error: {e}&#34;)
+
+            return None
+
+    def get_metadata_summary(self, image_path: Path) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Get a summary of image metadata.
+
+        Returns:
+            Dictionary with datetime, GPS coordinates, and location
+        &#34;&#34;&#34;
+        summary: Dict[str, Any] = {
+            &#34;datetime&#34;: None,
+            &#34;gps_coordinates&#34;: None,
+            &#34;location_name&#34;: None,
+            &#34;year&#34;: None,
+            &#34;month&#34;: None,
+            &#34;date_str&#34;: None,
+        }
+
+        exif_data = self.extract_exif_data(image_path)
+
+        dt = self._extract_datetime_from_exif(exif_data)
+        if dt:
+            summary[&#34;datetime&#34;] = dt
+            summary[&#34;year&#34;] = dt.year
+            summary[&#34;month&#34;] = dt.month
+            summary[&#34;date_str&#34;] = dt.strftime(&#34;%Y-%m&#34;)
+
+        coords = self.extract_gps_coordinates(image_path, exif_data)
+        if coords:
+            summary[&#34;gps_coordinates&#34;] = coords
+            location = self.get_location_name(coords)
+            if location:
+                summary[&#34;location_name&#34;] = location
+
+        return summary</code></pre>
+</details>
+<div class="desc"><p>Parses image metadata including EXIF, GPS, and timestamps.</p>
+<p>Initialize the metadata parser.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>cost_calculator</code></strong></dt>
+<dd>Optional cost calculator for tracking usage costs</dd>
+</dl></div>
+<h3>Methods</h3>
+<dl>
+<dt id="src.analyzers.image_metadata.ImageMetadataParser.extract_datetime"><code class="name flex">
+<span>def <span class="ident">extract_datetime</span></span>(<span>self, image_path: pathlib.Path, exif_data: Dict[str, Any] | None = None) ‑> datetime.datetime | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_datetime(
+    self, image_path: Path, exif_data: Optional[Dict[str, Any]] = None
+) -&gt; Optional[datetime]:
+    &#34;&#34;&#34;
+    Extract the datetime when the photo was taken.
+
+    Args:
+        image_path: Path to the image file
+        exif_data: Pre-extracted EXIF data to avoid redundant Image.open() calls
+
+    Returns:
+        datetime object or None
+    &#34;&#34;&#34;
+    if exif_data is None:
+        exif_data = self.extract_exif_data(image_path)
+    return self._extract_datetime_from_exif(exif_data)</code></pre>
+</details>
+<div class="desc"><p>Extract the datetime when the photo was taken.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>image_path</code></strong></dt>
+<dd>Path to the image file</dd>
+<dt><strong><code>exif_data</code></strong></dt>
+<dd>Pre-extracted EXIF data to avoid redundant Image.open() calls</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>datetime object or None</p></div>
+</dd>
+<dt id="src.analyzers.image_metadata.ImageMetadataParser.extract_exif_data"><code class="name flex">
+<span>def <span class="ident">extract_exif_data</span></span>(<span>self, image_path: pathlib.Path) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_exif_data(self, image_path: Path) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Extract EXIF data from an image.
+
+    Returns:
+        Dictionary with EXIF data
+    &#34;&#34;&#34;
+    if not self.metadata_available:
+        return {}
+
+    exif_data: Dict[str, Any] = {}
+    try:
+        image = Image.open(image_path)
+        exif = image._getexif()  # type: ignore[attr-defined]
+        if exif:
+            for tag_id, value in exif.items():
+                tag = TAGS.get(tag_id, tag_id)
+                exif_data[tag] = value
+    except Exception as e:
+        print(f&#34;  EXIF extraction error: {e}&#34;)
+
+    if not exif_data:
+        exif_data = self._extract_exif_via_piexif(image_path)
+
+    return exif_data</code></pre>
+</details>
+<div class="desc"><p>Extract EXIF data from an image.</p>
+<h2 id="returns">Returns</h2>
+<p>Dictionary with EXIF data</p></div>
+</dd>
+<dt id="src.analyzers.image_metadata.ImageMetadataParser.extract_gps_coordinates"><code class="name flex">
+<span>def <span class="ident">extract_gps_coordinates</span></span>(<span>self, image_path: pathlib.Path, exif_data: Dict[str, Any] | None = None) ‑> Tuple[float, float] | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_gps_coordinates(
+    self, image_path: Path, exif_data: Optional[Dict[str, Any]] = None
+) -&gt; Optional[Tuple[float, float]]:
+    &#34;&#34;&#34;
+    Extract GPS coordinates from image EXIF data.
+
+    Args:
+        image_path: Path to the image file
+        exif_data: Pre-extracted EXIF data to avoid redundant Image.open() calls
+
+    Returns:
+        Tuple of (latitude, longitude) or None
+    &#34;&#34;&#34;
+    if not self.metadata_available:
+        return None
+    if exif_data is None:
+        exif_data = self.extract_exif_data(image_path)
+    coords = self._extract_gps_from_exif(exif_data)
+    if coords is None and not isinstance(exif_data.get(&#34;GPSInfo&#34;), dict):
+        # PIL sometimes surfaces GPSInfo as a bare IFD offset (int) even
+        # when the file carries GPS data; retry that part via piexif.
+        fallback = self._extract_exif_via_piexif(image_path)
+        if isinstance(fallback.get(&#34;GPSInfo&#34;), dict):
+            coords = self._extract_gps_from_exif({&#34;GPSInfo&#34;: fallback[&#34;GPSInfo&#34;]})
+    return coords</code></pre>
+</details>
+<div class="desc"><p>Extract GPS coordinates from image EXIF data.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>image_path</code></strong></dt>
+<dd>Path to the image file</dd>
+<dt><strong><code>exif_data</code></strong></dt>
+<dd>Pre-extracted EXIF data to avoid redundant Image.open() calls</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Tuple of (latitude, longitude) or None</p></div>
+</dd>
+<dt id="src.analyzers.image_metadata.ImageMetadataParser.get_location_name"><code class="name flex">
+<span>def <span class="ident">get_location_name</span></span>(<span>self, coordinates: Tuple[float, float]) ‑> str | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_location_name(self, coordinates: Tuple[float, float]) -&gt; Optional[str]:
+    &#34;&#34;&#34;
+    Get location name from GPS coordinates using reverse geocoding.
+
+    Args:
+        coordinates: Tuple of (latitude, longitude)
+
+    Returns:
+        Location name (city, state, country) or None
+    &#34;&#34;&#34;
+    if not self.geocoder:
+        return None
+
+    ctx = CostTracker(self.cost_calculator, &#34;nominatim_geocoding&#34;) if self.cost_calculator else nullcontext()
+    with ctx:
+        try:
+            lat, lon = coordinates
+            location = self.geocoder.reverse(f&#34;{lat}, {lon}&#34;, exactly_one=True)
+
+            if location and location.raw.get(&#34;address&#34;):
+                address = location.raw[&#34;address&#34;]
+                parts = []
+
+                city = (
+                    address.get(&#34;city&#34;)
+                    or address.get(&#34;town&#34;)
+                    or address.get(&#34;village&#34;)
+                    or address.get(&#34;county&#34;)
+                )
+                if city:
+                    parts.append(city)
+
+                state = address.get(&#34;state&#34;) or address.get(&#34;region&#34;)
+                if state:
+                    parts.append(state)
+
+                country = address.get(&#34;country&#34;)
+                if country:
+                    parts.append(country)
+
+                if parts:
+                    return &#34;, &#34;.join(parts)
+
+        except (GeocoderTimedOut, GeocoderServiceError) as e:
+            print(f&#34;  Geocoding error: {e}&#34;)
+        except Exception as e:
+            print(f&#34;  Location lookup error: {e}&#34;)
+
+        return None</code></pre>
+</details>
+<div class="desc"><p>Get location name from GPS coordinates using reverse geocoding.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>coordinates</code></strong></dt>
+<dd>Tuple of (latitude, longitude)</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Location name (city, state, country) or None</p></div>
+</dd>
+<dt id="src.analyzers.image_metadata.ImageMetadataParser.get_metadata_summary"><code class="name flex">
+<span>def <span class="ident">get_metadata_summary</span></span>(<span>self, image_path: pathlib.Path) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_metadata_summary(self, image_path: Path) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get a summary of image metadata.
+
+    Returns:
+        Dictionary with datetime, GPS coordinates, and location
+    &#34;&#34;&#34;
+    summary: Dict[str, Any] = {
+        &#34;datetime&#34;: None,
+        &#34;gps_coordinates&#34;: None,
+        &#34;location_name&#34;: None,
+        &#34;year&#34;: None,
+        &#34;month&#34;: None,
+        &#34;date_str&#34;: None,
+    }
+
+    exif_data = self.extract_exif_data(image_path)
+
+    dt = self._extract_datetime_from_exif(exif_data)
+    if dt:
+        summary[&#34;datetime&#34;] = dt
+        summary[&#34;year&#34;] = dt.year
+        summary[&#34;month&#34;] = dt.month
+        summary[&#34;date_str&#34;] = dt.strftime(&#34;%Y-%m&#34;)
+
+    coords = self.extract_gps_coordinates(image_path, exif_data)
+    if coords:
+        summary[&#34;gps_coordinates&#34;] = coords
+        location = self.get_location_name(coords)
+        if location:
+            summary[&#34;location_name&#34;] = location
+
+    return summary</code></pre>
+</details>
+<div class="desc"><p>Get a summary of image metadata.</p>
+<h2 id="returns">Returns</h2>
+<p>Dictionary with datetime, GPS coordinates, and location</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.analyzers" href="index.html">src.analyzers</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.analyzers.image_metadata.ImageMetadataParser" href="#src.analyzers.image_metadata.ImageMetadataParser">ImageMetadataParser</a></code></h4>
+<ul class="">
+<li><code><a title="src.analyzers.image_metadata.ImageMetadataParser.extract_datetime" href="#src.analyzers.image_metadata.ImageMetadataParser.extract_datetime">extract_datetime</a></code></li>
+<li><code><a title="src.analyzers.image_metadata.ImageMetadataParser.extract_exif_data" href="#src.analyzers.image_metadata.ImageMetadataParser.extract_exif_data">extract_exif_data</a></code></li>
+<li><code><a title="src.analyzers.image_metadata.ImageMetadataParser.extract_gps_coordinates" href="#src.analyzers.image_metadata.ImageMetadataParser.extract_gps_coordinates">extract_gps_coordinates</a></code></li>
+<li><code><a title="src.analyzers.image_metadata.ImageMetadataParser.get_location_name" href="#src.analyzers.image_metadata.ImageMetadataParser.get_location_name">get_location_name</a></code></li>
+<li><code><a title="src.analyzers.image_metadata.ImageMetadataParser.get_metadata_summary" href="#src.analyzers.image_metadata.ImageMetadataParser.get_metadata_summary">get_metadata_summary</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

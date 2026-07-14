@@ -1,0 +1,634 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.storage.person_migration API documentation</title>
+<meta name="description" content="Person/ -&gt; Personal/{subcat}/ Migration Tool (Option C, Phase 5) …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.storage.person_migration</code></h1>
+</header>
+<section id="section-intro">
+<p>Person/ -&gt; Personal/{subcat}/ Migration Tool (Option C, Phase 5).</p>
+<p>Moves the pre-existing on-disk files under <code>~/Documents/Person/</code> into the new
+doc-class folders under <code>~/Documents/Personal/{subcat}/</code>, since the <code>person</code>
+filing category is being retired in favor of <code>personal</code> (see
+<code>docs/changelog/2.1.0/PERSON_TAXONOMY_OPTION_C_PLAN.md</code>). <code>Person/</code> will later be regenerated as a
+symlink view (a separate, not-yet-built generator) and that generator aborts
+if it finds any real (non-symlink) file under its root &ndash; so this migration
+must fully empty <code>Person/</code> of real files.</p>
+<p>Filesystem-walk driven, DB advisory only: on-disk <code>Person/</code> is a strict
+superset of what the DB knows about (most existing files predate the graph
+store, or were moved outside of it), so enumerating from DB rows would miss
+the majority of files. The DB is consulted per-file, as an optional hint for
+picking a more precise subcategory than the on-disk folder name alone allows.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="src.storage.person_migration.apply_migration"><code class="name flex">
+<span>def <span class="ident">apply_migration</span></span>(<span>entries: List[<a title="src.storage.person_migration.MigrationEntry" href="#src.storage.person_migration.MigrationEntry">MigrationEntry</a>],<br>db_path: str | None = None) ‑> int</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def apply_migration(entries: List[MigrationEntry], db_path: Optional[str] = None) -&gt; int:
+    &#34;&#34;&#34;Execute a previously computed plan: move files on disk and, for any
+    entry with a matching DB row, update its current_path. Returns the number
+    of files actually moved.&#34;&#34;&#34;
+    graph_store = GraphStore(db_path) if db_path else None
+    session = graph_store.get_session() if graph_store else None
+
+    moved = 0
+    try:
+        for entry in entries:
+            src = Path(entry.src)
+            dst = Path(entry.dst)
+            if not src.exists():
+                continue  # already moved (e.g. a re-run of a prior apply)
+            dst.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(src), str(dst))
+            moved += 1
+
+            if entry.file_id and graph_store:
+                graph_store.update_file_status(
+                    entry.file_id,
+                    FileStatus.ORGANIZED,
+                    destination=str(dst),
+                    reason=MIGRATION_REASON,
+                    session=session,
+                )
+    finally:
+        if session:
+            session.close()
+
+    return moved</code></pre>
+</details>
+<div class="desc"><p>Execute a previously computed plan: move files on disk and, for any
+entry with a matching DB row, update its current_path. Returns the number
+of files actually moved.</p></div>
+</dd>
+<dt id="src.storage.person_migration.apply_person_index"><code class="name flex">
+<span>def <span class="ident">apply_person_index</span></span>(<span>index: List[Tuple[str, str]], db_path: str) ‑> int</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def apply_person_index(index: List[Tuple[str, str]], db_path: str) -&gt; int:
+    &#34;&#34;&#34;Upsert a File row (at its current path) and attach a person edge for
+    each (current_path, person_name) pair. Idempotent: add_file updates an
+    existing row and add_file_to_person no-ops a duplicate edge. Returns the
+    number of person edges written.&#34;&#34;&#34;
+    graph_store = GraphStore(db_path)
+    session = graph_store.get_session()
+    edges = 0
+    try:
+        for current_path, person_name in index:
+            path_obj = Path(current_path)
+            file = graph_store.add_file(
+                original_path=current_path,
+                filename=path_obj.name,
+                current_path=current_path,
+                session=session,
+            )
+            if graph_store.add_file_to_person(
+                file.id,
+                person_name,
+                role=PERSON_INDEX_ROLE,
+                session=session,
+            ):
+                edges += 1
+        session.commit()
+    finally:
+        session.close()
+    return edges</code></pre>
+</details>
+<div class="desc"><p>Upsert a File row (at its current path) and attach a person edge for
+each (current_path, person_name) pair. Idempotent: add_file updates an
+existing row and add_file_to_person no-ops a duplicate edge. Returns the
+number of person edges written.</p></div>
+</dd>
+<dt id="src.storage.person_migration.build_migration_plan"><code class="name flex">
+<span>def <span class="ident">build_migration_plan</span></span>(<span>person_root: pathlib.Path = PosixPath('/Users/alyshialedlie/Documents/Person'),<br>documents_root: pathlib.Path = PosixPath('/Users/alyshialedlie/Documents'),<br>db_path: str | None = None) ‑> List[<a title="src.storage.person_migration.MigrationEntry" href="#src.storage.person_migration.MigrationEntry">MigrationEntry</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def build_migration_plan(
+    person_root: Path = DEFAULT_PERSON_ROOT,
+    documents_root: Path = DEFAULT_DOCUMENTS_ROOT,
+    db_path: Optional[str] = None,
+) -&gt; List[MigrationEntry]:
+    &#34;&#34;&#34;Walk person_root and compute the full migration plan. Never touches
+    the filesystem or DB -- pure planning, safe to call for a dry run.&#34;&#34;&#34;
+    person_root = Path(person_root)
+    documents_root = Path(documents_root)
+
+    graph_store = GraphStore(db_path) if db_path else None
+    session = graph_store.get_session() if graph_store else None
+
+    entries: List[MigrationEntry] = []
+    seen_destinations: Set[Path] = set()
+    try:
+        for src in _iter_real_files(person_root):
+            db_file = _find_db_file(session, src) if session else None
+            db_subcat = _lookup_db_person_subcat(db_file) if db_file else None
+            subcat, source, flagged = _determine_subcat(person_root, src, db_subcat)
+
+            dest_dir = documents_root / PERSONAL_SUBCAT_FOLDER[subcat]
+            dest = _resolve_collision_with_seen(dest_dir / src.name, seen_destinations)
+            seen_destinations.add(dest)
+
+            entries.append(
+                MigrationEntry(
+                    src=str(src),
+                    dst=str(dest),
+                    subcat=subcat,
+                    subcat_source=source,
+                    file_id=db_file.id if db_file else None,
+                    flagged=flagged,
+                )
+            )
+    finally:
+        if session:
+            session.close()
+
+    return entries</code></pre>
+</details>
+<div class="desc"><p>Walk person_root and compute the full migration plan. Never touches
+the filesystem or DB &ndash; pure planning, safe to call for a dry run.</p></div>
+</dd>
+<dt id="src.storage.person_migration.build_person_index"><code class="name flex">
+<span>def <span class="ident">build_person_index</span></span>(<span>manifest_path: pathlib.Path,<br>person_root: pathlib.Path = PosixPath('/Users/alyshialedlie/Documents/Person')) ‑> List[Tuple[str, str]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def build_person_index(
+    manifest_path: Path,
+    person_root: Path = DEFAULT_PERSON_ROOT,
+) -&gt; List[Tuple[str, str]]:
+    &#34;&#34;&#34;Return (current_path, person_name) pairs for every migrated file
+    attributable to a named individual. Attribution prefers the original
+    Person/{Name}/ dir; a resume/CV filename is a conservative fallback
+    (e.g. RESUME1-ChynaStrange.pdf). Files with neither signal are omitted.&#34;&#34;&#34;
+    person_root = Path(person_root).expanduser()
+    entries = load_manifest(manifest_path)
+    index: List[Tuple[str, str]] = []
+    for entry in entries:
+        person = _person_from_source_path(entry.src, person_root) or _person_from_filename(
+            Path(entry.src).name
+        )
+        if person:
+            index.append((entry.dst, person))
+    return index</code></pre>
+</details>
+<div class="desc"><p>Return (current_path, person_name) pairs for every migrated file
+attributable to a named individual. Attribution prefers the original
+Person/{Name}/ dir; a resume/CV filename is a conservative fallback
+(e.g. RESUME1-ChynaStrange.pdf). Files with neither signal are omitted.</p></div>
+</dd>
+<dt id="src.storage.person_migration.index_person_files"><code class="name flex">
+<span>def <span class="ident">index_person_files</span></span>(<span>manifest_path: pathlib.Path = PosixPath('person-migrate-manifest.json'),<br>db_path: str = 'results/file_organization.db',<br>person_root: pathlib.Path = PosixPath('/Users/alyshialedlie/Documents/Person'),<br>apply: bool = False,<br>verbose: bool = True) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def index_person_files(
+    manifest_path: Path = DEFAULT_MANIFEST_PATH,
+    db_path: str = &#34;results/file_organization.db&#34;,
+    person_root: Path = DEFAULT_PERSON_ROOT,
+    apply: bool = False,
+    verbose: bool = True,
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Register migrated files in the graph with person edges (no file moves).
+
+    Dry-run by default: reports the per-person attribution without touching the
+    DB. Pass apply=True to write the File rows and person edges that populate
+    the person-view symlink tree.
+    &#34;&#34;&#34;
+    manifest_path = Path(manifest_path)
+    index = build_person_index(manifest_path, person_root)
+
+    per_person: Dict[str, int] = {}
+    for _current_path, person_name in index:
+        per_person[person_name] = per_person.get(person_name, 0) + 1
+
+    if verbose:
+        print(&#34;=&#34; * SEPARATOR_WIDTH_MEDIUM)
+        print(&#34;Person Indexing (graph edges, no file moves)&#34;)
+        print(&#34;=&#34; * SEPARATOR_WIDTH_MEDIUM)
+        print(f&#34;  Manifest:            {manifest_path}&#34;)
+        print(f&#34;  Attributed files:    {len(index)}&#34;)
+        for name, count in sorted(per_person.items(), key=lambda kv: -kv[1]):
+            print(f&#34;    {name}: {count}&#34;)
+
+    if not apply:
+        if verbose:
+            print(&#34;\n  [DRY RUN] No graph rows or edges written&#34;)
+        return {
+            &#34;dry_run&#34;: True,
+            &#34;attributed&#34;: len(index),
+            &#34;people&#34;: per_person,
+        }
+
+    edges = apply_person_index(index, db_path)
+    if verbose:
+        print(f&#34;\n  Wrote {edges} person edges across {len(per_person)} people&#34;)
+
+    return {
+        &#34;dry_run&#34;: False,
+        &#34;attributed&#34;: len(index),
+        &#34;edges&#34;: edges,
+        &#34;people&#34;: per_person,
+    }</code></pre>
+</details>
+<div class="desc"><p>Register migrated files in the graph with person edges (no file moves).</p>
+<p>Dry-run by default: reports the per-person attribution without touching the
+DB. Pass apply=True to write the File rows and person edges that populate
+the person-view symlink tree.</p></div>
+</dd>
+<dt id="src.storage.person_migration.load_manifest"><code class="name flex">
+<span>def <span class="ident">load_manifest</span></span>(<span>manifest_path: pathlib.Path) ‑> List[<a title="src.storage.person_migration.MigrationEntry" href="#src.storage.person_migration.MigrationEntry">MigrationEntry</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def load_manifest(manifest_path: Path) -&gt; List[MigrationEntry]:
+    raw_entries = json.loads(Path(manifest_path).read_text())
+    return [MigrationEntry.from_dict(raw) for raw in raw_entries]</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+<dt id="src.storage.person_migration.migrate_person_files"><code class="name flex">
+<span>def <span class="ident">migrate_person_files</span></span>(<span>person_root: pathlib.Path = PosixPath('/Users/alyshialedlie/Documents/Person'),<br>documents_root: pathlib.Path = PosixPath('/Users/alyshialedlie/Documents'),<br>db_path: str | None = None,<br>manifest_path: pathlib.Path = PosixPath('person-migrate-manifest.json'),<br>apply: bool = False,<br>verbose: bool = True) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def migrate_person_files(
+    person_root: Path = DEFAULT_PERSON_ROOT,
+    documents_root: Path = DEFAULT_DOCUMENTS_ROOT,
+    db_path: Optional[str] = None,
+    manifest_path: Path = DEFAULT_MANIFEST_PATH,
+    apply: bool = False,
+    verbose: bool = True,
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Migrate legacy on-disk Person/ files into Personal/{subcat}/ folders.
+
+    Dry-run by default (mirrors migration.py&#39;s run_migration(dry_run=...)
+    pattern) -- pass apply=True to actually move files and update the DB.
+    Always writes the manifest (even in dry-run) so it can be inspected
+    before deciding to apply.
+    &#34;&#34;&#34;
+    person_root = Path(person_root).expanduser()
+    documents_root = Path(documents_root).expanduser()
+    manifest_path = Path(manifest_path)
+
+    if verbose:
+        print(&#34;=&#34; * SEPARATOR_WIDTH_MEDIUM)
+        print(&#34;Person/ -&gt; Personal/{subcat}/ Migration&#34;)
+        print(&#34;=&#34; * SEPARATOR_WIDTH_MEDIUM)
+        print(f&#34;  Source root:      {person_root}&#34;)
+        print(f&#34;  Destination root: {documents_root}&#34;)
+
+    entries = build_migration_plan(person_root, documents_root, db_path)
+    flagged_entries = [entry for entry in entries if entry.flagged]
+
+    if verbose:
+        print(f&#34;\n  Files found:                {len(entries)}&#34;)
+        print(f&#34;  Low-confidence (flagged):   {len(flagged_entries)}&#34;)
+        for source_kind in (SUBCAT_SOURCE_DB, SUBCAT_SOURCE_SUBFOLDER, SUBCAT_SOURCE_FALLBACK):
+            count = sum(1 for entry in entries if entry.subcat_source == source_kind)
+            print(f&#34;    subcat_source={source_kind:&lt;10} {count}&#34;)
+
+    write_manifest(entries, manifest_path)
+    if verbose:
+        print(f&#34;  Manifest written to: {manifest_path}&#34;)
+
+    if not apply:
+        if verbose:
+            print(&#34;\n  [DRY RUN] No files moved, no DB rows updated&#34;)
+        return {
+            &#34;dry_run&#34;: True,
+            &#34;planned&#34;: len(entries),
+            &#34;flagged&#34;: len(flagged_entries),
+            &#34;manifest_path&#34;: str(manifest_path),
+            &#34;entries&#34;: [entry.to_dict() for entry in entries],
+        }
+
+    moved = apply_migration(entries, db_path)
+    if verbose:
+        print(f&#34;\n  Moved {moved}/{len(entries)} files&#34;)
+
+    return {
+        &#34;dry_run&#34;: False,
+        &#34;migrated&#34;: moved,
+        &#34;flagged&#34;: len(flagged_entries),
+        &#34;manifest_path&#34;: str(manifest_path),
+        &#34;entries&#34;: [entry.to_dict() for entry in entries],
+    }</code></pre>
+</details>
+<div class="desc"><p>Migrate legacy on-disk Person/ files into Personal/{subcat}/ folders.</p>
+<p>Dry-run by default (mirrors migration.py's run_migration(dry_run=&hellip;)
+pattern) &ndash; pass apply=True to actually move files and update the DB.
+Always writes the manifest (even in dry-run) so it can be inspected
+before deciding to apply.</p></div>
+</dd>
+<dt id="src.storage.person_migration.rollback_person_migration"><code class="name flex">
+<span>def <span class="ident">rollback_person_migration</span></span>(<span>manifest_path: pathlib.Path, db_path: str | None = None, verbose: bool = True) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def rollback_person_migration(
+    manifest_path: Path,
+    db_path: Optional[str] = None,
+    verbose: bool = True,
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Reverse a prior apply run using the manifest it wrote. Moves every file
+    from its recorded `dst` back to its recorded `src` -- never recomputes
+    destinations, so collision-renamed paths are handled correctly. Processed
+    in reverse manifest order (last-moved-first-reversed); safe regardless of
+    order since migration moves never overlap in destination.
+    &#34;&#34;&#34;
+    manifest_path = Path(manifest_path)
+    entries = load_manifest(manifest_path)
+
+    if verbose:
+        print(f&#34;Rolling back {len(entries)} entries from {manifest_path}&#34;)
+
+    graph_store = GraphStore(db_path) if db_path else None
+    session = graph_store.get_session() if graph_store else None
+
+    restored = 0
+    try:
+        for entry in reversed(entries):
+            dst = Path(entry.dst)
+            src = Path(entry.src)
+            if not dst.exists():
+                continue  # already rolled back, or was never actually applied
+            src.parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(dst), str(src))
+            restored += 1
+
+            if entry.file_id and graph_store:
+                graph_store.update_file_status(
+                    entry.file_id,
+                    FileStatus.ORGANIZED,
+                    destination=str(src),
+                    reason=ROLLBACK_REASON,
+                    session=session,
+                )
+    finally:
+        if session:
+            session.close()
+
+    if verbose:
+        print(f&#34;  Restored {restored}/{len(entries)} files&#34;)
+
+    return {&#34;restored&#34;: restored, &#34;total&#34;: len(entries)}</code></pre>
+</details>
+<div class="desc"><p>Reverse a prior apply run using the manifest it wrote. Moves every file
+from its recorded <code>dst</code> back to its recorded <code><a title="src" href="../index.html">src</a></code> &ndash; never recomputes
+destinations, so collision-renamed paths are handled correctly. Processed
+in reverse manifest order (last-moved-first-reversed); safe regardless of
+order since migration moves never overlap in destination.</p></div>
+</dd>
+<dt id="src.storage.person_migration.write_manifest"><code class="name flex">
+<span>def <span class="ident">write_manifest</span></span>(<span>entries: List[<a title="src.storage.person_migration.MigrationEntry" href="#src.storage.person_migration.MigrationEntry">MigrationEntry</a>],<br>manifest_path: pathlib.Path) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def write_manifest(entries: List[MigrationEntry], manifest_path: Path) -&gt; None:
+    manifest_path = Path(manifest_path)
+    manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    manifest_path.write_text(json.dumps([entry.to_dict() for entry in entries], indent=2))</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.storage.person_migration.MigrationEntry"><code class="flex name class">
+<span>class <span class="ident">MigrationEntry</span></span>
+<span>(</span><span>src: str,<br>dst: str,<br>subcat: str,<br>subcat_source: str,<br>file_id: str | None = None,<br>flagged: bool = False)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass
+class MigrationEntry:
+    &#34;&#34;&#34;One planned (or executed) file move.&#34;&#34;&#34;
+
+    src: str
+    dst: str
+    subcat: str
+    subcat_source: str
+    file_id: Optional[str] = None
+    flagged: bool = False
+
+    def to_dict(self) -&gt; Dict[str, Any]:
+        return {
+            &#34;src&#34;: self.src,
+            &#34;dst&#34;: self.dst,
+            &#34;subcat&#34;: self.subcat,
+            &#34;subcat_source&#34;: self.subcat_source,
+            &#34;file_id&#34;: self.file_id,
+            &#34;flagged&#34;: self.flagged,
+        }
+
+    @staticmethod
+    def from_dict(data: Dict[str, Any]) -&gt; &#34;MigrationEntry&#34;:
+        return MigrationEntry(
+            src=data[&#34;src&#34;],
+            dst=data[&#34;dst&#34;],
+            subcat=data[&#34;subcat&#34;],
+            subcat_source=data[&#34;subcat_source&#34;],
+            file_id=data.get(&#34;file_id&#34;),
+            flagged=data.get(&#34;flagged&#34;, False),
+        )</code></pre>
+</details>
+<div class="desc"><p>One planned (or executed) file move.</p></div>
+<h3>Static methods</h3>
+<dl>
+<dt id="src.storage.person_migration.MigrationEntry.from_dict"><code class="name flex">
+<span>def <span class="ident">from_dict</span></span>(<span>data: Dict[str, Any]) ‑> <a title="src.storage.person_migration.MigrationEntry" href="#src.storage.person_migration.MigrationEntry">MigrationEntry</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def from_dict(data: Dict[str, Any]) -&gt; &#34;MigrationEntry&#34;:
+    return MigrationEntry(
+        src=data[&#34;src&#34;],
+        dst=data[&#34;dst&#34;],
+        subcat=data[&#34;subcat&#34;],
+        subcat_source=data[&#34;subcat_source&#34;],
+        file_id=data.get(&#34;file_id&#34;),
+        flagged=data.get(&#34;flagged&#34;, False),
+    )</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Instance variables</h3>
+<dl>
+<dt id="src.storage.person_migration.MigrationEntry.dst"><code class="name">var <span class="ident">dst</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.storage.person_migration.MigrationEntry.file_id"><code class="name">var <span class="ident">file_id</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.storage.person_migration.MigrationEntry.flagged"><code class="name">var <span class="ident">flagged</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.storage.person_migration.MigrationEntry.src"><code class="name">var <span class="ident">src</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.storage.person_migration.MigrationEntry.subcat"><code class="name">var <span class="ident">subcat</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.storage.person_migration.MigrationEntry.subcat_source"><code class="name">var <span class="ident">subcat_source</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="src.storage.person_migration.MigrationEntry.to_dict"><code class="name flex">
+<span>def <span class="ident">to_dict</span></span>(<span>self) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_dict(self) -&gt; Dict[str, Any]:
+    return {
+        &#34;src&#34;: self.src,
+        &#34;dst&#34;: self.dst,
+        &#34;subcat&#34;: self.subcat,
+        &#34;subcat_source&#34;: self.subcat_source,
+        &#34;file_id&#34;: self.file_id,
+        &#34;flagged&#34;: self.flagged,
+    }</code></pre>
+</details>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.storage" href="index.html">src.storage</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="src.storage.person_migration.apply_migration" href="#src.storage.person_migration.apply_migration">apply_migration</a></code></li>
+<li><code><a title="src.storage.person_migration.apply_person_index" href="#src.storage.person_migration.apply_person_index">apply_person_index</a></code></li>
+<li><code><a title="src.storage.person_migration.build_migration_plan" href="#src.storage.person_migration.build_migration_plan">build_migration_plan</a></code></li>
+<li><code><a title="src.storage.person_migration.build_person_index" href="#src.storage.person_migration.build_person_index">build_person_index</a></code></li>
+<li><code><a title="src.storage.person_migration.index_person_files" href="#src.storage.person_migration.index_person_files">index_person_files</a></code></li>
+<li><code><a title="src.storage.person_migration.load_manifest" href="#src.storage.person_migration.load_manifest">load_manifest</a></code></li>
+<li><code><a title="src.storage.person_migration.migrate_person_files" href="#src.storage.person_migration.migrate_person_files">migrate_person_files</a></code></li>
+<li><code><a title="src.storage.person_migration.rollback_person_migration" href="#src.storage.person_migration.rollback_person_migration">rollback_person_migration</a></code></li>
+<li><code><a title="src.storage.person_migration.write_manifest" href="#src.storage.person_migration.write_manifest">write_manifest</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.storage.person_migration.MigrationEntry" href="#src.storage.person_migration.MigrationEntry">MigrationEntry</a></code></h4>
+<ul class="two-column">
+<li><code><a title="src.storage.person_migration.MigrationEntry.dst" href="#src.storage.person_migration.MigrationEntry.dst">dst</a></code></li>
+<li><code><a title="src.storage.person_migration.MigrationEntry.file_id" href="#src.storage.person_migration.MigrationEntry.file_id">file_id</a></code></li>
+<li><code><a title="src.storage.person_migration.MigrationEntry.flagged" href="#src.storage.person_migration.MigrationEntry.flagged">flagged</a></code></li>
+<li><code><a title="src.storage.person_migration.MigrationEntry.from_dict" href="#src.storage.person_migration.MigrationEntry.from_dict">from_dict</a></code></li>
+<li><code><a title="src.storage.person_migration.MigrationEntry.src" href="#src.storage.person_migration.MigrationEntry.src">src</a></code></li>
+<li><code><a title="src.storage.person_migration.MigrationEntry.subcat" href="#src.storage.person_migration.MigrationEntry.subcat">subcat</a></code></li>
+<li><code><a title="src.storage.person_migration.MigrationEntry.subcat_source" href="#src.storage.person_migration.MigrationEntry.subcat_source">subcat_source</a></code></li>
+<li><code><a title="src.storage.person_migration.MigrationEntry.to_dict" href="#src.storage.person_migration.MigrationEntry.to_dict">to_dict</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

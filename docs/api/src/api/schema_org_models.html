@@ -1,0 +1,1828 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.api.schema_org_models API documentation</title>
+<meta name="description" content="Pydantic models for schema.org API request/response types …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.api.schema_org_models</code></h1>
+</header>
+<section id="section-intro">
+<p>Pydantic models for schema.org API request/response types.</p>
+<p>Defines types for JSON-LD entities, builder results, and API operations.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.api.schema_org_models.BulkExportParams"><code class="flex name class">
+<span>class <span class="ident">BulkExportParams</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BulkExportParams(BaseModel):
+  &#34;&#34;&#34;Bulk export query parameters.&#34;&#34;&#34;
+  entity_types: str = Field(
+    &#34;all&#34;,
+    description=&#34;Comma-separated entity types: file, category, company, person, location, or &#39;all&#39;&#34;
+  )</code></pre>
+</details>
+<div class="desc"><p>Bulk export query parameters.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.BulkExportParams.entity_types"><code class="name">var <span class="ident">entity_types</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.BulkExportParams.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.BulkExportResponse"><code class="flex name class">
+<span>class <span class="ident">BulkExportResponse</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BulkExportResponse(BaseModel):
+  &#34;&#34;&#34;Bulk export response containing all entity types.&#34;&#34;&#34;
+  files: Optional[List[FileSchemaOrg]] = None
+  categories: Optional[List[CategorySchemaOrg]] = None
+  companies: Optional[List[CompanySchemaOrg]] = None
+  people: Optional[List[PersonSchemaOrg]] = None
+  locations: Optional[List[LocationSchemaOrg]] = None</code></pre>
+</details>
+<div class="desc"><p>Bulk export response containing all entity types.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.BulkExportResponse.categories"><code class="name">var <span class="ident">categories</span> : List[<a title="src.api.schema_org_models.CategorySchemaOrg" href="#src.api.schema_org_models.CategorySchemaOrg">CategorySchemaOrg</a>] | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.BulkExportResponse.companies"><code class="name">var <span class="ident">companies</span> : List[<a title="src.api.schema_org_models.CompanySchemaOrg" href="#src.api.schema_org_models.CompanySchemaOrg">CompanySchemaOrg</a>] | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.BulkExportResponse.files"><code class="name">var <span class="ident">files</span> : List[<a title="src.api.schema_org_models.FileSchemaOrg" href="#src.api.schema_org_models.FileSchemaOrg">FileSchemaOrg</a>] | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.BulkExportResponse.locations"><code class="name">var <span class="ident">locations</span> : List[<a title="src.api.schema_org_models.LocationSchemaOrg" href="#src.api.schema_org_models.LocationSchemaOrg">LocationSchemaOrg</a>] | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.BulkExportResponse.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.BulkExportResponse.people"><code class="name">var <span class="ident">people</span> : List[<a title="src.api.schema_org_models.PersonSchemaOrg" href="#src.api.schema_org_models.PersonSchemaOrg">PersonSchemaOrg</a>] | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.CategoryFilterParams"><code class="flex name class">
+<span>class <span class="ident">CategoryFilterParams</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CategoryFilterParams(PaginationParams):
+  &#34;&#34;&#34;Category query parameters.&#34;&#34;&#34;
+  level: Optional[int] = Field(None, description=&#34;Filter by hierarchy level&#34;)</code></pre>
+</details>
+<div class="desc"><p>Category query parameters.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="src.api.schema_org_models.PaginationParams" href="#src.api.schema_org_models.PaginationParams">PaginationParams</a></li>
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.CategoryFilterParams.level"><code class="name">var <span class="ident">level</span> : int | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CategoryFilterParams.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.CategorySchemaOrg"><code class="flex name class">
+<span>class <span class="ident">CategorySchemaOrg</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CategorySchemaOrg(BaseModel):
+  &#34;&#34;&#34;Category entity as schema.org DefinedTerm.&#34;&#34;&#34;
+  context: str = Field(&#34;https://schema.org&#34;, alias=&#34;@context&#34;)
+  type: str = Field(&#34;DefinedTerm&#34;, alias=&#34;@type&#34;)
+  id: str = Field(alias=&#34;@id&#34;)
+  name: str
+  identifier: Optional[str] = None
+  definition: Optional[str] = None
+  in_defined_term_set: Dict[str, Any] = Field(alias=&#34;inDefinedTermSet&#34;)
+  broader: Optional[DefinedTermSchema] = None
+  narrower: Optional[List[DefinedTermSchema]] = None
+  file_count: int = Field(alias=&#34;fileCount&#34;)
+  hierarchy_level: int = Field(alias=&#34;hierarchyLevel&#34;)
+  icon: Optional[str] = None
+  color: Optional[str] = None
+
+  class Config:
+    populate_by_name = True</code></pre>
+</details>
+<div class="desc"><p>Category entity as schema.org DefinedTerm.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.CategorySchemaOrg.Config"><code class="name">var <span class="ident">Config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CategorySchemaOrg.broader"><code class="name">var <span class="ident">broader</span> : <a title="src.api.schema_org_models.DefinedTermSchema" href="#src.api.schema_org_models.DefinedTermSchema">DefinedTermSchema</a> | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CategorySchemaOrg.color"><code class="name">var <span class="ident">color</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CategorySchemaOrg.context"><code class="name">var <span class="ident">context</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CategorySchemaOrg.definition"><code class="name">var <span class="ident">definition</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CategorySchemaOrg.file_count"><code class="name">var <span class="ident">file_count</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CategorySchemaOrg.hierarchy_level"><code class="name">var <span class="ident">hierarchy_level</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CategorySchemaOrg.icon"><code class="name">var <span class="ident">icon</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CategorySchemaOrg.id"><code class="name">var <span class="ident">id</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CategorySchemaOrg.identifier"><code class="name">var <span class="ident">identifier</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CategorySchemaOrg.in_defined_term_set"><code class="name">var <span class="ident">in_defined_term_set</span> : Dict[str, Any]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CategorySchemaOrg.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CategorySchemaOrg.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CategorySchemaOrg.narrower"><code class="name">var <span class="ident">narrower</span> : List[<a title="src.api.schema_org_models.DefinedTermSchema" href="#src.api.schema_org_models.DefinedTermSchema">DefinedTermSchema</a>] | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CategorySchemaOrg.type"><code class="name">var <span class="ident">type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.CompanyFilterParams"><code class="flex name class">
+<span>class <span class="ident">CompanyFilterParams</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CompanyFilterParams(PaginationParams):
+  &#34;&#34;&#34;Company query parameters.&#34;&#34;&#34;
+  industry: Optional[str] = Field(None, description=&#34;Filter by industry&#34;)</code></pre>
+</details>
+<div class="desc"><p>Company query parameters.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="src.api.schema_org_models.PaginationParams" href="#src.api.schema_org_models.PaginationParams">PaginationParams</a></li>
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.CompanyFilterParams.industry"><code class="name">var <span class="ident">industry</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CompanyFilterParams.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.CompanySchemaOrg"><code class="flex name class">
+<span>class <span class="ident">CompanySchemaOrg</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CompanySchemaOrg(BaseModel):
+  &#34;&#34;&#34;Company entity as schema.org Organization.&#34;&#34;&#34;
+  context: str = Field(&#34;https://schema.org&#34;, alias=&#34;@context&#34;)
+  type: str = Field(&#34;Organization&#34;, alias=&#34;@type&#34;)
+  id: str = Field(alias=&#34;@id&#34;)
+  name: str
+  url: Optional[HttpUrl] = None
+  knows_about: Optional[str] = Field(None, alias=&#34;knowsAbout&#34;)
+  date_founded: Optional[str] = Field(None, alias=&#34;dateFounded&#34;)
+  date_created: Optional[datetime] = Field(None, alias=&#34;dateCreated&#34;)
+  date_modified: Optional[datetime] = Field(None, alias=&#34;dateModified&#34;)
+  same_as: Optional[List[str]] = Field(None, alias=&#34;sameAs&#34;)
+  mention_count: int = Field(alias=&#34;mentionCount&#34;)
+
+  class Config:
+    populate_by_name = True</code></pre>
+</details>
+<div class="desc"><p>Company entity as schema.org Organization.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.CompanySchemaOrg.Config"><code class="name">var <span class="ident">Config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CompanySchemaOrg.context"><code class="name">var <span class="ident">context</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CompanySchemaOrg.date_created"><code class="name">var <span class="ident">date_created</span> : datetime.datetime | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CompanySchemaOrg.date_founded"><code class="name">var <span class="ident">date_founded</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CompanySchemaOrg.date_modified"><code class="name">var <span class="ident">date_modified</span> : datetime.datetime | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CompanySchemaOrg.id"><code class="name">var <span class="ident">id</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CompanySchemaOrg.knows_about"><code class="name">var <span class="ident">knows_about</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CompanySchemaOrg.mention_count"><code class="name">var <span class="ident">mention_count</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CompanySchemaOrg.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CompanySchemaOrg.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CompanySchemaOrg.same_as"><code class="name">var <span class="ident">same_as</span> : List[str] | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CompanySchemaOrg.type"><code class="name">var <span class="ident">type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.CompanySchemaOrg.url"><code class="name">var <span class="ident">url</span> : pydantic.networks.HttpUrl | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.DefinedTermSchema"><code class="flex name class">
+<span>class <span class="ident">DefinedTermSchema</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class DefinedTermSchema(BaseModel):
+  &#34;&#34;&#34;DefinedTerm schema.org type (for categories).&#34;&#34;&#34;
+  type: str = Field(&#34;DefinedTerm&#34;, alias=&#34;@type&#34;)
+  id: Optional[str] = Field(None, alias=&#34;@id&#34;)
+  name: str
+  identifier: Optional[str] = None
+  definition: Optional[str] = None
+
+  class Config:
+    populate_by_name = True</code></pre>
+</details>
+<div class="desc"><p>DefinedTerm schema.org type (for categories).</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.DefinedTermSchema.Config"><code class="name">var <span class="ident">Config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.DefinedTermSchema.definition"><code class="name">var <span class="ident">definition</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.DefinedTermSchema.id"><code class="name">var <span class="ident">id</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.DefinedTermSchema.identifier"><code class="name">var <span class="ident">identifier</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.DefinedTermSchema.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.DefinedTermSchema.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.DefinedTermSchema.type"><code class="name">var <span class="ident">type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.EntityReference"><code class="flex name class">
+<span>class <span class="ident">EntityReference</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class EntityReference(BaseModel):
+  &#34;&#34;&#34;Generic entity reference in schema.org.&#34;&#34;&#34;
+  type: str = Field(alias=&#34;@type&#34;)
+  id: str = Field(alias=&#34;@id&#34;)
+  name: str
+
+  class Config:
+    populate_by_name = True</code></pre>
+</details>
+<div class="desc"><p>Generic entity reference in schema.org.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.EntityReference.Config"><code class="name">var <span class="ident">Config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.EntityReference.id"><code class="name">var <span class="ident">id</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.EntityReference.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.EntityReference.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.EntityReference.type"><code class="name">var <span class="ident">type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.ErrorResponse"><code class="flex name class">
+<span>class <span class="ident">ErrorResponse</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class ErrorResponse(BaseModel):
+  &#34;&#34;&#34;Standard error response.&#34;&#34;&#34;
+  detail: str = Field(description=&#34;Error message&#34;)
+  status_code: Optional[int] = Field(None, description=&#34;HTTP status code&#34;)</code></pre>
+</details>
+<div class="desc"><p>Standard error response.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.ErrorResponse.detail"><code class="name">var <span class="ident">detail</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.ErrorResponse.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.ErrorResponse.status_code"><code class="name">var <span class="ident">status_code</span> : int | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.FileFilterParams"><code class="flex name class">
+<span>class <span class="ident">FileFilterParams</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FileFilterParams(PaginationParams):
+  &#34;&#34;&#34;File query parameters.&#34;&#34;&#34;
+  mime_type: Optional[str] = Field(None, description=&#34;Filter by MIME type&#34;)</code></pre>
+</details>
+<div class="desc"><p>File query parameters.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="src.api.schema_org_models.PaginationParams" href="#src.api.schema_org_models.PaginationParams">PaginationParams</a></li>
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.FileFilterParams.mime_type"><code class="name">var <span class="ident">mime_type</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileFilterParams.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg"><code class="flex name class">
+<span>class <span class="ident">FileSchemaOrg</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FileSchemaOrg(BaseModel):
+  &#34;&#34;&#34;File entity as schema.org JSON-LD.&#34;&#34;&#34;
+  context: str = Field(&#34;https://schema.org&#34;, alias=&#34;@context&#34;)
+  type: str = Field(alias=&#34;@type&#34;)
+  id: str = Field(alias=&#34;@id&#34;)
+  name: str
+  encoding_format: Optional[str] = Field(None, alias=&#34;encodingFormat&#34;)
+  content_size: Optional[str] = Field(None, alias=&#34;contentSize&#34;)
+  url: Optional[str] = None
+  text: Optional[str] = None
+  date_created: Optional[datetime] = Field(None, alias=&#34;dateCreated&#34;)
+  date_modified: Optional[datetime] = Field(None, alias=&#34;dateModified&#34;)
+  # Image properties
+  width: Optional[int] = None
+  height: Optional[int] = None
+  has_faces: Optional[bool] = Field(None, alias=&#34;hasFaces&#34;)
+  date_published: Optional[datetime] = Field(None, alias=&#34;datePublished&#34;)
+  content_location: Optional[PlaceSchema] = Field(None, alias=&#34;contentLocation&#34;)
+  # Relationships
+  about: Optional[List[DefinedTermSchema]] = None
+  mentions: Optional[List[Dict[str, Any]]] = None
+  spatial_coverage: Optional[Any] = Field(None, alias=&#34;spatialCoverage&#34;)
+
+  class Config:
+    populate_by_name = True</code></pre>
+</details>
+<div class="desc"><p>File entity as schema.org JSON-LD.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.FileSchemaOrg.Config"><code class="name">var <span class="ident">Config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.about"><code class="name">var <span class="ident">about</span> : List[<a title="src.api.schema_org_models.DefinedTermSchema" href="#src.api.schema_org_models.DefinedTermSchema">DefinedTermSchema</a>] | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.content_location"><code class="name">var <span class="ident">content_location</span> : <a title="src.api.schema_org_models.PlaceSchema" href="#src.api.schema_org_models.PlaceSchema">PlaceSchema</a> | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.content_size"><code class="name">var <span class="ident">content_size</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.context"><code class="name">var <span class="ident">context</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.date_created"><code class="name">var <span class="ident">date_created</span> : datetime.datetime | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.date_modified"><code class="name">var <span class="ident">date_modified</span> : datetime.datetime | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.date_published"><code class="name">var <span class="ident">date_published</span> : datetime.datetime | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.encoding_format"><code class="name">var <span class="ident">encoding_format</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.has_faces"><code class="name">var <span class="ident">has_faces</span> : bool | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.height"><code class="name">var <span class="ident">height</span> : int | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.id"><code class="name">var <span class="ident">id</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.mentions"><code class="name">var <span class="ident">mentions</span> : List[Dict[str, Any]] | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.spatial_coverage"><code class="name">var <span class="ident">spatial_coverage</span> : Any | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.text"><code class="name">var <span class="ident">text</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.type"><code class="name">var <span class="ident">type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.url"><code class="name">var <span class="ident">url</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.FileSchemaOrg.width"><code class="name">var <span class="ident">width</span> : int | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.GeoCoordinatesSchema"><code class="flex name class">
+<span>class <span class="ident">GeoCoordinatesSchema</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GeoCoordinatesSchema(BaseModel):
+  &#34;&#34;&#34;GeoCoordinates schema.org type.&#34;&#34;&#34;
+  type: str = Field(&#34;GeoCoordinates&#34;, alias=&#34;@type&#34;)
+  latitude: float
+  longitude: float
+
+  class Config:
+    populate_by_name = True</code></pre>
+</details>
+<div class="desc"><p>GeoCoordinates schema.org type.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.GeoCoordinatesSchema.Config"><code class="name">var <span class="ident">Config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.GeoCoordinatesSchema.latitude"><code class="name">var <span class="ident">latitude</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.GeoCoordinatesSchema.longitude"><code class="name">var <span class="ident">longitude</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.GeoCoordinatesSchema.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.GeoCoordinatesSchema.type"><code class="name">var <span class="ident">type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.LocationFilterParams"><code class="flex name class">
+<span>class <span class="ident">LocationFilterParams</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class LocationFilterParams(PaginationParams):
+  &#34;&#34;&#34;Location query parameters.&#34;&#34;&#34;
+  country: Optional[str] = Field(None, description=&#34;Filter by country&#34;)</code></pre>
+</details>
+<div class="desc"><p>Location query parameters.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="src.api.schema_org_models.PaginationParams" href="#src.api.schema_org_models.PaginationParams">PaginationParams</a></li>
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.LocationFilterParams.country"><code class="name">var <span class="ident">country</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.LocationFilterParams.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.LocationSchemaOrg"><code class="flex name class">
+<span>class <span class="ident">LocationSchemaOrg</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class LocationSchemaOrg(BaseModel):
+  &#34;&#34;&#34;Location entity as schema.org Place/City/Country.&#34;&#34;&#34;
+  context: str = Field(&#34;https://schema.org&#34;, alias=&#34;@context&#34;)
+  type: str = Field(alias=&#34;@type&#34;)  # Place, City, or Country
+  id: str = Field(alias=&#34;@id&#34;)
+  name: str
+  address: Optional[PostalAddressSchema] = None
+  geo: Optional[GeoCoordinatesSchema] = None
+  geo_hash: Optional[str] = Field(None, alias=&#34;geoHash&#34;)
+  date_created: Optional[datetime] = Field(None, alias=&#34;dateCreated&#34;)
+  mention_count: int = Field(alias=&#34;mentionCount&#34;)
+
+  class Config:
+    populate_by_name = True</code></pre>
+</details>
+<div class="desc"><p>Location entity as schema.org Place/City/Country.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.LocationSchemaOrg.Config"><code class="name">var <span class="ident">Config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.LocationSchemaOrg.address"><code class="name">var <span class="ident">address</span> : <a title="src.api.schema_org_models.PostalAddressSchema" href="#src.api.schema_org_models.PostalAddressSchema">PostalAddressSchema</a> | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.LocationSchemaOrg.context"><code class="name">var <span class="ident">context</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.LocationSchemaOrg.date_created"><code class="name">var <span class="ident">date_created</span> : datetime.datetime | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.LocationSchemaOrg.geo"><code class="name">var <span class="ident">geo</span> : <a title="src.api.schema_org_models.GeoCoordinatesSchema" href="#src.api.schema_org_models.GeoCoordinatesSchema">GeoCoordinatesSchema</a> | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.LocationSchemaOrg.geo_hash"><code class="name">var <span class="ident">geo_hash</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.LocationSchemaOrg.id"><code class="name">var <span class="ident">id</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.LocationSchemaOrg.mention_count"><code class="name">var <span class="ident">mention_count</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.LocationSchemaOrg.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.LocationSchemaOrg.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.LocationSchemaOrg.type"><code class="name">var <span class="ident">type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.MentionsList"><code class="flex name class">
+<span>class <span class="ident">MentionsList</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MentionsList(BaseModel):
+  &#34;&#34;&#34;List of entity mentions.&#34;&#34;&#34;
+  items: List[EntityReference] = Field(description=&#34;List of mentioned entities&#34;)</code></pre>
+</details>
+<div class="desc"><p>List of entity mentions.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.MentionsList.items"><code class="name">var <span class="ident">items</span> : List[<a title="src.api.schema_org_models.EntityReference" href="#src.api.schema_org_models.EntityReference">EntityReference</a>]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.MentionsList.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.MimeTypeMapping"><code class="flex name class">
+<span>class <span class="ident">MimeTypeMapping</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MimeTypeMapping(BaseModel):
+  &#34;&#34;&#34;MIME type to schema.org type mapping.&#34;&#34;&#34;
+  mime_type: str = Field(description=&#34;MIME type&#34;)
+  schema_type: str = Field(description=&#34;schema.org type&#34;)</code></pre>
+</details>
+<div class="desc"><p>MIME type to schema.org type mapping.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.MimeTypeMapping.mime_type"><code class="name">var <span class="ident">mime_type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.MimeTypeMapping.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.MimeTypeMapping.schema_type"><code class="name">var <span class="ident">schema_type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.MimeTypeMappingsResponse"><code class="flex name class">
+<span>class <span class="ident">MimeTypeMappingsResponse</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class MimeTypeMappingsResponse(BaseModel):
+  &#34;&#34;&#34;Complete MIME type mapping reference.&#34;&#34;&#34;
+  mappings: List[MimeTypeMapping]
+  default_type: str = Field(&#34;DigitalDocument&#34;, description=&#34;Default type for unmapped MIME types&#34;)</code></pre>
+</details>
+<div class="desc"><p>Complete MIME type mapping reference.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.MimeTypeMappingsResponse.default_type"><code class="name">var <span class="ident">default_type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.MimeTypeMappingsResponse.mappings"><code class="name">var <span class="ident">mappings</span> : List[<a title="src.api.schema_org_models.MimeTypeMapping" href="#src.api.schema_org_models.MimeTypeMapping">MimeTypeMapping</a>]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.MimeTypeMappingsResponse.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.OrganizationSchema"><code class="flex name class">
+<span>class <span class="ident">OrganizationSchema</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class OrganizationSchema(BaseModel):
+  &#34;&#34;&#34;Organization schema.org type (for relationships).&#34;&#34;&#34;
+  type: str = Field(&#34;Organization&#34;, alias=&#34;@type&#34;)
+  id: Optional[str] = Field(None, alias=&#34;@id&#34;)
+  name: str
+  url: Optional[HttpUrl] = None
+  knows_about: Optional[str] = Field(None, alias=&#34;knowsAbout&#34;)
+  mention_count: Optional[int] = Field(None, alias=&#34;mentionCount&#34;)
+
+  class Config:
+    populate_by_name = True</code></pre>
+</details>
+<div class="desc"><p>Organization schema.org type (for relationships).</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.OrganizationSchema.Config"><code class="name">var <span class="ident">Config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.OrganizationSchema.id"><code class="name">var <span class="ident">id</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.OrganizationSchema.knows_about"><code class="name">var <span class="ident">knows_about</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.OrganizationSchema.mention_count"><code class="name">var <span class="ident">mention_count</span> : int | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.OrganizationSchema.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.OrganizationSchema.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.OrganizationSchema.type"><code class="name">var <span class="ident">type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.OrganizationSchema.url"><code class="name">var <span class="ident">url</span> : pydantic.networks.HttpUrl | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.PaginationParams"><code class="flex name class">
+<span>class <span class="ident">PaginationParams</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PaginationParams(BaseModel):
+  &#34;&#34;&#34;Standard pagination parameters.&#34;&#34;&#34;
+  skip: int = Field(0, ge=0, description=&#34;Number of records to skip&#34;)
+  limit: int = Field(100, ge=1, le=1000, description=&#34;Max records per page&#34;)</code></pre>
+</details>
+<div class="desc"><p>Standard pagination parameters.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="src.api.schema_org_models.CategoryFilterParams" href="#src.api.schema_org_models.CategoryFilterParams">CategoryFilterParams</a></li>
+<li><a title="src.api.schema_org_models.CompanyFilterParams" href="#src.api.schema_org_models.CompanyFilterParams">CompanyFilterParams</a></li>
+<li><a title="src.api.schema_org_models.FileFilterParams" href="#src.api.schema_org_models.FileFilterParams">FileFilterParams</a></li>
+<li><a title="src.api.schema_org_models.LocationFilterParams" href="#src.api.schema_org_models.LocationFilterParams">LocationFilterParams</a></li>
+<li><a title="src.api.schema_org_models.PersonFilterParams" href="#src.api.schema_org_models.PersonFilterParams">PersonFilterParams</a></li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.PaginationParams.limit"><code class="name">var <span class="ident">limit</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PaginationParams.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PaginationParams.skip"><code class="name">var <span class="ident">skip</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.PersonFilterParams"><code class="flex name class">
+<span>class <span class="ident">PersonFilterParams</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PersonFilterParams(PaginationParams):
+  &#34;&#34;&#34;Person query parameters.&#34;&#34;&#34;
+  role: Optional[str] = Field(None, description=&#34;Filter by job role&#34;)</code></pre>
+</details>
+<div class="desc"><p>Person query parameters.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li><a title="src.api.schema_org_models.PaginationParams" href="#src.api.schema_org_models.PaginationParams">PaginationParams</a></li>
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.PersonFilterParams.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonFilterParams.role"><code class="name">var <span class="ident">role</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchema"><code class="flex name class">
+<span>class <span class="ident">PersonSchema</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PersonSchema(BaseModel):
+  &#34;&#34;&#34;Person schema.org type (for relationships).&#34;&#34;&#34;
+  type: str = Field(&#34;Person&#34;, alias=&#34;@type&#34;)
+  id: Optional[str] = Field(None, alias=&#34;@id&#34;)
+  name: str
+  email: Optional[str] = None
+  job_title: Optional[str] = Field(None, alias=&#34;jobTitle&#34;)
+  mention_count: Optional[int] = Field(None, alias=&#34;mentionCount&#34;)
+
+  class Config:
+    populate_by_name = True</code></pre>
+</details>
+<div class="desc"><p>Person schema.org type (for relationships).</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.PersonSchema.Config"><code class="name">var <span class="ident">Config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchema.email"><code class="name">var <span class="ident">email</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchema.id"><code class="name">var <span class="ident">id</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchema.job_title"><code class="name">var <span class="ident">job_title</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchema.mention_count"><code class="name">var <span class="ident">mention_count</span> : int | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchema.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchema.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchema.type"><code class="name">var <span class="ident">type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchemaOrg"><code class="flex name class">
+<span>class <span class="ident">PersonSchemaOrg</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PersonSchemaOrg(BaseModel):
+  &#34;&#34;&#34;Person entity as schema.org Person.&#34;&#34;&#34;
+  context: str = Field(&#34;https://schema.org&#34;, alias=&#34;@context&#34;)
+  type: str = Field(&#34;Person&#34;, alias=&#34;@type&#34;)
+  id: str = Field(alias=&#34;@id&#34;)
+  name: str
+  email: Optional[str] = None
+  job_title: Optional[str] = Field(None, alias=&#34;jobTitle&#34;)
+  date_created: Optional[datetime] = Field(None, alias=&#34;dateCreated&#34;)
+  date_modified: Optional[datetime] = Field(None, alias=&#34;dateModified&#34;)
+  mention_count: int = Field(alias=&#34;mentionCount&#34;)
+  # Optional relationships (from to_schema_org_with_relationships)
+  works_for: Optional[OrganizationSchema] = Field(None, alias=&#34;worksFor&#34;)
+  work_location: Optional[PlaceSchema] = Field(None, alias=&#34;workLocation&#34;)
+
+  class Config:
+    populate_by_name = True</code></pre>
+</details>
+<div class="desc"><p>Person entity as schema.org Person.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.PersonSchemaOrg.Config"><code class="name">var <span class="ident">Config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchemaOrg.context"><code class="name">var <span class="ident">context</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchemaOrg.date_created"><code class="name">var <span class="ident">date_created</span> : datetime.datetime | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchemaOrg.date_modified"><code class="name">var <span class="ident">date_modified</span> : datetime.datetime | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchemaOrg.email"><code class="name">var <span class="ident">email</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchemaOrg.id"><code class="name">var <span class="ident">id</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchemaOrg.job_title"><code class="name">var <span class="ident">job_title</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchemaOrg.mention_count"><code class="name">var <span class="ident">mention_count</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchemaOrg.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchemaOrg.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchemaOrg.type"><code class="name">var <span class="ident">type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchemaOrg.work_location"><code class="name">var <span class="ident">work_location</span> : <a title="src.api.schema_org_models.PlaceSchema" href="#src.api.schema_org_models.PlaceSchema">PlaceSchema</a> | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PersonSchemaOrg.works_for"><code class="name">var <span class="ident">works_for</span> : <a title="src.api.schema_org_models.OrganizationSchema" href="#src.api.schema_org_models.OrganizationSchema">OrganizationSchema</a> | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.PlaceSchema"><code class="flex name class">
+<span>class <span class="ident">PlaceSchema</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PlaceSchema(BaseModel):
+  &#34;&#34;&#34;Place schema.org type (for relationships).&#34;&#34;&#34;
+  type: str = Field(&#34;Place&#34;, alias=&#34;@type&#34;)
+  id: Optional[str] = Field(None, alias=&#34;@id&#34;)
+  name: str
+  address: Optional[PostalAddressSchema] = None
+  geo: Optional[GeoCoordinatesSchema] = None
+  geo_hash: Optional[str] = Field(None, alias=&#34;geoHash&#34;)
+  mention_count: Optional[int] = Field(None, alias=&#34;mentionCount&#34;)
+  date_created: Optional[datetime] = Field(None, alias=&#34;dateCreated&#34;)
+
+  class Config:
+    populate_by_name = True</code></pre>
+</details>
+<div class="desc"><p>Place schema.org type (for relationships).</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.PlaceSchema.Config"><code class="name">var <span class="ident">Config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PlaceSchema.address"><code class="name">var <span class="ident">address</span> : <a title="src.api.schema_org_models.PostalAddressSchema" href="#src.api.schema_org_models.PostalAddressSchema">PostalAddressSchema</a> | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PlaceSchema.date_created"><code class="name">var <span class="ident">date_created</span> : datetime.datetime | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PlaceSchema.geo"><code class="name">var <span class="ident">geo</span> : <a title="src.api.schema_org_models.GeoCoordinatesSchema" href="#src.api.schema_org_models.GeoCoordinatesSchema">GeoCoordinatesSchema</a> | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PlaceSchema.geo_hash"><code class="name">var <span class="ident">geo_hash</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PlaceSchema.id"><code class="name">var <span class="ident">id</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PlaceSchema.mention_count"><code class="name">var <span class="ident">mention_count</span> : int | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PlaceSchema.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PlaceSchema.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PlaceSchema.type"><code class="name">var <span class="ident">type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.PostalAddressSchema"><code class="flex name class">
+<span>class <span class="ident">PostalAddressSchema</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PostalAddressSchema(BaseModel):
+  &#34;&#34;&#34;PostalAddress schema.org type.&#34;&#34;&#34;
+  type: str = Field(&#34;PostalAddress&#34;, alias=&#34;@type&#34;)
+  address_locality: Optional[str] = Field(None, alias=&#34;addressLocality&#34;)
+  address_region: Optional[str] = Field(None, alias=&#34;addressRegion&#34;)
+  address_country: Optional[str] = Field(None, alias=&#34;addressCountry&#34;)
+
+  class Config:
+    populate_by_name = True</code></pre>
+</details>
+<div class="desc"><p>PostalAddress schema.org type.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.PostalAddressSchema.Config"><code class="name">var <span class="ident">Config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PostalAddressSchema.address_country"><code class="name">var <span class="ident">address_country</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PostalAddressSchema.address_locality"><code class="name">var <span class="ident">address_locality</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PostalAddressSchema.address_region"><code class="name">var <span class="ident">address_region</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PostalAddressSchema.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.PostalAddressSchema.type"><code class="name">var <span class="ident">type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.SchemaContext"><code class="flex name class">
+<span>class <span class="ident">SchemaContext</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SchemaContext(BaseModel):
+  &#34;&#34;&#34;Schema.org context definition.&#34;&#34;&#34;
+  vocab: str = Field(&#34;https://schema.org/&#34;, alias=&#34;@vocab&#34;)
+  ml: str = Field(&#34;https://example.org/ml-properties/&#34;, description=&#34;ML namespace&#34;)
+
+  class Config:
+    populate_by_name = True</code></pre>
+</details>
+<div class="desc"><p>Schema.org context definition.</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.SchemaContext.Config"><code class="name">var <span class="ident">Config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.SchemaContext.ml"><code class="name">var <span class="ident">ml</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.SchemaContext.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.SchemaContext.vocab"><code class="name">var <span class="ident">vocab</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.api.schema_org_models.SpatialCoverage"><code class="flex name class">
+<span>class <span class="ident">SpatialCoverage</span></span>
+<span>(</span><span>**data: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SpatialCoverage(BaseModel):
+  &#34;&#34;&#34;Spatial coverage (location relationship).&#34;&#34;&#34;
+  items: List[PlaceSchema] = Field(description=&#34;Covered locations&#34;)</code></pre>
+</details>
+<div class="desc"><p>Spatial coverage (location relationship).</p>
+<p>Create a new model by parsing and validating input data from keyword arguments.</p>
+<p>Raises [<code>ValidationError</code>][pydantic_core.ValidationError] if the input data cannot be
+validated to form a valid model.</p>
+<p><code>self</code> is explicitly positional-only to allow <code>self</code> as a field name.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>pydantic.main.BaseModel</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.api.schema_org_models.SpatialCoverage.items"><code class="name">var <span class="ident">items</span> : List[<a title="src.api.schema_org_models.PlaceSchema" href="#src.api.schema_org_models.PlaceSchema">PlaceSchema</a>]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.api.schema_org_models.SpatialCoverage.model_config"><code class="name">var <span class="ident">model_config</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.api" href="index.html">src.api</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.api.schema_org_models.BulkExportParams" href="#src.api.schema_org_models.BulkExportParams">BulkExportParams</a></code></h4>
+<ul class="">
+<li><code><a title="src.api.schema_org_models.BulkExportParams.entity_types" href="#src.api.schema_org_models.BulkExportParams.entity_types">entity_types</a></code></li>
+<li><code><a title="src.api.schema_org_models.BulkExportParams.model_config" href="#src.api.schema_org_models.BulkExportParams.model_config">model_config</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.BulkExportResponse" href="#src.api.schema_org_models.BulkExportResponse">BulkExportResponse</a></code></h4>
+<ul class="two-column">
+<li><code><a title="src.api.schema_org_models.BulkExportResponse.categories" href="#src.api.schema_org_models.BulkExportResponse.categories">categories</a></code></li>
+<li><code><a title="src.api.schema_org_models.BulkExportResponse.companies" href="#src.api.schema_org_models.BulkExportResponse.companies">companies</a></code></li>
+<li><code><a title="src.api.schema_org_models.BulkExportResponse.files" href="#src.api.schema_org_models.BulkExportResponse.files">files</a></code></li>
+<li><code><a title="src.api.schema_org_models.BulkExportResponse.locations" href="#src.api.schema_org_models.BulkExportResponse.locations">locations</a></code></li>
+<li><code><a title="src.api.schema_org_models.BulkExportResponse.model_config" href="#src.api.schema_org_models.BulkExportResponse.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.BulkExportResponse.people" href="#src.api.schema_org_models.BulkExportResponse.people">people</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.CategoryFilterParams" href="#src.api.schema_org_models.CategoryFilterParams">CategoryFilterParams</a></code></h4>
+<ul class="">
+<li><code><a title="src.api.schema_org_models.CategoryFilterParams.level" href="#src.api.schema_org_models.CategoryFilterParams.level">level</a></code></li>
+<li><code><a title="src.api.schema_org_models.CategoryFilterParams.model_config" href="#src.api.schema_org_models.CategoryFilterParams.model_config">model_config</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.CategorySchemaOrg" href="#src.api.schema_org_models.CategorySchemaOrg">CategorySchemaOrg</a></code></h4>
+<ul class="two-column">
+<li><code><a title="src.api.schema_org_models.CategorySchemaOrg.Config" href="#src.api.schema_org_models.CategorySchemaOrg.Config">Config</a></code></li>
+<li><code><a title="src.api.schema_org_models.CategorySchemaOrg.broader" href="#src.api.schema_org_models.CategorySchemaOrg.broader">broader</a></code></li>
+<li><code><a title="src.api.schema_org_models.CategorySchemaOrg.color" href="#src.api.schema_org_models.CategorySchemaOrg.color">color</a></code></li>
+<li><code><a title="src.api.schema_org_models.CategorySchemaOrg.context" href="#src.api.schema_org_models.CategorySchemaOrg.context">context</a></code></li>
+<li><code><a title="src.api.schema_org_models.CategorySchemaOrg.definition" href="#src.api.schema_org_models.CategorySchemaOrg.definition">definition</a></code></li>
+<li><code><a title="src.api.schema_org_models.CategorySchemaOrg.file_count" href="#src.api.schema_org_models.CategorySchemaOrg.file_count">file_count</a></code></li>
+<li><code><a title="src.api.schema_org_models.CategorySchemaOrg.hierarchy_level" href="#src.api.schema_org_models.CategorySchemaOrg.hierarchy_level">hierarchy_level</a></code></li>
+<li><code><a title="src.api.schema_org_models.CategorySchemaOrg.icon" href="#src.api.schema_org_models.CategorySchemaOrg.icon">icon</a></code></li>
+<li><code><a title="src.api.schema_org_models.CategorySchemaOrg.id" href="#src.api.schema_org_models.CategorySchemaOrg.id">id</a></code></li>
+<li><code><a title="src.api.schema_org_models.CategorySchemaOrg.identifier" href="#src.api.schema_org_models.CategorySchemaOrg.identifier">identifier</a></code></li>
+<li><code><a title="src.api.schema_org_models.CategorySchemaOrg.in_defined_term_set" href="#src.api.schema_org_models.CategorySchemaOrg.in_defined_term_set">in_defined_term_set</a></code></li>
+<li><code><a title="src.api.schema_org_models.CategorySchemaOrg.model_config" href="#src.api.schema_org_models.CategorySchemaOrg.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.CategorySchemaOrg.name" href="#src.api.schema_org_models.CategorySchemaOrg.name">name</a></code></li>
+<li><code><a title="src.api.schema_org_models.CategorySchemaOrg.narrower" href="#src.api.schema_org_models.CategorySchemaOrg.narrower">narrower</a></code></li>
+<li><code><a title="src.api.schema_org_models.CategorySchemaOrg.type" href="#src.api.schema_org_models.CategorySchemaOrg.type">type</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.CompanyFilterParams" href="#src.api.schema_org_models.CompanyFilterParams">CompanyFilterParams</a></code></h4>
+<ul class="">
+<li><code><a title="src.api.schema_org_models.CompanyFilterParams.industry" href="#src.api.schema_org_models.CompanyFilterParams.industry">industry</a></code></li>
+<li><code><a title="src.api.schema_org_models.CompanyFilterParams.model_config" href="#src.api.schema_org_models.CompanyFilterParams.model_config">model_config</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.CompanySchemaOrg" href="#src.api.schema_org_models.CompanySchemaOrg">CompanySchemaOrg</a></code></h4>
+<ul class="two-column">
+<li><code><a title="src.api.schema_org_models.CompanySchemaOrg.Config" href="#src.api.schema_org_models.CompanySchemaOrg.Config">Config</a></code></li>
+<li><code><a title="src.api.schema_org_models.CompanySchemaOrg.context" href="#src.api.schema_org_models.CompanySchemaOrg.context">context</a></code></li>
+<li><code><a title="src.api.schema_org_models.CompanySchemaOrg.date_created" href="#src.api.schema_org_models.CompanySchemaOrg.date_created">date_created</a></code></li>
+<li><code><a title="src.api.schema_org_models.CompanySchemaOrg.date_founded" href="#src.api.schema_org_models.CompanySchemaOrg.date_founded">date_founded</a></code></li>
+<li><code><a title="src.api.schema_org_models.CompanySchemaOrg.date_modified" href="#src.api.schema_org_models.CompanySchemaOrg.date_modified">date_modified</a></code></li>
+<li><code><a title="src.api.schema_org_models.CompanySchemaOrg.id" href="#src.api.schema_org_models.CompanySchemaOrg.id">id</a></code></li>
+<li><code><a title="src.api.schema_org_models.CompanySchemaOrg.knows_about" href="#src.api.schema_org_models.CompanySchemaOrg.knows_about">knows_about</a></code></li>
+<li><code><a title="src.api.schema_org_models.CompanySchemaOrg.mention_count" href="#src.api.schema_org_models.CompanySchemaOrg.mention_count">mention_count</a></code></li>
+<li><code><a title="src.api.schema_org_models.CompanySchemaOrg.model_config" href="#src.api.schema_org_models.CompanySchemaOrg.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.CompanySchemaOrg.name" href="#src.api.schema_org_models.CompanySchemaOrg.name">name</a></code></li>
+<li><code><a title="src.api.schema_org_models.CompanySchemaOrg.same_as" href="#src.api.schema_org_models.CompanySchemaOrg.same_as">same_as</a></code></li>
+<li><code><a title="src.api.schema_org_models.CompanySchemaOrg.type" href="#src.api.schema_org_models.CompanySchemaOrg.type">type</a></code></li>
+<li><code><a title="src.api.schema_org_models.CompanySchemaOrg.url" href="#src.api.schema_org_models.CompanySchemaOrg.url">url</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.DefinedTermSchema" href="#src.api.schema_org_models.DefinedTermSchema">DefinedTermSchema</a></code></h4>
+<ul class="two-column">
+<li><code><a title="src.api.schema_org_models.DefinedTermSchema.Config" href="#src.api.schema_org_models.DefinedTermSchema.Config">Config</a></code></li>
+<li><code><a title="src.api.schema_org_models.DefinedTermSchema.definition" href="#src.api.schema_org_models.DefinedTermSchema.definition">definition</a></code></li>
+<li><code><a title="src.api.schema_org_models.DefinedTermSchema.id" href="#src.api.schema_org_models.DefinedTermSchema.id">id</a></code></li>
+<li><code><a title="src.api.schema_org_models.DefinedTermSchema.identifier" href="#src.api.schema_org_models.DefinedTermSchema.identifier">identifier</a></code></li>
+<li><code><a title="src.api.schema_org_models.DefinedTermSchema.model_config" href="#src.api.schema_org_models.DefinedTermSchema.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.DefinedTermSchema.name" href="#src.api.schema_org_models.DefinedTermSchema.name">name</a></code></li>
+<li><code><a title="src.api.schema_org_models.DefinedTermSchema.type" href="#src.api.schema_org_models.DefinedTermSchema.type">type</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.EntityReference" href="#src.api.schema_org_models.EntityReference">EntityReference</a></code></h4>
+<ul class="">
+<li><code><a title="src.api.schema_org_models.EntityReference.Config" href="#src.api.schema_org_models.EntityReference.Config">Config</a></code></li>
+<li><code><a title="src.api.schema_org_models.EntityReference.id" href="#src.api.schema_org_models.EntityReference.id">id</a></code></li>
+<li><code><a title="src.api.schema_org_models.EntityReference.model_config" href="#src.api.schema_org_models.EntityReference.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.EntityReference.name" href="#src.api.schema_org_models.EntityReference.name">name</a></code></li>
+<li><code><a title="src.api.schema_org_models.EntityReference.type" href="#src.api.schema_org_models.EntityReference.type">type</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.ErrorResponse" href="#src.api.schema_org_models.ErrorResponse">ErrorResponse</a></code></h4>
+<ul class="">
+<li><code><a title="src.api.schema_org_models.ErrorResponse.detail" href="#src.api.schema_org_models.ErrorResponse.detail">detail</a></code></li>
+<li><code><a title="src.api.schema_org_models.ErrorResponse.model_config" href="#src.api.schema_org_models.ErrorResponse.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.ErrorResponse.status_code" href="#src.api.schema_org_models.ErrorResponse.status_code">status_code</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.FileFilterParams" href="#src.api.schema_org_models.FileFilterParams">FileFilterParams</a></code></h4>
+<ul class="">
+<li><code><a title="src.api.schema_org_models.FileFilterParams.mime_type" href="#src.api.schema_org_models.FileFilterParams.mime_type">mime_type</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileFilterParams.model_config" href="#src.api.schema_org_models.FileFilterParams.model_config">model_config</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.FileSchemaOrg" href="#src.api.schema_org_models.FileSchemaOrg">FileSchemaOrg</a></code></h4>
+<ul class="two-column">
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.Config" href="#src.api.schema_org_models.FileSchemaOrg.Config">Config</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.about" href="#src.api.schema_org_models.FileSchemaOrg.about">about</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.content_location" href="#src.api.schema_org_models.FileSchemaOrg.content_location">content_location</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.content_size" href="#src.api.schema_org_models.FileSchemaOrg.content_size">content_size</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.context" href="#src.api.schema_org_models.FileSchemaOrg.context">context</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.date_created" href="#src.api.schema_org_models.FileSchemaOrg.date_created">date_created</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.date_modified" href="#src.api.schema_org_models.FileSchemaOrg.date_modified">date_modified</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.date_published" href="#src.api.schema_org_models.FileSchemaOrg.date_published">date_published</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.encoding_format" href="#src.api.schema_org_models.FileSchemaOrg.encoding_format">encoding_format</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.has_faces" href="#src.api.schema_org_models.FileSchemaOrg.has_faces">has_faces</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.height" href="#src.api.schema_org_models.FileSchemaOrg.height">height</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.id" href="#src.api.schema_org_models.FileSchemaOrg.id">id</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.mentions" href="#src.api.schema_org_models.FileSchemaOrg.mentions">mentions</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.model_config" href="#src.api.schema_org_models.FileSchemaOrg.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.name" href="#src.api.schema_org_models.FileSchemaOrg.name">name</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.spatial_coverage" href="#src.api.schema_org_models.FileSchemaOrg.spatial_coverage">spatial_coverage</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.text" href="#src.api.schema_org_models.FileSchemaOrg.text">text</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.type" href="#src.api.schema_org_models.FileSchemaOrg.type">type</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.url" href="#src.api.schema_org_models.FileSchemaOrg.url">url</a></code></li>
+<li><code><a title="src.api.schema_org_models.FileSchemaOrg.width" href="#src.api.schema_org_models.FileSchemaOrg.width">width</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.GeoCoordinatesSchema" href="#src.api.schema_org_models.GeoCoordinatesSchema">GeoCoordinatesSchema</a></code></h4>
+<ul class="">
+<li><code><a title="src.api.schema_org_models.GeoCoordinatesSchema.Config" href="#src.api.schema_org_models.GeoCoordinatesSchema.Config">Config</a></code></li>
+<li><code><a title="src.api.schema_org_models.GeoCoordinatesSchema.latitude" href="#src.api.schema_org_models.GeoCoordinatesSchema.latitude">latitude</a></code></li>
+<li><code><a title="src.api.schema_org_models.GeoCoordinatesSchema.longitude" href="#src.api.schema_org_models.GeoCoordinatesSchema.longitude">longitude</a></code></li>
+<li><code><a title="src.api.schema_org_models.GeoCoordinatesSchema.model_config" href="#src.api.schema_org_models.GeoCoordinatesSchema.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.GeoCoordinatesSchema.type" href="#src.api.schema_org_models.GeoCoordinatesSchema.type">type</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.LocationFilterParams" href="#src.api.schema_org_models.LocationFilterParams">LocationFilterParams</a></code></h4>
+<ul class="">
+<li><code><a title="src.api.schema_org_models.LocationFilterParams.country" href="#src.api.schema_org_models.LocationFilterParams.country">country</a></code></li>
+<li><code><a title="src.api.schema_org_models.LocationFilterParams.model_config" href="#src.api.schema_org_models.LocationFilterParams.model_config">model_config</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.LocationSchemaOrg" href="#src.api.schema_org_models.LocationSchemaOrg">LocationSchemaOrg</a></code></h4>
+<ul class="two-column">
+<li><code><a title="src.api.schema_org_models.LocationSchemaOrg.Config" href="#src.api.schema_org_models.LocationSchemaOrg.Config">Config</a></code></li>
+<li><code><a title="src.api.schema_org_models.LocationSchemaOrg.address" href="#src.api.schema_org_models.LocationSchemaOrg.address">address</a></code></li>
+<li><code><a title="src.api.schema_org_models.LocationSchemaOrg.context" href="#src.api.schema_org_models.LocationSchemaOrg.context">context</a></code></li>
+<li><code><a title="src.api.schema_org_models.LocationSchemaOrg.date_created" href="#src.api.schema_org_models.LocationSchemaOrg.date_created">date_created</a></code></li>
+<li><code><a title="src.api.schema_org_models.LocationSchemaOrg.geo" href="#src.api.schema_org_models.LocationSchemaOrg.geo">geo</a></code></li>
+<li><code><a title="src.api.schema_org_models.LocationSchemaOrg.geo_hash" href="#src.api.schema_org_models.LocationSchemaOrg.geo_hash">geo_hash</a></code></li>
+<li><code><a title="src.api.schema_org_models.LocationSchemaOrg.id" href="#src.api.schema_org_models.LocationSchemaOrg.id">id</a></code></li>
+<li><code><a title="src.api.schema_org_models.LocationSchemaOrg.mention_count" href="#src.api.schema_org_models.LocationSchemaOrg.mention_count">mention_count</a></code></li>
+<li><code><a title="src.api.schema_org_models.LocationSchemaOrg.model_config" href="#src.api.schema_org_models.LocationSchemaOrg.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.LocationSchemaOrg.name" href="#src.api.schema_org_models.LocationSchemaOrg.name">name</a></code></li>
+<li><code><a title="src.api.schema_org_models.LocationSchemaOrg.type" href="#src.api.schema_org_models.LocationSchemaOrg.type">type</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.MentionsList" href="#src.api.schema_org_models.MentionsList">MentionsList</a></code></h4>
+<ul class="">
+<li><code><a title="src.api.schema_org_models.MentionsList.items" href="#src.api.schema_org_models.MentionsList.items">items</a></code></li>
+<li><code><a title="src.api.schema_org_models.MentionsList.model_config" href="#src.api.schema_org_models.MentionsList.model_config">model_config</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.MimeTypeMapping" href="#src.api.schema_org_models.MimeTypeMapping">MimeTypeMapping</a></code></h4>
+<ul class="">
+<li><code><a title="src.api.schema_org_models.MimeTypeMapping.mime_type" href="#src.api.schema_org_models.MimeTypeMapping.mime_type">mime_type</a></code></li>
+<li><code><a title="src.api.schema_org_models.MimeTypeMapping.model_config" href="#src.api.schema_org_models.MimeTypeMapping.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.MimeTypeMapping.schema_type" href="#src.api.schema_org_models.MimeTypeMapping.schema_type">schema_type</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.MimeTypeMappingsResponse" href="#src.api.schema_org_models.MimeTypeMappingsResponse">MimeTypeMappingsResponse</a></code></h4>
+<ul class="">
+<li><code><a title="src.api.schema_org_models.MimeTypeMappingsResponse.default_type" href="#src.api.schema_org_models.MimeTypeMappingsResponse.default_type">default_type</a></code></li>
+<li><code><a title="src.api.schema_org_models.MimeTypeMappingsResponse.mappings" href="#src.api.schema_org_models.MimeTypeMappingsResponse.mappings">mappings</a></code></li>
+<li><code><a title="src.api.schema_org_models.MimeTypeMappingsResponse.model_config" href="#src.api.schema_org_models.MimeTypeMappingsResponse.model_config">model_config</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.OrganizationSchema" href="#src.api.schema_org_models.OrganizationSchema">OrganizationSchema</a></code></h4>
+<ul class="two-column">
+<li><code><a title="src.api.schema_org_models.OrganizationSchema.Config" href="#src.api.schema_org_models.OrganizationSchema.Config">Config</a></code></li>
+<li><code><a title="src.api.schema_org_models.OrganizationSchema.id" href="#src.api.schema_org_models.OrganizationSchema.id">id</a></code></li>
+<li><code><a title="src.api.schema_org_models.OrganizationSchema.knows_about" href="#src.api.schema_org_models.OrganizationSchema.knows_about">knows_about</a></code></li>
+<li><code><a title="src.api.schema_org_models.OrganizationSchema.mention_count" href="#src.api.schema_org_models.OrganizationSchema.mention_count">mention_count</a></code></li>
+<li><code><a title="src.api.schema_org_models.OrganizationSchema.model_config" href="#src.api.schema_org_models.OrganizationSchema.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.OrganizationSchema.name" href="#src.api.schema_org_models.OrganizationSchema.name">name</a></code></li>
+<li><code><a title="src.api.schema_org_models.OrganizationSchema.type" href="#src.api.schema_org_models.OrganizationSchema.type">type</a></code></li>
+<li><code><a title="src.api.schema_org_models.OrganizationSchema.url" href="#src.api.schema_org_models.OrganizationSchema.url">url</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.PaginationParams" href="#src.api.schema_org_models.PaginationParams">PaginationParams</a></code></h4>
+<ul class="">
+<li><code><a title="src.api.schema_org_models.PaginationParams.limit" href="#src.api.schema_org_models.PaginationParams.limit">limit</a></code></li>
+<li><code><a title="src.api.schema_org_models.PaginationParams.model_config" href="#src.api.schema_org_models.PaginationParams.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.PaginationParams.skip" href="#src.api.schema_org_models.PaginationParams.skip">skip</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.PersonFilterParams" href="#src.api.schema_org_models.PersonFilterParams">PersonFilterParams</a></code></h4>
+<ul class="">
+<li><code><a title="src.api.schema_org_models.PersonFilterParams.model_config" href="#src.api.schema_org_models.PersonFilterParams.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonFilterParams.role" href="#src.api.schema_org_models.PersonFilterParams.role">role</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.PersonSchema" href="#src.api.schema_org_models.PersonSchema">PersonSchema</a></code></h4>
+<ul class="two-column">
+<li><code><a title="src.api.schema_org_models.PersonSchema.Config" href="#src.api.schema_org_models.PersonSchema.Config">Config</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchema.email" href="#src.api.schema_org_models.PersonSchema.email">email</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchema.id" href="#src.api.schema_org_models.PersonSchema.id">id</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchema.job_title" href="#src.api.schema_org_models.PersonSchema.job_title">job_title</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchema.mention_count" href="#src.api.schema_org_models.PersonSchema.mention_count">mention_count</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchema.model_config" href="#src.api.schema_org_models.PersonSchema.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchema.name" href="#src.api.schema_org_models.PersonSchema.name">name</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchema.type" href="#src.api.schema_org_models.PersonSchema.type">type</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.PersonSchemaOrg" href="#src.api.schema_org_models.PersonSchemaOrg">PersonSchemaOrg</a></code></h4>
+<ul class="two-column">
+<li><code><a title="src.api.schema_org_models.PersonSchemaOrg.Config" href="#src.api.schema_org_models.PersonSchemaOrg.Config">Config</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchemaOrg.context" href="#src.api.schema_org_models.PersonSchemaOrg.context">context</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchemaOrg.date_created" href="#src.api.schema_org_models.PersonSchemaOrg.date_created">date_created</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchemaOrg.date_modified" href="#src.api.schema_org_models.PersonSchemaOrg.date_modified">date_modified</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchemaOrg.email" href="#src.api.schema_org_models.PersonSchemaOrg.email">email</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchemaOrg.id" href="#src.api.schema_org_models.PersonSchemaOrg.id">id</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchemaOrg.job_title" href="#src.api.schema_org_models.PersonSchemaOrg.job_title">job_title</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchemaOrg.mention_count" href="#src.api.schema_org_models.PersonSchemaOrg.mention_count">mention_count</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchemaOrg.model_config" href="#src.api.schema_org_models.PersonSchemaOrg.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchemaOrg.name" href="#src.api.schema_org_models.PersonSchemaOrg.name">name</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchemaOrg.type" href="#src.api.schema_org_models.PersonSchemaOrg.type">type</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchemaOrg.work_location" href="#src.api.schema_org_models.PersonSchemaOrg.work_location">work_location</a></code></li>
+<li><code><a title="src.api.schema_org_models.PersonSchemaOrg.works_for" href="#src.api.schema_org_models.PersonSchemaOrg.works_for">works_for</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.PlaceSchema" href="#src.api.schema_org_models.PlaceSchema">PlaceSchema</a></code></h4>
+<ul class="two-column">
+<li><code><a title="src.api.schema_org_models.PlaceSchema.Config" href="#src.api.schema_org_models.PlaceSchema.Config">Config</a></code></li>
+<li><code><a title="src.api.schema_org_models.PlaceSchema.address" href="#src.api.schema_org_models.PlaceSchema.address">address</a></code></li>
+<li><code><a title="src.api.schema_org_models.PlaceSchema.date_created" href="#src.api.schema_org_models.PlaceSchema.date_created">date_created</a></code></li>
+<li><code><a title="src.api.schema_org_models.PlaceSchema.geo" href="#src.api.schema_org_models.PlaceSchema.geo">geo</a></code></li>
+<li><code><a title="src.api.schema_org_models.PlaceSchema.geo_hash" href="#src.api.schema_org_models.PlaceSchema.geo_hash">geo_hash</a></code></li>
+<li><code><a title="src.api.schema_org_models.PlaceSchema.id" href="#src.api.schema_org_models.PlaceSchema.id">id</a></code></li>
+<li><code><a title="src.api.schema_org_models.PlaceSchema.mention_count" href="#src.api.schema_org_models.PlaceSchema.mention_count">mention_count</a></code></li>
+<li><code><a title="src.api.schema_org_models.PlaceSchema.model_config" href="#src.api.schema_org_models.PlaceSchema.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.PlaceSchema.name" href="#src.api.schema_org_models.PlaceSchema.name">name</a></code></li>
+<li><code><a title="src.api.schema_org_models.PlaceSchema.type" href="#src.api.schema_org_models.PlaceSchema.type">type</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.PostalAddressSchema" href="#src.api.schema_org_models.PostalAddressSchema">PostalAddressSchema</a></code></h4>
+<ul class="two-column">
+<li><code><a title="src.api.schema_org_models.PostalAddressSchema.Config" href="#src.api.schema_org_models.PostalAddressSchema.Config">Config</a></code></li>
+<li><code><a title="src.api.schema_org_models.PostalAddressSchema.address_country" href="#src.api.schema_org_models.PostalAddressSchema.address_country">address_country</a></code></li>
+<li><code><a title="src.api.schema_org_models.PostalAddressSchema.address_locality" href="#src.api.schema_org_models.PostalAddressSchema.address_locality">address_locality</a></code></li>
+<li><code><a title="src.api.schema_org_models.PostalAddressSchema.address_region" href="#src.api.schema_org_models.PostalAddressSchema.address_region">address_region</a></code></li>
+<li><code><a title="src.api.schema_org_models.PostalAddressSchema.model_config" href="#src.api.schema_org_models.PostalAddressSchema.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.PostalAddressSchema.type" href="#src.api.schema_org_models.PostalAddressSchema.type">type</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.SchemaContext" href="#src.api.schema_org_models.SchemaContext">SchemaContext</a></code></h4>
+<ul class="">
+<li><code><a title="src.api.schema_org_models.SchemaContext.Config" href="#src.api.schema_org_models.SchemaContext.Config">Config</a></code></li>
+<li><code><a title="src.api.schema_org_models.SchemaContext.ml" href="#src.api.schema_org_models.SchemaContext.ml">ml</a></code></li>
+<li><code><a title="src.api.schema_org_models.SchemaContext.model_config" href="#src.api.schema_org_models.SchemaContext.model_config">model_config</a></code></li>
+<li><code><a title="src.api.schema_org_models.SchemaContext.vocab" href="#src.api.schema_org_models.SchemaContext.vocab">vocab</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.api.schema_org_models.SpatialCoverage" href="#src.api.schema_org_models.SpatialCoverage">SpatialCoverage</a></code></h4>
+<ul class="">
+<li><code><a title="src.api.schema_org_models.SpatialCoverage.items" href="#src.api.schema_org_models.SpatialCoverage.items">items</a></code></li>
+<li><code><a title="src.api.schema_org_models.SpatialCoverage.model_config" href="#src.api.schema_org_models.SpatialCoverage.model_config">model_config</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

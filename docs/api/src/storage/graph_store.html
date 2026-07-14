@@ -1,0 +1,3330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.storage.graph_store API documentation</title>
+<meta name="description" content="Graph-based storage operations for file organization data …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.storage.graph_store</code></h1>
+</header>
+<section id="section-intro">
+<p>Graph-based storage operations for file organization data.</p>
+<p>Provides high-level operations for managing files, categories, and their
+relationships using a graph-like structure built on SQLAlchemy.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.storage.graph_store.GraphStore"><code class="flex name class">
+<span>class <span class="ident">GraphStore</span></span>
+<span>(</span><span>db_path: str = 'results/file_organization.db')</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class GraphStore:
+    &#34;&#34;&#34;
+    High-level interface for graph-based file storage.
+
+    Provides methods for:
+    - File CRUD operations
+    - Category management with hierarchy
+    - Relationship traversal (graph queries)
+    - Statistics and aggregations
+    &#34;&#34;&#34;
+
+    def __init__(self, db_path: str = &#39;results/file_organization.db&#39;):
+        &#34;&#34;&#34;
+        Initialize the graph store.
+
+        Args:
+            db_path: Path to SQLite database
+        &#34;&#34;&#34;
+        self.db_path = db_path
+        self.engine = create_engine(f&#39;sqlite:///{db_path}&#39;, echo=False)
+
+        # Enable SQLite optimizations
+        @event.listens_for(self.engine, &#34;connect&#34;)
+        def set_sqlite_pragma(dbapi_connection: Any, connection_record: Any) -&gt; None:
+            cursor = dbapi_connection.cursor()
+            cursor.execute(&#34;PRAGMA foreign_keys=ON&#34;)
+            cursor.execute(&#34;PRAGMA journal_mode=WAL&#34;)
+            cursor.execute(&#34;PRAGMA synchronous=NORMAL&#34;)
+            cursor.execute(&#34;PRAGMA cache_size=-64000&#34;)  # 64MB cache
+            cursor.close()
+
+        # Create tables
+        Base.metadata.create_all(self.engine)
+
+        # Session factory
+        self.SessionLocal = sessionmaker(bind=self.engine)
+
+    def get_session(self) -&gt; Session:
+        &#34;&#34;&#34;Get a new database session.&#34;&#34;&#34;
+        return self.SessionLocal()
+
+    # =========================================================================
+    # File Operations
+    # =========================================================================
+
+    def add_file(
+        self,
+        original_path: str,
+        filename: str,
+        session: Session = None,
+        **kwargs
+    ) -&gt; File:
+        &#34;&#34;&#34;
+        Add a new file to the store.
+
+        Args:
+            original_path: Original file path
+            filename: File name
+            session: Optional existing session
+            **kwargs: Additional file properties
+
+        Returns:
+            Created File object
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            file_id = File.generate_id(original_path)
+
+            # Check if file already exists
+            existing = session.query(File).filter(File.id == file_id).first()
+            if existing:
+                # Update existing file
+                for key, value in kwargs.items():
+                    if hasattr(existing, key):
+                        setattr(existing, key, value)
+                session.commit()
+                return existing
+
+            # Create new file with canonical ID
+            file = File(
+                id=file_id,
+                canonical_id=File.generate_canonical_id(original_path),
+                original_path=original_path,
+                filename=filename,
+                file_extension=Path(filename).suffix.lower() if filename else None,
+                **kwargs
+            )
+            session.add(file)
+            session.commit()
+            return file
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
+    def get_file(self, file_id: str = None, path: str = None, session: Session = None) -&gt; Optional[File]:
+        &#34;&#34;&#34;
+        Get a file by ID or path.
+
+        Args:
+            file_id: File ID (hash)
+            path: Original file path
+            session: Optional existing session
+
+        Returns:
+            File object or None
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            if file_id:
+                return session.query(File).filter(File.id == file_id).first()
+            elif path:
+                file_id = File.generate_id(path)
+                return session.query(File).filter(File.id == file_id).first()
+            return None
+        finally:
+            if close_session:
+                session.close()
+
+    def get_files(
+        self,
+        status: FileStatus = None,
+        category: str = None,
+        company: str = None,
+        extension: str = None,
+        limit: int = 100,
+        offset: int = 0,
+        session: Session = None
+    ) -&gt; List[File]:
+        &#34;&#34;&#34;
+        Query files with filters.
+
+        Args:
+            status: Filter by status
+            category: Filter by category name
+            company: Filter by company name
+            extension: Filter by file extension
+            limit: Maximum results
+            offset: Skip first N results
+            session: Optional existing session
+
+        Returns:
+            List of File objects
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            query = session.query(File).options(
+                joinedload(File.categories),
+                joinedload(File.companies)
+            )
+
+            if status:
+                query = query.filter(File.status == status)
+            if extension:
+                query = query.filter(File.file_extension == extension.lower())
+            if category:
+                query = query.join(File.categories).filter(Category.name == category)
+            if company:
+                query = query.join(File.companies).filter(Company.name == company)
+
+            return query.order_by(File.organized_at.desc()).offset(offset).limit(limit).all()
+
+        finally:
+            if close_session:
+                session.close()
+
+    def update_file_status(
+        self,
+        file_id: str,
+        status: FileStatus,
+        destination: str = None,
+        reason: str = None,
+        session: Session = None
+    ) -&gt; bool:
+        &#34;&#34;&#34;
+        Update file organization status.
+
+        Args:
+            file_id: File ID
+            status: New status
+            destination: New file path after organization
+            reason: Reason for status
+            session: Optional existing session
+
+        Returns:
+            True if updated successfully
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            file = session.query(File).filter(File.id == file_id).first()
+            if not file:
+                return False
+
+            file.status = status
+            file.current_path = destination
+            file.organization_reason = reason
+            if status == FileStatus.ORGANIZED:
+                file.organized_at = utcnow()
+
+            session.commit()
+            return True
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
+    # =========================================================================
+    # Category Operations
+    # =========================================================================
+
+    def get_or_create_category(
+        self,
+        name: str,
+        parent_name: str = None,
+        session: Session = None
+    ) -&gt; Optional[Category]:
+        &#34;&#34;&#34;
+        Get or create a category.
+
+        Args:
+            name: Category name
+            parent_name: Parent category name (for hierarchy)
+            session: Optional existing session
+
+        Returns:
+            Category object or None if creation fails
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            # Build full path
+            if parent_name:
+                full_path = f&#34;{parent_name}/{name}&#34;
+            else:
+                full_path = name
+
+            # Check if exists
+            category = session.query(Category).filter(Category.full_path == full_path).first()
+            if category:
+                return category
+
+            # Get parent if specified
+            parent = None
+            level = 0
+            if parent_name:
+                parent = session.query(Category).filter(Category.name == parent_name).first()
+                if parent:
+                    level = parent.level + 1
+
+            # Create new category with canonical ID
+            category = Category(
+                name=name,
+                canonical_id=Category.generate_canonical_id(full_path),
+                parent_id=parent.id if parent else None,
+                level=level,
+                full_path=full_path
+            )
+            session.add(category)
+            # Only commit if we own the session
+            if close_session:
+                session.commit()
+            else:
+                session.flush()  # Ensure ID is generated but don&#39;t commit
+            return category
+
+        except IntegrityError:
+            session.rollback()
+            # Race condition - return existing
+            return session.query(Category).filter(Category.full_path == full_path).first()
+        finally:
+            if close_session:
+                session.close()
+
+    def add_file_to_category(
+        self,
+        file_id: str,
+        category_name: str,
+        subcategory_name: str = None,
+        confidence: float = 1.0,
+        session: Session = None
+    ) -&gt; bool:
+        &#34;&#34;&#34;
+        Associate a file with a category.
+
+        Args:
+            file_id: File ID
+            category_name: Main category
+            subcategory_name: Optional subcategory
+            confidence: Classification confidence
+            session: Optional existing session
+
+        Returns:
+            True if successful
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            file = session.query(File).filter(File.id == file_id).first()
+            if not file:
+                return False
+
+            # Get or create category
+            if subcategory_name:
+                # Create parent first
+                parent = self.get_or_create_category(category_name, session=session)
+                category = self.get_or_create_category(subcategory_name, category_name, session=session)
+            else:
+                category = self.get_or_create_category(category_name, session=session)
+
+            # Guard against None category
+            if category is None:
+                return False
+
+            # Add relationship if not exists
+            if category not in file.categories:
+                file.categories.append(category)
+                category.file_count += 1
+                # Only commit if we own the session
+                if close_session:
+                    session.commit()
+
+            return True
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
+    def get_category_tree(self, session: Session = None) -&gt; List[Dict[str, Any]]:
+        &#34;&#34;&#34;
+        Get the full category hierarchy as a tree.
+
+        Returns:
+            List of root categories with nested subcategories
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            categories = session.query(Category).options(
+                selectinload(Category.subcategories).selectinload(Category.subcategories)
+            ).order_by(Category.level, Category.name).all()
+
+            # Build tree structure
+            tree = []
+            for category in categories:
+                if category.parent_id is None:
+                    tree.append(self._build_category_node(category))
+
+            return tree
+
+        finally:
+            if close_session:
+                session.close()
+
+    def _build_category_node(self, category: Category) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Build a category tree node recursively.&#34;&#34;&#34;
+        node = category.to_dict()
+        node[&#39;subcategories&#39;] = [self._build_category_node(sub) for sub in category.subcategories]
+        return node
+
+    # =========================================================================
+    # Company Operations
+    # =========================================================================
+
+    def get_or_create_company(self, name: str, session: Session = None) -&gt; Optional[Company]:
+        &#34;&#34;&#34;Get or create a company by name.&#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            normalized = Company.normalize_name(name)
+            company = session.query(Company).filter(Company.normalized_name == normalized).first()
+
+            if not company:
+                company = Company(
+                    name=name,
+                    normalized_name=normalized,
+                    canonical_id=Company.generate_canonical_id(name)
+                )
+                session.add(company)
+                # Only commit if we own the session
+                if close_session:
+                    session.commit()
+                else:
+                    session.flush()
+
+            return company
+
+        except IntegrityError:
+            session.rollback()
+            return session.query(Company).filter(Company.normalized_name == normalized).first()
+        finally:
+            if close_session:
+                session.close()
+
+    def add_file_to_company(
+        self,
+        file_id: str,
+        company_name: str,
+        confidence: float = 1.0,
+        context: str = None,
+        session: Session = None
+    ) -&gt; bool:
+        &#34;&#34;&#34;Associate a file with a company.&#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            file = session.query(File).filter(File.id == file_id).first()
+            if not file:
+                return False
+
+            company = self.get_or_create_company(company_name, session=session)
+
+            # Guard against None company
+            if company is None:
+                return False
+
+            if company not in file.companies:
+                file.companies.append(company)
+                company.file_count += 1
+                company.last_seen = utcnow()
+                # Only commit if we own the session
+                if close_session:
+                    session.commit()
+
+            return True
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
+    # =========================================================================
+    # Person Operations
+    # =========================================================================
+
+    def get_or_create_person(
+        self,
+        name: str,
+        email: str = None,
+        role: str = None,
+        session: Session = None
+    ) -&gt; Optional[Person]:
+        &#34;&#34;&#34;Get or create a person by name.&#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            normalized = Person.normalize_name(name)
+            person = session.query(Person).filter(Person.normalized_name == normalized).first()
+
+            if not person:
+                person = Person(
+                    name=name,
+                    normalized_name=normalized,
+                    canonical_id=Person.generate_canonical_id(name),
+                    email=email,
+                    role=role
+                )
+                session.add(person)
+                if close_session:
+                    session.commit()
+                else:
+                    session.flush()
+
+            return person
+
+        except IntegrityError:
+            session.rollback()
+            return session.query(Person).filter(Person.normalized_name == normalized).first()
+        finally:
+            if close_session:
+                session.close()
+
+    def add_file_to_person(
+        self,
+        file_id: str,
+        person_name: str,
+        role: str = None,
+        confidence: float = 1.0,
+        session: Session = None
+    ) -&gt; bool:
+        &#34;&#34;&#34;Associate a file with a person.&#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            file = session.query(File).filter(File.id == file_id).first()
+            if not file:
+                return False
+
+            person = self.get_or_create_person(person_name, role=role, session=session)
+
+            if person is None:
+                return False
+
+            if person not in file.people:
+                file.people.append(person)
+                person.file_count += 1
+                person.last_seen = utcnow()
+                if close_session:
+                    session.commit()
+
+            return True
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
+    def get_all_people_with_files(
+        self,
+        session: Session = None,
+        min_files: int = 1
+    ) -&gt; List[Tuple[str, List[str]]]:
+        &#34;&#34;&#34;
+        Get all people who have at least `min_files` organized files.
+
+        Filters out obvious non-person false positives (organization or
+        meeting names accidentally detected as people) using
+        `_PERSON_NAME_DENYLIST`, and excludes files that haven&#39;t been
+        organized yet (current_path is None).
+
+        Args:
+            session: Optional existing session
+            min_files: Minimum number of valid (organized) files a person
+                must have to be included in the results
+
+        Returns:
+            List of (display_name, [file.current_path, ...]) tuples
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            results = []
+            people = session.query(Person).options(selectinload(Person.files)).all()
+
+            for person in people:
+                name_lower = person.name.lower()
+                if any(term in name_lower for term in _PERSON_NAME_DENYLIST):
+                    continue
+
+                paths = [f.current_path for f in person.files if f.current_path]
+
+                if len(paths) &gt;= min_files:
+                    results.append((person.name, paths))
+
+            return results
+        finally:
+            if close_session:
+                session.close()
+
+    def get_files_by_person(
+        self,
+        person_id_or_name,
+        session: Session = None
+    ) -&gt; List[str]:
+        &#34;&#34;&#34;
+        Get the current file paths associated with a single person.
+
+        Args:
+            person_id_or_name: Person primary key (int), or name (str,
+                matched via Person.normalize_name, same lookup style as
+                get_or_create_person)
+            session: Optional existing session
+
+        Returns:
+            List of file.current_path values (None paths excluded); empty
+            list if the person isn&#39;t found
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            if isinstance(person_id_or_name, int):
+                person = session.query(Person).filter(Person.id == person_id_or_name).first()
+            else:
+                normalized = Person.normalize_name(person_id_or_name)
+                person = session.query(Person).filter(
+                    Person.normalized_name == normalized
+                ).first()
+
+            if not person:
+                return []
+
+            return [f.current_path for f in person.files if f.current_path]
+        finally:
+            if close_session:
+                session.close()
+
+    def _find_person(self, person_id_or_name, session: Session) -&gt; Optional[Person]:
+        &#34;&#34;&#34;Look up a person by primary key (int) or name (str, normalized).&#34;&#34;&#34;
+        if isinstance(person_id_or_name, int):
+            return session.query(Person).filter(Person.id == person_id_or_name).first()
+        normalized = Person.normalize_name(person_id_or_name)
+        return session.query(Person).filter(Person.normalized_name == normalized).first()
+
+    def remove_person_edge(
+        self,
+        file_id: str,
+        person_id_or_name,
+        session: Session = None
+    ) -&gt; bool:
+        &#34;&#34;&#34;
+        Remove a single file-&gt;person edge, keeping both rows.
+
+        Args:
+            file_id: File primary key (SHA-256 hex)
+            person_id_or_name: Person primary key (int), or name (str,
+                matched via Person.normalize_name)
+            session: Optional existing session
+
+        Returns:
+            True if an edge existed and was removed, False otherwise
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            file = session.query(File).filter(File.id == file_id).first()
+            person = self._find_person(person_id_or_name, session)
+            if not file or not person or person not in file.people:
+                return False
+
+            file.people.remove(person)
+            person.file_count = max((person.file_count or 0) - 1, 0)
+            if close_session:
+                session.commit()
+            return True
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
+    def prune_person(
+        self,
+        person_id_or_name,
+        dry_run: bool = False,
+        session: Session = None
+    ) -&gt; Optional[Dict[str, Any]]:
+        &#34;&#34;&#34;
+        Delete a person and all of its file-&gt;person edges.
+
+        Intended for false-positive &#34;people&#34; (org/event names misdetected as
+        people) and stale entries. Files are never touched on disk. Any other
+        person merged into this one has its merge pointer cleared.
+
+        Args:
+            person_id_or_name: Person primary key (int), or name (str,
+                matched via Person.normalize_name)
+            dry_run: When True, report what would be removed without changes
+            session: Optional existing session
+
+        Returns:
+            Summary dict with name/person_id/edges_removed/paths, or None if
+            the person isn&#39;t found
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            person = self._find_person(person_id_or_name, session)
+            if not person:
+                return None
+
+            summary = {
+                &#39;name&#39;: person.name,
+                &#39;person_id&#39;: person.id,
+                &#39;edges_removed&#39;: len(person.files),
+                &#39;paths&#39;: [f.current_path or f.original_path for f in person.files],
+            }
+            if dry_run:
+                return summary
+
+            person.files.clear()
+            session.query(Person).filter(
+                Person.merged_into_id == person.id
+            ).update({Person.merged_into_id: None})
+            session.delete(person)
+            if close_session:
+                session.commit()
+            return summary
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
+    def prune_missing_person_edges(
+        self,
+        dry_run: bool = False,
+        session: Session = None
+    ) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Drop file-&gt;person edges whose file no longer exists on disk.
+
+        A file&#39;s presence is checked at its current_path (falling back to
+        original_path when it was never organized). File and Person rows are
+        kept — only the edges are removed; use prune_person to delete a
+        person outright.
+
+        Args:
+            dry_run: When True, report what would be removed without changes
+            session: Optional existing session
+
+        Returns:
+            {&#39;edges_removed&#39;: N,
+             &#39;edges&#39;: [{&#39;person&#39;: name, &#39;file_id&#39;: id, &#39;path&#39;: path}, ...]}
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            removed: List[Dict[str, Any]] = []
+            people = session.query(Person).options(selectinload(Person.files)).all()
+
+            for person in people:
+                for file in list(person.files):
+                    path = file.current_path or file.original_path
+                    if not path or Path(path).exists():
+                        continue
+                    removed.append({
+                        &#39;person&#39;: person.name,
+                        &#39;file_id&#39;: file.id,
+                        &#39;path&#39;: path,
+                    })
+                    if not dry_run:
+                        person.files.remove(file)
+                        person.file_count = max((person.file_count or 0) - 1, 0)
+
+            if not dry_run and close_session:
+                session.commit()
+            return {&#39;edges_removed&#39;: len(removed), &#39;edges&#39;: removed}
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
+    # =========================================================================
+    # Location Operations
+    # =========================================================================
+
+    def get_or_create_location(
+        self,
+        name: str,
+        latitude: float = None,
+        longitude: float = None,
+        city: str = None,
+        state: str = None,
+        country: str = None,
+        session: Session = None
+    ) -&gt; Optional[Location]:
+        &#34;&#34;&#34;Get or create a location.&#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            # Try to find by coordinates first
+            if latitude and longitude:
+                location = session.query(Location).filter(
+                    and_(
+                        func.abs(Location.latitude - latitude) &lt; COORDINATE_TOLERANCE_DEG,
+                        func.abs(Location.longitude - longitude) &lt; COORDINATE_TOLERANCE_DEG
+                    )
+                ).first()
+                if location:
+                    return location
+
+            # Try to find by name
+            location = session.query(Location).filter(Location.name == name).first()
+            if location:
+                return location
+
+            # Create new location with canonical ID
+            location = Location(
+                name=name,
+                canonical_id=Location.generate_canonical_id(name),
+                latitude=latitude,
+                longitude=longitude,
+                city=city,
+                state=state,
+                country=country
+            )
+            session.add(location)
+            # Only commit if we own the session
+            if close_session:
+                session.commit()
+            else:
+                session.flush()  # Ensure ID is generated but don&#39;t commit
+            return location
+
+        except IntegrityError:
+            session.rollback()
+            return session.query(Location).filter(Location.name == name).first()
+        finally:
+            if close_session:
+                session.close()
+
+    def add_file_to_location(
+        self,
+        file_id: str,
+        location_name: str,
+        location_type: str = None,
+        latitude: float = None,
+        longitude: float = None,
+        city: str = None,
+        state: str = None,
+        country: str = None,
+        confidence: float = 1.0,
+        session: Session = None
+    ) -&gt; bool:
+        &#34;&#34;&#34;Associate a file with a location.&#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            file = session.query(File).filter(File.id == file_id).first()
+            if not file:
+                return False
+
+            location = self.get_or_create_location(
+                name=location_name,
+                latitude=latitude,
+                longitude=longitude,
+                city=city,
+                state=state,
+                country=country,
+                session=session
+            )
+
+            if location is None:
+                return False
+
+            if location not in file.locations:
+                file.locations.append(location)
+                location.file_count += 1
+                if close_session:
+                    session.commit()
+
+            return True
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
+    # =========================================================================
+    # Relationship Operations (Graph Edges)
+    # =========================================================================
+
+    def add_relationship(
+        self,
+        source_file_id: str,
+        target_file_id: str,
+        relationship_type: RelationshipType,
+        confidence: float = 1.0,
+        extra_data: Dict = None,
+        session: Session = None
+    ) -&gt; FileRelationship:
+        &#34;&#34;&#34;
+        Add a relationship between two files.
+
+        Args:
+            source_file_id: Source file ID
+            target_file_id: Target file ID
+            relationship_type: Type of relationship
+            confidence: Relationship confidence
+            extra_data: Additional relationship-specific data (JSON). On an
+                existing relationship, only overwritten when provided.
+
+        Returns:
+            Created relationship
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            # Check if relationship already exists
+            existing = session.query(FileRelationship).filter(
+                and_(
+                    FileRelationship.source_file_id == source_file_id,
+                    FileRelationship.target_file_id == target_file_id,
+                    FileRelationship.relationship_type == relationship_type
+                )
+            ).first()
+
+            if existing:
+                existing.confidence = confidence
+                if extra_data is not None:
+                    existing.extra_data = extra_data
+                session.commit()
+                return existing
+
+            relationship = FileRelationship(
+                source_file_id=source_file_id,
+                target_file_id=target_file_id,
+                relationship_type=relationship_type,
+                confidence=confidence,
+                extra_data=extra_data
+            )
+            session.add(relationship)
+            session.commit()
+            return relationship
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
+    def find_related_files(
+        self,
+        file_id: str,
+        relationship_type: RelationshipType = None,
+        depth: int = 1,
+        session: Session = None
+    ) -&gt; List[Tuple[File, RelationshipType, float]]:
+        &#34;&#34;&#34;
+        Find files related to a given file (graph traversal).
+
+        Args:
+            file_id: Starting file ID
+            relationship_type: Filter by relationship type
+            depth: How many hops to traverse (1 = direct relationships only)
+            session: Optional existing session
+
+        Returns:
+            List of (file, relationship_type, confidence) tuples
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            results = []
+            visited = {file_id}
+
+            # BFS traversal
+            current_level = [file_id]
+
+            for _ in range(depth):
+                next_level = []
+                pending: list[tuple[int, str, float]] = []
+
+                for current_id in current_level:
+                    # Get outgoing relationships
+                    query = session.query(FileRelationship).filter(
+                        FileRelationship.source_file_id == current_id
+                    )
+                    if relationship_type:
+                        query = query.filter(FileRelationship.relationship_type == relationship_type)
+
+                    for rel in query.all():
+                        if rel.target_file_id not in visited:
+                            visited.add(rel.target_file_id)
+                            next_level.append(rel.target_file_id)
+                            pending.append((rel.target_file_id, rel.relationship_type, rel.confidence))
+
+                    # Get incoming relationships
+                    query = session.query(FileRelationship).filter(
+                        FileRelationship.target_file_id == current_id
+                    )
+                    if relationship_type:
+                        query = query.filter(FileRelationship.relationship_type == relationship_type)
+
+                    for rel in query.all():
+                        if rel.source_file_id not in visited:
+                            visited.add(rel.source_file_id)
+                            next_level.append(rel.source_file_id)
+                            pending.append((rel.source_file_id, rel.relationship_type, rel.confidence))
+
+                if pending:
+                    pending_ids = [fid for fid, _, _ in pending]
+                    file_map = {
+                        f.id: f
+                        for f in session.query(File).filter(File.id.in_(pending_ids)).all()
+                    }
+                    for fid, rel_type, confidence in pending:
+                        file = file_map.get(fid)
+                        if file:
+                            results.append((file, rel_type, confidence))
+
+                current_level = next_level
+
+            return results
+
+        finally:
+            if close_session:
+                session.close()
+
+    def find_duplicates(self, content_hash: str = None, session: Session = None) -&gt; List[List[File]]:
+        &#34;&#34;&#34;
+        Find groups of duplicate files by content hash.
+
+        Args:
+            content_hash: Specific hash to look for (or all if None)
+            session: Optional existing session
+
+        Returns:
+            List of file groups (files with same content)
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            if content_hash:
+                files = session.query(File).filter(File.content_hash == content_hash).all()
+                return [files] if len(files) &gt; 1 else []
+
+            # Find all hashes with more than one file
+            duplicates = session.query(File.content_hash, func.count(File.id).label(&#39;count&#39;))\
+                .filter(File.content_hash.isnot(None))\
+                .group_by(File.content_hash)\
+                .having(func.count(File.id) &gt; 1)\
+                .all()
+
+            duplicate_hashes = [h for h, _ in duplicates]
+            all_files = session.query(File).filter(File.content_hash.in_(duplicate_hashes)).all()
+            groups: defaultdict = defaultdict(list)
+            for f in all_files:
+                groups[f.content_hash].append(f)
+
+            return list(groups.values())
+
+        finally:
+            if close_session:
+                session.close()
+
+    # =========================================================================
+    # Session Operations
+    # =========================================================================
+
+    def create_session(
+        self,
+        source_directories: List[str],
+        base_path: str,
+        dry_run: bool = False,
+        file_limit: int = None,
+        session: Session = None
+    ) -&gt; OrganizationSession:
+        &#34;&#34;&#34;
+        Create a new organization session.
+
+        Args:
+            source_directories: List of source paths
+            base_path: Base path for organization
+            dry_run: Whether this is a dry run
+            file_limit: Optional file limit
+            session: Optional existing session
+
+        Returns:
+            Created OrganizationSession
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            org_session = OrganizationSession(
+                id=str(uuid.uuid4()),
+                source_directories=source_directories,
+                base_path=base_path,
+                dry_run=dry_run,
+                file_limit=file_limit
+            )
+            session.add(org_session)
+            session.commit()
+            return org_session
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
+    def complete_session(
+        self,
+        session_id: str,
+        stats: Dict[str, int],
+        db_session: Session = None
+    ) -&gt; bool:
+        &#34;&#34;&#34;
+        Mark a session as completed with statistics.
+
+        Args:
+            session_id: Session ID
+            stats: Dictionary with total_files, organized_count, etc.
+            db_session: Optional existing session
+
+        Returns:
+            True if successful
+        &#34;&#34;&#34;
+        close_session = db_session is None
+        db_session = db_session or self.get_session()
+
+        try:
+            org_session = db_session.query(OrganizationSession)\
+                .filter(OrganizationSession.id == session_id).first()
+
+            if not org_session:
+                return False
+
+            org_session.completed_at = utcnow()
+            org_session.total_files = stats.get(&#39;total_files&#39;, 0)
+            org_session.organized_count = stats.get(&#39;organized&#39;, 0)
+            org_session.skipped_count = stats.get(&#39;skipped&#39;, 0)
+            org_session.error_count = stats.get(&#39;errors&#39;, 0)
+            org_session.total_cost = stats.get(&#39;total_cost&#39;, 0.0)
+            org_session.total_processing_time_sec = stats.get(&#39;processing_time&#39;, 0.0)
+
+            db_session.commit()
+            return True
+
+        except Exception as e:
+            db_session.rollback()
+            raise e
+        finally:
+            if close_session:
+                db_session.close()
+
+    # =========================================================================
+    # Statistics and Aggregations
+    # =========================================================================
+
+    def get_statistics(self, session: Session = None) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Get overall statistics.
+
+        Returns:
+            Dictionary with counts and aggregations
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            stats = {
+                &#39;total_files&#39;: session.query(func.count(File.id)).scalar(),
+                &#39;organized_files&#39;: session.query(func.count(File.id))\
+                    .filter(File.status == FileStatus.ORGANIZED).scalar(),
+                &#39;total_categories&#39;: session.query(func.count(Category.id)).scalar(),
+                &#39;total_companies&#39;: session.query(func.count(Company.id)).scalar(),
+                &#39;total_locations&#39;: session.query(func.count(Location.id)).scalar(),
+                &#39;total_relationships&#39;: session.query(func.count(FileRelationship.id)).scalar(),
+                &#39;total_sessions&#39;: session.query(func.count(OrganizationSession.id)).scalar(),
+            }
+
+            # Category breakdown
+            category_counts = session.query(
+                Category.name,
+                func.count(file_categories.c.file_id)
+            ).join(file_categories).group_by(Category.name).all()
+
+            stats[&#39;categories&#39;] = {name: count for name, count in category_counts}
+
+            # Extension breakdown
+            extension_counts = session.query(
+                File.file_extension,
+                func.count(File.id)
+            ).group_by(File.file_extension).order_by(func.count(File.id).desc()).limit(TOP_EXTENSIONS_LIMIT).all()
+
+            stats[&#39;extensions&#39;] = {ext or &#39;none&#39;: count for ext, count in extension_counts}
+
+            return stats
+
+        finally:
+            if close_session:
+                session.close()
+
+    def get_cost_statistics(
+        self,
+        session_id: str = None,
+        feature_name: str = None,
+        start_date: datetime = None,
+        end_date: datetime = None,
+        session: Session = None
+    ) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Get cost statistics with optional filters.
+
+        Args:
+            session_id: Filter by session
+            feature_name: Filter by feature
+            start_date: Start of date range
+            end_date: End of date range
+            session: Optional existing session
+
+        Returns:
+            Cost statistics dictionary
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            query = session.query(CostRecord)
+
+            if session_id:
+                query = query.filter(CostRecord.session_id == session_id)
+            if feature_name:
+                query = query.filter(CostRecord.feature_name == feature_name)
+            if start_date:
+                query = query.filter(CostRecord.created_at &gt;= start_date)
+            if end_date:
+                query = query.filter(CostRecord.created_at &lt;= end_date)
+
+            records = query.all()
+
+            # Aggregate by feature
+            feature_stats = defaultdict(lambda: {
+                &#39;invocations&#39;: 0,
+                &#39;total_cost&#39;: 0.0,
+                &#39;total_time&#39;: 0.0,
+                &#39;success_count&#39;: 0,
+                &#39;error_count&#39;: 0
+            })
+
+            for record in records:
+                stats = feature_stats[record.feature_name]
+                stats[&#39;invocations&#39;] += 1
+                stats[&#39;total_cost&#39;] += record.cost
+                stats[&#39;total_time&#39;] += record.processing_time_sec
+                if record.success:
+                    stats[&#39;success_count&#39;] += 1
+                else:
+                    stats[&#39;error_count&#39;] += 1
+
+            return {
+                &#39;total_records&#39;: len(records),
+                &#39;total_cost&#39;: sum(r.cost for r in records),
+                &#39;total_time&#39;: sum(r.processing_time_sec for r in records),
+                &#39;by_feature&#39;: dict(feature_stats)
+            }
+
+        finally:
+            if close_session:
+                session.close()
+
+    # =========================================================================
+    # Search Operations
+    # =========================================================================
+
+    def search_files(
+        self,
+        query: str,
+        search_content: bool = True,
+        search_filename: bool = True,
+        limit: int = DEFAULT_SEARCH_LIMIT,
+        session: Session = None
+    ) -&gt; List[File]:
+        &#34;&#34;&#34;
+        Search files by text content or filename.
+
+        Args:
+            query: Search query
+            search_content: Search in extracted text
+            search_filename: Search in filename
+            limit: Maximum results
+            session: Optional existing session
+
+        Returns:
+            List of matching files
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            filters = []
+
+            if search_filename:
+                filters.append(File.filename.ilike(f&#39;%{query}%&#39;))
+            if search_content:
+                filters.append(File.extracted_text.ilike(f&#39;%{query}%&#39;))
+
+            if not filters:
+                return []
+
+            return session.query(File)\
+                .filter(or_(*filters))\
+                .limit(limit)\
+                .all()
+
+        finally:
+            if close_session:
+                session.close()
+
+    def search_by_location(
+        self,
+        latitude: float,
+        longitude: float,
+        radius_km: float = 10,
+        limit: int = DEFAULT_SEARCH_LIMIT,
+        session: Session = None
+    ) -&gt; List[File]:
+        &#34;&#34;&#34;
+        Find files near a geographic location.
+
+        Uses a simple bounding box approximation for SQLite compatibility.
+
+        Args:
+            latitude: Center latitude
+            longitude: Center longitude
+            radius_km: Search radius in kilometers
+            limit: Maximum results
+            session: Optional existing session
+
+        Returns:
+            List of files with GPS data near the location
+        &#34;&#34;&#34;
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            # Approximate degrees per km. Longitude degrees shrink by
+            # cos(latitude); clamp the scale near the poles where cos
+            # approaches zero and the bounding box would blow up.
+            lat_delta = radius_km / KM_PER_DEGREE_LATITUDE
+            lon_scale = max(math.cos(math.radians(latitude)), 0.01)
+            lon_delta = radius_km / (KM_PER_DEGREE_LATITUDE * lon_scale)
+
+            return session.query(File)\
+                .filter(
+                    and_(
+                        File.gps_latitude.isnot(None),
+                        File.gps_latitude.between(latitude - lat_delta, latitude + lat_delta),
+                        File.gps_longitude.between(longitude - lon_delta, longitude + lon_delta)
+                    )
+                )\
+                .limit(limit)\
+                .all()
+
+        finally:
+            if close_session:
+                session.close()</code></pre>
+</details>
+<div class="desc"><p>High-level interface for graph-based file storage.</p>
+<p>Provides methods for:
+- File CRUD operations
+- Category management with hierarchy
+- Relationship traversal (graph queries)
+- Statistics and aggregations</p>
+<p>Initialize the graph store.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>db_path</code></strong></dt>
+<dd>Path to SQLite database</dd>
+</dl></div>
+<h3>Methods</h3>
+<dl>
+<dt id="src.storage.graph_store.GraphStore.add_file"><code class="name flex">
+<span>def <span class="ident">add_file</span></span>(<span>self,<br>original_path: str,<br>filename: str,<br>session: sqlalchemy.orm.session.Session = None,<br>**kwargs) ‑> <a title="src.storage.models.File" href="models.html#src.storage.models.File">File</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_file(
+    self,
+    original_path: str,
+    filename: str,
+    session: Session = None,
+    **kwargs
+) -&gt; File:
+    &#34;&#34;&#34;
+    Add a new file to the store.
+
+    Args:
+        original_path: Original file path
+        filename: File name
+        session: Optional existing session
+        **kwargs: Additional file properties
+
+    Returns:
+        Created File object
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        file_id = File.generate_id(original_path)
+
+        # Check if file already exists
+        existing = session.query(File).filter(File.id == file_id).first()
+        if existing:
+            # Update existing file
+            for key, value in kwargs.items():
+                if hasattr(existing, key):
+                    setattr(existing, key, value)
+            session.commit()
+            return existing
+
+        # Create new file with canonical ID
+        file = File(
+            id=file_id,
+            canonical_id=File.generate_canonical_id(original_path),
+            original_path=original_path,
+            filename=filename,
+            file_extension=Path(filename).suffix.lower() if filename else None,
+            **kwargs
+        )
+        session.add(file)
+        session.commit()
+        return file
+
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Add a new file to the store.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>original_path</code></strong></dt>
+<dd>Original file path</dd>
+<dt><strong><code>filename</code></strong></dt>
+<dd>File name</dd>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+<dt><strong><code>**kwargs</code></strong></dt>
+<dd>Additional file properties</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Created File object</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.add_file_to_category"><code class="name flex">
+<span>def <span class="ident">add_file_to_category</span></span>(<span>self,<br>file_id: str,<br>category_name: str,<br>subcategory_name: str = None,<br>confidence: float = 1.0,<br>session: sqlalchemy.orm.session.Session = None) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_file_to_category(
+    self,
+    file_id: str,
+    category_name: str,
+    subcategory_name: str = None,
+    confidence: float = 1.0,
+    session: Session = None
+) -&gt; bool:
+    &#34;&#34;&#34;
+    Associate a file with a category.
+
+    Args:
+        file_id: File ID
+        category_name: Main category
+        subcategory_name: Optional subcategory
+        confidence: Classification confidence
+        session: Optional existing session
+
+    Returns:
+        True if successful
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        file = session.query(File).filter(File.id == file_id).first()
+        if not file:
+            return False
+
+        # Get or create category
+        if subcategory_name:
+            # Create parent first
+            parent = self.get_or_create_category(category_name, session=session)
+            category = self.get_or_create_category(subcategory_name, category_name, session=session)
+        else:
+            category = self.get_or_create_category(category_name, session=session)
+
+        # Guard against None category
+        if category is None:
+            return False
+
+        # Add relationship if not exists
+        if category not in file.categories:
+            file.categories.append(category)
+            category.file_count += 1
+            # Only commit if we own the session
+            if close_session:
+                session.commit()
+
+        return True
+
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Associate a file with a category.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_id</code></strong></dt>
+<dd>File ID</dd>
+<dt><strong><code>category_name</code></strong></dt>
+<dd>Main category</dd>
+<dt><strong><code>subcategory_name</code></strong></dt>
+<dd>Optional subcategory</dd>
+<dt><strong><code>confidence</code></strong></dt>
+<dd>Classification confidence</dd>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>True if successful</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.add_file_to_company"><code class="name flex">
+<span>def <span class="ident">add_file_to_company</span></span>(<span>self,<br>file_id: str,<br>company_name: str,<br>confidence: float = 1.0,<br>context: str = None,<br>session: sqlalchemy.orm.session.Session = None) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_file_to_company(
+    self,
+    file_id: str,
+    company_name: str,
+    confidence: float = 1.0,
+    context: str = None,
+    session: Session = None
+) -&gt; bool:
+    &#34;&#34;&#34;Associate a file with a company.&#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        file = session.query(File).filter(File.id == file_id).first()
+        if not file:
+            return False
+
+        company = self.get_or_create_company(company_name, session=session)
+
+        # Guard against None company
+        if company is None:
+            return False
+
+        if company not in file.companies:
+            file.companies.append(company)
+            company.file_count += 1
+            company.last_seen = utcnow()
+            # Only commit if we own the session
+            if close_session:
+                session.commit()
+
+        return True
+
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Associate a file with a company.</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.add_file_to_location"><code class="name flex">
+<span>def <span class="ident">add_file_to_location</span></span>(<span>self,<br>file_id: str,<br>location_name: str,<br>location_type: str = None,<br>latitude: float = None,<br>longitude: float = None,<br>city: str = None,<br>state: str = None,<br>country: str = None,<br>confidence: float = 1.0,<br>session: sqlalchemy.orm.session.Session = None) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_file_to_location(
+    self,
+    file_id: str,
+    location_name: str,
+    location_type: str = None,
+    latitude: float = None,
+    longitude: float = None,
+    city: str = None,
+    state: str = None,
+    country: str = None,
+    confidence: float = 1.0,
+    session: Session = None
+) -&gt; bool:
+    &#34;&#34;&#34;Associate a file with a location.&#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        file = session.query(File).filter(File.id == file_id).first()
+        if not file:
+            return False
+
+        location = self.get_or_create_location(
+            name=location_name,
+            latitude=latitude,
+            longitude=longitude,
+            city=city,
+            state=state,
+            country=country,
+            session=session
+        )
+
+        if location is None:
+            return False
+
+        if location not in file.locations:
+            file.locations.append(location)
+            location.file_count += 1
+            if close_session:
+                session.commit()
+
+        return True
+
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Associate a file with a location.</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.add_file_to_person"><code class="name flex">
+<span>def <span class="ident">add_file_to_person</span></span>(<span>self,<br>file_id: str,<br>person_name: str,<br>role: str = None,<br>confidence: float = 1.0,<br>session: sqlalchemy.orm.session.Session = None) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_file_to_person(
+    self,
+    file_id: str,
+    person_name: str,
+    role: str = None,
+    confidence: float = 1.0,
+    session: Session = None
+) -&gt; bool:
+    &#34;&#34;&#34;Associate a file with a person.&#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        file = session.query(File).filter(File.id == file_id).first()
+        if not file:
+            return False
+
+        person = self.get_or_create_person(person_name, role=role, session=session)
+
+        if person is None:
+            return False
+
+        if person not in file.people:
+            file.people.append(person)
+            person.file_count += 1
+            person.last_seen = utcnow()
+            if close_session:
+                session.commit()
+
+        return True
+
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Associate a file with a person.</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.add_relationship"><code class="name flex">
+<span>def <span class="ident">add_relationship</span></span>(<span>self,<br>source_file_id: str,<br>target_file_id: str,<br>relationship_type: <a title="src.storage.models.RelationshipType" href="models.html#src.storage.models.RelationshipType">RelationshipType</a>,<br>confidence: float = 1.0,<br>extra_data: Dict = None,<br>session: sqlalchemy.orm.session.Session = None) ‑> <a title="src.storage.models.FileRelationship" href="models.html#src.storage.models.FileRelationship">FileRelationship</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_relationship(
+    self,
+    source_file_id: str,
+    target_file_id: str,
+    relationship_type: RelationshipType,
+    confidence: float = 1.0,
+    extra_data: Dict = None,
+    session: Session = None
+) -&gt; FileRelationship:
+    &#34;&#34;&#34;
+    Add a relationship between two files.
+
+    Args:
+        source_file_id: Source file ID
+        target_file_id: Target file ID
+        relationship_type: Type of relationship
+        confidence: Relationship confidence
+        extra_data: Additional relationship-specific data (JSON). On an
+            existing relationship, only overwritten when provided.
+
+    Returns:
+        Created relationship
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        # Check if relationship already exists
+        existing = session.query(FileRelationship).filter(
+            and_(
+                FileRelationship.source_file_id == source_file_id,
+                FileRelationship.target_file_id == target_file_id,
+                FileRelationship.relationship_type == relationship_type
+            )
+        ).first()
+
+        if existing:
+            existing.confidence = confidence
+            if extra_data is not None:
+                existing.extra_data = extra_data
+            session.commit()
+            return existing
+
+        relationship = FileRelationship(
+            source_file_id=source_file_id,
+            target_file_id=target_file_id,
+            relationship_type=relationship_type,
+            confidence=confidence,
+            extra_data=extra_data
+        )
+        session.add(relationship)
+        session.commit()
+        return relationship
+
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Add a relationship between two files.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source_file_id</code></strong></dt>
+<dd>Source file ID</dd>
+<dt><strong><code>target_file_id</code></strong></dt>
+<dd>Target file ID</dd>
+<dt><strong><code>relationship_type</code></strong></dt>
+<dd>Type of relationship</dd>
+<dt><strong><code>confidence</code></strong></dt>
+<dd>Relationship confidence</dd>
+<dt><strong><code>extra_data</code></strong></dt>
+<dd>Additional relationship-specific data (JSON). On an
+existing relationship, only overwritten when provided.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Created relationship</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.complete_session"><code class="name flex">
+<span>def <span class="ident">complete_session</span></span>(<span>self,<br>session_id: str,<br>stats: Dict[str, int],<br>db_session: sqlalchemy.orm.session.Session = None) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def complete_session(
+    self,
+    session_id: str,
+    stats: Dict[str, int],
+    db_session: Session = None
+) -&gt; bool:
+    &#34;&#34;&#34;
+    Mark a session as completed with statistics.
+
+    Args:
+        session_id: Session ID
+        stats: Dictionary with total_files, organized_count, etc.
+        db_session: Optional existing session
+
+    Returns:
+        True if successful
+    &#34;&#34;&#34;
+    close_session = db_session is None
+    db_session = db_session or self.get_session()
+
+    try:
+        org_session = db_session.query(OrganizationSession)\
+            .filter(OrganizationSession.id == session_id).first()
+
+        if not org_session:
+            return False
+
+        org_session.completed_at = utcnow()
+        org_session.total_files = stats.get(&#39;total_files&#39;, 0)
+        org_session.organized_count = stats.get(&#39;organized&#39;, 0)
+        org_session.skipped_count = stats.get(&#39;skipped&#39;, 0)
+        org_session.error_count = stats.get(&#39;errors&#39;, 0)
+        org_session.total_cost = stats.get(&#39;total_cost&#39;, 0.0)
+        org_session.total_processing_time_sec = stats.get(&#39;processing_time&#39;, 0.0)
+
+        db_session.commit()
+        return True
+
+    except Exception as e:
+        db_session.rollback()
+        raise e
+    finally:
+        if close_session:
+            db_session.close()</code></pre>
+</details>
+<div class="desc"><p>Mark a session as completed with statistics.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>session_id</code></strong></dt>
+<dd>Session ID</dd>
+<dt><strong><code>stats</code></strong></dt>
+<dd>Dictionary with total_files, organized_count, etc.</dd>
+<dt><strong><code>db_session</code></strong></dt>
+<dd>Optional existing session</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>True if successful</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.create_session"><code class="name flex">
+<span>def <span class="ident">create_session</span></span>(<span>self,<br>source_directories: List[str],<br>base_path: str,<br>dry_run: bool = False,<br>file_limit: int = None,<br>session: sqlalchemy.orm.session.Session = None) ‑> <a title="src.storage.models.OrganizationSession" href="models.html#src.storage.models.OrganizationSession">OrganizationSession</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def create_session(
+    self,
+    source_directories: List[str],
+    base_path: str,
+    dry_run: bool = False,
+    file_limit: int = None,
+    session: Session = None
+) -&gt; OrganizationSession:
+    &#34;&#34;&#34;
+    Create a new organization session.
+
+    Args:
+        source_directories: List of source paths
+        base_path: Base path for organization
+        dry_run: Whether this is a dry run
+        file_limit: Optional file limit
+        session: Optional existing session
+
+    Returns:
+        Created OrganizationSession
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        org_session = OrganizationSession(
+            id=str(uuid.uuid4()),
+            source_directories=source_directories,
+            base_path=base_path,
+            dry_run=dry_run,
+            file_limit=file_limit
+        )
+        session.add(org_session)
+        session.commit()
+        return org_session
+
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Create a new organization session.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source_directories</code></strong></dt>
+<dd>List of source paths</dd>
+<dt><strong><code>base_path</code></strong></dt>
+<dd>Base path for organization</dd>
+<dt><strong><code>dry_run</code></strong></dt>
+<dd>Whether this is a dry run</dd>
+<dt><strong><code>file_limit</code></strong></dt>
+<dd>Optional file limit</dd>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Created OrganizationSession</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.find_duplicates"><code class="name flex">
+<span>def <span class="ident">find_duplicates</span></span>(<span>self, content_hash: str = None, session: sqlalchemy.orm.session.Session = None) ‑> List[List[<a title="src.storage.models.File" href="models.html#src.storage.models.File">File</a>]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find_duplicates(self, content_hash: str = None, session: Session = None) -&gt; List[List[File]]:
+    &#34;&#34;&#34;
+    Find groups of duplicate files by content hash.
+
+    Args:
+        content_hash: Specific hash to look for (or all if None)
+        session: Optional existing session
+
+    Returns:
+        List of file groups (files with same content)
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        if content_hash:
+            files = session.query(File).filter(File.content_hash == content_hash).all()
+            return [files] if len(files) &gt; 1 else []
+
+        # Find all hashes with more than one file
+        duplicates = session.query(File.content_hash, func.count(File.id).label(&#39;count&#39;))\
+            .filter(File.content_hash.isnot(None))\
+            .group_by(File.content_hash)\
+            .having(func.count(File.id) &gt; 1)\
+            .all()
+
+        duplicate_hashes = [h for h, _ in duplicates]
+        all_files = session.query(File).filter(File.content_hash.in_(duplicate_hashes)).all()
+        groups: defaultdict = defaultdict(list)
+        for f in all_files:
+            groups[f.content_hash].append(f)
+
+        return list(groups.values())
+
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Find groups of duplicate files by content hash.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>content_hash</code></strong></dt>
+<dd>Specific hash to look for (or all if None)</dd>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>List of file groups (files with same content)</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.find_related_files"><code class="name flex">
+<span>def <span class="ident">find_related_files</span></span>(<span>self,<br>file_id: str,<br>relationship_type: <a title="src.storage.models.RelationshipType" href="models.html#src.storage.models.RelationshipType">RelationshipType</a> = None,<br>depth: int = 1,<br>session: sqlalchemy.orm.session.Session = None) ‑> List[Tuple[<a title="src.storage.models.File" href="models.html#src.storage.models.File">File</a>, <a title="src.storage.models.RelationshipType" href="models.html#src.storage.models.RelationshipType">RelationshipType</a>, float]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def find_related_files(
+    self,
+    file_id: str,
+    relationship_type: RelationshipType = None,
+    depth: int = 1,
+    session: Session = None
+) -&gt; List[Tuple[File, RelationshipType, float]]:
+    &#34;&#34;&#34;
+    Find files related to a given file (graph traversal).
+
+    Args:
+        file_id: Starting file ID
+        relationship_type: Filter by relationship type
+        depth: How many hops to traverse (1 = direct relationships only)
+        session: Optional existing session
+
+    Returns:
+        List of (file, relationship_type, confidence) tuples
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        results = []
+        visited = {file_id}
+
+        # BFS traversal
+        current_level = [file_id]
+
+        for _ in range(depth):
+            next_level = []
+            pending: list[tuple[int, str, float]] = []
+
+            for current_id in current_level:
+                # Get outgoing relationships
+                query = session.query(FileRelationship).filter(
+                    FileRelationship.source_file_id == current_id
+                )
+                if relationship_type:
+                    query = query.filter(FileRelationship.relationship_type == relationship_type)
+
+                for rel in query.all():
+                    if rel.target_file_id not in visited:
+                        visited.add(rel.target_file_id)
+                        next_level.append(rel.target_file_id)
+                        pending.append((rel.target_file_id, rel.relationship_type, rel.confidence))
+
+                # Get incoming relationships
+                query = session.query(FileRelationship).filter(
+                    FileRelationship.target_file_id == current_id
+                )
+                if relationship_type:
+                    query = query.filter(FileRelationship.relationship_type == relationship_type)
+
+                for rel in query.all():
+                    if rel.source_file_id not in visited:
+                        visited.add(rel.source_file_id)
+                        next_level.append(rel.source_file_id)
+                        pending.append((rel.source_file_id, rel.relationship_type, rel.confidence))
+
+            if pending:
+                pending_ids = [fid for fid, _, _ in pending]
+                file_map = {
+                    f.id: f
+                    for f in session.query(File).filter(File.id.in_(pending_ids)).all()
+                }
+                for fid, rel_type, confidence in pending:
+                    file = file_map.get(fid)
+                    if file:
+                        results.append((file, rel_type, confidence))
+
+            current_level = next_level
+
+        return results
+
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Find files related to a given file (graph traversal).</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_id</code></strong></dt>
+<dd>Starting file ID</dd>
+<dt><strong><code>relationship_type</code></strong></dt>
+<dd>Filter by relationship type</dd>
+<dt><strong><code>depth</code></strong></dt>
+<dd>How many hops to traverse (1 = direct relationships only)</dd>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>List of (file, relationship_type, confidence) tuples</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.get_all_people_with_files"><code class="name flex">
+<span>def <span class="ident">get_all_people_with_files</span></span>(<span>self, session: sqlalchemy.orm.session.Session = None, min_files: int = 1) ‑> List[Tuple[str, List[str]]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_all_people_with_files(
+    self,
+    session: Session = None,
+    min_files: int = 1
+) -&gt; List[Tuple[str, List[str]]]:
+    &#34;&#34;&#34;
+    Get all people who have at least `min_files` organized files.
+
+    Filters out obvious non-person false positives (organization or
+    meeting names accidentally detected as people) using
+    `_PERSON_NAME_DENYLIST`, and excludes files that haven&#39;t been
+    organized yet (current_path is None).
+
+    Args:
+        session: Optional existing session
+        min_files: Minimum number of valid (organized) files a person
+            must have to be included in the results
+
+    Returns:
+        List of (display_name, [file.current_path, ...]) tuples
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        results = []
+        people = session.query(Person).options(selectinload(Person.files)).all()
+
+        for person in people:
+            name_lower = person.name.lower()
+            if any(term in name_lower for term in _PERSON_NAME_DENYLIST):
+                continue
+
+            paths = [f.current_path for f in person.files if f.current_path]
+
+            if len(paths) &gt;= min_files:
+                results.append((person.name, paths))
+
+        return results
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Get all people who have at least <code>min_files</code> organized files.</p>
+<p>Filters out obvious non-person false positives (organization or
+meeting names accidentally detected as people) using
+<code>_PERSON_NAME_DENYLIST</code>, and excludes files that haven't been
+organized yet (current_path is None).</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+<dt><strong><code>min_files</code></strong></dt>
+<dd>Minimum number of valid (organized) files a person
+must have to be included in the results</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>List of (display_name, [file.current_path, &hellip;]) tuples</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.get_category_tree"><code class="name flex">
+<span>def <span class="ident">get_category_tree</span></span>(<span>self, session: sqlalchemy.orm.session.Session = None) ‑> List[Dict[str, Any]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_category_tree(self, session: Session = None) -&gt; List[Dict[str, Any]]:
+    &#34;&#34;&#34;
+    Get the full category hierarchy as a tree.
+
+    Returns:
+        List of root categories with nested subcategories
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        categories = session.query(Category).options(
+            selectinload(Category.subcategories).selectinload(Category.subcategories)
+        ).order_by(Category.level, Category.name).all()
+
+        # Build tree structure
+        tree = []
+        for category in categories:
+            if category.parent_id is None:
+                tree.append(self._build_category_node(category))
+
+        return tree
+
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Get the full category hierarchy as a tree.</p>
+<h2 id="returns">Returns</h2>
+<p>List of root categories with nested subcategories</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.get_cost_statistics"><code class="name flex">
+<span>def <span class="ident">get_cost_statistics</span></span>(<span>self,<br>session_id: str = None,<br>feature_name: str = None,<br>start_date: datetime.datetime = None,<br>end_date: datetime.datetime = None,<br>session: sqlalchemy.orm.session.Session = None) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_cost_statistics(
+    self,
+    session_id: str = None,
+    feature_name: str = None,
+    start_date: datetime = None,
+    end_date: datetime = None,
+    session: Session = None
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get cost statistics with optional filters.
+
+    Args:
+        session_id: Filter by session
+        feature_name: Filter by feature
+        start_date: Start of date range
+        end_date: End of date range
+        session: Optional existing session
+
+    Returns:
+        Cost statistics dictionary
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        query = session.query(CostRecord)
+
+        if session_id:
+            query = query.filter(CostRecord.session_id == session_id)
+        if feature_name:
+            query = query.filter(CostRecord.feature_name == feature_name)
+        if start_date:
+            query = query.filter(CostRecord.created_at &gt;= start_date)
+        if end_date:
+            query = query.filter(CostRecord.created_at &lt;= end_date)
+
+        records = query.all()
+
+        # Aggregate by feature
+        feature_stats = defaultdict(lambda: {
+            &#39;invocations&#39;: 0,
+            &#39;total_cost&#39;: 0.0,
+            &#39;total_time&#39;: 0.0,
+            &#39;success_count&#39;: 0,
+            &#39;error_count&#39;: 0
+        })
+
+        for record in records:
+            stats = feature_stats[record.feature_name]
+            stats[&#39;invocations&#39;] += 1
+            stats[&#39;total_cost&#39;] += record.cost
+            stats[&#39;total_time&#39;] += record.processing_time_sec
+            if record.success:
+                stats[&#39;success_count&#39;] += 1
+            else:
+                stats[&#39;error_count&#39;] += 1
+
+        return {
+            &#39;total_records&#39;: len(records),
+            &#39;total_cost&#39;: sum(r.cost for r in records),
+            &#39;total_time&#39;: sum(r.processing_time_sec for r in records),
+            &#39;by_feature&#39;: dict(feature_stats)
+        }
+
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Get cost statistics with optional filters.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>session_id</code></strong></dt>
+<dd>Filter by session</dd>
+<dt><strong><code>feature_name</code></strong></dt>
+<dd>Filter by feature</dd>
+<dt><strong><code>start_date</code></strong></dt>
+<dd>Start of date range</dd>
+<dt><strong><code>end_date</code></strong></dt>
+<dd>End of date range</dd>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Cost statistics dictionary</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.get_file"><code class="name flex">
+<span>def <span class="ident">get_file</span></span>(<span>self,<br>file_id: str = None,<br>path: str = None,<br>session: sqlalchemy.orm.session.Session = None) ‑> <a title="src.storage.models.File" href="models.html#src.storage.models.File">File</a> | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_file(self, file_id: str = None, path: str = None, session: Session = None) -&gt; Optional[File]:
+    &#34;&#34;&#34;
+    Get a file by ID or path.
+
+    Args:
+        file_id: File ID (hash)
+        path: Original file path
+        session: Optional existing session
+
+    Returns:
+        File object or None
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        if file_id:
+            return session.query(File).filter(File.id == file_id).first()
+        elif path:
+            file_id = File.generate_id(path)
+            return session.query(File).filter(File.id == file_id).first()
+        return None
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Get a file by ID or path.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_id</code></strong></dt>
+<dd>File ID (hash)</dd>
+<dt><strong><code>path</code></strong></dt>
+<dd>Original file path</dd>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>File object or None</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.get_files"><code class="name flex">
+<span>def <span class="ident">get_files</span></span>(<span>self,<br>status: <a title="src.storage.models.FileStatus" href="models.html#src.storage.models.FileStatus">FileStatus</a> = None,<br>category: str = None,<br>company: str = None,<br>extension: str = None,<br>limit: int = 100,<br>offset: int = 0,<br>session: sqlalchemy.orm.session.Session = None) ‑> List[<a title="src.storage.models.File" href="models.html#src.storage.models.File">File</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_files(
+    self,
+    status: FileStatus = None,
+    category: str = None,
+    company: str = None,
+    extension: str = None,
+    limit: int = 100,
+    offset: int = 0,
+    session: Session = None
+) -&gt; List[File]:
+    &#34;&#34;&#34;
+    Query files with filters.
+
+    Args:
+        status: Filter by status
+        category: Filter by category name
+        company: Filter by company name
+        extension: Filter by file extension
+        limit: Maximum results
+        offset: Skip first N results
+        session: Optional existing session
+
+    Returns:
+        List of File objects
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        query = session.query(File).options(
+            joinedload(File.categories),
+            joinedload(File.companies)
+        )
+
+        if status:
+            query = query.filter(File.status == status)
+        if extension:
+            query = query.filter(File.file_extension == extension.lower())
+        if category:
+            query = query.join(File.categories).filter(Category.name == category)
+        if company:
+            query = query.join(File.companies).filter(Company.name == company)
+
+        return query.order_by(File.organized_at.desc()).offset(offset).limit(limit).all()
+
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Query files with filters.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>status</code></strong></dt>
+<dd>Filter by status</dd>
+<dt><strong><code>category</code></strong></dt>
+<dd>Filter by category name</dd>
+<dt><strong><code>company</code></strong></dt>
+<dd>Filter by company name</dd>
+<dt><strong><code>extension</code></strong></dt>
+<dd>Filter by file extension</dd>
+<dt><strong><code>limit</code></strong></dt>
+<dd>Maximum results</dd>
+<dt><strong><code>offset</code></strong></dt>
+<dd>Skip first N results</dd>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>List of File objects</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.get_files_by_person"><code class="name flex">
+<span>def <span class="ident">get_files_by_person</span></span>(<span>self, person_id_or_name, session: sqlalchemy.orm.session.Session = None) ‑> List[str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_files_by_person(
+    self,
+    person_id_or_name,
+    session: Session = None
+) -&gt; List[str]:
+    &#34;&#34;&#34;
+    Get the current file paths associated with a single person.
+
+    Args:
+        person_id_or_name: Person primary key (int), or name (str,
+            matched via Person.normalize_name, same lookup style as
+            get_or_create_person)
+        session: Optional existing session
+
+    Returns:
+        List of file.current_path values (None paths excluded); empty
+        list if the person isn&#39;t found
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        if isinstance(person_id_or_name, int):
+            person = session.query(Person).filter(Person.id == person_id_or_name).first()
+        else:
+            normalized = Person.normalize_name(person_id_or_name)
+            person = session.query(Person).filter(
+                Person.normalized_name == normalized
+            ).first()
+
+        if not person:
+            return []
+
+        return [f.current_path for f in person.files if f.current_path]
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Get the current file paths associated with a single person.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>person_id_or_name</code></strong></dt>
+<dd>Person primary key (int), or name (str,
+matched via Person.normalize_name, same lookup style as
+get_or_create_person)</dd>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>List of file.current_path values (None paths excluded); empty
+list if the person isn't found</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.get_or_create_category"><code class="name flex">
+<span>def <span class="ident">get_or_create_category</span></span>(<span>self,<br>name: str,<br>parent_name: str = None,<br>session: sqlalchemy.orm.session.Session = None) ‑> <a title="src.storage.models.Category" href="models.html#src.storage.models.Category">Category</a> | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_or_create_category(
+    self,
+    name: str,
+    parent_name: str = None,
+    session: Session = None
+) -&gt; Optional[Category]:
+    &#34;&#34;&#34;
+    Get or create a category.
+
+    Args:
+        name: Category name
+        parent_name: Parent category name (for hierarchy)
+        session: Optional existing session
+
+    Returns:
+        Category object or None if creation fails
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        # Build full path
+        if parent_name:
+            full_path = f&#34;{parent_name}/{name}&#34;
+        else:
+            full_path = name
+
+        # Check if exists
+        category = session.query(Category).filter(Category.full_path == full_path).first()
+        if category:
+            return category
+
+        # Get parent if specified
+        parent = None
+        level = 0
+        if parent_name:
+            parent = session.query(Category).filter(Category.name == parent_name).first()
+            if parent:
+                level = parent.level + 1
+
+        # Create new category with canonical ID
+        category = Category(
+            name=name,
+            canonical_id=Category.generate_canonical_id(full_path),
+            parent_id=parent.id if parent else None,
+            level=level,
+            full_path=full_path
+        )
+        session.add(category)
+        # Only commit if we own the session
+        if close_session:
+            session.commit()
+        else:
+            session.flush()  # Ensure ID is generated but don&#39;t commit
+        return category
+
+    except IntegrityError:
+        session.rollback()
+        # Race condition - return existing
+        return session.query(Category).filter(Category.full_path == full_path).first()
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Get or create a category.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong></dt>
+<dd>Category name</dd>
+<dt><strong><code>parent_name</code></strong></dt>
+<dd>Parent category name (for hierarchy)</dd>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Category object or None if creation fails</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.get_or_create_company"><code class="name flex">
+<span>def <span class="ident">get_or_create_company</span></span>(<span>self, name: str, session: sqlalchemy.orm.session.Session = None) ‑> <a title="src.storage.models.Company" href="models.html#src.storage.models.Company">Company</a> | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_or_create_company(self, name: str, session: Session = None) -&gt; Optional[Company]:
+    &#34;&#34;&#34;Get or create a company by name.&#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        normalized = Company.normalize_name(name)
+        company = session.query(Company).filter(Company.normalized_name == normalized).first()
+
+        if not company:
+            company = Company(
+                name=name,
+                normalized_name=normalized,
+                canonical_id=Company.generate_canonical_id(name)
+            )
+            session.add(company)
+            # Only commit if we own the session
+            if close_session:
+                session.commit()
+            else:
+                session.flush()
+
+        return company
+
+    except IntegrityError:
+        session.rollback()
+        return session.query(Company).filter(Company.normalized_name == normalized).first()
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Get or create a company by name.</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.get_or_create_location"><code class="name flex">
+<span>def <span class="ident">get_or_create_location</span></span>(<span>self,<br>name: str,<br>latitude: float = None,<br>longitude: float = None,<br>city: str = None,<br>state: str = None,<br>country: str = None,<br>session: sqlalchemy.orm.session.Session = None) ‑> <a title="src.storage.models.Location" href="models.html#src.storage.models.Location">Location</a> | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_or_create_location(
+    self,
+    name: str,
+    latitude: float = None,
+    longitude: float = None,
+    city: str = None,
+    state: str = None,
+    country: str = None,
+    session: Session = None
+) -&gt; Optional[Location]:
+    &#34;&#34;&#34;Get or create a location.&#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        # Try to find by coordinates first
+        if latitude and longitude:
+            location = session.query(Location).filter(
+                and_(
+                    func.abs(Location.latitude - latitude) &lt; COORDINATE_TOLERANCE_DEG,
+                    func.abs(Location.longitude - longitude) &lt; COORDINATE_TOLERANCE_DEG
+                )
+            ).first()
+            if location:
+                return location
+
+        # Try to find by name
+        location = session.query(Location).filter(Location.name == name).first()
+        if location:
+            return location
+
+        # Create new location with canonical ID
+        location = Location(
+            name=name,
+            canonical_id=Location.generate_canonical_id(name),
+            latitude=latitude,
+            longitude=longitude,
+            city=city,
+            state=state,
+            country=country
+        )
+        session.add(location)
+        # Only commit if we own the session
+        if close_session:
+            session.commit()
+        else:
+            session.flush()  # Ensure ID is generated but don&#39;t commit
+        return location
+
+    except IntegrityError:
+        session.rollback()
+        return session.query(Location).filter(Location.name == name).first()
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Get or create a location.</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.get_or_create_person"><code class="name flex">
+<span>def <span class="ident">get_or_create_person</span></span>(<span>self,<br>name: str,<br>email: str = None,<br>role: str = None,<br>session: sqlalchemy.orm.session.Session = None) ‑> <a title="src.storage.models.Person" href="models.html#src.storage.models.Person">Person</a> | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_or_create_person(
+    self,
+    name: str,
+    email: str = None,
+    role: str = None,
+    session: Session = None
+) -&gt; Optional[Person]:
+    &#34;&#34;&#34;Get or create a person by name.&#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        normalized = Person.normalize_name(name)
+        person = session.query(Person).filter(Person.normalized_name == normalized).first()
+
+        if not person:
+            person = Person(
+                name=name,
+                normalized_name=normalized,
+                canonical_id=Person.generate_canonical_id(name),
+                email=email,
+                role=role
+            )
+            session.add(person)
+            if close_session:
+                session.commit()
+            else:
+                session.flush()
+
+        return person
+
+    except IntegrityError:
+        session.rollback()
+        return session.query(Person).filter(Person.normalized_name == normalized).first()
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Get or create a person by name.</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.get_session"><code class="name flex">
+<span>def <span class="ident">get_session</span></span>(<span>self) ‑> sqlalchemy.orm.session.Session</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_session(self) -&gt; Session:
+    &#34;&#34;&#34;Get a new database session.&#34;&#34;&#34;
+    return self.SessionLocal()</code></pre>
+</details>
+<div class="desc"><p>Get a new database session.</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.get_statistics"><code class="name flex">
+<span>def <span class="ident">get_statistics</span></span>(<span>self, session: sqlalchemy.orm.session.Session = None) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_statistics(self, session: Session = None) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Get overall statistics.
+
+    Returns:
+        Dictionary with counts and aggregations
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        stats = {
+            &#39;total_files&#39;: session.query(func.count(File.id)).scalar(),
+            &#39;organized_files&#39;: session.query(func.count(File.id))\
+                .filter(File.status == FileStatus.ORGANIZED).scalar(),
+            &#39;total_categories&#39;: session.query(func.count(Category.id)).scalar(),
+            &#39;total_companies&#39;: session.query(func.count(Company.id)).scalar(),
+            &#39;total_locations&#39;: session.query(func.count(Location.id)).scalar(),
+            &#39;total_relationships&#39;: session.query(func.count(FileRelationship.id)).scalar(),
+            &#39;total_sessions&#39;: session.query(func.count(OrganizationSession.id)).scalar(),
+        }
+
+        # Category breakdown
+        category_counts = session.query(
+            Category.name,
+            func.count(file_categories.c.file_id)
+        ).join(file_categories).group_by(Category.name).all()
+
+        stats[&#39;categories&#39;] = {name: count for name, count in category_counts}
+
+        # Extension breakdown
+        extension_counts = session.query(
+            File.file_extension,
+            func.count(File.id)
+        ).group_by(File.file_extension).order_by(func.count(File.id).desc()).limit(TOP_EXTENSIONS_LIMIT).all()
+
+        stats[&#39;extensions&#39;] = {ext or &#39;none&#39;: count for ext, count in extension_counts}
+
+        return stats
+
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Get overall statistics.</p>
+<h2 id="returns">Returns</h2>
+<p>Dictionary with counts and aggregations</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.prune_missing_person_edges"><code class="name flex">
+<span>def <span class="ident">prune_missing_person_edges</span></span>(<span>self, dry_run: bool = False, session: sqlalchemy.orm.session.Session = None) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def prune_missing_person_edges(
+    self,
+    dry_run: bool = False,
+    session: Session = None
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Drop file-&gt;person edges whose file no longer exists on disk.
+
+    A file&#39;s presence is checked at its current_path (falling back to
+    original_path when it was never organized). File and Person rows are
+    kept — only the edges are removed; use prune_person to delete a
+    person outright.
+
+    Args:
+        dry_run: When True, report what would be removed without changes
+        session: Optional existing session
+
+    Returns:
+        {&#39;edges_removed&#39;: N,
+         &#39;edges&#39;: [{&#39;person&#39;: name, &#39;file_id&#39;: id, &#39;path&#39;: path}, ...]}
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        removed: List[Dict[str, Any]] = []
+        people = session.query(Person).options(selectinload(Person.files)).all()
+
+        for person in people:
+            for file in list(person.files):
+                path = file.current_path or file.original_path
+                if not path or Path(path).exists():
+                    continue
+                removed.append({
+                    &#39;person&#39;: person.name,
+                    &#39;file_id&#39;: file.id,
+                    &#39;path&#39;: path,
+                })
+                if not dry_run:
+                    person.files.remove(file)
+                    person.file_count = max((person.file_count or 0) - 1, 0)
+
+        if not dry_run and close_session:
+            session.commit()
+        return {&#39;edges_removed&#39;: len(removed), &#39;edges&#39;: removed}
+
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Drop file-&gt;person edges whose file no longer exists on disk.</p>
+<p>A file's presence is checked at its current_path (falling back to
+original_path when it was never organized). File and Person rows are
+kept — only the edges are removed; use prune_person to delete a
+person outright.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>dry_run</code></strong></dt>
+<dd>When True, report what would be removed without changes</dd>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>{'edges_removed': N,
+'edges': [{'person': name, 'file_id': id, 'path': path}, &hellip;]}</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.prune_person"><code class="name flex">
+<span>def <span class="ident">prune_person</span></span>(<span>self,<br>person_id_or_name,<br>dry_run: bool = False,<br>session: sqlalchemy.orm.session.Session = None) ‑> Dict[str, Any] | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def prune_person(
+    self,
+    person_id_or_name,
+    dry_run: bool = False,
+    session: Session = None
+) -&gt; Optional[Dict[str, Any]]:
+    &#34;&#34;&#34;
+    Delete a person and all of its file-&gt;person edges.
+
+    Intended for false-positive &#34;people&#34; (org/event names misdetected as
+    people) and stale entries. Files are never touched on disk. Any other
+    person merged into this one has its merge pointer cleared.
+
+    Args:
+        person_id_or_name: Person primary key (int), or name (str,
+            matched via Person.normalize_name)
+        dry_run: When True, report what would be removed without changes
+        session: Optional existing session
+
+    Returns:
+        Summary dict with name/person_id/edges_removed/paths, or None if
+        the person isn&#39;t found
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        person = self._find_person(person_id_or_name, session)
+        if not person:
+            return None
+
+        summary = {
+            &#39;name&#39;: person.name,
+            &#39;person_id&#39;: person.id,
+            &#39;edges_removed&#39;: len(person.files),
+            &#39;paths&#39;: [f.current_path or f.original_path for f in person.files],
+        }
+        if dry_run:
+            return summary
+
+        person.files.clear()
+        session.query(Person).filter(
+            Person.merged_into_id == person.id
+        ).update({Person.merged_into_id: None})
+        session.delete(person)
+        if close_session:
+            session.commit()
+        return summary
+
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Delete a person and all of its file-&gt;person edges.</p>
+<p>Intended for false-positive "people" (org/event names misdetected as
+people) and stale entries. Files are never touched on disk. Any other
+person merged into this one has its merge pointer cleared.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>person_id_or_name</code></strong></dt>
+<dd>Person primary key (int), or name (str,
+matched via Person.normalize_name)</dd>
+<dt><strong><code>dry_run</code></strong></dt>
+<dd>When True, report what would be removed without changes</dd>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Summary dict with name/person_id/edges_removed/paths, or None if
+the person isn't found</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.remove_person_edge"><code class="name flex">
+<span>def <span class="ident">remove_person_edge</span></span>(<span>self,<br>file_id: str,<br>person_id_or_name,<br>session: sqlalchemy.orm.session.Session = None) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def remove_person_edge(
+    self,
+    file_id: str,
+    person_id_or_name,
+    session: Session = None
+) -&gt; bool:
+    &#34;&#34;&#34;
+    Remove a single file-&gt;person edge, keeping both rows.
+
+    Args:
+        file_id: File primary key (SHA-256 hex)
+        person_id_or_name: Person primary key (int), or name (str,
+            matched via Person.normalize_name)
+        session: Optional existing session
+
+    Returns:
+        True if an edge existed and was removed, False otherwise
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        file = session.query(File).filter(File.id == file_id).first()
+        person = self._find_person(person_id_or_name, session)
+        if not file or not person or person not in file.people:
+            return False
+
+        file.people.remove(person)
+        person.file_count = max((person.file_count or 0) - 1, 0)
+        if close_session:
+            session.commit()
+        return True
+
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Remove a single file-&gt;person edge, keeping both rows.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_id</code></strong></dt>
+<dd>File primary key (SHA-256 hex)</dd>
+<dt><strong><code>person_id_or_name</code></strong></dt>
+<dd>Person primary key (int), or name (str,
+matched via Person.normalize_name)</dd>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>True if an edge existed and was removed, False otherwise</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.search_by_location"><code class="name flex">
+<span>def <span class="ident">search_by_location</span></span>(<span>self,<br>latitude: float,<br>longitude: float,<br>radius_km: float = 10,<br>limit: int = 50,<br>session: sqlalchemy.orm.session.Session = None) ‑> List[<a title="src.storage.models.File" href="models.html#src.storage.models.File">File</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def search_by_location(
+    self,
+    latitude: float,
+    longitude: float,
+    radius_km: float = 10,
+    limit: int = DEFAULT_SEARCH_LIMIT,
+    session: Session = None
+) -&gt; List[File]:
+    &#34;&#34;&#34;
+    Find files near a geographic location.
+
+    Uses a simple bounding box approximation for SQLite compatibility.
+
+    Args:
+        latitude: Center latitude
+        longitude: Center longitude
+        radius_km: Search radius in kilometers
+        limit: Maximum results
+        session: Optional existing session
+
+    Returns:
+        List of files with GPS data near the location
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        # Approximate degrees per km. Longitude degrees shrink by
+        # cos(latitude); clamp the scale near the poles where cos
+        # approaches zero and the bounding box would blow up.
+        lat_delta = radius_km / KM_PER_DEGREE_LATITUDE
+        lon_scale = max(math.cos(math.radians(latitude)), 0.01)
+        lon_delta = radius_km / (KM_PER_DEGREE_LATITUDE * lon_scale)
+
+        return session.query(File)\
+            .filter(
+                and_(
+                    File.gps_latitude.isnot(None),
+                    File.gps_latitude.between(latitude - lat_delta, latitude + lat_delta),
+                    File.gps_longitude.between(longitude - lon_delta, longitude + lon_delta)
+                )
+            )\
+            .limit(limit)\
+            .all()
+
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Find files near a geographic location.</p>
+<p>Uses a simple bounding box approximation for SQLite compatibility.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>latitude</code></strong></dt>
+<dd>Center latitude</dd>
+<dt><strong><code>longitude</code></strong></dt>
+<dd>Center longitude</dd>
+<dt><strong><code>radius_km</code></strong></dt>
+<dd>Search radius in kilometers</dd>
+<dt><strong><code>limit</code></strong></dt>
+<dd>Maximum results</dd>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>List of files with GPS data near the location</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.search_files"><code class="name flex">
+<span>def <span class="ident">search_files</span></span>(<span>self,<br>query: str,<br>search_content: bool = True,<br>search_filename: bool = True,<br>limit: int = 50,<br>session: sqlalchemy.orm.session.Session = None) ‑> List[<a title="src.storage.models.File" href="models.html#src.storage.models.File">File</a>]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def search_files(
+    self,
+    query: str,
+    search_content: bool = True,
+    search_filename: bool = True,
+    limit: int = DEFAULT_SEARCH_LIMIT,
+    session: Session = None
+) -&gt; List[File]:
+    &#34;&#34;&#34;
+    Search files by text content or filename.
+
+    Args:
+        query: Search query
+        search_content: Search in extracted text
+        search_filename: Search in filename
+        limit: Maximum results
+        session: Optional existing session
+
+    Returns:
+        List of matching files
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        filters = []
+
+        if search_filename:
+            filters.append(File.filename.ilike(f&#39;%{query}%&#39;))
+        if search_content:
+            filters.append(File.extracted_text.ilike(f&#39;%{query}%&#39;))
+
+        if not filters:
+            return []
+
+        return session.query(File)\
+            .filter(or_(*filters))\
+            .limit(limit)\
+            .all()
+
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Search files by text content or filename.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>query</code></strong></dt>
+<dd>Search query</dd>
+<dt><strong><code>search_content</code></strong></dt>
+<dd>Search in extracted text</dd>
+<dt><strong><code>search_filename</code></strong></dt>
+<dd>Search in filename</dd>
+<dt><strong><code>limit</code></strong></dt>
+<dd>Maximum results</dd>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>List of matching files</p></div>
+</dd>
+<dt id="src.storage.graph_store.GraphStore.update_file_status"><code class="name flex">
+<span>def <span class="ident">update_file_status</span></span>(<span>self,<br>file_id: str,<br>status: <a title="src.storage.models.FileStatus" href="models.html#src.storage.models.FileStatus">FileStatus</a>,<br>destination: str = None,<br>reason: str = None,<br>session: sqlalchemy.orm.session.Session = None) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def update_file_status(
+    self,
+    file_id: str,
+    status: FileStatus,
+    destination: str = None,
+    reason: str = None,
+    session: Session = None
+) -&gt; bool:
+    &#34;&#34;&#34;
+    Update file organization status.
+
+    Args:
+        file_id: File ID
+        status: New status
+        destination: New file path after organization
+        reason: Reason for status
+        session: Optional existing session
+
+    Returns:
+        True if updated successfully
+    &#34;&#34;&#34;
+    close_session = session is None
+    session = session or self.get_session()
+
+    try:
+        file = session.query(File).filter(File.id == file_id).first()
+        if not file:
+            return False
+
+        file.status = status
+        file.current_path = destination
+        file.organization_reason = reason
+        if status == FileStatus.ORGANIZED:
+            file.organized_at = utcnow()
+
+        session.commit()
+        return True
+
+    except Exception as e:
+        session.rollback()
+        raise e
+    finally:
+        if close_session:
+            session.close()</code></pre>
+</details>
+<div class="desc"><p>Update file organization status.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_id</code></strong></dt>
+<dd>File ID</dd>
+<dt><strong><code>status</code></strong></dt>
+<dd>New status</dd>
+<dt><strong><code>destination</code></strong></dt>
+<dd>New file path after organization</dd>
+<dt><strong><code>reason</code></strong></dt>
+<dd>Reason for status</dd>
+<dt><strong><code>session</code></strong></dt>
+<dd>Optional existing session</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>True if updated successfully</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.storage" href="index.html">src.storage</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.storage.graph_store.GraphStore" href="#src.storage.graph_store.GraphStore">GraphStore</a></code></h4>
+<ul class="">
+<li><code><a title="src.storage.graph_store.GraphStore.add_file" href="#src.storage.graph_store.GraphStore.add_file">add_file</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.add_file_to_category" href="#src.storage.graph_store.GraphStore.add_file_to_category">add_file_to_category</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.add_file_to_company" href="#src.storage.graph_store.GraphStore.add_file_to_company">add_file_to_company</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.add_file_to_location" href="#src.storage.graph_store.GraphStore.add_file_to_location">add_file_to_location</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.add_file_to_person" href="#src.storage.graph_store.GraphStore.add_file_to_person">add_file_to_person</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.add_relationship" href="#src.storage.graph_store.GraphStore.add_relationship">add_relationship</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.complete_session" href="#src.storage.graph_store.GraphStore.complete_session">complete_session</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.create_session" href="#src.storage.graph_store.GraphStore.create_session">create_session</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.find_duplicates" href="#src.storage.graph_store.GraphStore.find_duplicates">find_duplicates</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.find_related_files" href="#src.storage.graph_store.GraphStore.find_related_files">find_related_files</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.get_all_people_with_files" href="#src.storage.graph_store.GraphStore.get_all_people_with_files">get_all_people_with_files</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.get_category_tree" href="#src.storage.graph_store.GraphStore.get_category_tree">get_category_tree</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.get_cost_statistics" href="#src.storage.graph_store.GraphStore.get_cost_statistics">get_cost_statistics</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.get_file" href="#src.storage.graph_store.GraphStore.get_file">get_file</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.get_files" href="#src.storage.graph_store.GraphStore.get_files">get_files</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.get_files_by_person" href="#src.storage.graph_store.GraphStore.get_files_by_person">get_files_by_person</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.get_or_create_category" href="#src.storage.graph_store.GraphStore.get_or_create_category">get_or_create_category</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.get_or_create_company" href="#src.storage.graph_store.GraphStore.get_or_create_company">get_or_create_company</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.get_or_create_location" href="#src.storage.graph_store.GraphStore.get_or_create_location">get_or_create_location</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.get_or_create_person" href="#src.storage.graph_store.GraphStore.get_or_create_person">get_or_create_person</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.get_session" href="#src.storage.graph_store.GraphStore.get_session">get_session</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.get_statistics" href="#src.storage.graph_store.GraphStore.get_statistics">get_statistics</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.prune_missing_person_edges" href="#src.storage.graph_store.GraphStore.prune_missing_person_edges">prune_missing_person_edges</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.prune_person" href="#src.storage.graph_store.GraphStore.prune_person">prune_person</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.remove_person_edge" href="#src.storage.graph_store.GraphStore.remove_person_edge">remove_person_edge</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.search_by_location" href="#src.storage.graph_store.GraphStore.search_by_location">search_by_location</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.search_files" href="#src.storage.graph_store.GraphStore.search_files">search_files</a></code></li>
+<li><code><a title="src.storage.graph_store.GraphStore.update_file_status" href="#src.storage.graph_store.GraphStore.update_file_status">update_file_status</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

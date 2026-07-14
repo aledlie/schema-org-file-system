@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.base API documentation</title>
+<meta name="description" content="Base classes for Schema.org generation system …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.base</code></h1>
+</header>
+<section id="section-intro">
+<p>Base classes for Schema.org generation system.</p>
+<p>Provides core functionality for all Schema.org generators including
+context management, property validation, and nested schema support.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.base.PropertyType"><code class="flex name class">
+<span>class <span class="ident">PropertyType</span></span>
+<span>(</span><span>*args, **kwds)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PropertyType(Enum):
+    &#34;&#34;&#34;Schema.org property types.&#34;&#34;&#34;
+    TEXT = &#34;Text&#34;
+    URL = &#34;URL&#34;
+    DATE = &#34;Date&#34;
+    DATETIME = &#34;DateTime&#34;
+    NUMBER = &#34;Number&#34;
+    INTEGER = &#34;Integer&#34;
+    BOOLEAN = &#34;Boolean&#34;
+    OBJECT = &#34;Object&#34;
+    ARRAY = &#34;Array&#34;</code></pre>
+</details>
+<div class="desc"><p>Schema.org property types.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.base.PropertyType.ARRAY"><code class="name">var <span class="ident">ARRAY</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.base.PropertyType.BOOLEAN"><code class="name">var <span class="ident">BOOLEAN</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.base.PropertyType.DATE"><code class="name">var <span class="ident">DATE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.base.PropertyType.DATETIME"><code class="name">var <span class="ident">DATETIME</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.base.PropertyType.INTEGER"><code class="name">var <span class="ident">INTEGER</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.base.PropertyType.NUMBER"><code class="name">var <span class="ident">NUMBER</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.base.PropertyType.OBJECT"><code class="name">var <span class="ident">OBJECT</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.base.PropertyType.TEXT"><code class="name">var <span class="ident">TEXT</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.base.PropertyType.URL"><code class="name">var <span class="ident">URL</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.base.SchemaContext"><code class="flex name class">
+<span>class <span class="ident">SchemaContext</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SchemaContext:
+    &#34;&#34;&#34;Manages Schema.org context and namespace.&#34;&#34;&#34;
+
+    SCHEMA_ORG = &#34;https://schema.org&#34;
+    DEFAULT_CONTEXT = {
+        &#34;@context&#34;: &#34;https://schema.org&#34;,
+        &#34;@vocab&#34;: &#34;https://schema.org/&#34;
+    }
+
+    @classmethod
+    def get_context(cls, additional_contexts: Optional[Dict[str, str]] = None) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Get Schema.org context with optional additional contexts.
+
+        Args:
+            additional_contexts: Additional context mappings to include
+
+        Returns:
+            Complete context dictionary
+        &#34;&#34;&#34;
+        context = cls.DEFAULT_CONTEXT.copy()
+        if additional_contexts:
+            context.update(additional_contexts)
+        return context</code></pre>
+</details>
+<div class="desc"><p>Manages Schema.org context and namespace.</p></div>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.base.SchemaContext.DEFAULT_CONTEXT"><code class="name">var <span class="ident">DEFAULT_CONTEXT</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.base.SchemaContext.SCHEMA_ORG"><code class="name">var <span class="ident">SCHEMA_ORG</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Static methods</h3>
+<dl>
+<dt id="src.base.SchemaContext.get_context"><code class="name flex">
+<span>def <span class="ident">get_context</span></span>(<span>additional_contexts: Dict[str, str] | None = None) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Get Schema.org context with optional additional contexts.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>additional_contexts</code></strong></dt>
+<dd>Additional context mappings to include</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Complete context dictionary</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.base.SchemaOrgBase"><code class="flex name class">
+<span>class <span class="ident">SchemaOrgBase</span></span>
+<span>(</span><span>schema_type: str, entity_id: str | None = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class SchemaOrgBase(ABC):
+    &#34;&#34;&#34;
+    Base class for all Schema.org generators.
+
+    Provides common functionality for creating, validating, and managing
+    Schema.org structured data across different file types.
+
+    All generated Schema.org objects include a valid @id field for JSON-LD
+    compliance. The @id can be:
+    - Auto-generated UUID v4 (default)
+    - Deterministic UUID v5 from a natural key
+    - Custom IRI (HTTPS URL or URN)
+    &#34;&#34;&#34;
+
+    def __init__(self, schema_type: str, entity_id: Optional[str] = None):
+        &#34;&#34;&#34;
+        Initialize the Schema.org generator.
+
+        Args:
+            schema_type: The Schema.org type (e.g., &#39;DigitalDocument&#39;, &#39;ImageObject&#39;)
+            entity_id: Optional entity ID. If not provided, generates UUID v4.
+                      Can be a UUID string, URN, or HTTPS URL.
+
+        Examples:
+            # Auto-generated ID
+            doc = DocumentGenerator()
+
+            # Custom UUID
+            doc = DocumentGenerator(entity_id=&#39;550e8400-e29b-41d4-a716-446655440000&#39;)
+
+            # URN format
+            doc = DocumentGenerator(entity_id=&#39;urn:sha256:abc123...&#39;)
+
+            # HTTPS URL
+            doc = DocumentGenerator(entity_id=&#39;https://example.com/docs/123&#39;)
+        &#34;&#34;&#34;
+        self.schema_type = schema_type
+
+        # Generate or normalize the @id
+        if entity_id is None:
+            # Generate random UUID v4
+            normalized_id = f&#34;urn:uuid:{uuid.uuid4()}&#34;
+        elif entity_id.startswith((&#39;http://&#39;, &#39;https://&#39;, &#39;urn:&#39;)):
+            # Already a valid IRI
+            normalized_id = entity_id
+        else:
+            # Assume it&#39;s a UUID string, wrap in URN
+            normalized_id = f&#34;urn:uuid:{entity_id}&#34;
+
+        self.data: Dict[str, Any] = {
+            &#34;@context&#34;: SchemaContext.SCHEMA_ORG,
+            &#34;@type&#34;: schema_type,
+            &#34;@id&#34;: normalized_id
+        }
+        self._required_properties: List[str] = []
+        self._recommended_properties: List[str] = []
+
+    @abstractmethod
+    def get_required_properties(self) -&gt; List[str]:
+        &#34;&#34;&#34;
+        Get list of required properties for this schema type.
+
+        Returns:
+            List of required property names
+        &#34;&#34;&#34;
+        pass
+
+    @abstractmethod
+    def get_recommended_properties(self) -&gt; List[str]:
+        &#34;&#34;&#34;
+        Get list of recommended properties for this schema type.
+
+        Returns:
+            List of recommended property names
+        &#34;&#34;&#34;
+        pass
+
+    def set_property(self, name: str, value: Any,
+                     property_type: Optional[PropertyType] = None) -&gt; &#39;SchemaOrgBase&#39;:
+        &#34;&#34;&#34;
+        Set a property value with optional type validation.
+
+        Args:
+            name: Property name
+            value: Property value
+            property_type: Expected property type for validation
+
+        Returns:
+            Self for method chaining
+        &#34;&#34;&#34;
+        if value is None:
+            return self
+
+        # Validate and convert value based on type
+        if property_type:
+            value = self._validate_and_convert(value, property_type)
+
+        self.data[name] = value
+        return self
+
+    def _validate_and_convert(self, value: Any, property_type: PropertyType) -&gt; Any:
+        &#34;&#34;&#34;
+        Validate and convert value to appropriate type.
+
+        Args:
+            value: Value to validate
+            property_type: Expected property type
+
+        Returns:
+            Converted value
+
+        Raises:
+            ValueError: If value cannot be converted to expected type
+        &#34;&#34;&#34;
+        if property_type == PropertyType.TEXT:
+            return str(value)
+        elif property_type == PropertyType.URL:
+            url_str = str(value)
+            if not (url_str.startswith(&#39;http://&#39;) or url_str.startswith(&#39;https://&#39;)):
+                raise ValueError(f&#34;Invalid URL: {url_str}&#34;)
+            return url_str
+        elif property_type == PropertyType.DATE:
+            if isinstance(value, datetime):
+                return value.date().isoformat()
+            elif isinstance(value, str):
+                return value  # Assume already in ISO format
+            return str(value)
+        elif property_type == PropertyType.DATETIME:
+            if isinstance(value, datetime):
+                return value.isoformat()
+            elif isinstance(value, str):
+                return value  # Assume already in ISO format
+            return str(value)
+        elif property_type == PropertyType.NUMBER:
+            return float(value)
+        elif property_type == PropertyType.INTEGER:
+            return int(value)
+        elif property_type == PropertyType.BOOLEAN:
+            return bool(value)
+        elif property_type == PropertyType.OBJECT:
+            if not isinstance(value, dict):
+                raise ValueError(f&#34;Expected object, got {type(value)}&#34;)
+            return value
+        elif property_type == PropertyType.ARRAY:
+            if not isinstance(value, list):
+                return [value]
+            return value
+        return value
+
+    def get_id(self) -&gt; str:
+        &#34;&#34;&#34;
+        Get the @id for this schema.
+
+        Returns:
+            The @id IRI string
+        &#34;&#34;&#34;
+        return self.data.get(&#34;@id&#34;, &#34;&#34;)
+
+    def set_dates(self, created: Optional[datetime] = None,
+                  modified: Optional[datetime] = None,
+                  published: Optional[datetime] = None) -&gt; &#39;SchemaOrgBase&#39;:
+        &#34;&#34;&#34;
+        Set date properties.
+
+        Args:
+            created: Date created
+            modified: Date modified
+            published: Date published
+
+        Returns:
+            Self for method chaining
+        &#34;&#34;&#34;
+        if created:
+            self.set_property(&#34;dateCreated&#34;, created, PropertyType.DATETIME)
+        if modified:
+            self.set_property(&#34;dateModified&#34;, modified, PropertyType.DATETIME)
+        if published:
+            self.set_property(&#34;datePublished&#34;, published, PropertyType.DATETIME)
+        return self
+
+    def to_dict(self) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Convert to dictionary representation.
+
+        Returns:
+            Dictionary representation of the schema
+        &#34;&#34;&#34;
+        return self.data.copy()
+
+    def to_json_ld(self, indent: int = 2) -&gt; str:
+        &#34;&#34;&#34;
+        Convert to JSON-LD string.
+
+        Args:
+            indent: JSON indentation level
+
+        Returns:
+            JSON-LD string
+        &#34;&#34;&#34;
+        return json.dumps(self.data, indent=indent, ensure_ascii=False)
+
+    def to_json_ld_script(self, indent: int = 2) -&gt; str:
+        &#34;&#34;&#34;
+        Convert to JSON-LD script tag for HTML embedding.
+
+        Args:
+            indent: JSON indentation level
+
+        Returns:
+            HTML script tag with JSON-LD
+        &#34;&#34;&#34;
+        json_ld = self.to_json_ld(indent=indent)
+        return f&#39;&lt;script type=&#34;application/ld+json&#34;&gt;\n{json_ld}\n&lt;/script&gt;&#39;
+
+    def validate_required_properties(self) -&gt; List[str]:
+        &#34;&#34;&#34;
+        Validate that all required properties are present.
+
+        Returns:
+            List of missing required properties
+        &#34;&#34;&#34;
+        required = self.get_required_properties()
+        missing = []
+        for prop in required:
+            if prop not in self.data:
+                missing.append(prop)
+        return missing
+
+    def get_completion_score(self) -&gt; float:
+        &#34;&#34;&#34;
+        Calculate completion score based on required and recommended properties.
+
+        Returns:
+            Completion score (0.0 to 1.0)
+        &#34;&#34;&#34;
+        required = self.get_required_properties()
+        recommended = self.get_recommended_properties()
+        total = len(required) + len(recommended)
+
+        if total == 0:
+            return 1.0
+
+        present = 0
+        for prop in required:
+            if prop in self.data:
+                present += 1
+        for prop in recommended:
+            if prop in self.data:
+                present += 0.5  # Recommended properties count as half
+
+        return min(present / len(required) if required else 1.0, 1.0)
+
+    def __str__(self) -&gt; str:
+        &#34;&#34;&#34;String representation.&#34;&#34;&#34;
+        return self.to_json_ld()
+
+    def __repr__(self) -&gt; str:
+        &#34;&#34;&#34;Representation.&#34;&#34;&#34;
+        return f&#34;&lt;{self.__class__.__name__}(type={self.schema_type})&gt;&#34;</code></pre>
+</details>
+<div class="desc"><p>Base class for all Schema.org generators.</p>
+<p>Provides common functionality for creating, validating, and managing
+Schema.org structured data across different file types.</p>
+<p>All generated Schema.org objects include a valid @id field for JSON-LD
+compliance. The @id can be:
+- Auto-generated UUID v4 (default)
+- Deterministic UUID v5 from a natural key
+- Custom IRI (HTTPS URL or URN)</p>
+<p>Initialize the Schema.org generator.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>schema_type</code></strong></dt>
+<dd>The Schema.org type (e.g., 'DigitalDocument', 'ImageObject')</dd>
+<dt><strong><code>entity_id</code></strong></dt>
+<dd>Optional entity ID. If not provided, generates UUID v4.
+Can be a UUID string, URN, or HTTPS URL.</dd>
+</dl>
+<h2 id="examples">Examples</h2>
+<h1 id="auto-generated-id">Auto-generated ID</h1>
+<p>doc = DocumentGenerator()</p>
+<h1 id="custom-uuid">Custom UUID</h1>
+<p>doc = DocumentGenerator(entity_id='550e8400-e29b-41d4-a716-446655440000')</p>
+<h1 id="urn-format">URN format</h1>
+<p>doc = DocumentGenerator(entity_id='urn:sha256:abc123&hellip;')</p>
+<h1 id="https-url">HTTPS URL</h1>
+<p>doc = DocumentGenerator(entity_id='https://example.com/docs/123')</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>abc.ABC</li>
+</ul>
+<h3>Subclasses</h3>
+<ul class="hlist">
+<li><a title="src.generators.ArchiveGenerator" href="generators.html#src.generators.ArchiveGenerator">ArchiveGenerator</a></li>
+<li><a title="src.generators.AudioGenerator" href="generators.html#src.generators.AudioGenerator">AudioGenerator</a></li>
+<li><a title="src.generators.CodeGenerator" href="generators.html#src.generators.CodeGenerator">CodeGenerator</a></li>
+<li><a title="src.generators.DatasetGenerator" href="generators.html#src.generators.DatasetGenerator">DatasetGenerator</a></li>
+<li><a title="src.generators.DocumentGenerator" href="generators.html#src.generators.DocumentGenerator">DocumentGenerator</a></li>
+<li><a title="src.generators.ImageGenerator" href="generators.html#src.generators.ImageGenerator">ImageGenerator</a></li>
+<li><a title="src.generators.OrganizationGenerator" href="generators.html#src.generators.OrganizationGenerator">OrganizationGenerator</a></li>
+<li><a title="src.generators.PersonGenerator" href="generators.html#src.generators.PersonGenerator">PersonGenerator</a></li>
+<li><a title="src.generators.VideoGenerator" href="generators.html#src.generators.VideoGenerator">VideoGenerator</a></li>
+</ul>
+<h3>Methods</h3>
+<dl>
+<dt id="src.base.SchemaOrgBase.get_completion_score"><code class="name flex">
+<span>def <span class="ident">get_completion_score</span></span>(<span>self) ‑> float</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_completion_score(self) -&gt; float:
+    &#34;&#34;&#34;
+    Calculate completion score based on required and recommended properties.
+
+    Returns:
+        Completion score (0.0 to 1.0)
+    &#34;&#34;&#34;
+    required = self.get_required_properties()
+    recommended = self.get_recommended_properties()
+    total = len(required) + len(recommended)
+
+    if total == 0:
+        return 1.0
+
+    present = 0
+    for prop in required:
+        if prop in self.data:
+            present += 1
+    for prop in recommended:
+        if prop in self.data:
+            present += 0.5  # Recommended properties count as half
+
+    return min(present / len(required) if required else 1.0, 1.0)</code></pre>
+</details>
+<div class="desc"><p>Calculate completion score based on required and recommended properties.</p>
+<h2 id="returns">Returns</h2>
+<p>Completion score (0.0 to 1.0)</p></div>
+</dd>
+<dt id="src.base.SchemaOrgBase.get_id"><code class="name flex">
+<span>def <span class="ident">get_id</span></span>(<span>self) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_id(self) -&gt; str:
+    &#34;&#34;&#34;
+    Get the @id for this schema.
+
+    Returns:
+        The @id IRI string
+    &#34;&#34;&#34;
+    return self.data.get(&#34;@id&#34;, &#34;&#34;)</code></pre>
+</details>
+<div class="desc"><p>Get the @id for this schema.</p>
+<h2 id="returns">Returns</h2>
+<p>The @id IRI string</p></div>
+</dd>
+<dt id="src.base.SchemaOrgBase.get_recommended_properties"><code class="name flex">
+<span>def <span class="ident">get_recommended_properties</span></span>(<span>self) ‑> List[str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def get_recommended_properties(self) -&gt; List[str]:
+    &#34;&#34;&#34;
+    Get list of recommended properties for this schema type.
+
+    Returns:
+        List of recommended property names
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+<div class="desc"><p>Get list of recommended properties for this schema type.</p>
+<h2 id="returns">Returns</h2>
+<p>List of recommended property names</p></div>
+</dd>
+<dt id="src.base.SchemaOrgBase.get_required_properties"><code class="name flex">
+<span>def <span class="ident">get_required_properties</span></span>(<span>self) ‑> List[str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@abstractmethod
+def get_required_properties(self) -&gt; List[str]:
+    &#34;&#34;&#34;
+    Get list of required properties for this schema type.
+
+    Returns:
+        List of required property names
+    &#34;&#34;&#34;
+    pass</code></pre>
+</details>
+<div class="desc"><p>Get list of required properties for this schema type.</p>
+<h2 id="returns">Returns</h2>
+<p>List of required property names</p></div>
+</dd>
+<dt id="src.base.SchemaOrgBase.set_dates"><code class="name flex">
+<span>def <span class="ident">set_dates</span></span>(<span>self,<br>created: datetime.datetime | None = None,<br>modified: datetime.datetime | None = None,<br>published: datetime.datetime | None = None) ‑> <a title="src.base.SchemaOrgBase" href="#src.base.SchemaOrgBase">SchemaOrgBase</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_dates(self, created: Optional[datetime] = None,
+              modified: Optional[datetime] = None,
+              published: Optional[datetime] = None) -&gt; &#39;SchemaOrgBase&#39;:
+    &#34;&#34;&#34;
+    Set date properties.
+
+    Args:
+        created: Date created
+        modified: Date modified
+        published: Date published
+
+    Returns:
+        Self for method chaining
+    &#34;&#34;&#34;
+    if created:
+        self.set_property(&#34;dateCreated&#34;, created, PropertyType.DATETIME)
+    if modified:
+        self.set_property(&#34;dateModified&#34;, modified, PropertyType.DATETIME)
+    if published:
+        self.set_property(&#34;datePublished&#34;, published, PropertyType.DATETIME)
+    return self</code></pre>
+</details>
+<div class="desc"><p>Set date properties.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>created</code></strong></dt>
+<dd>Date created</dd>
+<dt><strong><code>modified</code></strong></dt>
+<dd>Date modified</dd>
+<dt><strong><code>published</code></strong></dt>
+<dd>Date published</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Self for method chaining</p></div>
+</dd>
+<dt id="src.base.SchemaOrgBase.set_property"><code class="name flex">
+<span>def <span class="ident">set_property</span></span>(<span>self,<br>name: str,<br>value: Any,<br>property_type: <a title="src.base.PropertyType" href="#src.base.PropertyType">PropertyType</a> | None = None) ‑> <a title="src.base.SchemaOrgBase" href="#src.base.SchemaOrgBase">SchemaOrgBase</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def set_property(self, name: str, value: Any,
+                 property_type: Optional[PropertyType] = None) -&gt; &#39;SchemaOrgBase&#39;:
+    &#34;&#34;&#34;
+    Set a property value with optional type validation.
+
+    Args:
+        name: Property name
+        value: Property value
+        property_type: Expected property type for validation
+
+    Returns:
+        Self for method chaining
+    &#34;&#34;&#34;
+    if value is None:
+        return self
+
+    # Validate and convert value based on type
+    if property_type:
+        value = self._validate_and_convert(value, property_type)
+
+    self.data[name] = value
+    return self</code></pre>
+</details>
+<div class="desc"><p>Set a property value with optional type validation.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>name</code></strong></dt>
+<dd>Property name</dd>
+<dt><strong><code>value</code></strong></dt>
+<dd>Property value</dd>
+<dt><strong><code>property_type</code></strong></dt>
+<dd>Expected property type for validation</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Self for method chaining</p></div>
+</dd>
+<dt id="src.base.SchemaOrgBase.to_dict"><code class="name flex">
+<span>def <span class="ident">to_dict</span></span>(<span>self) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_dict(self) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Convert to dictionary representation.
+
+    Returns:
+        Dictionary representation of the schema
+    &#34;&#34;&#34;
+    return self.data.copy()</code></pre>
+</details>
+<div class="desc"><p>Convert to dictionary representation.</p>
+<h2 id="returns">Returns</h2>
+<p>Dictionary representation of the schema</p></div>
+</dd>
+<dt id="src.base.SchemaOrgBase.to_json_ld"><code class="name flex">
+<span>def <span class="ident">to_json_ld</span></span>(<span>self, indent: int = 2) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_json_ld(self, indent: int = 2) -&gt; str:
+    &#34;&#34;&#34;
+    Convert to JSON-LD string.
+
+    Args:
+        indent: JSON indentation level
+
+    Returns:
+        JSON-LD string
+    &#34;&#34;&#34;
+    return json.dumps(self.data, indent=indent, ensure_ascii=False)</code></pre>
+</details>
+<div class="desc"><p>Convert to JSON-LD string.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>indent</code></strong></dt>
+<dd>JSON indentation level</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>JSON-LD string</p></div>
+</dd>
+<dt id="src.base.SchemaOrgBase.to_json_ld_script"><code class="name flex">
+<span>def <span class="ident">to_json_ld_script</span></span>(<span>self, indent: int = 2) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def to_json_ld_script(self, indent: int = 2) -&gt; str:
+    &#34;&#34;&#34;
+    Convert to JSON-LD script tag for HTML embedding.
+
+    Args:
+        indent: JSON indentation level
+
+    Returns:
+        HTML script tag with JSON-LD
+    &#34;&#34;&#34;
+    json_ld = self.to_json_ld(indent=indent)
+    return f&#39;&lt;script type=&#34;application/ld+json&#34;&gt;\n{json_ld}\n&lt;/script&gt;&#39;</code></pre>
+</details>
+<div class="desc"><p>Convert to JSON-LD script tag for HTML embedding.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>indent</code></strong></dt>
+<dd>JSON indentation level</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>HTML script tag with JSON-LD</p></div>
+</dd>
+<dt id="src.base.SchemaOrgBase.validate_required_properties"><code class="name flex">
+<span>def <span class="ident">validate_required_properties</span></span>(<span>self) ‑> List[str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def validate_required_properties(self) -&gt; List[str]:
+    &#34;&#34;&#34;
+    Validate that all required properties are present.
+
+    Returns:
+        List of missing required properties
+    &#34;&#34;&#34;
+    required = self.get_required_properties()
+    missing = []
+    for prop in required:
+        if prop not in self.data:
+            missing.append(prop)
+    return missing</code></pre>
+</details>
+<div class="desc"><p>Validate that all required properties are present.</p>
+<h2 id="returns">Returns</h2>
+<p>List of missing required properties</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src" href="index.html">src</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.base.PropertyType" href="#src.base.PropertyType">PropertyType</a></code></h4>
+<ul class="two-column">
+<li><code><a title="src.base.PropertyType.ARRAY" href="#src.base.PropertyType.ARRAY">ARRAY</a></code></li>
+<li><code><a title="src.base.PropertyType.BOOLEAN" href="#src.base.PropertyType.BOOLEAN">BOOLEAN</a></code></li>
+<li><code><a title="src.base.PropertyType.DATE" href="#src.base.PropertyType.DATE">DATE</a></code></li>
+<li><code><a title="src.base.PropertyType.DATETIME" href="#src.base.PropertyType.DATETIME">DATETIME</a></code></li>
+<li><code><a title="src.base.PropertyType.INTEGER" href="#src.base.PropertyType.INTEGER">INTEGER</a></code></li>
+<li><code><a title="src.base.PropertyType.NUMBER" href="#src.base.PropertyType.NUMBER">NUMBER</a></code></li>
+<li><code><a title="src.base.PropertyType.OBJECT" href="#src.base.PropertyType.OBJECT">OBJECT</a></code></li>
+<li><code><a title="src.base.PropertyType.TEXT" href="#src.base.PropertyType.TEXT">TEXT</a></code></li>
+<li><code><a title="src.base.PropertyType.URL" href="#src.base.PropertyType.URL">URL</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.base.SchemaContext" href="#src.base.SchemaContext">SchemaContext</a></code></h4>
+<ul class="">
+<li><code><a title="src.base.SchemaContext.DEFAULT_CONTEXT" href="#src.base.SchemaContext.DEFAULT_CONTEXT">DEFAULT_CONTEXT</a></code></li>
+<li><code><a title="src.base.SchemaContext.SCHEMA_ORG" href="#src.base.SchemaContext.SCHEMA_ORG">SCHEMA_ORG</a></code></li>
+<li><code><a title="src.base.SchemaContext.get_context" href="#src.base.SchemaContext.get_context">get_context</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.base.SchemaOrgBase" href="#src.base.SchemaOrgBase">SchemaOrgBase</a></code></h4>
+<ul class="">
+<li><code><a title="src.base.SchemaOrgBase.get_completion_score" href="#src.base.SchemaOrgBase.get_completion_score">get_completion_score</a></code></li>
+<li><code><a title="src.base.SchemaOrgBase.get_id" href="#src.base.SchemaOrgBase.get_id">get_id</a></code></li>
+<li><code><a title="src.base.SchemaOrgBase.get_recommended_properties" href="#src.base.SchemaOrgBase.get_recommended_properties">get_recommended_properties</a></code></li>
+<li><code><a title="src.base.SchemaOrgBase.get_required_properties" href="#src.base.SchemaOrgBase.get_required_properties">get_required_properties</a></code></li>
+<li><code><a title="src.base.SchemaOrgBase.set_dates" href="#src.base.SchemaOrgBase.set_dates">set_dates</a></code></li>
+<li><code><a title="src.base.SchemaOrgBase.set_property" href="#src.base.SchemaOrgBase.set_property">set_property</a></code></li>
+<li><code><a title="src.base.SchemaOrgBase.to_dict" href="#src.base.SchemaOrgBase.to_dict">to_dict</a></code></li>
+<li><code><a title="src.base.SchemaOrgBase.to_json_ld" href="#src.base.SchemaOrgBase.to_json_ld">to_json_ld</a></code></li>
+<li><code><a title="src.base.SchemaOrgBase.to_json_ld_script" href="#src.base.SchemaOrgBase.to_json_ld_script">to_json_ld_script</a></code></li>
+<li><code><a title="src.base.SchemaOrgBase.validate_required_properties" href="#src.base.SchemaOrgBase.validate_required_properties">validate_required_properties</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

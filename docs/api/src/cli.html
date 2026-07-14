@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.cli API documentation</title>
+<meta name="description" content="Unified CLI for Schema.org File Organization System …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.cli</code></h1>
+</header>
+<section id="section-intro">
+<p>Unified CLI for Schema.org File Organization System.</p>
+<p>Provides a single entry point with subcommands for all file organization tasks.</p>
+<h2 id="usage">Usage</h2>
+<p>organize-files content &ndash;source ~/Downloads &ndash;limit 100 &ndash;dry-run
+organize-files name &ndash;source ~/Downloads &ndash;target ~/Documents
+organize-files type &ndash;source ~/Desktop
+organize-files preprocess &ndash;output results/training_data
+organize-files evaluate &ndash;test-data results/test_set.json
+organize-files migrate-ids
+organize-files health</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="src.cli.add_content_arguments"><code class="name flex">
+<span>def <span class="ident">add_content_arguments</span></span>(<span>parser: argparse.ArgumentParser) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_content_arguments(parser: argparse.ArgumentParser) -&gt; None:
+    &#34;&#34;&#34;Options for content-based organization (organize-files content).&#34;&#34;&#34;
+    parser.add_argument(&#39;--source&#39;, &#39;--sources&#39;, nargs=&#39;+&#39;, dest=&#39;sources&#39;,
+                        default=DEFAULT_SOURCES,
+                        help=&#39;Source directories to organize&#39;)
+    parser.add_argument(&#39;--target&#39;, &#39;--base-path&#39;, dest=&#39;base_path&#39;,
+                        default=DEFAULT_TARGET,
+                        help=&#39;Target directory for organized files&#39;)
+    parser.add_argument(&#39;--dry-run&#39;, action=&#39;store_true&#39;,
+                        help=&#39;Simulate without moving files&#39;)
+    parser.add_argument(&#39;--limit&#39;, type=int,
+                        help=&#39;Limit number of files to process&#39;)
+    parser.add_argument(&#39;--report&#39;, help=&#39;Path to save JSON report&#39;)
+    parser.add_argument(&#39;--force&#39;, action=&#39;store_true&#39;,
+                        help=&#39;Force re-organization of all files, even if &#39;
+                             &#39;already in correct location&#39;)
+    parser.add_argument(&#39;--no-cost-tracking&#39;, action=&#39;store_true&#39;,
+                        help=&#39;Disable cost tracking&#39;)
+    parser.add_argument(&#39;--cost-report&#39;, nargs=&#39;?&#39;, const=DEFAULT_COST_REPORT,
+                        default=DEFAULT_COST_REPORT,
+                        help=f&#39;Path to save cost/ROI report (default: {DEFAULT_COST_REPORT}, &#39;
+                             &#39;use --no-cost-tracking to disable)&#39;)
+    parser.add_argument(&#39;--check-deps&#39;, action=&#39;store_true&#39;,
+                        help=&#39;Run system health check and show feature availability&#39;)
+    parser.add_argument(&#39;--skip-health-check&#39;, action=&#39;store_true&#39;,
+                        help=&#39;Skip startup health check&#39;)
+    parser.add_argument(&#39;--sentry-dsn&#39;,
+                        help=&#39;Sentry DSN for error tracking (or set SENTRY_DSN env var)&#39;)
+    parser.add_argument(&#39;--no-sentry&#39;, action=&#39;store_true&#39;,
+                        help=&#39;Disable Sentry error tracking&#39;)
+    parser.add_argument(&#39;--db-path&#39;, default=DEFAULT_DB_PATH,
+                        help=&#39;SQLite database path&#39;)
+    parser.add_argument(&#39;--no-db&#39;, action=&#39;store_true&#39;,
+                        help=&#39;Disable database persistence&#39;)
+    parser.add_argument(&#39;--run-migration&#39;, action=&#39;store_true&#39;,
+                        help=&#39;Run database migration to add canonical_id columns &#39;
+                             &#39;to existing records&#39;)</code></pre>
+</details>
+<div class="desc"><p>Options for content-based organization (organize-files content).</p></div>
+</dd>
+<dt id="src.cli.add_evaluate_arguments"><code class="name flex">
+<span>def <span class="ident">add_evaluate_arguments</span></span>(<span>parser: argparse.ArgumentParser) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_evaluate_arguments(parser: argparse.ArgumentParser) -&gt; None:
+    &#34;&#34;&#34;Options for model evaluation (organize-files evaluate).&#34;&#34;&#34;
+    parser.add_argument(&#39;--test-data&#39;, &#39;-t&#39;, default=&#39;results/ml_data/test.json&#39;,
+                        help=&#39;Path to test.json&#39;)
+    parser.add_argument(&#39;--output&#39;, &#39;-o&#39;, default=&#39;results/model_evaluation.json&#39;,
+                        help=&#39;Output path for results JSON&#39;)
+    parser.add_argument(&#39;--classifier&#39;, &#39;-c&#39;, choices=[&#39;baseline&#39;, &#39;content&#39;],
+                        default=&#39;baseline&#39;,
+                        help=&#39;baseline = filename heuristic; content = production &#39;
+                             &#39;CLIP+OCR classifier (requires test files on disk)&#39;)
+    parser.add_argument(&#39;--min-support&#39;, type=int, default=None,
+                        help=&#39;Minimum per-class sample count for its metrics to be &#39;
+                             &#39;reported (default: evaluate_model.DEFAULT_MIN_SUPPORT)&#39;)</code></pre>
+</details>
+<div class="desc"><p>Options for model evaluation (organize-files evaluate).</p></div>
+</dd>
+<dt id="src.cli.add_name_arguments"><code class="name flex">
+<span>def <span class="ident">add_name_arguments</span></span>(<span>parser: argparse.ArgumentParser) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_name_arguments(parser: argparse.ArgumentParser) -&gt; None:
+    &#34;&#34;&#34;Options for name-based organization (organize-files name).&#34;&#34;&#34;
+    parser.add_argument(&#39;--source&#39;, &#39;--sources&#39;, nargs=&#39;+&#39;, dest=&#39;sources&#39;,
+                        default=DEFAULT_SOURCES,
+                        help=&#39;Source directories to organize&#39;)
+    parser.add_argument(&#39;--target&#39;, &#39;--base-path&#39;, dest=&#39;base_path&#39;,
+                        default=DEFAULT_TARGET,
+                        help=&#39;Target directory for organized files&#39;)
+    parser.add_argument(&#39;--recursive&#39;, action=&#39;store_true&#39;,
+                        help=&#39;Process subdirectories recursively&#39;)
+    parser.add_argument(&#39;--dry-run&#39;, action=&#39;store_true&#39;,
+                        help=&#39;Simulate without moving files&#39;)
+    parser.add_argument(&#39;--limit&#39;, type=int,
+                        help=&#39;Limit number of files to process&#39;)</code></pre>
+</details>
+<div class="desc"><p>Options for name-based organization (organize-files name).</p></div>
+</dd>
+<dt id="src.cli.add_preprocess_arguments"><code class="name flex">
+<span>def <span class="ident">add_preprocess_arguments</span></span>(<span>parser: argparse.ArgumentParser) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_preprocess_arguments(parser: argparse.ArgumentParser) -&gt; None:
+    &#34;&#34;&#34;Options for ML data preprocessing (organize-files preprocess).&#34;&#34;&#34;
+    parser.add_argument(&#39;--input&#39;, &#39;-i&#39;, required=True,
+                        help=&#39;Path to organization report JSON&#39;)
+    parser.add_argument(&#39;--output&#39;, &#39;-o&#39;, default=&#39;./ml_data&#39;,
+                        help=&#39;Output directory for processed data&#39;)
+    parser.add_argument(&#39;--test-ratio&#39;, type=float, default=0.2,
+                        help=&#39;Test set ratio (default: 0.2)&#39;)
+    parser.add_argument(&#39;--min-freq&#39;, type=int, default=5,
+                        help=&#39;Minimum token frequency for vocabulary&#39;)
+    parser.add_argument(&#39;--report-only&#39;, action=&#39;store_true&#39;,
+                        help=&#39;Only generate report, no export&#39;)</code></pre>
+</details>
+<div class="desc"><p>Options for ML data preprocessing (organize-files preprocess).</p></div>
+</dd>
+<dt id="src.cli.add_timeline_arguments"><code class="name flex">
+<span>def <span class="ident">add_timeline_arguments</span></span>(<span>parser: argparse.ArgumentParser) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_timeline_arguments(parser: argparse.ArgumentParser) -&gt; None:
+    &#34;&#34;&#34;Options for timeline generation (organize-files timeline).&#34;&#34;&#34;
+    parser.add_argument(&#39;--db-path&#39;, default=None,
+                        help=f&#39;Path to SQLite database (default: {DEFAULT_DB_PATH})&#39;)</code></pre>
+</details>
+<div class="desc"><p>Options for timeline generation (organize-files timeline).</p></div>
+</dd>
+<dt id="src.cli.add_type_arguments"><code class="name flex">
+<span>def <span class="ident">add_type_arguments</span></span>(<span>parser: argparse.ArgumentParser) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_type_arguments(parser: argparse.ArgumentParser) -&gt; None:
+    &#34;&#34;&#34;Options for type-based organization (organize-files type).&#34;&#34;&#34;
+    parser.add_argument(&#39;--source&#39;, &#39;--sources&#39;, nargs=&#39;+&#39;, dest=&#39;sources&#39;,
+                        default=DEFAULT_SOURCES,
+                        help=&#39;Source directories to organize&#39;)
+    parser.add_argument(&#39;--target&#39;, &#39;--base-path&#39;, dest=&#39;base_path&#39;,
+                        default=DEFAULT_TARGET,
+                        help=&#39;Target directory for organized files&#39;)
+    parser.add_argument(&#39;--dry-run&#39;, action=&#39;store_true&#39;,
+                        help=&#39;Simulate without moving files&#39;)</code></pre>
+</details>
+<div class="desc"><p>Options for type-based organization (organize-files type).</p></div>
+</dd>
+<dt id="src.cli.add_update_site_arguments"><code class="name flex">
+<span>def <span class="ident">add_update_site_arguments</span></span>(<span>parser: argparse.ArgumentParser) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def add_update_site_arguments(parser: argparse.ArgumentParser) -&gt; None:
+    &#34;&#34;&#34;Options for dashboard data refresh (organize-files update-site).&#34;&#34;&#34;
+    parser.add_argument(&#39;--results-dir&#39;, &#39;-r&#39;, default=&#39;results&#39;,
+                        help=&#39;Results directory&#39;)
+    parser.add_argument(&#39;--site-dir&#39;, &#39;-s&#39;, default=&#39;_site&#39;,
+                        help=&#39;Site directory&#39;)
+    parser.add_argument(&#39;--report&#39;, help=&#39;Specific report file to use&#39;)</code></pre>
+</details>
+<div class="desc"><p>Options for dashboard data refresh (organize-files update-site).</p></div>
+</dd>
+<dt id="src.cli.cmd_content"><code class="name flex">
+<span>def <span class="ident">cmd_content</span></span>(<span>args: argparse.Namespace) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cmd_content(args: argparse.Namespace) -&gt; None:
+    &#34;&#34;&#34;Run content-based organization using AI/OCR.&#34;&#34;&#34;
+    # Import here to avoid loading heavy dependencies until needed
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    from file_organizer_content_based import run as content_run
+
+    content_run(ContentInputs.from_namespace(args))</code></pre>
+</details>
+<div class="desc"><p>Run content-based organization using AI/OCR.</p></div>
+</dd>
+<dt id="src.cli.cmd_evaluate"><code class="name flex">
+<span>def <span class="ident">cmd_evaluate</span></span>(<span>args: argparse.Namespace) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cmd_evaluate(args: argparse.Namespace) -&gt; None:
+    &#34;&#34;&#34;Run model evaluation.&#34;&#34;&#34;
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    from evaluate_model import run as evaluate_run
+
+    evaluate_run(EvaluateInputs.from_namespace(args))</code></pre>
+</details>
+<div class="desc"><p>Run model evaluation.</p></div>
+</dd>
+<dt id="src.cli.cmd_health"><code class="name flex">
+<span>def <span class="ident">cmd_health</span></span>(<span>args: argparse.Namespace) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cmd_health(args: argparse.Namespace) -&gt; None:
+    &#34;&#34;&#34;Run system health check.&#34;&#34;&#34;
+    from health_check import check_system
+    check_system(verbose=True)</code></pre>
+</details>
+<div class="desc"><p>Run system health check.</p></div>
+</dd>
+<dt id="src.cli.cmd_index_people"><code class="name flex">
+<span>def <span class="ident">cmd_index_people</span></span>(<span>args: argparse.Namespace) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cmd_index_people(args: argparse.Namespace) -&gt; None:
+    &#34;&#34;&#34;Register migrated files in the graph with person edges (no file moves).&#34;&#34;&#34;
+    from storage.person_migration import DEFAULT_MANIFEST_PATH, index_person_files
+
+    manifest_path = Path(args.manifest) if args.manifest else DEFAULT_MANIFEST_PATH
+    person_root = Path(args.person_root).expanduser() if args.person_root else None
+    kwargs = {
+        &#34;manifest_path&#34;: manifest_path,
+        &#34;db_path&#34;: args.db_path,
+        &#34;apply&#34;: bool(args.apply),
+    }
+    if person_root is not None:
+        kwargs[&#34;person_root&#34;] = person_root
+    index_person_files(**kwargs)
+
+    # Clean-up pass after indexing: drop edges whose file path is gone.
+    if args.prune_missing:
+        from storage.graph_store import GraphStore
+
+        _prune_missing_edges(GraphStore(args.db_path), bool(args.apply))</code></pre>
+</details>
+<div class="desc"><p>Register migrated files in the graph with person edges (no file moves).</p></div>
+</dd>
+<dt id="src.cli.cmd_migrate"><code class="name flex">
+<span>def <span class="ident">cmd_migrate</span></span>(<span>args: argparse.Namespace) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cmd_migrate(args: argparse.Namespace) -&gt; None:
+    &#34;&#34;&#34;Run database migration for ID generation.&#34;&#34;&#34;
+    from storage.migration import run_migration
+
+    db_path = args.db_path or DEFAULT_DB_PATH
+    print(f&#34;\n{&#39;=&#39;*60}&#34;)
+    print(&#34;Running ID Generation Migration&#34;)
+    print(f&#34;{&#39;=&#39;*60}\n&#34;)
+    run_migration(db_path)
+    print(&#34;\nMigration complete. Canonical IDs have been generated for existing records.&#34;)</code></pre>
+</details>
+<div class="desc"><p>Run database migration for ID generation.</p></div>
+</dd>
+<dt id="src.cli.cmd_migrate_person"><code class="name flex">
+<span>def <span class="ident">cmd_migrate_person</span></span>(<span>args: argparse.Namespace) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cmd_migrate_person(args: argparse.Namespace) -&gt; None:
+    &#34;&#34;&#34;Migrate legacy on-disk Person/ files into Personal/{subcat}/ folders.&#34;&#34;&#34;
+    from storage.person_migration import (
+        DEFAULT_DOCUMENTS_ROOT,
+        DEFAULT_MANIFEST_PATH,
+        DEFAULT_PERSON_ROOT,
+        migrate_person_files,
+        rollback_person_migration,
+    )
+
+    manifest_path = Path(args.manifest) if args.manifest else DEFAULT_MANIFEST_PATH
+    db_path = None if args.no_db else args.db_path
+
+    if args.rollback:
+        rollback_person_migration(manifest_path, db_path=db_path)
+        return
+
+    person_root = Path(args.person_root).expanduser() if args.person_root else DEFAULT_PERSON_ROOT
+    documents_root = (
+        Path(args.documents_root).expanduser() if args.documents_root else DEFAULT_DOCUMENTS_ROOT
+    )
+    migrate_person_files(
+        person_root=person_root,
+        documents_root=documents_root,
+        db_path=db_path,
+        manifest_path=manifest_path,
+        apply=bool(args.apply),
+    )</code></pre>
+</details>
+<div class="desc"><p>Migrate legacy on-disk Person/ files into Personal/{subcat}/ folders.</p></div>
+</dd>
+<dt id="src.cli.cmd_name"><code class="name flex">
+<span>def <span class="ident">cmd_name</span></span>(<span>args: argparse.Namespace) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cmd_name(args: argparse.Namespace) -&gt; None:
+    &#34;&#34;&#34;Run name-based organization (no AI).&#34;&#34;&#34;
+    sys.path.insert(0, str(PROJECT_ROOT))
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    from src.organizers.name_organizer import run as name_run
+
+    name_run(NameInputs.from_namespace(args))</code></pre>
+</details>
+<div class="desc"><p>Run name-based organization (no AI).</p></div>
+</dd>
+<dt id="src.cli.cmd_person_view"><code class="name flex">
+<span>def <span class="ident">cmd_person_view</span></span>(<span>args: argparse.Namespace) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cmd_person_view(args: argparse.Namespace) -&gt; None:
+    &#34;&#34;&#34;Regenerate the derived Person/{Name}/ symlink view from graph edges.&#34;&#34;&#34;
+    from storage.graph_store import GraphStore
+    from storage.person_view_generator import PersonViewGenerator
+
+    view_root = Path(args.view_root).expanduser() if args.view_root else None
+    graph_store = GraphStore(args.db_path)
+    apply = bool(args.apply)
+
+    # Prune before generating so the view is derived from the cleaned graph.
+    if args.prune_missing:
+        _prune_missing_edges(graph_store, apply)
+
+    generator = PersonViewGenerator(graph_store, view_root=view_root)
+    summary = generator.generate(dry_run=not apply, apply=apply)
+
+    label = &#34;APPLIED&#34; if apply else &#34;DRY RUN&#34;
+    print(f&#34;\n[{label}] Person view: {summary[&#39;people&#39;]} people, &#34;
+          f&#34;{summary[&#39;symlinks_created&#39;]} symlinks, &#34;
+          f&#34;{summary[&#39;removed_stale&#39;]} stale removed&#34;)
+    for err in summary.get(&#39;errors&#39;, []):
+        print(f&#34;  ! {err}&#34;)</code></pre>
+</details>
+<div class="desc"><p>Regenerate the derived Person/{Name}/ symlink view from graph edges.</p></div>
+</dd>
+<dt id="src.cli.cmd_preprocess"><code class="name flex">
+<span>def <span class="ident">cmd_preprocess</span></span>(<span>args: argparse.Namespace) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cmd_preprocess(args: argparse.Namespace) -&gt; None:
+    &#34;&#34;&#34;Run ML data preprocessing.&#34;&#34;&#34;
+    sys.path.insert(0, str(PROJECT_ROOT))
+    sys.path.insert(0, str(SCRIPTS_DIR))  # shared.constants, used by feature extraction
+    from src.ml.data_preprocessor import run as preprocess_run
+
+    preprocess_run(PreprocessInputs.from_namespace(args))</code></pre>
+</details>
+<div class="desc"><p>Run ML data preprocessing.</p></div>
+</dd>
+<dt id="src.cli.cmd_prune_person"><code class="name flex">
+<span>def <span class="ident">cmd_prune_person</span></span>(<span>args: argparse.Namespace) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cmd_prune_person(args: argparse.Namespace) -&gt; None:
+    &#34;&#34;&#34;Delete people and their file-&gt;person graph edges (no file moves).&#34;&#34;&#34;
+    import shutil
+    from datetime import datetime
+
+    from storage.graph_store import GraphStore
+
+    apply = bool(args.apply)
+    label = &#34;APPLIED&#34; if apply else &#34;DRY RUN&#34;
+
+    if apply:
+        db_file = Path(args.db_path)
+        if db_file.exists():
+            stamp = datetime.now().strftime(&#39;%Y%m%d_%H%M%S&#39;)
+            for suffix in (&#39;&#39;, &#39;-wal&#39;, &#39;-shm&#39;):
+                src = Path(str(db_file) + suffix)
+                if src.exists():
+                    shutil.copy2(src, Path(f&#34;{db_file}.bak-{stamp}{suffix}&#34;))
+            print(f&#34;Backed up database to {db_file}.bak-{stamp}&#34;)
+
+    store = GraphStore(args.db_path)
+    missing = 0
+    for target in args.people:
+        key: Any = int(target) if target.isdigit() else target
+        summary = store.prune_person(key, dry_run=not apply)
+        if summary is None:
+            print(f&#34;[{label}] {target!r}: no matching person&#34;)
+            missing += 1
+            continue
+        print(f&#34;[{label}] {summary[&#39;name&#39;]} (id={summary[&#39;person_id&#39;]}): &#34;
+              f&#34;{summary[&#39;edges_removed&#39;]} edge(s) removed, person deleted&#34;)
+        for path in summary[&#39;paths&#39;]:
+            print(f&#34;    {path}&#34;)
+
+    if missing:
+        sys.exit(1)</code></pre>
+</details>
+<div class="desc"><p>Delete people and their file-&gt;person graph edges (no file moves).</p></div>
+</dd>
+<dt id="src.cli.cmd_timeline"><code class="name flex">
+<span>def <span class="ident">cmd_timeline</span></span>(<span>args: argparse.Namespace) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cmd_timeline(args: argparse.Namespace) -&gt; None:
+    &#34;&#34;&#34;Generate timeline data for visualization.&#34;&#34;&#34;
+    sys.path.insert(0, str(PROJECT_ROOT))
+    sys.path.insert(0, str(SCRIPTS_DIR))  # timeline_api imports shared.db_utils
+    from src.api.timeline_api import run as timeline_run
+
+    try:
+        timeline_run(TimelineInputs.from_namespace(args))
+    except FileNotFoundError as exc:
+        print(f&#34;Error: {exc}&#34;)
+        sys.exit(1)</code></pre>
+</details>
+<div class="desc"><p>Generate timeline data for visualization.</p></div>
+</dd>
+<dt id="src.cli.cmd_type"><code class="name flex">
+<span>def <span class="ident">cmd_type</span></span>(<span>args: argparse.Namespace) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cmd_type(args: argparse.Namespace) -&gt; None:
+    &#34;&#34;&#34;Run type-based organization by file extension.&#34;&#34;&#34;
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    from file_organizer_by_type import run as type_run
+
+    type_run(TypeInputs.from_namespace(args))</code></pre>
+</details>
+<div class="desc"><p>Run type-based organization by file extension.</p></div>
+</dd>
+<dt id="src.cli.cmd_update_site"><code class="name flex">
+<span>def <span class="ident">cmd_update_site</span></span>(<span>args: argparse.Namespace) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def cmd_update_site(args: argparse.Namespace) -&gt; None:
+    &#34;&#34;&#34;Update _site dashboard data.&#34;&#34;&#34;
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    from update_site_data import run as update_run
+
+    update_run(UpdateSiteInputs.from_namespace(args))</code></pre>
+</details>
+<div class="desc"><p>Update _site dashboard data.</p></div>
+</dd>
+<dt id="src.cli.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main() -&gt; None:
+    &#34;&#34;&#34;Main CLI entry point.&#34;&#34;&#34;
+    parser = argparse.ArgumentParser(
+        prog=&#39;organize-files&#39;,
+        description=&#39;Schema.org File Organization System - AI-powered file organization&#39;,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog=&#34;&#34;&#34;
+Examples:
+  organize-files content --source ~/Downloads --dry-run --limit 100
+  organize-files name --source ~/Downloads --target ~/Documents
+  organize-files type --source ~/Desktop
+  organize-files health
+  organize-files migrate-ids --db-path results/file_organization.db
+
+For more help on a specific command:
+  organize-files &lt;command&gt; --help
+&#34;&#34;&#34;
+    )
+
+    subparsers = parser.add_subparsers(
+        title=&#39;commands&#39;,
+        description=&#39;Available organization commands&#39;,
+        dest=&#39;command&#39;
+    )
+
+    # Content-based organization (main AI organizer)
+    content_parser = subparsers.add_parser(
+        &#39;content&#39;,
+        help=&#39;Organize files using AI content analysis (CLIP, OCR)&#39;,
+        description=&#39;AI-powered file organization using CLIP vision and OCR text extraction&#39;
+    )
+    add_content_arguments(content_parser)
+    content_parser.set_defaults(func=cmd_content)
+
+    # Name-based organization (no AI)
+    name_parser = subparsers.add_parser(
+        &#39;name&#39;,
+        help=&#39;Organize files by filename patterns (no AI)&#39;,
+        description=&#39;Simple file organization based on filename patterns and paths&#39;
+    )
+    add_name_arguments(name_parser)
+    name_parser.set_defaults(func=cmd_name)
+
+    # Type-based organization (by extension)
+    type_parser = subparsers.add_parser(
+        &#39;type&#39;,
+        help=&#39;Organize files by file type/extension&#39;,
+        description=&#39;Simple file organization based on file extensions&#39;
+    )
+    add_type_arguments(type_parser)
+    type_parser.set_defaults(func=cmd_type)
+
+    # ML preprocessing
+    preprocess_parser = subparsers.add_parser(
+        &#39;preprocess&#39;,
+        help=&#39;Prepare training data for ML models&#39;,
+        description=&#39;Data preprocessing pipeline for ML model training&#39;
+    )
+    add_preprocess_arguments(preprocess_parser)
+    preprocess_parser.set_defaults(func=cmd_preprocess)
+
+    # Model evaluation
+    evaluate_parser = subparsers.add_parser(
+        &#39;evaluate&#39;,
+        help=&#39;Evaluate model performance&#39;,
+        description=&#39;Run evaluation metrics on test dataset&#39;
+    )
+    add_evaluate_arguments(evaluate_parser)
+    evaluate_parser.set_defaults(func=cmd_evaluate)
+
+    # Database migration
+    migrate_parser = subparsers.add_parser(
+        &#39;migrate-ids&#39;,
+        help=&#39;Run database migration for canonical IDs&#39;,
+        description=&#39;Add canonical_id columns and generate UUIDs for existing records&#39;
+    )
+    migrate_parser.add_argument(&#39;--db-path&#39;, default=DEFAULT_DB_PATH,
+                                help=&#39;Path to SQLite database&#39;)
+    migrate_parser.set_defaults(func=cmd_migrate)
+
+    # Person symlink view (derived from graph edges)
+    person_view_parser = subparsers.add_parser(
+        &#39;person-view&#39;,
+        help=&#39;Regenerate the derived Person/{Name}/ symlink view from graph edges&#39;,
+        description=&#39;Rebuild ~/Documents/Person/ as symlinks to doc-class files &#39;
+                    &#39;(idempotent; aborts if a real file is found under the view root)&#39;
+    )
+    person_view_parser.add_argument(&#39;--view-root&#39;,
+                                    help=&#39;Root directory for the symlink view (default ~/Documents/Person)&#39;)  # noqa: E501
+    person_view_parser.add_argument(&#39;--db-path&#39;, default=DEFAULT_DB_PATH,
+                                    help=&#39;Path to SQLite database&#39;)
+    person_view_parser.add_argument(&#39;--apply&#39;, action=&#39;store_true&#39;,
+                                    help=&#39;Write symlinks (default is dry-run)&#39;)
+    person_view_parser.add_argument(&#39;--prune-missing&#39;, action=&#39;store_true&#39;,
+                                    help=&#39;First drop file-&gt;person edges whose file path &#39;
+                                         &#39;no longer exists (honors --apply/dry-run)&#39;)
+    person_view_parser.set_defaults(func=cmd_person_view)
+
+    # Migrate legacy on-disk Person/ files into Personal/{subcat}/
+    migrate_person_parser = subparsers.add_parser(
+        &#39;migrate-person&#39;,
+        help=&#39;Migrate legacy on-disk Person/ files into Personal/{subcat}/ folders&#39;,
+        description=&#39;Filesystem-walk migration of ~/Documents/Person/ into &#39;
+                    &#39;Personal/{subcat}/; dry-run by default, manifest-backed rollback&#39;
+    )
+    migrate_person_parser.add_argument(&#39;--person-root&#39;,
+                                       help=&#39;Source root to migrate (default ~/Documents/Person)&#39;)
+    migrate_person_parser.add_argument(&#39;--documents-root&#39;,
+                                       help=&#39;Destination base for Personal/ (default ~/Documents)&#39;)
+    migrate_person_parser.add_argument(&#39;--manifest&#39;,
+                                       help=&#39;Manifest path (default person-migrate-manifest.json)&#39;)
+    migrate_person_parser.add_argument(&#39;--db-path&#39;, default=DEFAULT_DB_PATH,
+                                       help=&#39;Path to SQLite database&#39;)
+    migrate_person_parser.add_argument(&#39;--no-db&#39;, action=&#39;store_true&#39;,
+                                       help=&#39;Skip DB lookups and updates&#39;)
+    migrate_person_parser.add_argument(&#39;--apply&#39;, action=&#39;store_true&#39;,
+                                       help=&#39;Move files (default is dry-run)&#39;)
+    migrate_person_parser.add_argument(&#39;--rollback&#39;, action=&#39;store_true&#39;,
+                                       help=&#39;Reverse a prior apply using the manifest&#39;)
+    migrate_person_parser.set_defaults(func=cmd_migrate_person)
+
+    # Index migrated files into the graph with person edges (no file moves)
+    index_people_parser = subparsers.add_parser(
+        &#39;index-people&#39;,
+        help=&#39;Attach person-&gt;file graph edges for migrated files (no moves)&#39;,
+        description=&#39;Register migrated Personal/ files in the graph at their &#39;
+                    &#39;current path and attach person edges derived from the &#39;
+                    &#39;migration manifest, so person-view can populate. No files move.&#39;
+    )
+    index_people_parser.add_argument(&#39;--manifest&#39;,
+                                     help=&#39;Migration manifest path (default person-migrate-manifest.json)&#39;)  # noqa: E501
+    index_people_parser.add_argument(&#39;--person-root&#39;,
+                                     help=&#39;Original Person/ root the manifest sources came from (default ~/Documents/Person)&#39;)  # noqa: E501
+    index_people_parser.add_argument(&#39;--db-path&#39;, default=DEFAULT_DB_PATH,
+                                     help=&#39;Path to SQLite database&#39;)
+    index_people_parser.add_argument(&#39;--apply&#39;, action=&#39;store_true&#39;,
+                                     help=&#39;Write graph rows/edges (default is dry-run)&#39;)
+    index_people_parser.add_argument(&#39;--prune-missing&#39;, action=&#39;store_true&#39;,
+                                     help=&#39;Afterwards drop file-&gt;person edges whose file &#39;
+                                          &#39;path no longer exists (honors --apply/dry-run)&#39;)
+    index_people_parser.set_defaults(func=cmd_index_people)
+
+    # Prune person nodes + their file edges from the graph
+    prune_person_parser = subparsers.add_parser(
+        &#39;prune-person&#39;,
+        help=&#39;Delete people and their file-&gt;person graph edges (no file moves)&#39;,
+        description=&#39;Remove false-positive or stale Person rows and all their &#39;
+                    &#39;file-&gt;person edges from the graph. Files on disk are never &#39;
+                    &#39;touched. Dry-run by default; --apply backs up the database &#39;
+                    &#39;first, then deletes.&#39;
+    )
+    prune_person_parser.add_argument(&#39;people&#39;, nargs=&#39;+&#39;,
+                                     help=&#39;Person names or integer IDs to prune&#39;)
+    prune_person_parser.add_argument(&#39;--db-path&#39;, default=DEFAULT_DB_PATH,
+                                     help=&#39;Path to SQLite database&#39;)
+    prune_person_parser.add_argument(&#39;--apply&#39;, action=&#39;store_true&#39;,
+                                     help=&#39;Delete (default is dry-run)&#39;)
+    prune_person_parser.set_defaults(func=cmd_prune_person)
+
+    # Health check
+    health_parser = subparsers.add_parser(
+        &#39;health&#39;,
+        help=&#39;Check system dependencies and feature availability&#39;,
+        description=&#39;Run system health check to verify all dependencies are installed&#39;
+    )
+    health_parser.set_defaults(func=cmd_health)
+
+    # Update site data
+    update_site_parser = subparsers.add_parser(
+        &#39;update-site&#39;,
+        help=&#39;Update _site dashboard data files&#39;,
+        description=&#39;Generate and update dashboard data in _site directory&#39;
+    )
+    add_update_site_arguments(update_site_parser)
+    update_site_parser.set_defaults(func=cmd_update_site)
+
+    # Generate timeline
+    timeline_parser = subparsers.add_parser(
+        &#39;timeline&#39;,
+        help=&#39;Generate timeline visualization data&#39;,
+        description=&#39;Query database and create timeline_data.json for frontend&#39;
+    )
+    add_timeline_arguments(timeline_parser)
+    timeline_parser.set_defaults(func=cmd_timeline)
+
+    # Parse and execute
+    args = parser.parse_args()
+
+    if args.command is None:
+        parser.print_help()
+        sys.exit(0)
+
+    # Execute the command
+    args.func(args)</code></pre>
+</details>
+<div class="desc"><p>Main CLI entry point.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src" href="index.html">src</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="src.cli.add_content_arguments" href="#src.cli.add_content_arguments">add_content_arguments</a></code></li>
+<li><code><a title="src.cli.add_evaluate_arguments" href="#src.cli.add_evaluate_arguments">add_evaluate_arguments</a></code></li>
+<li><code><a title="src.cli.add_name_arguments" href="#src.cli.add_name_arguments">add_name_arguments</a></code></li>
+<li><code><a title="src.cli.add_preprocess_arguments" href="#src.cli.add_preprocess_arguments">add_preprocess_arguments</a></code></li>
+<li><code><a title="src.cli.add_timeline_arguments" href="#src.cli.add_timeline_arguments">add_timeline_arguments</a></code></li>
+<li><code><a title="src.cli.add_type_arguments" href="#src.cli.add_type_arguments">add_type_arguments</a></code></li>
+<li><code><a title="src.cli.add_update_site_arguments" href="#src.cli.add_update_site_arguments">add_update_site_arguments</a></code></li>
+<li><code><a title="src.cli.cmd_content" href="#src.cli.cmd_content">cmd_content</a></code></li>
+<li><code><a title="src.cli.cmd_evaluate" href="#src.cli.cmd_evaluate">cmd_evaluate</a></code></li>
+<li><code><a title="src.cli.cmd_health" href="#src.cli.cmd_health">cmd_health</a></code></li>
+<li><code><a title="src.cli.cmd_index_people" href="#src.cli.cmd_index_people">cmd_index_people</a></code></li>
+<li><code><a title="src.cli.cmd_migrate" href="#src.cli.cmd_migrate">cmd_migrate</a></code></li>
+<li><code><a title="src.cli.cmd_migrate_person" href="#src.cli.cmd_migrate_person">cmd_migrate_person</a></code></li>
+<li><code><a title="src.cli.cmd_name" href="#src.cli.cmd_name">cmd_name</a></code></li>
+<li><code><a title="src.cli.cmd_person_view" href="#src.cli.cmd_person_view">cmd_person_view</a></code></li>
+<li><code><a title="src.cli.cmd_preprocess" href="#src.cli.cmd_preprocess">cmd_preprocess</a></code></li>
+<li><code><a title="src.cli.cmd_prune_person" href="#src.cli.cmd_prune_person">cmd_prune_person</a></code></li>
+<li><code><a title="src.cli.cmd_timeline" href="#src.cli.cmd_timeline">cmd_timeline</a></code></li>
+<li><code><a title="src.cli.cmd_type" href="#src.cli.cmd_type">cmd_type</a></code></li>
+<li><code><a title="src.cli.cmd_update_site" href="#src.cli.cmd_update_site">cmd_update_site</a></code></li>
+<li><code><a title="src.cli.main" href="#src.cli.main">main</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

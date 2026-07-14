@@ -1,0 +1,1021 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.pipeline.file_processor API documentation</title>
+<meta name="description" content="FileProcessor: single-file organization and schema generation.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.pipeline.file_processor</code></h1>
+</header>
+<section id="section-intro">
+<p>FileProcessor: single-file organization and schema generation.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.pipeline.file_processor.FileProcessor"><code class="flex name class">
+<span>class <span class="ident">FileProcessor</span></span>
+<span>(</span><span>base_path: pathlib.Path,<br>dry_run: bool = False,<br>db_path: str | None = None,<br>cost_calculator: Any | None = None,<br>graph_store: Any | None = None,<br>enricher: Any | None = None,<br>validator: Any | None = None,<br>registry: Any | None = None,<br>rename_analyzer: Any | None = None,<br>organizer: Any | None = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class FileProcessor:
+    &#34;&#34;&#34;
+    Handles single-file organization, schema generation, DB persistence,
+    and cost/report utilities.
+
+    Classification is delegated back to the injected ``organizer`` (a
+    ``ContentOrganizer``/``ContentBasedFileOrganizer``): ``should_skip_file``,
+    ``detect_file_category``, ``get_destination_path``, ``generate_schema``,
+    per-file OCR/KIE state, and the ``stats`` counter all live there.
+
+    Args:
+        base_path: Base path for organized files.
+        dry_run: Default dry-run mode (can be overridden per call).
+        db_path: SQLite DB path for GraphStore persistence (used only when no
+            graph_store instance is injected).
+        cost_calculator: Injected CostROICalculator instance (optional).
+        graph_store: Injected GraphStore instance (optional).
+        enricher: Injected MetadataEnricher (optional, created if None).
+        validator: Injected SchemaValidator (optional, created if None).
+        registry: Injected SchemaRegistry (optional, created if None).
+        rename_analyzer: Injected ImageAnalyzer used by ``_maybe_rename_image``
+            (optional; renaming is skipped when None).
+        organizer: The organizer this processor calls back into for
+            classification. May also be attached later via ``_organizer``.
+    &#34;&#34;&#34;
+
+    def __init__(
+        self,
+        base_path: Path,
+        dry_run: bool = False,
+        db_path: Optional[str] = None,
+        cost_calculator: Optional[Any] = None,
+        graph_store: Optional[Any] = None,
+        enricher: Optional[Any] = None,
+        validator: Optional[Any] = None,
+        registry: Optional[Any] = None,
+        rename_analyzer: Optional[Any] = None,
+        organizer: Optional[Any] = None,
+    ) -&gt; None:
+        self.base_path = Path(base_path).expanduser()
+        self.dry_run = dry_run
+
+        self.cost_calculator = cost_calculator
+
+        self.graph_store = graph_store
+        if self.graph_store is None and GRAPH_STORE_AVAILABLE and GraphStore is not None and db_path:
+            self.graph_store = GraphStore(db_path=db_path)
+
+        self.enricher = enricher if enricher is not None else MetadataEnricher()
+        self.validator = validator if validator is not None else SchemaValidator()
+        self.registry = registry if registry is not None else SchemaRegistry()
+        self.rename_analyzer = rename_analyzer
+        self._organizer = organizer
+
+    def _content_description(self, file_path: Path) -&gt; str:
+        &#34;&#34;&#34;Human-readable description for the schema.org ``description`` field.
+
+        Uses the winning CLIP label + confidence when the organizer&#39;s per-file
+        state carries one (stashed by ContentOrganizer._run_clip_signal);
+        falls back to the filename for non-CLIP paths.
+        &#34;&#34;&#34;
+        state = getattr(self._organizer, &#34;_last_file_state&#34;, None) or {}
+        clip = state.get(&#34;clip_description&#34;)
+        if clip:
+            label, score = clip
+            return f&#34;Content: {label} ({score:.0%} confident)&#34;
+        return f&#34;{file_path.name}&#34;
+
+    def generate_schema(
+        self,
+        file_path: Path,
+        schema_type: str,
+        extracted_text: str = &#34;&#34;,
+    ) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;Generate Schema.org metadata for a file with extracted content.&#34;&#34;&#34;
+        stats = cached_stat(str(file_path))
+        mime_type = self.enricher.detect_mime_type(str(file_path))
+        file_url = f&#34;https://localhost/files/{quote(file_path.name)}&#34;
+        actual_path = str(file_path.absolute())
+        description = self._content_description(file_path)
+
+        # Create generator based on type
+        if schema_type == &#34;ImageObject&#34;:
+            generator: Any = ImageGenerator(schema_type)
+            generator.set_property(&#34;name&#34;, file_path.name, PropertyType.TEXT)
+            generator.set_property(&#34;contentUrl&#34;, file_url, PropertyType.URL)
+            generator.set_property(&#34;encodingFormat&#34;, mime_type or &#34;image/png&#34;, PropertyType.TEXT)
+            generator.set_property(&#34;description&#34;, description, PropertyType.TEXT)
+        elif schema_type in [&#34;DigitalDocument&#34;, &#34;Article&#34;, SCHOLARLY_ARTICLE_SCHEMA_TYPE, &#34;Report&#34;]:
+            generator = DocumentGenerator(schema_type)
+            generator.set_property(&#34;name&#34;, file_path.name, PropertyType.TEXT)
+            generator.set_property(&#34;description&#34;, description, PropertyType.TEXT)
+            generator.set_property(
+                &#34;encodingFormat&#34;, mime_type or &#34;application/octet-stream&#34;, PropertyType.TEXT
+            )
+            generator.set_property(&#34;url&#34;, file_url, PropertyType.URL)
+            generator.set_property(&#34;contentSize&#34;, f&#34;{stats.st_size}B&#34;, PropertyType.TEXT)
+            research = None
+            if self._organizer is not None:
+                research = getattr(self._organizer, &#34;_last_file_state&#34;, {}).get(&#34;research&#34;)
+            if schema_type == SCHOLARLY_ARTICLE_SCHEMA_TYPE and research:
+                _publisher_key, identifier, publisher_name, canonical_url = research
+                try:
+                    generator.set_property(&#34;identifier&#34;, identifier, PropertyType.TEXT)
+                    generator.set_property(&#34;sameAs&#34;, canonical_url, PropertyType.URL)
+                    generator.set_property(
+                        &#34;publisher&#34;,
+                        {&#34;@type&#34;: &#34;Organization&#34;, &#34;name&#34;: publisher_name},
+                        PropertyType.OBJECT,
+                    )
+                except Exception as e:
+                    print(f&#34;  Warning: could not attach scholarly metadata: {e}&#34;)
+        else:
+            generator = DocumentGenerator()
+            generator.set_property(&#34;name&#34;, file_path.name, PropertyType.TEXT)
+            generator.set_property(&#34;description&#34;, description, PropertyType.TEXT)
+
+        # Set dates
+        try:
+            generator.set_dates(
+                created=datetime.fromtimestamp(stats.st_ctime),
+                modified=datetime.fromtimestamp(stats.st_mtime),
+            )
+        except Exception:
+            pass
+
+        # Add extracted text as abstract/text property
+        if extracted_text:
+            try:
+                # Truncate to reasonable length for schema
+                text_preview = extracted_text[:1000] + (&#34;...&#34; if len(extracted_text) &gt; 1000 else &#34;&#34;)
+                generator.set_property(&#34;abstract&#34;, text_preview, PropertyType.TEXT)
+                generator.set_property(&#34;text&#34;, extracted_text[:5000], PropertyType.TEXT)
+            except Exception:
+                pass
+
+        # Add file path
+        try:
+            generator.set_property(&#34;filePath&#34;, actual_path, PropertyType.TEXT)
+        except Exception:
+            pass
+
+        return generator.to_dict()
+
+    def _persist_to_graph_store(
+        self,
+        file_path: Path,
+        dest_path: Path,
+        category: str,
+        subcategory: str,
+        schema: Dict[str, Any],
+        extracted_text: str,
+        company_name: Optional[str],
+        people_names: List[str],
+        image_metadata: Optional[Dict[str, Any]],
+        ocr_confidence: Optional[float] = None,
+        detected_language: Optional[str] = None,
+        kie_result: Any = None,
+    ) -&gt; None:
+        &#34;&#34;&#34;
+        Persist file and its relationships to the graph store with canonical IDs.
+
+        This method creates:
+        - File record with canonical_id (urn:sha256:{hash})
+        - Category record with canonical_id (UUID v5 from name)
+        - Company record with canonical_id (UUID v5 from name)
+        - Person records with canonical_id (UUID v5 from name)
+        - Location record with canonical_id (UUID v5 from name)
+        - Relationships between file and entities
+        &#34;&#34;&#34;
+        if not self.graph_store:
+            return
+        try:
+            session = self.graph_store.get_session()
+
+            # Get file stats
+            stat = (
+                cached_stat(str(file_path)) if file_path.exists() else cached_stat(str(dest_path))
+            )
+
+            # Merge KIE-extracted Schema.org properties into schema dict.
+            kie_fields_json = None
+            if kie_result is not None:
+                try:
+                    kie_schema = kie_result_to_schema_org(kie_result)
+                    # Merge KIE properties without overwriting existing keys.
+                    for k, v in kie_schema.items():
+                        if k not in schema or k == &#34;@type&#34;:
+                            schema[k] = v
+                    # Serialize raw fields for debugging/reprocessing.
+                    kie_fields_json = {
+                        cls: [{&#34;value&#34;: f.value, &#34;confidence&#34;: f.confidence} for f in fields]
+                        for cls, fields in kie_result.fields.items()
+                    }
+                except Exception:
+                    pass  # KIE merge failure must not block persistence
+
+            # Add file to store (generates canonical_id automatically)
+            file_record = self.graph_store.add_file(
+                original_path=str(file_path),
+                filename=file_path.name,
+                session=session,
+                current_path=str(dest_path),
+                file_size=stat.st_size,
+                mime_type=schema.get(&#34;encodingFormat&#34;),
+                schema_type=schema.get(&#34;@type&#34;),
+                schema_data=schema,
+                extracted_text=extracted_text[:10000] if extracted_text else None,
+                extracted_text_length=len(extracted_text) if extracted_text else 0,
+                ocr_confidence=ocr_confidence,
+                detected_language=detected_language,
+                kie_fields=kie_fields_json,
+                status=FileStatus.ORGANIZED,
+                organized_at=datetime.now(),
+            )
+
+            file_id = file_record.id
+
+            # Add category relationship
+            self.graph_store.add_file_to_category(
+                file_id=file_id,
+                category_name=category,
+                subcategory_name=subcategory,
+                session=session,
+            )
+
+            # Add company relationship if detected
+            if company_name:
+                self.graph_store.add_file_to_company(
+                    file_id=file_id,
+                    company_name=company_name,
+                    context=&#34;content_analysis&#34;,
+                    session=session,
+                )
+
+            # Add people relationships if detected
+            if people_names:
+                for person_name in people_names:
+                    self.graph_store.add_file_to_person(
+                        file_id=file_id, person_name=person_name, role=&#34;mentioned&#34;, session=session
+                    )
+
+            # Add location if available from image metadata. Accepts either a
+            # structured &#34;location&#34; dict or the flat get_metadata_summary()
+            # shape (&#34;location_name&#34; + &#34;gps_coordinates&#34;), which is what
+            # ContentOrganizer actually produces.
+            location_info = (image_metadata or {}).get(&#34;location&#34;)
+            if not location_info and (image_metadata or {}).get(&#34;location_name&#34;):
+                coords = image_metadata.get(&#34;gps_coordinates&#34;) or (None, None)
+                location_info = {
+                    &#34;display_name&#34;: image_metadata[&#34;location_name&#34;],
+                    &#34;latitude&#34;: coords[0],
+                    &#34;longitude&#34;: coords[1],
+                }
+            if location_info:
+                self.graph_store.add_file_to_location(
+                    file_id=file_id,
+                    location_name=location_info.get(&#34;display_name&#34;, &#34;Unknown&#34;),
+                    latitude=location_info.get(&#34;latitude&#34;),
+                    longitude=location_info.get(&#34;longitude&#34;),
+                    city=location_info.get(&#34;city&#34;),
+                    state=location_info.get(&#34;state&#34;),
+                    country=location_info.get(&#34;country&#34;),
+                    location_type=&#34;captured_at&#34;,
+                    session=session,
+                )
+
+            session.commit()
+            session.close()
+
+        except Exception as e:
+            print(f&#34;  ⚠ Graph store error (non-fatal): {e}&#34;)
+
+    def _maybe_rename_image(self, file_path: Path, dry_run: bool) -&gt; Path:
+        &#34;&#34;&#34;Rename generic image files using content analysis before sorting.
+
+        When *not* dry-run, physically renames the file and returns the
+        new path.  In dry-run mode the file stays on disk but the
+        proposed new path is returned so that filename-pattern
+        classification sees the descriptive name.  Callers that need to
+        read file contents should use the original path stored in
+        ``result[&#39;source&#39;]``.
+        &#34;&#34;&#34;
+        if self.rename_analyzer is None or not _RENAME_SUPPORT_AVAILABLE:
+            return file_path
+
+        if not is_generic_filename(file_path.name):
+            return file_path
+
+        if file_path.suffix.lower() not in IMAGE_EXTENSIONS_WIDE:
+            return file_path
+
+        result = self.rename_analyzer.analyze_image(file_path)
+
+        new_name = result.get(&#34;new_name&#34;)
+        if not new_name or result.get(&#34;status&#34;) != ProcessingStatus.PENDING:
+            return file_path
+
+        conf = result.get(&#34;confidence&#34;)
+        conf_str = f&#34; ({conf:.0%})&#34; if conf is not None else &#34;&#34;
+        new_path = resolve_collision(file_path.parent / new_name)
+
+        if dry_run:
+            print(f&#34;  → Would rename: {file_path.name} → {new_path.name}{conf_str}&#34;)
+            return new_path
+
+        file_path.rename(new_path)
+        print(f&#34;  ✓ Renamed: {file_path.name} → {new_path.name}{conf_str}&#34;)
+        return new_path
+
+    def organize_file(
+        self,
+        file_path: Path,
+        dry_run: bool = False,
+        force: bool = False,
+    ) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Organize a single file based on content.
+
+        Requires ``_organizer`` to be set (constructor ``organizer=`` or
+        attached afterwards): classification and destination routing are
+        delegated to it.
+
+        Args:
+            file_path: Path to the file.
+            dry_run: If True, don&#39;t actually move files.
+            force: If True, re-organize even if already in correct location.
+
+        Returns:
+            Dictionary with organization details.
+        &#34;&#34;&#34;
+        organizer = self._organizer
+        if organizer is None:
+            raise RuntimeError(
+                &#34;FileProcessor._organizer is not set. &#34;
+                &#34;Attach a ContentBasedFileOrganizer instance to _organizer before calling organize_file.&#34;
+            )
+
+        result = {
+            &#34;source&#34;: str(file_path),
+            &#34;status&#34;: &#34;skipped&#34;,
+            &#34;reason&#34;: None,
+            &#34;destination&#34;: None,
+            &#34;schema&#34;: None,
+            &#34;extracted_text_length&#34;: 0,
+        }
+
+        if organizer.should_skip_file(file_path):
+            result[&#34;reason&#34;] = &#34;system_file&#34;
+            organizer.stats[&#34;skipped&#34;] += 1
+            return result
+
+        if not file_path.is_file():
+            result[&#34;reason&#34;] = &#34;not_file&#34;
+            organizer.stats[&#34;skipped&#34;] += 1
+            return result
+
+        try:
+            # Rename generic image files (screenshots, IMG_, etc.) before classification.
+            # In dry-run the file stays on disk at file_path but renamed_path
+            # carries the descriptive name for pattern matching.
+            renamed_path = organizer._maybe_rename_image(file_path, dry_run)
+            display_path = renamed_path if renamed_path != file_path else None
+            physical_path = renamed_path if not dry_run else file_path
+
+            # Detect category: physical_path for content reading,
+            # display_path (renamed name) for filename-pattern matching.
+            (
+                category,
+                subcategory,
+                schema_type,
+                extracted_text,
+                company_name,
+                people_names,
+                image_metadata,
+            ) = organizer.detect_file_category(physical_path, display_path=display_path)
+            result[&#34;extracted_text_length&#34;] = len(extracted_text)
+            result[&#34;company_name&#34;] = company_name
+            result[&#34;people_names&#34;] = people_names
+            result[&#34;image_metadata&#34;] = image_metadata
+
+            # Handle skip category (duplicates, etc.)
+            if category == &#34;skip&#34;:
+                result[&#34;status&#34;] = &#34;skipped&#34;
+                result[&#34;reason&#34;] = subcategory  # e.g., &#39;duplicate&#39;
+                organizer.stats[&#34;skipped&#34;] += 1
+                return result
+
+            # Generate schema with extracted content.
+            # Use physical_path (current path on disk) since the file may have
+            # been renamed by _maybe_rename_image before reaching this point.
+            schema = organizer.generate_schema(physical_path, schema_type, extracted_text)
+
+            # Validate schema
+            validation_report = self.validator.validate(schema)
+
+            # Get destination path (with optional date/location organization for images)
+            # Use renamed_path so the destination carries the descriptive filename.
+            dest_path = organizer.get_destination_path(
+                renamed_path, category, subcategory, company_name, image_metadata, people_names
+            )
+
+            # Skip if already in the right place (unless force=True)
+            if physical_path == dest_path and not force:
+                result[&#34;status&#34;] = &#34;already_organized&#34;
+                result[&#34;destination&#34;] = str(dest_path)
+                result[&#34;schema&#34;] = schema
+                result[&#34;category&#34;] = category
+                result[&#34;subcategory&#34;] = subcategory
+                organizer.stats[&#34;already_organized&#34;] += 1
+                return result
+
+            # Move file if not dry run
+            if not dry_run:
+                shutil.move(str(physical_path), str(dest_path))
+
+                # Register schema
+                schema[&#34;url&#34;] = f&#34;file://{dest_path.absolute()}&#34;
+                metadata = {
+                    &#34;category&#34;: category,
+                    &#34;subcategory&#34;: subcategory,
+                    &#34;organized_date&#34;: datetime.now().isoformat(),
+                    &#34;is_valid&#34;: validation_report.is_valid(),
+                    &#34;has_extracted_text&#34;: bool(extracted_text),
+                }
+                if company_name:
+                    metadata[&#34;company_name&#34;] = company_name
+
+                self.registry.register(str(dest_path), schema, metadata=metadata)
+
+                # Persist to database with canonical IDs
+                if self.graph_store:
+                    organizer._persist_to_graph_store(
+                        file_path=file_path,
+                        dest_path=dest_path,
+                        category=category,
+                        subcategory=subcategory,
+                        schema=schema,
+                        extracted_text=extracted_text,
+                        company_name=company_name,
+                        people_names=people_names,
+                        image_metadata=image_metadata,
+                        ocr_confidence=organizer._last_file_ocr_confidence,
+                        detected_language=organizer._last_file_detected_language,
+                        kie_result=organizer._last_file_state.get(&#34;kie_result&#34;),
+                    )
+
+            result[&#34;status&#34;] = &#34;organized&#34; if not dry_run else &#34;would_organize&#34;
+            result[&#34;destination&#34;] = str(dest_path)
+            result[&#34;schema&#34;] = schema
+            result[&#34;category&#34;] = category
+            result[&#34;subcategory&#34;] = subcategory
+            result[&#34;is_valid&#34;] = validation_report.is_valid()
+
+            organizer.stats[&#34;organized&#34;] += 1
+            organizer.stats[f&#34;{category}_{subcategory}&#34;] += 1
+
+        except Exception as e:
+            result[&#34;status&#34;] = &#34;error&#34;
+            result[&#34;reason&#34;] = str(e)
+            organizer.stats[&#34;errors&#34;] += 1
+            print(f&#34;  ✗ Error: {e}&#34;)
+
+        return result
+
+    def _print_cost_summary(self) -&gt; None:
+        &#34;&#34;&#34;Print cost and ROI summary from the cost calculator.&#34;&#34;&#34;
+        if not self.cost_calculator:
+            return
+
+        print(f&#34;\n{&#39;=&#39;*60}&#34;)
+        print(&#34;Cost &amp; ROI Analysis&#34;)
+        print(f&#34;{&#39;=&#39;*60}\n&#34;)
+
+        cost_summary = self.cost_calculator.calculate_total_cost()
+        roi_summary = self.cost_calculator.calculate_total_roi()
+
+        print(f&#34;Total Processing Cost:     ${cost_summary[&#39;total_cost&#39;]:.4f}&#34;)
+        print(f&#34;Total Files Processed:     {cost_summary[&#39;total_files_processed&#39;]:,}&#34;)
+        print(f&#34;Avg Cost per File:         ${cost_summary[&#39;avg_cost_per_file&#39;]:.6f}&#34;)
+        print(f&#34;Total Processing Time:     {cost_summary[&#39;total_processing_time_sec&#39;]:.1f}s&#34;)
+
+        print(f&#34;\nEstimated Value Generated: ${roi_summary[&#39;total_value&#39;]:.2f}&#34;)
+        roi_pct = roi_summary[&#34;overall_roi_percentage&#34;]
+        roi_str = f&#34;{roi_pct:.0f}%&#34; if roi_pct != float(&#34;inf&#34;) else &#34;∞&#34;
+        print(f&#34;Overall ROI:               {roi_str}&#34;)
+        print(f&#34;Manual Hours Saved:        {roi_summary[&#39;total_manual_hours_saved&#39;]:.1f} hours&#34;)
+
+        # Per-feature breakdown (top 5 by usage)
+        feature_costs = cost_summary.get(&#34;feature_breakdown&#34;, {})
+        if feature_costs:
+            print(f&#34;\n{&#39;Feature&#39;:&lt;25} {&#39;Cost&#39;:&gt;10} {&#39;Files&#39;:&gt;10}&#34;)
+            print(&#34;-&#34; * 50)
+            sorted_features = sorted(
+                feature_costs.items(), key=lambda x: x[1][&#34;total_files_processed&#34;], reverse=True
+            )
+            for feature_name, data in sorted_features[:7]:
+                if data[&#34;total_invocations&#34;] &gt; 0:
+                    print(
+                        f&#34;{feature_name:&lt;25} ${data[&#39;total_cost&#39;]:&gt;9.4f} {data[&#39;total_files_processed&#39;]:&gt;10,}&#34;  # noqa: E501
+                    )
+
+        # Show recommendations if any critical issues
+        recommendations = self.cost_calculator.get_optimization_recommendations()
+        critical_recs = [r for r in recommendations if r[&#34;severity&#34;] in (&#34;critical&#34;, &#34;high&#34;)]
+        if critical_recs:
+            print(&#34;\n⚠️  Optimization Recommendations:&#34;)
+            for rec in critical_recs[:3]:
+                print(f&#34;   • {rec[&#39;message&#39;]}&#34;)
+
+    def get_cost_report(self) -&gt; Optional[Dict[str, Any]]:
+        &#34;&#34;&#34;
+        Get the full cost and ROI report.
+
+        Returns:
+            Cost report dictionary or None if cost tracking is disabled.
+        &#34;&#34;&#34;
+        if not self.cost_calculator:
+            return None
+        return self.cost_calculator.generate_report()
+
+    def save_cost_report(self, output_path: Optional[str] = None) -&gt; None:
+        &#34;&#34;&#34;
+        Save the cost report to a JSON file.
+
+        Args:
+            output_path: Path to save the report (auto-generated if None).
+        &#34;&#34;&#34;
+        if not self.cost_calculator:
+            print(&#34;Cost tracking is not enabled&#34;)
+            return
+
+        if output_path is None:
+            timestamp = datetime.now().strftime(&#34;%Y%m%d_%H%M%S&#34;)
+            output_path = f&#34;results/cost_report_{timestamp}.json&#34;
+
+        self.cost_calculator.generate_report(output_path)
+        print(f&#34;Cost report saved to: {output_path}&#34;)
+
+    def save_report(self, summary: Dict[str, Any], output_path: Optional[str] = None) -&gt; None:
+        &#34;&#34;&#34;Save detailed organization report to JSON.&#34;&#34;&#34;
+        if output_path is None:
+            timestamp = datetime.now().strftime(&#34;%Y%m%d_%H%M%S&#34;)
+            output_path = f&#34;results/content_organization_report_{timestamp}.json&#34;
+
+        with open(output_path, &#34;w&#34;) as f:
+            json.dump(summary, f, indent=2, default=str)
+
+        print(f&#34;\nDetailed report saved to: {output_path}&#34;)</code></pre>
+</details>
+<div class="desc"><p>Handles single-file organization, schema generation, DB persistence,
+and cost/report utilities.</p>
+<p>Classification is delegated back to the injected <code>organizer</code> (a
+<code>ContentOrganizer</code>/<code>ContentBasedFileOrganizer</code>): <code>should_skip_file</code>,
+<code>detect_file_category</code>, <code>get_destination_path</code>, <code>generate_schema</code>,
+per-file OCR/KIE state, and the <code>stats</code> counter all live there.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>base_path</code></strong></dt>
+<dd>Base path for organized files.</dd>
+<dt><strong><code>dry_run</code></strong></dt>
+<dd>Default dry-run mode (can be overridden per call).</dd>
+<dt><strong><code>db_path</code></strong></dt>
+<dd>SQLite DB path for GraphStore persistence (used only when no
+graph_store instance is injected).</dd>
+<dt><strong><code>cost_calculator</code></strong></dt>
+<dd>Injected CostROICalculator instance (optional).</dd>
+<dt><strong><code>graph_store</code></strong></dt>
+<dd>Injected GraphStore instance (optional).</dd>
+<dt><strong><code>enricher</code></strong></dt>
+<dd>Injected MetadataEnricher (optional, created if None).</dd>
+<dt><strong><code>validator</code></strong></dt>
+<dd>Injected SchemaValidator (optional, created if None).</dd>
+<dt><strong><code>registry</code></strong></dt>
+<dd>Injected SchemaRegistry (optional, created if None).</dd>
+<dt><strong><code>rename_analyzer</code></strong></dt>
+<dd>Injected ImageAnalyzer used by <code>_maybe_rename_image</code>
+(optional; renaming is skipped when None).</dd>
+<dt><strong><code>organizer</code></strong></dt>
+<dd>The organizer this processor calls back into for
+classification. May also be attached later via <code>_organizer</code>.</dd>
+</dl></div>
+<h3>Methods</h3>
+<dl>
+<dt id="src.pipeline.file_processor.FileProcessor.generate_schema"><code class="name flex">
+<span>def <span class="ident">generate_schema</span></span>(<span>self, file_path: pathlib.Path, schema_type: str, extracted_text: str = '') ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_schema(
+    self,
+    file_path: Path,
+    schema_type: str,
+    extracted_text: str = &#34;&#34;,
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;Generate Schema.org metadata for a file with extracted content.&#34;&#34;&#34;
+    stats = cached_stat(str(file_path))
+    mime_type = self.enricher.detect_mime_type(str(file_path))
+    file_url = f&#34;https://localhost/files/{quote(file_path.name)}&#34;
+    actual_path = str(file_path.absolute())
+    description = self._content_description(file_path)
+
+    # Create generator based on type
+    if schema_type == &#34;ImageObject&#34;:
+        generator: Any = ImageGenerator(schema_type)
+        generator.set_property(&#34;name&#34;, file_path.name, PropertyType.TEXT)
+        generator.set_property(&#34;contentUrl&#34;, file_url, PropertyType.URL)
+        generator.set_property(&#34;encodingFormat&#34;, mime_type or &#34;image/png&#34;, PropertyType.TEXT)
+        generator.set_property(&#34;description&#34;, description, PropertyType.TEXT)
+    elif schema_type in [&#34;DigitalDocument&#34;, &#34;Article&#34;, SCHOLARLY_ARTICLE_SCHEMA_TYPE, &#34;Report&#34;]:
+        generator = DocumentGenerator(schema_type)
+        generator.set_property(&#34;name&#34;, file_path.name, PropertyType.TEXT)
+        generator.set_property(&#34;description&#34;, description, PropertyType.TEXT)
+        generator.set_property(
+            &#34;encodingFormat&#34;, mime_type or &#34;application/octet-stream&#34;, PropertyType.TEXT
+        )
+        generator.set_property(&#34;url&#34;, file_url, PropertyType.URL)
+        generator.set_property(&#34;contentSize&#34;, f&#34;{stats.st_size}B&#34;, PropertyType.TEXT)
+        research = None
+        if self._organizer is not None:
+            research = getattr(self._organizer, &#34;_last_file_state&#34;, {}).get(&#34;research&#34;)
+        if schema_type == SCHOLARLY_ARTICLE_SCHEMA_TYPE and research:
+            _publisher_key, identifier, publisher_name, canonical_url = research
+            try:
+                generator.set_property(&#34;identifier&#34;, identifier, PropertyType.TEXT)
+                generator.set_property(&#34;sameAs&#34;, canonical_url, PropertyType.URL)
+                generator.set_property(
+                    &#34;publisher&#34;,
+                    {&#34;@type&#34;: &#34;Organization&#34;, &#34;name&#34;: publisher_name},
+                    PropertyType.OBJECT,
+                )
+            except Exception as e:
+                print(f&#34;  Warning: could not attach scholarly metadata: {e}&#34;)
+    else:
+        generator = DocumentGenerator()
+        generator.set_property(&#34;name&#34;, file_path.name, PropertyType.TEXT)
+        generator.set_property(&#34;description&#34;, description, PropertyType.TEXT)
+
+    # Set dates
+    try:
+        generator.set_dates(
+            created=datetime.fromtimestamp(stats.st_ctime),
+            modified=datetime.fromtimestamp(stats.st_mtime),
+        )
+    except Exception:
+        pass
+
+    # Add extracted text as abstract/text property
+    if extracted_text:
+        try:
+            # Truncate to reasonable length for schema
+            text_preview = extracted_text[:1000] + (&#34;...&#34; if len(extracted_text) &gt; 1000 else &#34;&#34;)
+            generator.set_property(&#34;abstract&#34;, text_preview, PropertyType.TEXT)
+            generator.set_property(&#34;text&#34;, extracted_text[:5000], PropertyType.TEXT)
+        except Exception:
+            pass
+
+    # Add file path
+    try:
+        generator.set_property(&#34;filePath&#34;, actual_path, PropertyType.TEXT)
+    except Exception:
+        pass
+
+    return generator.to_dict()</code></pre>
+</details>
+<div class="desc"><p>Generate Schema.org metadata for a file with extracted content.</p></div>
+</dd>
+<dt id="src.pipeline.file_processor.FileProcessor.get_cost_report"><code class="name flex">
+<span>def <span class="ident">get_cost_report</span></span>(<span>self) ‑> Dict[str, Any] | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_cost_report(self) -&gt; Optional[Dict[str, Any]]:
+    &#34;&#34;&#34;
+    Get the full cost and ROI report.
+
+    Returns:
+        Cost report dictionary or None if cost tracking is disabled.
+    &#34;&#34;&#34;
+    if not self.cost_calculator:
+        return None
+    return self.cost_calculator.generate_report()</code></pre>
+</details>
+<div class="desc"><p>Get the full cost and ROI report.</p>
+<h2 id="returns">Returns</h2>
+<p>Cost report dictionary or None if cost tracking is disabled.</p></div>
+</dd>
+<dt id="src.pipeline.file_processor.FileProcessor.organize_file"><code class="name flex">
+<span>def <span class="ident">organize_file</span></span>(<span>self, file_path: pathlib.Path, dry_run: bool = False, force: bool = False) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def organize_file(
+    self,
+    file_path: Path,
+    dry_run: bool = False,
+    force: bool = False,
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Organize a single file based on content.
+
+    Requires ``_organizer`` to be set (constructor ``organizer=`` or
+    attached afterwards): classification and destination routing are
+    delegated to it.
+
+    Args:
+        file_path: Path to the file.
+        dry_run: If True, don&#39;t actually move files.
+        force: If True, re-organize even if already in correct location.
+
+    Returns:
+        Dictionary with organization details.
+    &#34;&#34;&#34;
+    organizer = self._organizer
+    if organizer is None:
+        raise RuntimeError(
+            &#34;FileProcessor._organizer is not set. &#34;
+            &#34;Attach a ContentBasedFileOrganizer instance to _organizer before calling organize_file.&#34;
+        )
+
+    result = {
+        &#34;source&#34;: str(file_path),
+        &#34;status&#34;: &#34;skipped&#34;,
+        &#34;reason&#34;: None,
+        &#34;destination&#34;: None,
+        &#34;schema&#34;: None,
+        &#34;extracted_text_length&#34;: 0,
+    }
+
+    if organizer.should_skip_file(file_path):
+        result[&#34;reason&#34;] = &#34;system_file&#34;
+        organizer.stats[&#34;skipped&#34;] += 1
+        return result
+
+    if not file_path.is_file():
+        result[&#34;reason&#34;] = &#34;not_file&#34;
+        organizer.stats[&#34;skipped&#34;] += 1
+        return result
+
+    try:
+        # Rename generic image files (screenshots, IMG_, etc.) before classification.
+        # In dry-run the file stays on disk at file_path but renamed_path
+        # carries the descriptive name for pattern matching.
+        renamed_path = organizer._maybe_rename_image(file_path, dry_run)
+        display_path = renamed_path if renamed_path != file_path else None
+        physical_path = renamed_path if not dry_run else file_path
+
+        # Detect category: physical_path for content reading,
+        # display_path (renamed name) for filename-pattern matching.
+        (
+            category,
+            subcategory,
+            schema_type,
+            extracted_text,
+            company_name,
+            people_names,
+            image_metadata,
+        ) = organizer.detect_file_category(physical_path, display_path=display_path)
+        result[&#34;extracted_text_length&#34;] = len(extracted_text)
+        result[&#34;company_name&#34;] = company_name
+        result[&#34;people_names&#34;] = people_names
+        result[&#34;image_metadata&#34;] = image_metadata
+
+        # Handle skip category (duplicates, etc.)
+        if category == &#34;skip&#34;:
+            result[&#34;status&#34;] = &#34;skipped&#34;
+            result[&#34;reason&#34;] = subcategory  # e.g., &#39;duplicate&#39;
+            organizer.stats[&#34;skipped&#34;] += 1
+            return result
+
+        # Generate schema with extracted content.
+        # Use physical_path (current path on disk) since the file may have
+        # been renamed by _maybe_rename_image before reaching this point.
+        schema = organizer.generate_schema(physical_path, schema_type, extracted_text)
+
+        # Validate schema
+        validation_report = self.validator.validate(schema)
+
+        # Get destination path (with optional date/location organization for images)
+        # Use renamed_path so the destination carries the descriptive filename.
+        dest_path = organizer.get_destination_path(
+            renamed_path, category, subcategory, company_name, image_metadata, people_names
+        )
+
+        # Skip if already in the right place (unless force=True)
+        if physical_path == dest_path and not force:
+            result[&#34;status&#34;] = &#34;already_organized&#34;
+            result[&#34;destination&#34;] = str(dest_path)
+            result[&#34;schema&#34;] = schema
+            result[&#34;category&#34;] = category
+            result[&#34;subcategory&#34;] = subcategory
+            organizer.stats[&#34;already_organized&#34;] += 1
+            return result
+
+        # Move file if not dry run
+        if not dry_run:
+            shutil.move(str(physical_path), str(dest_path))
+
+            # Register schema
+            schema[&#34;url&#34;] = f&#34;file://{dest_path.absolute()}&#34;
+            metadata = {
+                &#34;category&#34;: category,
+                &#34;subcategory&#34;: subcategory,
+                &#34;organized_date&#34;: datetime.now().isoformat(),
+                &#34;is_valid&#34;: validation_report.is_valid(),
+                &#34;has_extracted_text&#34;: bool(extracted_text),
+            }
+            if company_name:
+                metadata[&#34;company_name&#34;] = company_name
+
+            self.registry.register(str(dest_path), schema, metadata=metadata)
+
+            # Persist to database with canonical IDs
+            if self.graph_store:
+                organizer._persist_to_graph_store(
+                    file_path=file_path,
+                    dest_path=dest_path,
+                    category=category,
+                    subcategory=subcategory,
+                    schema=schema,
+                    extracted_text=extracted_text,
+                    company_name=company_name,
+                    people_names=people_names,
+                    image_metadata=image_metadata,
+                    ocr_confidence=organizer._last_file_ocr_confidence,
+                    detected_language=organizer._last_file_detected_language,
+                    kie_result=organizer._last_file_state.get(&#34;kie_result&#34;),
+                )
+
+        result[&#34;status&#34;] = &#34;organized&#34; if not dry_run else &#34;would_organize&#34;
+        result[&#34;destination&#34;] = str(dest_path)
+        result[&#34;schema&#34;] = schema
+        result[&#34;category&#34;] = category
+        result[&#34;subcategory&#34;] = subcategory
+        result[&#34;is_valid&#34;] = validation_report.is_valid()
+
+        organizer.stats[&#34;organized&#34;] += 1
+        organizer.stats[f&#34;{category}_{subcategory}&#34;] += 1
+
+    except Exception as e:
+        result[&#34;status&#34;] = &#34;error&#34;
+        result[&#34;reason&#34;] = str(e)
+        organizer.stats[&#34;errors&#34;] += 1
+        print(f&#34;  ✗ Error: {e}&#34;)
+
+    return result</code></pre>
+</details>
+<div class="desc"><p>Organize a single file based on content.</p>
+<p>Requires <code>_organizer</code> to be set (constructor <code>organizer=</code> or
+attached afterwards): classification and destination routing are
+delegated to it.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_path</code></strong></dt>
+<dd>Path to the file.</dd>
+<dt><strong><code>dry_run</code></strong></dt>
+<dd>If True, don't actually move files.</dd>
+<dt><strong><code>force</code></strong></dt>
+<dd>If True, re-organize even if already in correct location.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Dictionary with organization details.</p></div>
+</dd>
+<dt id="src.pipeline.file_processor.FileProcessor.save_cost_report"><code class="name flex">
+<span>def <span class="ident">save_cost_report</span></span>(<span>self, output_path: str | None = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save_cost_report(self, output_path: Optional[str] = None) -&gt; None:
+    &#34;&#34;&#34;
+    Save the cost report to a JSON file.
+
+    Args:
+        output_path: Path to save the report (auto-generated if None).
+    &#34;&#34;&#34;
+    if not self.cost_calculator:
+        print(&#34;Cost tracking is not enabled&#34;)
+        return
+
+    if output_path is None:
+        timestamp = datetime.now().strftime(&#34;%Y%m%d_%H%M%S&#34;)
+        output_path = f&#34;results/cost_report_{timestamp}.json&#34;
+
+    self.cost_calculator.generate_report(output_path)
+    print(f&#34;Cost report saved to: {output_path}&#34;)</code></pre>
+</details>
+<div class="desc"><p>Save the cost report to a JSON file.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>output_path</code></strong></dt>
+<dd>Path to save the report (auto-generated if None).</dd>
+</dl></div>
+</dd>
+<dt id="src.pipeline.file_processor.FileProcessor.save_report"><code class="name flex">
+<span>def <span class="ident">save_report</span></span>(<span>self, summary: Dict[str, Any], output_path: str | None = None) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def save_report(self, summary: Dict[str, Any], output_path: Optional[str] = None) -&gt; None:
+    &#34;&#34;&#34;Save detailed organization report to JSON.&#34;&#34;&#34;
+    if output_path is None:
+        timestamp = datetime.now().strftime(&#34;%Y%m%d_%H%M%S&#34;)
+        output_path = f&#34;results/content_organization_report_{timestamp}.json&#34;
+
+    with open(output_path, &#34;w&#34;) as f:
+        json.dump(summary, f, indent=2, default=str)
+
+    print(f&#34;\nDetailed report saved to: {output_path}&#34;)</code></pre>
+</details>
+<div class="desc"><p>Save detailed organization report to JSON.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.pipeline" href="index.html">src.pipeline</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.pipeline.file_processor.FileProcessor" href="#src.pipeline.file_processor.FileProcessor">FileProcessor</a></code></h4>
+<ul class="">
+<li><code><a title="src.pipeline.file_processor.FileProcessor.generate_schema" href="#src.pipeline.file_processor.FileProcessor.generate_schema">generate_schema</a></code></li>
+<li><code><a title="src.pipeline.file_processor.FileProcessor.get_cost_report" href="#src.pipeline.file_processor.FileProcessor.get_cost_report">get_cost_report</a></code></li>
+<li><code><a title="src.pipeline.file_processor.FileProcessor.organize_file" href="#src.pipeline.file_processor.FileProcessor.organize_file">organize_file</a></code></li>
+<li><code><a title="src.pipeline.file_processor.FileProcessor.save_cost_report" href="#src.pipeline.file_processor.FileProcessor.save_cost_report">save_cost_report</a></code></li>
+<li><code><a title="src.pipeline.file_processor.FileProcessor.save_report" href="#src.pipeline.file_processor.FileProcessor.save_report">save_report</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

@@ -1,0 +1,1886 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.cost_roi_calculator API documentation</title>
+<meta name="description" content="Cost and ROI Calculator for Schema.org File Organization System …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.cost_roi_calculator</code></h1>
+</header>
+<section id="section-intro">
+<p>Cost and ROI Calculator for Schema.org File Organization System</p>
+<p>Calculates per-feature and per-model costs with ROI metrics.
+Tracks usage, estimates costs, and provides optimization recommendations.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="src.cost_roi_calculator.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main() -&gt; None:
+    &#34;&#34;&#34;Demo the cost calculator with sample data.&#34;&#34;&#34;
+    import random
+
+    print(&#34;Schema.org File Organization System - Cost &amp; ROI Calculator Demo&#34;)
+    print(&#34;=&#34; * 70)
+
+    # Create calculator
+    calculator = CostROICalculator()
+
+    # Simulate processing 1000 files with various features
+    print(&#34;\nSimulating processing of 1000 files...&#34;)
+
+    for i in range(1000):
+        # Simulate different feature usage patterns
+        file_type = random.choice([&#39;image&#39;, &#39;pdf&#39;, &#39;docx&#39;, &#39;xlsx&#39;, &#39;game_asset&#39;])
+
+        if file_type == &#39;image&#39;:
+            # Image processing uses CLIP, OCR, face detection
+            calculator.record_usage(&#39;clip_vision&#39;, random.uniform(2.0, 3.5), 1, random.random() &gt; 0.05)
+            calculator.record_usage(&#39;tesseract_ocr&#39;, random.uniform(1.0, 2.0), 1, random.random() &gt; 0.10)
+            calculator.record_usage(&#39;face_detection&#39;, random.uniform(0.3, 0.8), 1, random.random() &gt; 0.15)
+            calculator.record_usage(&#39;exif_extraction&#39;, random.uniform(0.05, 0.15), 1, random.random() &gt; 0.30)
+            if random.random() &gt; 0.5:
+                calculator.record_usage(&#39;nominatim_geocoding&#39;, random.uniform(0.5, 1.5), 1, random.random() &gt; 0.25)
+
+        elif file_type == &#39;pdf&#39;:
+            calculator.record_usage(&#39;pdf_extraction&#39;, random.uniform(2.0, 5.0), 1, random.random() &gt; 0.15)
+            calculator.record_usage(&#39;keyword_classifier&#39;, random.uniform(0.001, 0.002), 1, True)
+
+        elif file_type == &#39;docx&#39;:
+            calculator.record_usage(&#39;docx_extraction&#39;, random.uniform(0.3, 0.8), 1, random.random() &gt; 0.05)
+            calculator.record_usage(&#39;keyword_classifier&#39;, random.uniform(0.001, 0.002), 1, True)
+
+        elif file_type == &#39;xlsx&#39;:
+            calculator.record_usage(&#39;xlsx_extraction&#39;, random.uniform(0.5, 1.5), 1, random.random() &gt; 0.10)
+            calculator.record_usage(&#39;keyword_classifier&#39;, random.uniform(0.001, 0.002), 1, True)
+
+        elif file_type == &#39;game_asset&#39;:
+            calculator.record_usage(&#39;game_asset_detection&#39;, random.uniform(0.001, 0.002), 1, True)
+
+        # Schema generation for all files
+        calculator.record_usage(&#39;schema_generation&#39;, random.uniform(0.03, 0.08), 1, True)
+
+    # Print summary
+    calculator.print_summary()
+
+    # Generate and save report
+    report = calculator.generate_report(&#39;results/cost_roi_report.json&#39;)
+    print(f&#34;\nFull report saved to: results/cost_roi_report.json&#34;)
+
+    # Show projection for larger runs
+    print(f&#34;\n{&#39;COST PROJECTIONS&#39;:=^70}&#34;)
+    for file_count in [1000, 10000, 100000]:
+        estimate = calculator.estimate_cost_for_files(file_count)
+        print(f&#34;\n{file_count:,} files:&#34;)
+        print(f&#34;  Estimated Cost:  ${estimate[&#39;total_estimated_cost&#39;]:.2f}&#34;)
+        print(f&#34;  Estimated Value: ${estimate[&#39;total_estimated_value&#39;]:.2f}&#34;)
+        print(f&#34;  Estimated Time:  {estimate[&#39;total_estimated_time_human&#39;]}&#34;)
+        print(f&#34;  Projected ROI:   {estimate[&#39;estimated_roi&#39;]:.0f}%&#34;)</code></pre>
+</details>
+<div class="desc"><p>Demo the cost calculator with sample data.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.cost_roi_calculator.CostROICalculator"><code class="flex name class">
+<span>class <span class="ident">CostROICalculator</span></span>
+<span>(</span><span>config_path: Optional[str] = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CostROICalculator:
+    &#34;&#34;&#34;
+    Calculates costs and ROI for the file organization system.
+
+    Tracks usage of each feature/model and provides cost analysis
+    with ROI calculations based on manual time saved.
+    &#34;&#34;&#34;
+
+    # Default cost configurations based on 2024/2025 pricing
+    DEFAULT_COST_CONFIGS = {
+        # AI Vision (CLIP Model)
+        &#34;clip_vision&#34;: ModelCostConfig(
+            name=&#34;CLIP Vision Model&#34;,
+            cost_type=CostType.COMPUTE,
+            cost_per_unit=0.0001,          # ~$0.0001 per inference (local GPU)
+            unit_type=&#34;invocation&#34;,
+            avg_processing_time_sec=2.5,   # 2-3 seconds per image
+            success_rate=0.95,
+            description=&#34;OpenAI CLIP model for image content classification&#34;,
+            files_correctly_classified=0.85,
+            manual_time_saved_sec=30.0     # 30 sec to manually classify an image
+        ),
+
+        # OCR (Tesseract)
+        &#34;tesseract_ocr&#34;: ModelCostConfig(
+            name=&#34;Tesseract OCR&#34;,
+            cost_type=CostType.COMPUTE,
+            cost_per_unit=0.00001,         # Very low cost (local processing)
+            unit_type=&#34;invocation&#34;,
+            avg_processing_time_sec=1.5,   # 1-2 seconds per image
+            success_rate=0.90,
+            description=&#34;Tesseract OCR for text extraction&#34;,
+            files_correctly_classified=0.75,
+            manual_time_saved_sec=60.0     # 1 min to manually read/transcribe
+        ),
+
+        # OCR (docTR - neural network, local model)
+        &#34;doctr_ocr&#34;: ModelCostConfig(
+            name=&#34;docTR OCR&#34;,
+            cost_type=CostType.COMPUTE,
+            cost_per_unit=0.0,             # Local model, no API cost
+            unit_type=&#34;invocation&#34;,
+            avg_processing_time_sec=3.0,   # Slower than Tesseract; DL inference
+            success_rate=0.92,
+            description=&#34;docTR deep-learning OCR for text extraction&#34;,
+            files_correctly_classified=0.82,
+            manual_time_saved_sec=60.0     # 1 min to manually read/transcribe
+        ),
+
+        # Face Detection (OpenCV)
+        &#34;face_detection&#34;: ModelCostConfig(
+            name=&#34;OpenCV Face Detection&#34;,
+            cost_type=CostType.COMPUTE,
+            cost_per_unit=0.000005,        # Very low cost
+            unit_type=&#34;invocation&#34;,
+            avg_processing_time_sec=0.5,   # Very fast
+            success_rate=0.85,
+            description=&#34;Haar cascade face detection&#34;,
+            files_correctly_classified=0.80,
+            manual_time_saved_sec=5.0      # Quick manual check
+        ),
+
+        # Geocoding (Nominatim API)
+        &#34;nominatim_geocoding&#34;: ModelCostConfig(
+            name=&#34;Nominatim Geocoding&#34;,
+            cost_type=CostType.API_CALL,
+            cost_per_unit=0.0,             # Free API (rate limited)
+            unit_type=&#34;invocation&#34;,
+            avg_processing_time_sec=1.0,   # Network latency
+            success_rate=0.75,             # May timeout or fail
+            description=&#34;OpenStreetMap reverse geocoding&#34;,
+            files_correctly_classified=0.90,
+            manual_time_saved_sec=120.0    # 2 min to manually look up location
+        ),
+
+        # Keyword Classification (Rule-based)
+        &#34;keyword_classifier&#34;: ModelCostConfig(
+            name=&#34;Keyword Classification&#34;,
+            cost_type=CostType.COMPUTE,
+            cost_per_unit=0.0,             # Essentially free
+            unit_type=&#34;invocation&#34;,
+            avg_processing_time_sec=0.001, # Instant
+            success_rate=0.98,
+            description=&#34;Rule-based keyword matching&#34;,
+            files_correctly_classified=0.70,
+            manual_time_saved_sec=15.0     # Quick manual categorization
+        ),
+
+        # PDF Processing
+        &#34;pdf_extraction&#34;: ModelCostConfig(
+            name=&#34;PDF Text Extraction&#34;,
+            cost_type=CostType.COMPUTE,
+            cost_per_unit=0.00005,
+            unit_type=&#34;invocation&#34;,
+            avg_processing_time_sec=3.0,
+            success_rate=0.85,
+            description=&#34;pypdf + pdf2image for PDF processing&#34;,
+            files_correctly_classified=0.80,
+            manual_time_saved_sec=120.0    # 2 min to manually read PDF
+        ),
+
+        # Word Document Processing
+        &#34;docx_extraction&#34;: ModelCostConfig(
+            name=&#34;Word Document Extraction&#34;,
+            cost_type=CostType.COMPUTE,
+            cost_per_unit=0.00001,
+            unit_type=&#34;invocation&#34;,
+            avg_processing_time_sec=0.5,
+            success_rate=0.95,
+            description=&#34;python-docx for DOCX processing&#34;,
+            files_correctly_classified=0.85,
+            manual_time_saved_sec=90.0     # 1.5 min to manually read
+        ),
+
+        # Excel Processing
+        &#34;xlsx_extraction&#34;: ModelCostConfig(
+            name=&#34;Excel Extraction&#34;,
+            cost_type=CostType.COMPUTE,
+            cost_per_unit=0.00002,
+            unit_type=&#34;invocation&#34;,
+            avg_processing_time_sec=1.0,
+            success_rate=0.90,
+            description=&#34;openpyxl for Excel processing&#34;,
+            files_correctly_classified=0.80,
+            manual_time_saved_sec=180.0    # 3 min to manually review spreadsheet
+        ),
+
+        # EXIF Metadata Extraction
+        &#34;exif_extraction&#34;: ModelCostConfig(
+            name=&#34;EXIF Metadata Extraction&#34;,
+            cost_type=CostType.COMPUTE,
+            cost_per_unit=0.0,             # Free
+            unit_type=&#34;invocation&#34;,
+            avg_processing_time_sec=0.1,
+            success_rate=0.70,             # Many images lack EXIF
+            description=&#34;PIL/piexif for image metadata&#34;,
+            files_correctly_classified=0.95,
+            manual_time_saved_sec=45.0     # Time to manually check image properties
+        ),
+
+        # Schema.org Generation
+        &#34;schema_generation&#34;: ModelCostConfig(
+            name=&#34;Schema.org Generation&#34;,
+            cost_type=CostType.COMPUTE,
+            cost_per_unit=0.0,
+            unit_type=&#34;invocation&#34;,
+            avg_processing_time_sec=0.05,
+            success_rate=0.99,
+            description=&#34;Structured data generation&#34;,
+            files_correctly_classified=0.99,
+            manual_time_saved_sec=300.0    # 5 min to manually create JSON-LD
+        ),
+
+        # Game Asset Detection
+        &#34;game_asset_detection&#34;: ModelCostConfig(
+            name=&#34;Game Asset Detection&#34;,
+            cost_type=CostType.COMPUTE,
+            cost_per_unit=0.0,
+            unit_type=&#34;invocation&#34;,
+            avg_processing_time_sec=0.001,
+            success_rate=0.95,
+            description=&#34;Keyword-based game asset classification&#34;,
+            files_correctly_classified=0.90,
+            manual_time_saved_sec=20.0
+        ),
+    }
+
+    # Hourly rate for manual work (for ROI calculation)
+    MANUAL_HOURLY_RATE = 25.0  # $25/hour for manual file organization
+
+    def __init__(self, config_path: Optional[str] = None):
+        &#34;&#34;&#34;
+        Initialize the cost calculator.
+
+        Args:
+            config_path: Optional path to custom cost configuration JSON
+        &#34;&#34;&#34;
+        self.cost_configs: Dict[str, ModelCostConfig] = {}
+        self.usage_records: List[UsageRecord] = []
+        self.session_start = datetime.now()
+
+        # Load default configs
+        for name, config in self.DEFAULT_COST_CONFIGS.items():
+            self.cost_configs[name] = config
+
+        # Load custom config if provided
+        if config_path and Path(config_path).exists():
+            self._load_custom_config(config_path)
+
+    def _load_custom_config(self, config_path: str):
+        &#34;&#34;&#34;Load custom cost configuration from JSON.&#34;&#34;&#34;
+        with open(config_path, &#39;r&#39;) as f:
+            custom_config = json.load(f)
+
+        for name, config_dict in custom_config.get(&#39;models&#39;, {}).items():
+            self.cost_configs[name] = ModelCostConfig(
+                name=config_dict.get(&#39;name&#39;, name),
+                cost_type=CostType(config_dict.get(&#39;cost_type&#39;, &#39;compute&#39;)),
+                cost_per_unit=config_dict.get(&#39;cost_per_unit&#39;, 0.0),
+                unit_type=config_dict.get(&#39;unit_type&#39;, &#39;invocation&#39;),
+                avg_processing_time_sec=config_dict.get(&#39;avg_processing_time_sec&#39;, 1.0),
+                success_rate=config_dict.get(&#39;success_rate&#39;, 1.0),
+                description=config_dict.get(&#39;description&#39;, &#39;&#39;),
+                files_correctly_classified=config_dict.get(&#39;files_correctly_classified&#39;, 0.0),
+                manual_time_saved_sec=config_dict.get(&#39;manual_time_saved_sec&#39;, 0.0)
+            )
+
+    def _records_df(self) -&gt; pd.DataFrame:
+        &#34;&#34;&#34;Return usage_records as a DataFrame for vectorized aggregation.&#34;&#34;&#34;
+        if not self.usage_records:
+            return pd.DataFrame(columns=[
+                &#34;feature_name&#34;, &#34;processing_time_sec&#34;, &#34;files_processed&#34;, &#34;success&#34;
+            ])
+        return pd.DataFrame([
+            {
+                &#34;feature_name&#34;: r.feature_name,
+                &#34;processing_time_sec&#34;: r.processing_time_sec,
+                &#34;files_processed&#34;: r.files_processed,
+                &#34;success&#34;: r.success,
+            }
+            for r in self.usage_records
+        ])
+
+    def record_usage(
+        self,
+        feature_name: str,
+        processing_time_sec: float,
+        files_processed: int = 1,
+        success: bool = True,
+        error_message: Optional[str] = None,
+        input_file_size_bytes: int = 0,
+        metadata: Optional[Dict[str, Any]] = None
+    ) -&gt; UsageRecord:
+        &#34;&#34;&#34;
+        Record a usage event for a feature/model.
+
+        Args:
+            feature_name: Name of the feature (must match cost_configs key)
+            processing_time_sec: Time taken for processing
+            files_processed: Number of files processed
+            success: Whether the processing succeeded
+            error_message: Error message if failed
+            input_file_size_bytes: Size of input file
+            metadata: Additional metadata
+
+        Returns:
+            The created UsageRecord
+        &#34;&#34;&#34;
+        record = UsageRecord(
+            feature_name=feature_name,
+            timestamp=datetime.now(),
+            processing_time_sec=processing_time_sec,
+            files_processed=files_processed,
+            success=success,
+            error_message=error_message,
+            input_file_size_bytes=input_file_size_bytes,
+            metadata=metadata or {}
+        )
+        self.usage_records.append(record)
+        return record
+
+    def calculate_feature_cost(self, feature_name: str) -&gt; CostSummary:
+        &#34;&#34;&#34;
+        Calculate total cost for a specific feature.
+
+        Args:
+            feature_name: Name of the feature
+
+        Returns:
+            CostSummary for the feature
+        &#34;&#34;&#34;
+        config = self.cost_configs.get(feature_name)
+        if not config:
+            raise ValueError(f&#34;Unknown feature: {feature_name}&#34;)
+
+        subset = self._records_df()
+        subset = subset[subset[&#34;feature_name&#34;] == feature_name]
+
+        if subset.empty:
+            return CostSummary(
+                feature_name=feature_name,
+                total_invocations=0,
+                total_processing_time_sec=0.0,
+                total_cost=0.0,
+                avg_cost_per_file=0.0,
+                success_rate=0.0,
+                total_files_processed=0
+            )
+
+        total_invocations = len(subset)
+        total_processing_time = float(subset[&#34;processing_time_sec&#34;].sum())
+        total_files = int(subset[&#34;files_processed&#34;].sum())
+        success_rate = float(subset[&#34;success&#34;].mean())
+        total_cost = total_invocations * config.cost_per_unit
+        avg_cost_per_file = total_cost / total_files if total_files &gt; 0 else 0.0
+
+        return CostSummary(
+            feature_name=feature_name,
+            total_invocations=total_invocations,
+            total_processing_time_sec=total_processing_time,
+            total_cost=total_cost,
+            avg_cost_per_file=avg_cost_per_file,
+            success_rate=success_rate,
+            total_files_processed=total_files
+        )
+
+    def calculate_roi(self, feature_name: str) -&gt; ROIMetrics:
+        &#34;&#34;&#34;
+        Calculate ROI for a specific feature.
+
+        ROI = (Value Generated - Cost) / Cost * 100
+
+        Value is calculated as:
+        - Manual time saved * hourly rate * success rate
+
+        Args:
+            feature_name: Name of the feature
+
+        Returns:
+            ROIMetrics for the feature
+        &#34;&#34;&#34;
+        config = self.cost_configs.get(feature_name)
+        if not config:
+            raise ValueError(f&#34;Unknown feature: {feature_name}&#34;)
+
+        cost_summary = self.calculate_feature_cost(feature_name)
+
+        if cost_summary.total_files_processed == 0:
+            return ROIMetrics(
+                feature_name=feature_name,
+                total_cost=0.0,
+                total_value=0.0,
+                roi_percentage=0.0,
+                manual_hours_saved=0.0,
+                cost_per_file=0.0,
+                value_per_file=0.0,
+                break_even_files=0
+            )
+
+        # Calculate value generated
+        # Value = (manual time saved * files classified correctly) * hourly rate
+        files_classified = cost_summary.total_files_processed * config.files_correctly_classified
+        total_time_saved_sec = files_classified * config.manual_time_saved_sec
+        total_time_saved_hours = total_time_saved_sec / 3600
+        total_value = total_time_saved_hours * self.MANUAL_HOURLY_RATE
+
+        # Calculate ROI
+        if cost_summary.total_cost &gt; 0:
+            roi_percentage = ((total_value - cost_summary.total_cost) / cost_summary.total_cost) * 100
+        else:
+            roi_percentage = float(&#39;inf&#39;) if total_value &gt; 0 else 0.0
+
+        # Calculate break-even point
+        cost_per_file = cost_summary.avg_cost_per_file
+        value_per_file = (config.manual_time_saved_sec / 3600) * self.MANUAL_HOURLY_RATE * config.files_correctly_classified
+
+        if cost_per_file &gt; 0 and value_per_file &gt; cost_per_file:
+            break_even_files = 1  # Already profitable per file
+        elif cost_per_file &gt; 0:
+            # Need multiple files to break even
+            break_even_files = int(cost_summary.total_cost / value_per_file) + 1 if value_per_file &gt; 0 else float(&#39;inf&#39;)
+        else:
+            break_even_files = 0  # No cost
+
+        return ROIMetrics(
+            feature_name=feature_name,
+            total_cost=cost_summary.total_cost,
+            total_value=total_value,
+            roi_percentage=roi_percentage,
+            manual_hours_saved=total_time_saved_hours,
+            cost_per_file=cost_per_file,
+            value_per_file=value_per_file,
+            break_even_files=break_even_files
+        )
+
+    def calculate_total_cost(self) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Calculate total cost across all features.
+
+        Returns:
+            Dictionary with total cost breakdown
+        &#34;&#34;&#34;
+        df = self._records_df()
+        if df.empty:
+            return {
+                &#39;total_cost&#39;: 0.0,
+                &#39;total_files_processed&#39;: 0,
+                &#39;total_processing_time_sec&#39;: 0.0,
+                &#39;avg_cost_per_file&#39;: 0.0,
+                &#39;feature_breakdown&#39;: {}
+            }
+
+        grouped = df.groupby(&#34;feature_name&#34;).agg(
+            total_invocations=(&#34;success&#34;, &#34;count&#34;),
+            total_processing_time_sec=(&#34;processing_time_sec&#34;, &#34;sum&#34;),
+            total_files_processed=(&#34;files_processed&#34;, &#34;sum&#34;),
+            success_rate=(&#34;success&#34;, &#34;mean&#34;),
+        )
+
+        feature_costs: Dict[str, Any] = {}
+        total_cost = 0.0
+        total_files = 0
+        total_time = 0.0
+
+        for feature_name, row in grouped.iterrows():
+            config = self.cost_configs.get(feature_name)
+            if not config:
+                continue
+            invocations = int(row[&#34;total_invocations&#34;])
+            files = int(row[&#34;total_files_processed&#34;])
+            proc_time = float(row[&#34;total_processing_time_sec&#34;])
+            feat_cost = invocations * config.cost_per_unit
+            summary = CostSummary(
+                feature_name=feature_name,
+                total_invocations=invocations,
+                total_processing_time_sec=proc_time,
+                total_cost=feat_cost,
+                avg_cost_per_file=feat_cost / files if files &gt; 0 else 0.0,
+                success_rate=float(row[&#34;success_rate&#34;]),
+                total_files_processed=files,
+            )
+            feature_costs[feature_name] = asdict(summary)
+            total_cost += feat_cost
+            total_files += files
+            total_time += proc_time
+
+        return {
+            &#39;total_cost&#39;: total_cost,
+            &#39;total_files_processed&#39;: total_files,
+            &#39;total_processing_time_sec&#39;: total_time,
+            &#39;avg_cost_per_file&#39;: total_cost / total_files if total_files &gt; 0 else 0.0,
+            &#39;feature_breakdown&#39;: feature_costs
+        }
+
+    def calculate_total_roi(self) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Calculate total ROI across all features.
+
+        Returns:
+            Dictionary with total ROI breakdown
+        &#34;&#34;&#34;
+        df = self._records_df()
+        feature_names = list(self.cost_configs.keys()) if df.empty else list(df[&#34;feature_name&#34;].unique())
+
+        feature_rois: Dict[str, Any] = {}
+        total_cost = 0.0
+        total_value = 0.0
+        total_hours_saved = 0.0
+
+        for feature_name in feature_names:
+            roi = self.calculate_roi(feature_name)
+            if roi.total_cost &gt; 0 or roi.total_value &gt; 0:
+                feature_rois[feature_name] = asdict(roi)
+                total_cost += roi.total_cost
+                total_value += roi.total_value
+                total_hours_saved += roi.manual_hours_saved
+
+        overall_roi = ((total_value - total_cost) / total_cost * 100) if total_cost &gt; 0 else float(&#39;inf&#39;)
+
+        return {
+            &#39;total_cost&#39;: total_cost,
+            &#39;total_value&#39;: total_value,
+            &#39;overall_roi_percentage&#39;: overall_roi,
+            &#39;total_manual_hours_saved&#39;: total_hours_saved,
+            &#39;hourly_rate_used&#39;: self.MANUAL_HOURLY_RATE,
+            &#39;feature_breakdown&#39;: feature_rois
+        }
+
+    def get_optimization_recommendations(self) -&gt; List[Dict[str, Any]]:
+        &#34;&#34;&#34;
+        Analyze usage and provide cost optimization recommendations.
+
+        Returns:
+            List of recommendations
+        &#34;&#34;&#34;
+        recommendations = []
+
+        for feature_name in self.cost_configs.keys():
+            summary = self.calculate_feature_cost(feature_name)
+            roi = self.calculate_roi(feature_name)
+            config = self.cost_configs[feature_name]
+
+            if summary.total_invocations == 0:
+                continue
+
+            # Check for low success rate
+            if summary.success_rate &lt; 0.7:
+                recommendations.append({
+                    &#39;feature&#39;: feature_name,
+                    &#39;type&#39;: &#39;low_success_rate&#39;,
+                    &#39;severity&#39;: &#39;high&#39;,
+                    &#39;message&#39;: f&#34;{config.name} has a {summary.success_rate:.1%} success rate. &#34;
+                              f&#34;Consider improving error handling or fallback mechanisms.&#34;,
+                    &#39;potential_savings&#39;: summary.total_cost * (1 - summary.success_rate)
+                })
+
+            # Check for negative ROI
+            if roi.roi_percentage &lt; 0:
+                recommendations.append({
+                    &#39;feature&#39;: feature_name,
+                    &#39;type&#39;: &#39;negative_roi&#39;,
+                    &#39;severity&#39;: &#39;critical&#39;,
+                    &#39;message&#39;: f&#34;{config.name} has negative ROI ({roi.roi_percentage:.1f}%). &#34;
+                              f&#34;Cost (${roi.total_cost:.4f}) exceeds value (${roi.total_value:.4f}).&#34;,
+                    &#39;potential_savings&#39;: roi.total_cost - roi.total_value
+                })
+
+            # Check for high processing time
+            avg_time = summary.total_processing_time_sec / summary.total_invocations
+            if avg_time &gt; config.avg_processing_time_sec * 2:
+                recommendations.append({
+                    &#39;feature&#39;: feature_name,
+                    &#39;type&#39;: &#39;slow_processing&#39;,
+                    &#39;severity&#39;: &#39;medium&#39;,
+                    &#39;message&#39;: f&#34;{config.name} is taking {avg_time:.2f}s per invocation &#34;
+                              f&#34;(expected {config.avg_processing_time_sec:.2f}s). Consider optimization.&#34;,
+                    &#39;potential_savings&#39;: 0.0  # Time savings, not cost
+                })
+
+            # Check if feature is underutilized
+            total_files = sum(r.files_processed for r in self.usage_records)
+            feature_files = summary.total_files_processed
+            if total_files &gt; 100 and feature_files / total_files &lt; 0.05 and roi.roi_percentage &gt; 100:
+                recommendations.append({
+                    &#39;feature&#39;: feature_name,
+                    &#39;type&#39;: &#39;underutilized&#39;,
+                    &#39;severity&#39;: &#39;low&#39;,
+                    &#39;message&#39;: f&#34;{config.name} is only used for {feature_files/total_files:.1%} of files &#34;
+                              f&#34;but has {roi.roi_percentage:.0f}% ROI. Consider expanding usage.&#34;,
+                    &#39;potential_savings&#39;: 0.0  # Opportunity cost
+                })
+
+        # Sort by severity and potential savings
+        severity_order = {&#39;critical&#39;: 0, &#39;high&#39;: 1, &#39;medium&#39;: 2, &#39;low&#39;: 3}
+        recommendations.sort(key=lambda x: (severity_order.get(x[&#39;severity&#39;], 4), -x[&#39;potential_savings&#39;]))
+
+        return recommendations
+
+    def estimate_cost_for_files(self, file_count: int, features: Optional[List[str]] = None) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Estimate cost for processing a given number of files.
+
+        Args:
+            file_count: Number of files to estimate
+            features: List of features to use (None for all)
+
+        Returns:
+            Cost estimate breakdown
+        &#34;&#34;&#34;
+        features = features or list(self.cost_configs.keys())
+        estimates = {}
+        total_cost = 0.0
+        total_time = 0.0
+        total_value = 0.0
+
+        for feature_name in features:
+            config = self.cost_configs.get(feature_name)
+            if not config:
+                continue
+
+            # Estimate cost
+            cost = file_count * config.cost_per_unit
+            time_sec = file_count * config.avg_processing_time_sec
+
+            # Estimate value
+            files_classified = file_count * config.files_correctly_classified * config.success_rate
+            value = (files_classified * config.manual_time_saved_sec / 3600) * self.MANUAL_HOURLY_RATE
+
+            estimates[feature_name] = {
+                &#39;estimated_cost&#39;: cost,
+                &#39;estimated_time_sec&#39;: time_sec,
+                &#39;estimated_time_human&#39;: self._format_duration(time_sec),
+                &#39;estimated_value&#39;: value,
+                &#39;estimated_roi&#39;: ((value - cost) / cost * 100) if cost &gt; 0 else float(&#39;inf&#39;)
+            }
+
+            total_cost += cost
+            total_time += time_sec
+            total_value += value
+
+        return {
+            &#39;file_count&#39;: file_count,
+            &#39;total_estimated_cost&#39;: total_cost,
+            &#39;total_estimated_time_sec&#39;: total_time,
+            &#39;total_estimated_time_human&#39;: self._format_duration(total_time),
+            &#39;total_estimated_value&#39;: total_value,
+            &#39;estimated_roi&#39;: ((total_value - total_cost) / total_cost * 100) if total_cost &gt; 0 else float(&#39;inf&#39;),
+            &#39;feature_estimates&#39;: estimates
+        }
+
+    def _format_duration(self, seconds: float) -&gt; str:
+        &#34;&#34;&#34;Format seconds into human-readable duration.&#34;&#34;&#34;
+        if seconds &lt; 60:
+            return f&#34;{seconds:.1f} seconds&#34;
+        elif seconds &lt; 3600:
+            return f&#34;{seconds/60:.1f} minutes&#34;
+        else:
+            return f&#34;{seconds/3600:.1f} hours&#34;
+
+    def generate_report(self, output_path: Optional[str] = None) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Generate a comprehensive cost and ROI report.
+
+        Args:
+            output_path: Optional path to save report JSON
+
+        Returns:
+            Complete report dictionary
+        &#34;&#34;&#34;
+        report = {
+            &#39;metadata&#39;: {
+                &#39;generated_at&#39;: datetime.now().isoformat(),
+                &#39;session_start&#39;: self.session_start.isoformat(),
+                &#39;session_duration_sec&#39;: (datetime.now() - self.session_start).total_seconds(),
+                &#39;total_usage_records&#39;: len(self.usage_records)
+            },
+            &#39;cost_summary&#39;: self.calculate_total_cost(),
+            &#39;roi_summary&#39;: self.calculate_total_roi(),
+            &#39;recommendations&#39;: self.get_optimization_recommendations(),
+            &#39;model_configs&#39;: {name: asdict(config) for name, config in self.cost_configs.items()},
+        }
+
+        # Add projections for common file counts
+        report[&#39;projections&#39;] = {
+            &#39;1000_files&#39;: self.estimate_cost_for_files(1000),
+            &#39;10000_files&#39;: self.estimate_cost_for_files(10000),
+            &#39;100000_files&#39;: self.estimate_cost_for_files(100000)
+        }
+
+        if output_path:
+            with open(output_path, &#39;w&#39;) as f:
+                json.dump(report, f, indent=2, default=str)
+
+        return report
+
+    def print_summary(self) -&gt; None:
+        &#34;&#34;&#34;Print a formatted summary of costs and ROI.&#34;&#34;&#34;
+        print(&#34;\n&#34; + &#34;=&#34; * 70)
+        print(&#34;COST &amp; ROI SUMMARY REPORT&#34;)
+        print(&#34;=&#34; * 70)
+
+        # Overall costs
+        cost_summary = self.calculate_total_cost()
+        print(f&#34;\n{&#39;COST SUMMARY&#39;:=^70}&#34;)
+        print(f&#34;  Total Cost:              ${cost_summary[&#39;total_cost&#39;]:.4f}&#34;)
+        print(f&#34;  Total Files Processed:   {cost_summary[&#39;total_files_processed&#39;]:,}&#34;)
+        print(f&#34;  Avg Cost per File:       ${cost_summary[&#39;avg_cost_per_file&#39;]:.6f}&#34;)
+        print(f&#34;  Total Processing Time:   {self._format_duration(cost_summary[&#39;total_processing_time_sec&#39;])}&#34;)
+
+        # ROI summary
+        roi_summary = self.calculate_total_roi()
+        print(f&#34;\n{&#39;ROI SUMMARY&#39;:=^70}&#34;)
+        print(f&#34;  Total Value Generated:   ${roi_summary[&#39;total_value&#39;]:.2f}&#34;)
+        print(f&#34;  Overall ROI:             {roi_summary[&#39;overall_roi_percentage&#39;]:.0f}%&#34;)
+        print(f&#34;  Manual Hours Saved:      {roi_summary[&#39;total_manual_hours_saved&#39;]:.1f} hours&#34;)
+        print(f&#34;  (at ${roi_summary[&#39;hourly_rate_used&#39;]:.2f}/hour)&#34;)
+
+        # Per-feature breakdown
+        print(f&#34;\n{&#39;PER-FEATURE BREAKDOWN&#39;:=^70}&#34;)
+        print(f&#34;{&#39;Feature&#39;:&lt;25} {&#39;Cost&#39;:&gt;10} {&#39;Value&#39;:&gt;10} {&#39;ROI&#39;:&gt;10} {&#39;Files&#39;:&gt;10}&#34;)
+        print(&#34;-&#34; * 70)
+
+        for feature_name in sorted(self.cost_configs.keys()):
+            cost = self.calculate_feature_cost(feature_name)
+            roi = self.calculate_roi(feature_name)
+
+            if cost.total_invocations &gt; 0:
+                roi_str = f&#34;{roi.roi_percentage:.0f}%&#34; if roi.roi_percentage != float(&#39;inf&#39;) else &#34;∞&#34;
+                print(f&#34;{feature_name:&lt;25} ${cost.total_cost:&gt;9.4f} ${roi.total_value:&gt;9.2f} {roi_str:&gt;10} {cost.total_files_processed:&gt;10,}&#34;)
+
+        # Recommendations
+        recommendations = self.get_optimization_recommendations()
+        if recommendations:
+            print(f&#34;\n{&#39;RECOMMENDATIONS&#39;:=^70}&#34;)
+            for i, rec in enumerate(recommendations[:5], 1):
+                print(f&#34;  {i}. [{rec[&#39;severity&#39;].upper()}] {rec[&#39;message&#39;]}&#34;)
+
+        print(&#34;\n&#34; + &#34;=&#34; * 70)</code></pre>
+</details>
+<div class="desc"><p>Calculates costs and ROI for the file organization system.</p>
+<p>Tracks usage of each feature/model and provides cost analysis
+with ROI calculations based on manual time saved.</p>
+<p>Initialize the cost calculator.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>config_path</code></strong></dt>
+<dd>Optional path to custom cost configuration JSON</dd>
+</dl></div>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.cost_roi_calculator.CostROICalculator.DEFAULT_COST_CONFIGS"><code class="name">var <span class="ident">DEFAULT_COST_CONFIGS</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostROICalculator.MANUAL_HOURLY_RATE"><code class="name">var <span class="ident">MANUAL_HOURLY_RATE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="src.cost_roi_calculator.CostROICalculator.calculate_feature_cost"><code class="name flex">
+<span>def <span class="ident">calculate_feature_cost</span></span>(<span>self, feature_name: str) ‑> <a title="src.cost_roi_calculator.CostSummary" href="#src.cost_roi_calculator.CostSummary">CostSummary</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def calculate_feature_cost(self, feature_name: str) -&gt; CostSummary:
+    &#34;&#34;&#34;
+    Calculate total cost for a specific feature.
+
+    Args:
+        feature_name: Name of the feature
+
+    Returns:
+        CostSummary for the feature
+    &#34;&#34;&#34;
+    config = self.cost_configs.get(feature_name)
+    if not config:
+        raise ValueError(f&#34;Unknown feature: {feature_name}&#34;)
+
+    subset = self._records_df()
+    subset = subset[subset[&#34;feature_name&#34;] == feature_name]
+
+    if subset.empty:
+        return CostSummary(
+            feature_name=feature_name,
+            total_invocations=0,
+            total_processing_time_sec=0.0,
+            total_cost=0.0,
+            avg_cost_per_file=0.0,
+            success_rate=0.0,
+            total_files_processed=0
+        )
+
+    total_invocations = len(subset)
+    total_processing_time = float(subset[&#34;processing_time_sec&#34;].sum())
+    total_files = int(subset[&#34;files_processed&#34;].sum())
+    success_rate = float(subset[&#34;success&#34;].mean())
+    total_cost = total_invocations * config.cost_per_unit
+    avg_cost_per_file = total_cost / total_files if total_files &gt; 0 else 0.0
+
+    return CostSummary(
+        feature_name=feature_name,
+        total_invocations=total_invocations,
+        total_processing_time_sec=total_processing_time,
+        total_cost=total_cost,
+        avg_cost_per_file=avg_cost_per_file,
+        success_rate=success_rate,
+        total_files_processed=total_files
+    )</code></pre>
+</details>
+<div class="desc"><p>Calculate total cost for a specific feature.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>feature_name</code></strong></dt>
+<dd>Name of the feature</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>CostSummary for the feature</p></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostROICalculator.calculate_roi"><code class="name flex">
+<span>def <span class="ident">calculate_roi</span></span>(<span>self, feature_name: str) ‑> <a title="src.cost_roi_calculator.ROIMetrics" href="#src.cost_roi_calculator.ROIMetrics">ROIMetrics</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def calculate_roi(self, feature_name: str) -&gt; ROIMetrics:
+    &#34;&#34;&#34;
+    Calculate ROI for a specific feature.
+
+    ROI = (Value Generated - Cost) / Cost * 100
+
+    Value is calculated as:
+    - Manual time saved * hourly rate * success rate
+
+    Args:
+        feature_name: Name of the feature
+
+    Returns:
+        ROIMetrics for the feature
+    &#34;&#34;&#34;
+    config = self.cost_configs.get(feature_name)
+    if not config:
+        raise ValueError(f&#34;Unknown feature: {feature_name}&#34;)
+
+    cost_summary = self.calculate_feature_cost(feature_name)
+
+    if cost_summary.total_files_processed == 0:
+        return ROIMetrics(
+            feature_name=feature_name,
+            total_cost=0.0,
+            total_value=0.0,
+            roi_percentage=0.0,
+            manual_hours_saved=0.0,
+            cost_per_file=0.0,
+            value_per_file=0.0,
+            break_even_files=0
+        )
+
+    # Calculate value generated
+    # Value = (manual time saved * files classified correctly) * hourly rate
+    files_classified = cost_summary.total_files_processed * config.files_correctly_classified
+    total_time_saved_sec = files_classified * config.manual_time_saved_sec
+    total_time_saved_hours = total_time_saved_sec / 3600
+    total_value = total_time_saved_hours * self.MANUAL_HOURLY_RATE
+
+    # Calculate ROI
+    if cost_summary.total_cost &gt; 0:
+        roi_percentage = ((total_value - cost_summary.total_cost) / cost_summary.total_cost) * 100
+    else:
+        roi_percentage = float(&#39;inf&#39;) if total_value &gt; 0 else 0.0
+
+    # Calculate break-even point
+    cost_per_file = cost_summary.avg_cost_per_file
+    value_per_file = (config.manual_time_saved_sec / 3600) * self.MANUAL_HOURLY_RATE * config.files_correctly_classified
+
+    if cost_per_file &gt; 0 and value_per_file &gt; cost_per_file:
+        break_even_files = 1  # Already profitable per file
+    elif cost_per_file &gt; 0:
+        # Need multiple files to break even
+        break_even_files = int(cost_summary.total_cost / value_per_file) + 1 if value_per_file &gt; 0 else float(&#39;inf&#39;)
+    else:
+        break_even_files = 0  # No cost
+
+    return ROIMetrics(
+        feature_name=feature_name,
+        total_cost=cost_summary.total_cost,
+        total_value=total_value,
+        roi_percentage=roi_percentage,
+        manual_hours_saved=total_time_saved_hours,
+        cost_per_file=cost_per_file,
+        value_per_file=value_per_file,
+        break_even_files=break_even_files
+    )</code></pre>
+</details>
+<div class="desc"><p>Calculate ROI for a specific feature.</p>
+<p>ROI = (Value Generated - Cost) / Cost * 100</p>
+<p>Value is calculated as:
+- Manual time saved * hourly rate * success rate</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>feature_name</code></strong></dt>
+<dd>Name of the feature</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>ROIMetrics for the feature</p></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostROICalculator.calculate_total_cost"><code class="name flex">
+<span>def <span class="ident">calculate_total_cost</span></span>(<span>self) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def calculate_total_cost(self) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Calculate total cost across all features.
+
+    Returns:
+        Dictionary with total cost breakdown
+    &#34;&#34;&#34;
+    df = self._records_df()
+    if df.empty:
+        return {
+            &#39;total_cost&#39;: 0.0,
+            &#39;total_files_processed&#39;: 0,
+            &#39;total_processing_time_sec&#39;: 0.0,
+            &#39;avg_cost_per_file&#39;: 0.0,
+            &#39;feature_breakdown&#39;: {}
+        }
+
+    grouped = df.groupby(&#34;feature_name&#34;).agg(
+        total_invocations=(&#34;success&#34;, &#34;count&#34;),
+        total_processing_time_sec=(&#34;processing_time_sec&#34;, &#34;sum&#34;),
+        total_files_processed=(&#34;files_processed&#34;, &#34;sum&#34;),
+        success_rate=(&#34;success&#34;, &#34;mean&#34;),
+    )
+
+    feature_costs: Dict[str, Any] = {}
+    total_cost = 0.0
+    total_files = 0
+    total_time = 0.0
+
+    for feature_name, row in grouped.iterrows():
+        config = self.cost_configs.get(feature_name)
+        if not config:
+            continue
+        invocations = int(row[&#34;total_invocations&#34;])
+        files = int(row[&#34;total_files_processed&#34;])
+        proc_time = float(row[&#34;total_processing_time_sec&#34;])
+        feat_cost = invocations * config.cost_per_unit
+        summary = CostSummary(
+            feature_name=feature_name,
+            total_invocations=invocations,
+            total_processing_time_sec=proc_time,
+            total_cost=feat_cost,
+            avg_cost_per_file=feat_cost / files if files &gt; 0 else 0.0,
+            success_rate=float(row[&#34;success_rate&#34;]),
+            total_files_processed=files,
+        )
+        feature_costs[feature_name] = asdict(summary)
+        total_cost += feat_cost
+        total_files += files
+        total_time += proc_time
+
+    return {
+        &#39;total_cost&#39;: total_cost,
+        &#39;total_files_processed&#39;: total_files,
+        &#39;total_processing_time_sec&#39;: total_time,
+        &#39;avg_cost_per_file&#39;: total_cost / total_files if total_files &gt; 0 else 0.0,
+        &#39;feature_breakdown&#39;: feature_costs
+    }</code></pre>
+</details>
+<div class="desc"><p>Calculate total cost across all features.</p>
+<h2 id="returns">Returns</h2>
+<p>Dictionary with total cost breakdown</p></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostROICalculator.calculate_total_roi"><code class="name flex">
+<span>def <span class="ident">calculate_total_roi</span></span>(<span>self) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def calculate_total_roi(self) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Calculate total ROI across all features.
+
+    Returns:
+        Dictionary with total ROI breakdown
+    &#34;&#34;&#34;
+    df = self._records_df()
+    feature_names = list(self.cost_configs.keys()) if df.empty else list(df[&#34;feature_name&#34;].unique())
+
+    feature_rois: Dict[str, Any] = {}
+    total_cost = 0.0
+    total_value = 0.0
+    total_hours_saved = 0.0
+
+    for feature_name in feature_names:
+        roi = self.calculate_roi(feature_name)
+        if roi.total_cost &gt; 0 or roi.total_value &gt; 0:
+            feature_rois[feature_name] = asdict(roi)
+            total_cost += roi.total_cost
+            total_value += roi.total_value
+            total_hours_saved += roi.manual_hours_saved
+
+    overall_roi = ((total_value - total_cost) / total_cost * 100) if total_cost &gt; 0 else float(&#39;inf&#39;)
+
+    return {
+        &#39;total_cost&#39;: total_cost,
+        &#39;total_value&#39;: total_value,
+        &#39;overall_roi_percentage&#39;: overall_roi,
+        &#39;total_manual_hours_saved&#39;: total_hours_saved,
+        &#39;hourly_rate_used&#39;: self.MANUAL_HOURLY_RATE,
+        &#39;feature_breakdown&#39;: feature_rois
+    }</code></pre>
+</details>
+<div class="desc"><p>Calculate total ROI across all features.</p>
+<h2 id="returns">Returns</h2>
+<p>Dictionary with total ROI breakdown</p></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostROICalculator.estimate_cost_for_files"><code class="name flex">
+<span>def <span class="ident">estimate_cost_for_files</span></span>(<span>self, file_count: int, features: Optional[List[str]] = None) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def estimate_cost_for_files(self, file_count: int, features: Optional[List[str]] = None) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Estimate cost for processing a given number of files.
+
+    Args:
+        file_count: Number of files to estimate
+        features: List of features to use (None for all)
+
+    Returns:
+        Cost estimate breakdown
+    &#34;&#34;&#34;
+    features = features or list(self.cost_configs.keys())
+    estimates = {}
+    total_cost = 0.0
+    total_time = 0.0
+    total_value = 0.0
+
+    for feature_name in features:
+        config = self.cost_configs.get(feature_name)
+        if not config:
+            continue
+
+        # Estimate cost
+        cost = file_count * config.cost_per_unit
+        time_sec = file_count * config.avg_processing_time_sec
+
+        # Estimate value
+        files_classified = file_count * config.files_correctly_classified * config.success_rate
+        value = (files_classified * config.manual_time_saved_sec / 3600) * self.MANUAL_HOURLY_RATE
+
+        estimates[feature_name] = {
+            &#39;estimated_cost&#39;: cost,
+            &#39;estimated_time_sec&#39;: time_sec,
+            &#39;estimated_time_human&#39;: self._format_duration(time_sec),
+            &#39;estimated_value&#39;: value,
+            &#39;estimated_roi&#39;: ((value - cost) / cost * 100) if cost &gt; 0 else float(&#39;inf&#39;)
+        }
+
+        total_cost += cost
+        total_time += time_sec
+        total_value += value
+
+    return {
+        &#39;file_count&#39;: file_count,
+        &#39;total_estimated_cost&#39;: total_cost,
+        &#39;total_estimated_time_sec&#39;: total_time,
+        &#39;total_estimated_time_human&#39;: self._format_duration(total_time),
+        &#39;total_estimated_value&#39;: total_value,
+        &#39;estimated_roi&#39;: ((total_value - total_cost) / total_cost * 100) if total_cost &gt; 0 else float(&#39;inf&#39;),
+        &#39;feature_estimates&#39;: estimates
+    }</code></pre>
+</details>
+<div class="desc"><p>Estimate cost for processing a given number of files.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_count</code></strong></dt>
+<dd>Number of files to estimate</dd>
+<dt><strong><code>features</code></strong></dt>
+<dd>List of features to use (None for all)</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Cost estimate breakdown</p></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostROICalculator.generate_report"><code class="name flex">
+<span>def <span class="ident">generate_report</span></span>(<span>self, output_path: Optional[str] = None) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_report(self, output_path: Optional[str] = None) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Generate a comprehensive cost and ROI report.
+
+    Args:
+        output_path: Optional path to save report JSON
+
+    Returns:
+        Complete report dictionary
+    &#34;&#34;&#34;
+    report = {
+        &#39;metadata&#39;: {
+            &#39;generated_at&#39;: datetime.now().isoformat(),
+            &#39;session_start&#39;: self.session_start.isoformat(),
+            &#39;session_duration_sec&#39;: (datetime.now() - self.session_start).total_seconds(),
+            &#39;total_usage_records&#39;: len(self.usage_records)
+        },
+        &#39;cost_summary&#39;: self.calculate_total_cost(),
+        &#39;roi_summary&#39;: self.calculate_total_roi(),
+        &#39;recommendations&#39;: self.get_optimization_recommendations(),
+        &#39;model_configs&#39;: {name: asdict(config) for name, config in self.cost_configs.items()},
+    }
+
+    # Add projections for common file counts
+    report[&#39;projections&#39;] = {
+        &#39;1000_files&#39;: self.estimate_cost_for_files(1000),
+        &#39;10000_files&#39;: self.estimate_cost_for_files(10000),
+        &#39;100000_files&#39;: self.estimate_cost_for_files(100000)
+    }
+
+    if output_path:
+        with open(output_path, &#39;w&#39;) as f:
+            json.dump(report, f, indent=2, default=str)
+
+    return report</code></pre>
+</details>
+<div class="desc"><p>Generate a comprehensive cost and ROI report.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>output_path</code></strong></dt>
+<dd>Optional path to save report JSON</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Complete report dictionary</p></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostROICalculator.get_optimization_recommendations"><code class="name flex">
+<span>def <span class="ident">get_optimization_recommendations</span></span>(<span>self) ‑> List[Dict[str, Any]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_optimization_recommendations(self) -&gt; List[Dict[str, Any]]:
+    &#34;&#34;&#34;
+    Analyze usage and provide cost optimization recommendations.
+
+    Returns:
+        List of recommendations
+    &#34;&#34;&#34;
+    recommendations = []
+
+    for feature_name in self.cost_configs.keys():
+        summary = self.calculate_feature_cost(feature_name)
+        roi = self.calculate_roi(feature_name)
+        config = self.cost_configs[feature_name]
+
+        if summary.total_invocations == 0:
+            continue
+
+        # Check for low success rate
+        if summary.success_rate &lt; 0.7:
+            recommendations.append({
+                &#39;feature&#39;: feature_name,
+                &#39;type&#39;: &#39;low_success_rate&#39;,
+                &#39;severity&#39;: &#39;high&#39;,
+                &#39;message&#39;: f&#34;{config.name} has a {summary.success_rate:.1%} success rate. &#34;
+                          f&#34;Consider improving error handling or fallback mechanisms.&#34;,
+                &#39;potential_savings&#39;: summary.total_cost * (1 - summary.success_rate)
+            })
+
+        # Check for negative ROI
+        if roi.roi_percentage &lt; 0:
+            recommendations.append({
+                &#39;feature&#39;: feature_name,
+                &#39;type&#39;: &#39;negative_roi&#39;,
+                &#39;severity&#39;: &#39;critical&#39;,
+                &#39;message&#39;: f&#34;{config.name} has negative ROI ({roi.roi_percentage:.1f}%). &#34;
+                          f&#34;Cost (${roi.total_cost:.4f}) exceeds value (${roi.total_value:.4f}).&#34;,
+                &#39;potential_savings&#39;: roi.total_cost - roi.total_value
+            })
+
+        # Check for high processing time
+        avg_time = summary.total_processing_time_sec / summary.total_invocations
+        if avg_time &gt; config.avg_processing_time_sec * 2:
+            recommendations.append({
+                &#39;feature&#39;: feature_name,
+                &#39;type&#39;: &#39;slow_processing&#39;,
+                &#39;severity&#39;: &#39;medium&#39;,
+                &#39;message&#39;: f&#34;{config.name} is taking {avg_time:.2f}s per invocation &#34;
+                          f&#34;(expected {config.avg_processing_time_sec:.2f}s). Consider optimization.&#34;,
+                &#39;potential_savings&#39;: 0.0  # Time savings, not cost
+            })
+
+        # Check if feature is underutilized
+        total_files = sum(r.files_processed for r in self.usage_records)
+        feature_files = summary.total_files_processed
+        if total_files &gt; 100 and feature_files / total_files &lt; 0.05 and roi.roi_percentage &gt; 100:
+            recommendations.append({
+                &#39;feature&#39;: feature_name,
+                &#39;type&#39;: &#39;underutilized&#39;,
+                &#39;severity&#39;: &#39;low&#39;,
+                &#39;message&#39;: f&#34;{config.name} is only used for {feature_files/total_files:.1%} of files &#34;
+                          f&#34;but has {roi.roi_percentage:.0f}% ROI. Consider expanding usage.&#34;,
+                &#39;potential_savings&#39;: 0.0  # Opportunity cost
+            })
+
+    # Sort by severity and potential savings
+    severity_order = {&#39;critical&#39;: 0, &#39;high&#39;: 1, &#39;medium&#39;: 2, &#39;low&#39;: 3}
+    recommendations.sort(key=lambda x: (severity_order.get(x[&#39;severity&#39;], 4), -x[&#39;potential_savings&#39;]))
+
+    return recommendations</code></pre>
+</details>
+<div class="desc"><p>Analyze usage and provide cost optimization recommendations.</p>
+<h2 id="returns">Returns</h2>
+<p>List of recommendations</p></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostROICalculator.print_summary"><code class="name flex">
+<span>def <span class="ident">print_summary</span></span>(<span>self) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def print_summary(self) -&gt; None:
+    &#34;&#34;&#34;Print a formatted summary of costs and ROI.&#34;&#34;&#34;
+    print(&#34;\n&#34; + &#34;=&#34; * 70)
+    print(&#34;COST &amp; ROI SUMMARY REPORT&#34;)
+    print(&#34;=&#34; * 70)
+
+    # Overall costs
+    cost_summary = self.calculate_total_cost()
+    print(f&#34;\n{&#39;COST SUMMARY&#39;:=^70}&#34;)
+    print(f&#34;  Total Cost:              ${cost_summary[&#39;total_cost&#39;]:.4f}&#34;)
+    print(f&#34;  Total Files Processed:   {cost_summary[&#39;total_files_processed&#39;]:,}&#34;)
+    print(f&#34;  Avg Cost per File:       ${cost_summary[&#39;avg_cost_per_file&#39;]:.6f}&#34;)
+    print(f&#34;  Total Processing Time:   {self._format_duration(cost_summary[&#39;total_processing_time_sec&#39;])}&#34;)
+
+    # ROI summary
+    roi_summary = self.calculate_total_roi()
+    print(f&#34;\n{&#39;ROI SUMMARY&#39;:=^70}&#34;)
+    print(f&#34;  Total Value Generated:   ${roi_summary[&#39;total_value&#39;]:.2f}&#34;)
+    print(f&#34;  Overall ROI:             {roi_summary[&#39;overall_roi_percentage&#39;]:.0f}%&#34;)
+    print(f&#34;  Manual Hours Saved:      {roi_summary[&#39;total_manual_hours_saved&#39;]:.1f} hours&#34;)
+    print(f&#34;  (at ${roi_summary[&#39;hourly_rate_used&#39;]:.2f}/hour)&#34;)
+
+    # Per-feature breakdown
+    print(f&#34;\n{&#39;PER-FEATURE BREAKDOWN&#39;:=^70}&#34;)
+    print(f&#34;{&#39;Feature&#39;:&lt;25} {&#39;Cost&#39;:&gt;10} {&#39;Value&#39;:&gt;10} {&#39;ROI&#39;:&gt;10} {&#39;Files&#39;:&gt;10}&#34;)
+    print(&#34;-&#34; * 70)
+
+    for feature_name in sorted(self.cost_configs.keys()):
+        cost = self.calculate_feature_cost(feature_name)
+        roi = self.calculate_roi(feature_name)
+
+        if cost.total_invocations &gt; 0:
+            roi_str = f&#34;{roi.roi_percentage:.0f}%&#34; if roi.roi_percentage != float(&#39;inf&#39;) else &#34;∞&#34;
+            print(f&#34;{feature_name:&lt;25} ${cost.total_cost:&gt;9.4f} ${roi.total_value:&gt;9.2f} {roi_str:&gt;10} {cost.total_files_processed:&gt;10,}&#34;)
+
+    # Recommendations
+    recommendations = self.get_optimization_recommendations()
+    if recommendations:
+        print(f&#34;\n{&#39;RECOMMENDATIONS&#39;:=^70}&#34;)
+        for i, rec in enumerate(recommendations[:5], 1):
+            print(f&#34;  {i}. [{rec[&#39;severity&#39;].upper()}] {rec[&#39;message&#39;]}&#34;)
+
+    print(&#34;\n&#34; + &#34;=&#34; * 70)</code></pre>
+</details>
+<div class="desc"><p>Print a formatted summary of costs and ROI.</p></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostROICalculator.record_usage"><code class="name flex">
+<span>def <span class="ident">record_usage</span></span>(<span>self,<br>feature_name: str,<br>processing_time_sec: float,<br>files_processed: int = 1,<br>success: bool = True,<br>error_message: Optional[str] = None,<br>input_file_size_bytes: int = 0,<br>metadata: Optional[Dict[str, Any]] = None) ‑> <a title="src.cost_roi_calculator.UsageRecord" href="#src.cost_roi_calculator.UsageRecord">UsageRecord</a></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def record_usage(
+    self,
+    feature_name: str,
+    processing_time_sec: float,
+    files_processed: int = 1,
+    success: bool = True,
+    error_message: Optional[str] = None,
+    input_file_size_bytes: int = 0,
+    metadata: Optional[Dict[str, Any]] = None
+) -&gt; UsageRecord:
+    &#34;&#34;&#34;
+    Record a usage event for a feature/model.
+
+    Args:
+        feature_name: Name of the feature (must match cost_configs key)
+        processing_time_sec: Time taken for processing
+        files_processed: Number of files processed
+        success: Whether the processing succeeded
+        error_message: Error message if failed
+        input_file_size_bytes: Size of input file
+        metadata: Additional metadata
+
+    Returns:
+        The created UsageRecord
+    &#34;&#34;&#34;
+    record = UsageRecord(
+        feature_name=feature_name,
+        timestamp=datetime.now(),
+        processing_time_sec=processing_time_sec,
+        files_processed=files_processed,
+        success=success,
+        error_message=error_message,
+        input_file_size_bytes=input_file_size_bytes,
+        metadata=metadata or {}
+    )
+    self.usage_records.append(record)
+    return record</code></pre>
+</details>
+<div class="desc"><p>Record a usage event for a feature/model.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>feature_name</code></strong></dt>
+<dd>Name of the feature (must match cost_configs key)</dd>
+<dt><strong><code>processing_time_sec</code></strong></dt>
+<dd>Time taken for processing</dd>
+<dt><strong><code>files_processed</code></strong></dt>
+<dd>Number of files processed</dd>
+<dt><strong><code>success</code></strong></dt>
+<dd>Whether the processing succeeded</dd>
+<dt><strong><code>error_message</code></strong></dt>
+<dd>Error message if failed</dd>
+<dt><strong><code>input_file_size_bytes</code></strong></dt>
+<dd>Size of input file</dd>
+<dt><strong><code>metadata</code></strong></dt>
+<dd>Additional metadata</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>The created UsageRecord</p></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.cost_roi_calculator.CostSummary"><code class="flex name class">
+<span>class <span class="ident">CostSummary</span></span>
+<span>(</span><span>feature_name: str,<br>total_invocations: int,<br>total_processing_time_sec: float,<br>total_cost: float,<br>avg_cost_per_file: float,<br>success_rate: float,<br>total_files_processed: int)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass
+class CostSummary:
+    &#34;&#34;&#34;Summary of costs for a feature.&#34;&#34;&#34;
+    feature_name: str
+    total_invocations: int
+    total_processing_time_sec: float
+    total_cost: float
+    avg_cost_per_file: float
+    success_rate: float
+    total_files_processed: int</code></pre>
+</details>
+<div class="desc"><p>Summary of costs for a feature.</p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="src.cost_roi_calculator.CostSummary.avg_cost_per_file"><code class="name">var <span class="ident">avg_cost_per_file</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostSummary.feature_name"><code class="name">var <span class="ident">feature_name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostSummary.success_rate"><code class="name">var <span class="ident">success_rate</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostSummary.total_cost"><code class="name">var <span class="ident">total_cost</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostSummary.total_files_processed"><code class="name">var <span class="ident">total_files_processed</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostSummary.total_invocations"><code class="name">var <span class="ident">total_invocations</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostSummary.total_processing_time_sec"><code class="name">var <span class="ident">total_processing_time_sec</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.cost_roi_calculator.CostTracker"><code class="flex name class">
+<span>class <span class="ident">CostTracker</span></span>
+<span>(</span><span>calculator: <a title="src.cost_roi_calculator.CostROICalculator" href="#src.cost_roi_calculator.CostROICalculator">CostROICalculator</a>,<br>feature_name: str,<br>files_processed: int = 1,<br>input_file_size_bytes: int = 0,<br>metadata: Optional[Dict[str, Any]] = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CostTracker:
+    &#34;&#34;&#34;
+    Context manager for tracking feature usage costs.
+
+    Usage:
+        calculator = CostROICalculator()
+        with CostTracker(calculator, &#39;clip_vision&#39;, files_processed=1) as tracker:
+            # Do the work
+            result = analyze_image(image_path)
+        # Cost is automatically recorded
+    &#34;&#34;&#34;
+
+    def __init__(
+        self,
+        calculator: CostROICalculator,
+        feature_name: str,
+        files_processed: int = 1,
+        input_file_size_bytes: int = 0,
+        metadata: Optional[Dict[str, Any]] = None
+    ):
+        self.calculator = calculator
+        self.feature_name = feature_name
+        self.files_processed = files_processed
+        self.input_file_size_bytes = input_file_size_bytes
+        self.metadata = metadata or {}
+        self.start_time = None
+        self.success = True
+        self.error_message = None
+
+    def __enter__(self) -&gt; &#39;CostTracker&#39;:
+        self.start_time = time.time()
+        return self
+
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -&gt; bool:
+        processing_time = time.time() - self.start_time
+
+        if exc_type is not None:
+            self.success = False
+            self.error_message = str(exc_val)
+
+        self.calculator.record_usage(
+            feature_name=self.feature_name,
+            processing_time_sec=processing_time,
+            files_processed=self.files_processed,
+            success=self.success,
+            error_message=self.error_message,
+            input_file_size_bytes=self.input_file_size_bytes,
+            metadata=self.metadata
+        )
+
+        return False  # Don&#39;t suppress exceptions</code></pre>
+</details>
+<div class="desc"><p>Context manager for tracking feature usage costs.</p>
+<h2 id="usage">Usage</h2>
+<p>calculator = CostROICalculator()
+with CostTracker(calculator, 'clip_vision', files_processed=1) as tracker:
+# Do the work
+result = analyze_image(image_path)</p>
+<h1 id="cost-is-automatically-recorded">Cost is automatically recorded</h1></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostType"><code class="flex name class">
+<span>class <span class="ident">CostType</span></span>
+<span>(</span><span>*args, **kwds)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class CostType(Enum):
+    &#34;&#34;&#34;Types of costs tracked.&#34;&#34;&#34;
+    COMPUTE = &#34;compute&#34;      # CPU/GPU processing time
+    API_CALL = &#34;api_call&#34;    # External API calls
+    STORAGE = &#34;storage&#34;      # File storage costs
+    MEMORY = &#34;memory&#34;        # RAM usage</code></pre>
+</details>
+<div class="desc"><p>Types of costs tracked.</p></div>
+<h3>Ancestors</h3>
+<ul class="hlist">
+<li>enum.Enum</li>
+</ul>
+<h3>Class variables</h3>
+<dl>
+<dt id="src.cost_roi_calculator.CostType.API_CALL"><code class="name">var <span class="ident">API_CALL</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostType.COMPUTE"><code class="name">var <span class="ident">COMPUTE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostType.MEMORY"><code class="name">var <span class="ident">MEMORY</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.CostType.STORAGE"><code class="name">var <span class="ident">STORAGE</span></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.cost_roi_calculator.ModelCostConfig"><code class="flex name class">
+<span>class <span class="ident">ModelCostConfig</span></span>
+<span>(</span><span>name: str,<br>cost_type: <a title="src.cost_roi_calculator.CostType" href="#src.cost_roi_calculator.CostType">CostType</a>,<br>cost_per_unit: float,<br>unit_type: str,<br>avg_processing_time_sec: float,<br>success_rate: float = 1.0,<br>description: str = '',<br>files_correctly_classified: float = 0.0,<br>manual_time_saved_sec: float = 0.0)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass
+class ModelCostConfig:
+    &#34;&#34;&#34;Cost configuration for a specific model/feature.&#34;&#34;&#34;
+    name: str
+    cost_type: CostType
+    cost_per_unit: float           # Cost per invocation or per second
+    unit_type: str                 # &#34;invocation&#34;, &#34;second&#34;, &#34;mb&#34;, etc.
+    avg_processing_time_sec: float # Average time per file
+    success_rate: float = 1.0      # Expected success rate (0-1)
+    description: str = &#34;&#34;
+
+    # Value metrics (for ROI calculation)
+    files_correctly_classified: float = 0.0  # Average files correctly classified per use
+    manual_time_saved_sec: float = 0.0       # Manual time saved per use</code></pre>
+</details>
+<div class="desc"><p>Cost configuration for a specific model/feature.</p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="src.cost_roi_calculator.ModelCostConfig.avg_processing_time_sec"><code class="name">var <span class="ident">avg_processing_time_sec</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.ModelCostConfig.cost_per_unit"><code class="name">var <span class="ident">cost_per_unit</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.ModelCostConfig.cost_type"><code class="name">var <span class="ident">cost_type</span> : <a title="src.cost_roi_calculator.CostType" href="#src.cost_roi_calculator.CostType">CostType</a></code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.ModelCostConfig.description"><code class="name">var <span class="ident">description</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.ModelCostConfig.files_correctly_classified"><code class="name">var <span class="ident">files_correctly_classified</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.ModelCostConfig.manual_time_saved_sec"><code class="name">var <span class="ident">manual_time_saved_sec</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.ModelCostConfig.name"><code class="name">var <span class="ident">name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.ModelCostConfig.success_rate"><code class="name">var <span class="ident">success_rate</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.ModelCostConfig.unit_type"><code class="name">var <span class="ident">unit_type</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.cost_roi_calculator.ROIMetrics"><code class="flex name class">
+<span>class <span class="ident">ROIMetrics</span></span>
+<span>(</span><span>feature_name: str,<br>total_cost: float,<br>total_value: float,<br>roi_percentage: float,<br>manual_hours_saved: float,<br>cost_per_file: float,<br>value_per_file: float,<br>break_even_files: int)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass
+class ROIMetrics:
+    &#34;&#34;&#34;ROI metrics for a feature.&#34;&#34;&#34;
+    feature_name: str
+    total_cost: float
+    total_value: float  # Estimated value generated
+    roi_percentage: float
+    manual_hours_saved: float
+    cost_per_file: float
+    value_per_file: float
+    break_even_files: int  # Files needed to break even</code></pre>
+</details>
+<div class="desc"><p>ROI metrics for a feature.</p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="src.cost_roi_calculator.ROIMetrics.break_even_files"><code class="name">var <span class="ident">break_even_files</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.ROIMetrics.cost_per_file"><code class="name">var <span class="ident">cost_per_file</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.ROIMetrics.feature_name"><code class="name">var <span class="ident">feature_name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.ROIMetrics.manual_hours_saved"><code class="name">var <span class="ident">manual_hours_saved</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.ROIMetrics.roi_percentage"><code class="name">var <span class="ident">roi_percentage</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.ROIMetrics.total_cost"><code class="name">var <span class="ident">total_cost</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.ROIMetrics.total_value"><code class="name">var <span class="ident">total_value</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.ROIMetrics.value_per_file"><code class="name">var <span class="ident">value_per_file</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+<dt id="src.cost_roi_calculator.UsageRecord"><code class="flex name class">
+<span>class <span class="ident">UsageRecord</span></span>
+<span>(</span><span>feature_name: str,<br>timestamp: datetime,<br>processing_time_sec: float,<br>files_processed: int,<br>success: bool,<br>error_message: Optional[str] = None,<br>input_file_size_bytes: int = 0,<br>metadata: Dict[str, Any] = &lt;factory&gt;)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@dataclass
+class UsageRecord:
+    &#34;&#34;&#34;Record of a single feature/model usage.&#34;&#34;&#34;
+    feature_name: str
+    timestamp: datetime
+    processing_time_sec: float
+    files_processed: int
+    success: bool
+    error_message: Optional[str] = None
+    input_file_size_bytes: int = 0
+    metadata: Dict[str, Any] = field(default_factory=dict)</code></pre>
+</details>
+<div class="desc"><p>Record of a single feature/model usage.</p></div>
+<h3>Instance variables</h3>
+<dl>
+<dt id="src.cost_roi_calculator.UsageRecord.error_message"><code class="name">var <span class="ident">error_message</span> : str | None</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.UsageRecord.feature_name"><code class="name">var <span class="ident">feature_name</span> : str</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.UsageRecord.files_processed"><code class="name">var <span class="ident">files_processed</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.UsageRecord.input_file_size_bytes"><code class="name">var <span class="ident">input_file_size_bytes</span> : int</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.UsageRecord.metadata"><code class="name">var <span class="ident">metadata</span> : Dict[str, Any]</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.UsageRecord.processing_time_sec"><code class="name">var <span class="ident">processing_time_sec</span> : float</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.UsageRecord.success"><code class="name">var <span class="ident">success</span> : bool</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+<dt id="src.cost_roi_calculator.UsageRecord.timestamp"><code class="name">var <span class="ident">timestamp</span> : datetime.datetime</code></dt>
+<dd>
+<div class="desc"></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src" href="index.html">src</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="src.cost_roi_calculator.main" href="#src.cost_roi_calculator.main">main</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.cost_roi_calculator.CostROICalculator" href="#src.cost_roi_calculator.CostROICalculator">CostROICalculator</a></code></h4>
+<ul class="">
+<li><code><a title="src.cost_roi_calculator.CostROICalculator.DEFAULT_COST_CONFIGS" href="#src.cost_roi_calculator.CostROICalculator.DEFAULT_COST_CONFIGS">DEFAULT_COST_CONFIGS</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostROICalculator.MANUAL_HOURLY_RATE" href="#src.cost_roi_calculator.CostROICalculator.MANUAL_HOURLY_RATE">MANUAL_HOURLY_RATE</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostROICalculator.calculate_feature_cost" href="#src.cost_roi_calculator.CostROICalculator.calculate_feature_cost">calculate_feature_cost</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostROICalculator.calculate_roi" href="#src.cost_roi_calculator.CostROICalculator.calculate_roi">calculate_roi</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostROICalculator.calculate_total_cost" href="#src.cost_roi_calculator.CostROICalculator.calculate_total_cost">calculate_total_cost</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostROICalculator.calculate_total_roi" href="#src.cost_roi_calculator.CostROICalculator.calculate_total_roi">calculate_total_roi</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostROICalculator.estimate_cost_for_files" href="#src.cost_roi_calculator.CostROICalculator.estimate_cost_for_files">estimate_cost_for_files</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostROICalculator.generate_report" href="#src.cost_roi_calculator.CostROICalculator.generate_report">generate_report</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostROICalculator.get_optimization_recommendations" href="#src.cost_roi_calculator.CostROICalculator.get_optimization_recommendations">get_optimization_recommendations</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostROICalculator.print_summary" href="#src.cost_roi_calculator.CostROICalculator.print_summary">print_summary</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostROICalculator.record_usage" href="#src.cost_roi_calculator.CostROICalculator.record_usage">record_usage</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.cost_roi_calculator.CostSummary" href="#src.cost_roi_calculator.CostSummary">CostSummary</a></code></h4>
+<ul class="">
+<li><code><a title="src.cost_roi_calculator.CostSummary.avg_cost_per_file" href="#src.cost_roi_calculator.CostSummary.avg_cost_per_file">avg_cost_per_file</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostSummary.feature_name" href="#src.cost_roi_calculator.CostSummary.feature_name">feature_name</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostSummary.success_rate" href="#src.cost_roi_calculator.CostSummary.success_rate">success_rate</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostSummary.total_cost" href="#src.cost_roi_calculator.CostSummary.total_cost">total_cost</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostSummary.total_files_processed" href="#src.cost_roi_calculator.CostSummary.total_files_processed">total_files_processed</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostSummary.total_invocations" href="#src.cost_roi_calculator.CostSummary.total_invocations">total_invocations</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostSummary.total_processing_time_sec" href="#src.cost_roi_calculator.CostSummary.total_processing_time_sec">total_processing_time_sec</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.cost_roi_calculator.CostTracker" href="#src.cost_roi_calculator.CostTracker">CostTracker</a></code></h4>
+</li>
+<li>
+<h4><code><a title="src.cost_roi_calculator.CostType" href="#src.cost_roi_calculator.CostType">CostType</a></code></h4>
+<ul class="">
+<li><code><a title="src.cost_roi_calculator.CostType.API_CALL" href="#src.cost_roi_calculator.CostType.API_CALL">API_CALL</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostType.COMPUTE" href="#src.cost_roi_calculator.CostType.COMPUTE">COMPUTE</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostType.MEMORY" href="#src.cost_roi_calculator.CostType.MEMORY">MEMORY</a></code></li>
+<li><code><a title="src.cost_roi_calculator.CostType.STORAGE" href="#src.cost_roi_calculator.CostType.STORAGE">STORAGE</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.cost_roi_calculator.ModelCostConfig" href="#src.cost_roi_calculator.ModelCostConfig">ModelCostConfig</a></code></h4>
+<ul class="">
+<li><code><a title="src.cost_roi_calculator.ModelCostConfig.avg_processing_time_sec" href="#src.cost_roi_calculator.ModelCostConfig.avg_processing_time_sec">avg_processing_time_sec</a></code></li>
+<li><code><a title="src.cost_roi_calculator.ModelCostConfig.cost_per_unit" href="#src.cost_roi_calculator.ModelCostConfig.cost_per_unit">cost_per_unit</a></code></li>
+<li><code><a title="src.cost_roi_calculator.ModelCostConfig.cost_type" href="#src.cost_roi_calculator.ModelCostConfig.cost_type">cost_type</a></code></li>
+<li><code><a title="src.cost_roi_calculator.ModelCostConfig.description" href="#src.cost_roi_calculator.ModelCostConfig.description">description</a></code></li>
+<li><code><a title="src.cost_roi_calculator.ModelCostConfig.files_correctly_classified" href="#src.cost_roi_calculator.ModelCostConfig.files_correctly_classified">files_correctly_classified</a></code></li>
+<li><code><a title="src.cost_roi_calculator.ModelCostConfig.manual_time_saved_sec" href="#src.cost_roi_calculator.ModelCostConfig.manual_time_saved_sec">manual_time_saved_sec</a></code></li>
+<li><code><a title="src.cost_roi_calculator.ModelCostConfig.name" href="#src.cost_roi_calculator.ModelCostConfig.name">name</a></code></li>
+<li><code><a title="src.cost_roi_calculator.ModelCostConfig.success_rate" href="#src.cost_roi_calculator.ModelCostConfig.success_rate">success_rate</a></code></li>
+<li><code><a title="src.cost_roi_calculator.ModelCostConfig.unit_type" href="#src.cost_roi_calculator.ModelCostConfig.unit_type">unit_type</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.cost_roi_calculator.ROIMetrics" href="#src.cost_roi_calculator.ROIMetrics">ROIMetrics</a></code></h4>
+<ul class="two-column">
+<li><code><a title="src.cost_roi_calculator.ROIMetrics.break_even_files" href="#src.cost_roi_calculator.ROIMetrics.break_even_files">break_even_files</a></code></li>
+<li><code><a title="src.cost_roi_calculator.ROIMetrics.cost_per_file" href="#src.cost_roi_calculator.ROIMetrics.cost_per_file">cost_per_file</a></code></li>
+<li><code><a title="src.cost_roi_calculator.ROIMetrics.feature_name" href="#src.cost_roi_calculator.ROIMetrics.feature_name">feature_name</a></code></li>
+<li><code><a title="src.cost_roi_calculator.ROIMetrics.manual_hours_saved" href="#src.cost_roi_calculator.ROIMetrics.manual_hours_saved">manual_hours_saved</a></code></li>
+<li><code><a title="src.cost_roi_calculator.ROIMetrics.roi_percentage" href="#src.cost_roi_calculator.ROIMetrics.roi_percentage">roi_percentage</a></code></li>
+<li><code><a title="src.cost_roi_calculator.ROIMetrics.total_cost" href="#src.cost_roi_calculator.ROIMetrics.total_cost">total_cost</a></code></li>
+<li><code><a title="src.cost_roi_calculator.ROIMetrics.total_value" href="#src.cost_roi_calculator.ROIMetrics.total_value">total_value</a></code></li>
+<li><code><a title="src.cost_roi_calculator.ROIMetrics.value_per_file" href="#src.cost_roi_calculator.ROIMetrics.value_per_file">value_per_file</a></code></li>
+</ul>
+</li>
+<li>
+<h4><code><a title="src.cost_roi_calculator.UsageRecord" href="#src.cost_roi_calculator.UsageRecord">UsageRecord</a></code></h4>
+<ul class="">
+<li><code><a title="src.cost_roi_calculator.UsageRecord.error_message" href="#src.cost_roi_calculator.UsageRecord.error_message">error_message</a></code></li>
+<li><code><a title="src.cost_roi_calculator.UsageRecord.feature_name" href="#src.cost_roi_calculator.UsageRecord.feature_name">feature_name</a></code></li>
+<li><code><a title="src.cost_roi_calculator.UsageRecord.files_processed" href="#src.cost_roi_calculator.UsageRecord.files_processed">files_processed</a></code></li>
+<li><code><a title="src.cost_roi_calculator.UsageRecord.input_file_size_bytes" href="#src.cost_roi_calculator.UsageRecord.input_file_size_bytes">input_file_size_bytes</a></code></li>
+<li><code><a title="src.cost_roi_calculator.UsageRecord.metadata" href="#src.cost_roi_calculator.UsageRecord.metadata">metadata</a></code></li>
+<li><code><a title="src.cost_roi_calculator.UsageRecord.processing_time_sec" href="#src.cost_roi_calculator.UsageRecord.processing_time_sec">processing_time_sec</a></code></li>
+<li><code><a title="src.cost_roi_calculator.UsageRecord.success" href="#src.cost_roi_calculator.UsageRecord.success">success</a></code></li>
+<li><code><a title="src.cost_roi_calculator.UsageRecord.timestamp" href="#src.cost_roi_calculator.UsageRecord.timestamp">timestamp</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

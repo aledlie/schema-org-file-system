@@ -1,0 +1,774 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.api.timeline_api API documentation</title>
+<meta name="description" content="Timeline data generation for the run-history visualization …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.api.timeline_api</code></h1>
+</header>
+<section id="section-intro">
+<p>Timeline data generation for the run-history visualization.</p>
+<p><code><a title="src.api.timeline_api.TimelineAPI" href="#src.api.timeline_api.TimelineAPI">TimelineAPI</a></code> is the canonical builder of the <code>_site/timeline_data.json</code>
+document consumed by <code>_site/run_timeline.html</code>: sessions (each enriched with
+category / schema-type / extension breakdowns and consecutive-session deltas)
+plus cumulative stats. Reached via <code>organize-files timeline</code>,
+<code>organize-files update-site</code>, and the <code>scripts/generate_timeline_data.py</code>
+launcher — keep those the only writers of the output file.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="src.api.timeline_api.generate_timeline_data"><code class="name flex">
+<span>def <span class="ident">generate_timeline_data</span></span>(<span>db_path: pathlib.Path | str | None = None) ‑> dict[str, typing.Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_timeline_data(db_path: Path | str | None = None) -&gt; dict[str, Any]:
+    &#34;&#34;&#34;Module-level convenience: build the full timeline document for ``db_path``.&#34;&#34;&#34;
+    return TimelineAPI(db_path).generate_document()</code></pre>
+</details>
+<div class="desc"><p>Module-level convenience: build the full timeline document for <code>db_path</code>.</p></div>
+</dd>
+<dt id="src.api.timeline_api.main"><code class="name flex">
+<span>def <span class="ident">main</span></span>(<span>) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def main() -&gt; None:
+    &#34;&#34;&#34;Standalone entry point (argument definitions shared with organize-files).
+
+    Reached via the ``scripts/generate_timeline_data.py`` launcher, which puts
+    the project root and ``scripts/`` on ``sys.path``.
+    &#34;&#34;&#34;
+    import argparse
+
+    from src.cli import add_timeline_arguments
+    from src.cli_inputs import TimelineInputs
+
+    parser = argparse.ArgumentParser(description=&#39;Generate timeline visualization data&#39;)
+    add_timeline_arguments(parser)
+    run(TimelineInputs.from_namespace(parser.parse_args()))</code></pre>
+</details>
+<div class="desc"><p>Standalone entry point (argument definitions shared with organize-files).</p>
+<p>Reached via the <code>scripts/generate_timeline_data.py</code> launcher, which puts
+the project root and <code>scripts/</code> on <code>sys.path</code>.</p></div>
+</dd>
+<dt id="src.api.timeline_api.run"><code class="name flex">
+<span>def <span class="ident">run</span></span>(<span>args: TimelineInputs)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run(args: &#34;TimelineInputs&#34;) -&gt; None:
+    &#34;&#34;&#34;Typed entry point: generate and save timeline data from validated CLI inputs.
+
+    ``args`` is the frozen ``src.cli_inputs.TimelineInputs`` dataclass built
+    from the options ``src.cli.add_timeline_arguments`` defines (the single
+    source for this command, shared with the unified CLI). ``db_path=None``
+    resolves to the shared DEFAULT_DB_PATH.
+    &#34;&#34;&#34;
+    db_path = args.db_path or DB_PATH
+    print(f&#34;Generating timeline data from {db_path}...&#34;)
+
+    data = TimelineAPI(db_path).export_to_json(OUTPUT_PATH)
+
+    print(f&#34;Timeline data saved to {OUTPUT_PATH}&#34;)
+    print(f&#34;  - {data[&#39;session_count&#39;]} sessions&#34;)
+    print(f&#34;  - {data[&#39;cumulative&#39;][&#39;total_files&#39;]} total files&#34;)</code></pre>
+</details>
+<div class="desc"><p>Typed entry point: generate and save timeline data from validated CLI inputs.</p>
+<p><code>args</code> is the frozen <code><a title="src.cli_inputs.TimelineInputs" href="../cli_inputs.html#src.cli_inputs.TimelineInputs">TimelineInputs</a></code> dataclass built
+from the options <code><a title="src.cli.add_timeline_arguments" href="../cli.html#src.cli.add_timeline_arguments">add_timeline_arguments()</a></code> defines (the single
+source for this command, shared with the unified CLI). <code>db_path=None</code>
+resolves to the shared DEFAULT_DB_PATH.</p></div>
+</dd>
+</dl>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.api.timeline_api.TimelineAPI"><code class="flex name class">
+<span>class <span class="ident">TimelineAPI</span></span>
+<span>(</span><span>db_path: pathlib.Path | str | None = None)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class TimelineAPI:
+    &#34;&#34;&#34;Builds the timeline visualization document from the SQLite database.
+
+    A single instance is bound to one database path (``None`` resolves to the
+    shared ``DEFAULT_DB_PATH``). Construction validates that the database
+    exists and has been populated, raising ``FileNotFoundError`` otherwise.
+    ``generate_document`` assembles the full ``_site/timeline_data.json``
+    payload; ``export_to_json`` also writes it.
+    &#34;&#34;&#34;
+
+    def __init__(self, db_path: Path | str | None = None) -&gt; None:
+        self.db_path = db_path
+        # Fail early with a clear, actionable message instead of an opaque
+        # &#34;no such table&#34; from the first query. Both a missing file and a
+        # present-but-unpopulated one (e.g. a fresh/empty DB) mean the same
+        # thing to the user — there is no timeline data yet — so both raise
+        # FileNotFoundError, which cmd_timeline turns into a clean CLI error.
+        effective_path = Path(db_path) if db_path else Path(DB_PATH)
+        if not effective_path.exists():
+            raise FileNotFoundError(
+                f&#34;Timeline database not found: {effective_path}. &#34;
+                &#34;Run the file organizer at least once to create it.&#34;
+            )
+        with db_connection(self.db_path) as conn:
+            has_sessions_table = conn.execute(
+                &#34;SELECT name FROM sqlite_master &#34;
+                &#34;WHERE type = &#39;table&#39; AND name = &#39;organization_sessions&#39;&#34;
+            ).fetchone()
+        if not has_sessions_table:
+            raise FileNotFoundError(
+                f&#34;Timeline database at {effective_path} has no &#34;
+                &#34;organization_sessions table. Run the file organizer at least &#34;
+                &#34;once to populate it.&#34;
+            )
+
+    @contextmanager
+    def _cursor(
+        self, conn: sqlite3.Connection | None = None
+    ) -&gt; Iterator[sqlite3.Cursor]:
+        &#34;&#34;&#34;Yield a cursor, reusing ``conn`` when given or opening a scoped one.
+
+        Query methods accept an optional connection so they stay usable
+        standalone (each opens its own) while ``generate_document`` can share a
+        single connection across the whole build.
+        &#34;&#34;&#34;
+        if conn is not None:
+            yield conn.cursor()
+        else:
+            with db_connection(self.db_path) as owned:
+                yield owned.cursor()
+
+    def _fetch_dicts(
+        self,
+        sql: str,
+        params: tuple = (),
+        conn: sqlite3.Connection | None = None,
+    ) -&gt; list[dict[str, Any]]:
+        &#34;&#34;&#34;Run ``sql`` and return every row as a dict.
+
+        Shared by the per-session distribution getters, which differ only in
+        their query text.
+        &#34;&#34;&#34;
+        with self._cursor(conn) as cursor:
+            cursor.execute(sql, params)
+            return [dict(row) for row in cursor.fetchall()]
+
+    def get_sessions(
+        self, conn: sqlite3.Connection | None = None
+    ) -&gt; list[dict[str, Any]]:
+        &#34;&#34;&#34;Get all non-empty organization sessions with their stats, oldest first.&#34;&#34;&#34;
+        with self._cursor(conn) as cursor:
+            cursor.execute(&#34;&#34;&#34;
+                SELECT
+                    id,
+                    started_at,
+                    completed_at,
+                    dry_run,
+                    source_directories,
+                    base_path,
+                    file_limit,
+                    total_files,
+                    organized_count,
+                    skipped_count,
+                    error_count,
+                    total_cost,
+                    total_processing_time_sec
+                FROM organization_sessions
+                WHERE total_files &gt; 0
+                ORDER BY started_at ASC
+            &#34;&#34;&#34;)
+
+            sessions = []
+            for row in cursor.fetchall():
+                session = dict(row)
+                session[&#39;id_short&#39;] = session[&#39;id&#39;][:8]
+
+                # Parse JSON fields
+                if session[&#39;source_directories&#39;]:
+                    try:
+                        session[&#39;source_directories&#39;] = json.loads(
+                            session[&#39;source_directories&#39;]
+                        )
+                    except (json.JSONDecodeError, TypeError):
+                        session[&#39;source_directories&#39;] = []
+                else:
+                    session[&#39;source_directories&#39;] = []
+
+                # Calculate success rate
+                if session[&#39;total_files&#39;] &gt; 0:
+                    session[&#39;success_rate&#39;] = round(
+                        (session[&#39;organized_count&#39;] / session[&#39;total_files&#39;]) * 100, 1
+                    )
+                else:
+                    session[&#39;success_rate&#39;] = 0
+
+                sessions.append(session)
+
+        return sessions
+
+    def get_session_categories(
+        self, session_id: str, conn: sqlite3.Connection | None = None
+    ) -&gt; list[dict[str, Any]]:
+        &#34;&#34;&#34;Get category breakdown for a specific session.&#34;&#34;&#34;
+        return self._fetch_dicts(&#34;&#34;&#34;
+            SELECT
+                c.name,
+                c.color,
+                c.icon,
+                COUNT(fc.file_id) as count,
+                AVG(fc.confidence) as avg_confidence
+            FROM categories c
+            JOIN file_categories fc ON c.id = fc.category_id
+            JOIN files f ON fc.file_id = f.id
+            WHERE f.session_id = ?
+            GROUP BY c.id
+            ORDER BY count DESC
+            LIMIT 10
+        &#34;&#34;&#34;, (session_id,), conn)
+
+    def get_session_schema_types(
+        self, session_id: str, conn: sqlite3.Connection | None = None
+    ) -&gt; list[dict[str, Any]]:
+        &#34;&#34;&#34;Get schema type distribution for a specific session.&#34;&#34;&#34;
+        return self._fetch_dicts(&#34;&#34;&#34;
+            SELECT
+                schema_type,
+                COUNT(*) as count
+            FROM files
+            WHERE session_id = ? AND schema_type IS NOT NULL
+            GROUP BY schema_type
+            ORDER BY count DESC
+        &#34;&#34;&#34;, (session_id,), conn)
+
+    def get_session_extensions(
+        self, session_id: str, conn: sqlite3.Connection | None = None
+    ) -&gt; list[dict[str, Any]]:
+        &#34;&#34;&#34;Get file extension distribution for a specific session.&#34;&#34;&#34;
+        return self._fetch_dicts(&#34;&#34;&#34;
+            SELECT
+                LOWER(file_extension) as extension,
+                COUNT(*) as count
+            FROM files
+            WHERE session_id = ? AND file_extension IS NOT NULL
+            GROUP BY LOWER(file_extension)
+            ORDER BY count DESC
+            LIMIT 10
+        &#34;&#34;&#34;, (session_id,), conn)
+
+    @staticmethod
+    def calculate_session_changes(
+        current: dict, previous: dict | None
+    ) -&gt; dict[str, Any]:
+        &#34;&#34;&#34;Calculate what changed between two consecutive sessions.&#34;&#34;&#34;
+        if previous is None:
+            return {
+                &#39;is_first&#39;: True,
+                &#39;files_delta&#39;: current[&#39;total_files&#39;],
+                &#39;organized_delta&#39;: current[&#39;organized_count&#39;],
+            }
+
+        return {
+            &#39;is_first&#39;: False,
+            &#39;files_delta&#39;: current[&#39;total_files&#39;] - previous[&#39;total_files&#39;],
+            &#39;organized_delta&#39;: current[&#39;organized_count&#39;] - previous[&#39;organized_count&#39;],
+            &#39;success_rate_delta&#39;: round(
+                current[&#39;success_rate&#39;] - previous[&#39;success_rate&#39;], 1
+            ),
+            &#39;cost_delta&#39;: round(current[&#39;total_cost&#39;] - previous[&#39;total_cost&#39;], 4),
+            &#39;time_delta&#39;: round(
+                (current[&#39;total_processing_time_sec&#39;] or 0) -
+                (previous[&#39;total_processing_time_sec&#39;] or 0), 2
+            )
+        }
+
+    def get_cumulative_stats(
+        self, conn: sqlite3.Connection | None = None
+    ) -&gt; dict[str, Any]:
+        &#34;&#34;&#34;Get cumulative statistics across all sessions.&#34;&#34;&#34;
+        with self._cursor(conn) as cursor:
+            cursor.execute(&#34;&#34;&#34;
+                SELECT
+                    COUNT(DISTINCT session_id) as total_sessions,
+                    COUNT(*) as total_files,
+                    SUM(CASE WHEN status = &#39;organized&#39; THEN 1 ELSE 0 END) as total_organized,
+                    AVG(processing_time_sec) as avg_processing_time
+                FROM files
+                WHERE session_id IS NOT NULL
+            &#34;&#34;&#34;)
+
+            row = cursor.fetchone()
+            stats = dict(row) if row else {
+                &#39;total_sessions&#39;: 0, &#39;total_files&#39;: 0,
+                &#39;total_organized&#39;: 0, &#39;avg_processing_time&#39;: None,
+            }
+
+            # Get category totals
+            cursor.execute(&#34;&#34;&#34;
+                SELECT
+                    c.name,
+                    COUNT(fc.file_id) as count
+                FROM categories c
+                LEFT JOIN file_categories fc ON c.id = fc.category_id
+                GROUP BY c.id
+                ORDER BY count DESC
+                LIMIT 5
+            &#34;&#34;&#34;)
+
+            stats[&#39;top_categories&#39;] = [dict(row) for row in cursor.fetchall()]
+
+        return stats
+
+    def generate_document(self) -&gt; dict[str, Any]:
+        &#34;&#34;&#34;Assemble the complete timeline document.
+
+        Each session is enriched with its category / schema-type / extension
+        breakdowns and the deltas versus the preceding session. All queries
+        share one connection for the duration of the build.
+        &#34;&#34;&#34;
+        with db_connection(self.db_path) as conn:
+            sessions = self.get_sessions(conn)
+
+            enriched_sessions = []
+            previous_session = None
+
+            for session in sessions:
+                session[&#39;categories&#39;] = self.get_session_categories(session[&#39;id&#39;], conn)
+                session[&#39;schema_types&#39;] = self.get_session_schema_types(session[&#39;id&#39;], conn)
+                session[&#39;extensions&#39;] = self.get_session_extensions(session[&#39;id&#39;], conn)
+                session[&#39;changes&#39;] = self.calculate_session_changes(session, previous_session)
+
+                enriched_sessions.append(session)
+                previous_session = session
+
+            cumulative = self.get_cumulative_stats(conn)
+
+        return {
+            &#39;generated_at&#39;: utcnow().isoformat(),
+            &#39;cumulative&#39;: cumulative,
+            &#39;sessions&#39;: enriched_sessions,
+            &#39;session_count&#39;: len(enriched_sessions)
+        }
+
+    def export_to_json(
+        self, output_path: Path | str = OUTPUT_PATH
+    ) -&gt; dict[str, Any]:
+        &#34;&#34;&#34;Generate the timeline document and write it to ``output_path``.
+
+        Returns the generated document so callers can report counts without
+        re-reading the file.
+        &#34;&#34;&#34;
+        data = self.generate_document()
+
+        output_file = Path(output_path)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        with open(output_file, &#39;w&#39;) as f:
+            json.dump(data, f, indent=2, default=str)
+
+        return data</code></pre>
+</details>
+<div class="desc"><p>Builds the timeline visualization document from the SQLite database.</p>
+<p>A single instance is bound to one database path (<code>None</code> resolves to the
+shared <code>DEFAULT_DB_PATH</code>). Construction validates that the database
+exists and has been populated, raising <code>FileNotFoundError</code> otherwise.
+<code>generate_document</code> assembles the full <code>_site/timeline_data.json</code>
+payload; <code>export_to_json</code> also writes it.</p></div>
+<h3>Static methods</h3>
+<dl>
+<dt id="src.api.timeline_api.TimelineAPI.calculate_session_changes"><code class="name flex">
+<span>def <span class="ident">calculate_session_changes</span></span>(<span>current: dict, previous: dict | None) ‑> dict[str, typing.Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">@staticmethod
+def calculate_session_changes(
+    current: dict, previous: dict | None
+) -&gt; dict[str, Any]:
+    &#34;&#34;&#34;Calculate what changed between two consecutive sessions.&#34;&#34;&#34;
+    if previous is None:
+        return {
+            &#39;is_first&#39;: True,
+            &#39;files_delta&#39;: current[&#39;total_files&#39;],
+            &#39;organized_delta&#39;: current[&#39;organized_count&#39;],
+        }
+
+    return {
+        &#39;is_first&#39;: False,
+        &#39;files_delta&#39;: current[&#39;total_files&#39;] - previous[&#39;total_files&#39;],
+        &#39;organized_delta&#39;: current[&#39;organized_count&#39;] - previous[&#39;organized_count&#39;],
+        &#39;success_rate_delta&#39;: round(
+            current[&#39;success_rate&#39;] - previous[&#39;success_rate&#39;], 1
+        ),
+        &#39;cost_delta&#39;: round(current[&#39;total_cost&#39;] - previous[&#39;total_cost&#39;], 4),
+        &#39;time_delta&#39;: round(
+            (current[&#39;total_processing_time_sec&#39;] or 0) -
+            (previous[&#39;total_processing_time_sec&#39;] or 0), 2
+        )
+    }</code></pre>
+</details>
+<div class="desc"><p>Calculate what changed between two consecutive sessions.</p></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="src.api.timeline_api.TimelineAPI.export_to_json"><code class="name flex">
+<span>def <span class="ident">export_to_json</span></span>(<span>self,<br>output_path: pathlib.Path | str = PosixPath('/Users/alyshialedlie/schema-org-file-system/_site/timeline_data.json')) ‑> dict[str, typing.Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def export_to_json(
+    self, output_path: Path | str = OUTPUT_PATH
+) -&gt; dict[str, Any]:
+    &#34;&#34;&#34;Generate the timeline document and write it to ``output_path``.
+
+    Returns the generated document so callers can report counts without
+    re-reading the file.
+    &#34;&#34;&#34;
+    data = self.generate_document()
+
+    output_file = Path(output_path)
+    output_file.parent.mkdir(parents=True, exist_ok=True)
+    with open(output_file, &#39;w&#39;) as f:
+        json.dump(data, f, indent=2, default=str)
+
+    return data</code></pre>
+</details>
+<div class="desc"><p>Generate the timeline document and write it to <code>output_path</code>.</p>
+<p>Returns the generated document so callers can report counts without
+re-reading the file.</p></div>
+</dd>
+<dt id="src.api.timeline_api.TimelineAPI.generate_document"><code class="name flex">
+<span>def <span class="ident">generate_document</span></span>(<span>self) ‑> dict[str, typing.Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def generate_document(self) -&gt; dict[str, Any]:
+    &#34;&#34;&#34;Assemble the complete timeline document.
+
+    Each session is enriched with its category / schema-type / extension
+    breakdowns and the deltas versus the preceding session. All queries
+    share one connection for the duration of the build.
+    &#34;&#34;&#34;
+    with db_connection(self.db_path) as conn:
+        sessions = self.get_sessions(conn)
+
+        enriched_sessions = []
+        previous_session = None
+
+        for session in sessions:
+            session[&#39;categories&#39;] = self.get_session_categories(session[&#39;id&#39;], conn)
+            session[&#39;schema_types&#39;] = self.get_session_schema_types(session[&#39;id&#39;], conn)
+            session[&#39;extensions&#39;] = self.get_session_extensions(session[&#39;id&#39;], conn)
+            session[&#39;changes&#39;] = self.calculate_session_changes(session, previous_session)
+
+            enriched_sessions.append(session)
+            previous_session = session
+
+        cumulative = self.get_cumulative_stats(conn)
+
+    return {
+        &#39;generated_at&#39;: utcnow().isoformat(),
+        &#39;cumulative&#39;: cumulative,
+        &#39;sessions&#39;: enriched_sessions,
+        &#39;session_count&#39;: len(enriched_sessions)
+    }</code></pre>
+</details>
+<div class="desc"><p>Assemble the complete timeline document.</p>
+<p>Each session is enriched with its category / schema-type / extension
+breakdowns and the deltas versus the preceding session. All queries
+share one connection for the duration of the build.</p></div>
+</dd>
+<dt id="src.api.timeline_api.TimelineAPI.get_cumulative_stats"><code class="name flex">
+<span>def <span class="ident">get_cumulative_stats</span></span>(<span>self, conn: sqlite3.Connection | None = None) ‑> dict[str, typing.Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_cumulative_stats(
+    self, conn: sqlite3.Connection | None = None
+) -&gt; dict[str, Any]:
+    &#34;&#34;&#34;Get cumulative statistics across all sessions.&#34;&#34;&#34;
+    with self._cursor(conn) as cursor:
+        cursor.execute(&#34;&#34;&#34;
+            SELECT
+                COUNT(DISTINCT session_id) as total_sessions,
+                COUNT(*) as total_files,
+                SUM(CASE WHEN status = &#39;organized&#39; THEN 1 ELSE 0 END) as total_organized,
+                AVG(processing_time_sec) as avg_processing_time
+            FROM files
+            WHERE session_id IS NOT NULL
+        &#34;&#34;&#34;)
+
+        row = cursor.fetchone()
+        stats = dict(row) if row else {
+            &#39;total_sessions&#39;: 0, &#39;total_files&#39;: 0,
+            &#39;total_organized&#39;: 0, &#39;avg_processing_time&#39;: None,
+        }
+
+        # Get category totals
+        cursor.execute(&#34;&#34;&#34;
+            SELECT
+                c.name,
+                COUNT(fc.file_id) as count
+            FROM categories c
+            LEFT JOIN file_categories fc ON c.id = fc.category_id
+            GROUP BY c.id
+            ORDER BY count DESC
+            LIMIT 5
+        &#34;&#34;&#34;)
+
+        stats[&#39;top_categories&#39;] = [dict(row) for row in cursor.fetchall()]
+
+    return stats</code></pre>
+</details>
+<div class="desc"><p>Get cumulative statistics across all sessions.</p></div>
+</dd>
+<dt id="src.api.timeline_api.TimelineAPI.get_session_categories"><code class="name flex">
+<span>def <span class="ident">get_session_categories</span></span>(<span>self, session_id: str, conn: sqlite3.Connection | None = None) ‑> list[dict[str, typing.Any]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_session_categories(
+    self, session_id: str, conn: sqlite3.Connection | None = None
+) -&gt; list[dict[str, Any]]:
+    &#34;&#34;&#34;Get category breakdown for a specific session.&#34;&#34;&#34;
+    return self._fetch_dicts(&#34;&#34;&#34;
+        SELECT
+            c.name,
+            c.color,
+            c.icon,
+            COUNT(fc.file_id) as count,
+            AVG(fc.confidence) as avg_confidence
+        FROM categories c
+        JOIN file_categories fc ON c.id = fc.category_id
+        JOIN files f ON fc.file_id = f.id
+        WHERE f.session_id = ?
+        GROUP BY c.id
+        ORDER BY count DESC
+        LIMIT 10
+    &#34;&#34;&#34;, (session_id,), conn)</code></pre>
+</details>
+<div class="desc"><p>Get category breakdown for a specific session.</p></div>
+</dd>
+<dt id="src.api.timeline_api.TimelineAPI.get_session_extensions"><code class="name flex">
+<span>def <span class="ident">get_session_extensions</span></span>(<span>self, session_id: str, conn: sqlite3.Connection | None = None) ‑> list[dict[str, typing.Any]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_session_extensions(
+    self, session_id: str, conn: sqlite3.Connection | None = None
+) -&gt; list[dict[str, Any]]:
+    &#34;&#34;&#34;Get file extension distribution for a specific session.&#34;&#34;&#34;
+    return self._fetch_dicts(&#34;&#34;&#34;
+        SELECT
+            LOWER(file_extension) as extension,
+            COUNT(*) as count
+        FROM files
+        WHERE session_id = ? AND file_extension IS NOT NULL
+        GROUP BY LOWER(file_extension)
+        ORDER BY count DESC
+        LIMIT 10
+    &#34;&#34;&#34;, (session_id,), conn)</code></pre>
+</details>
+<div class="desc"><p>Get file extension distribution for a specific session.</p></div>
+</dd>
+<dt id="src.api.timeline_api.TimelineAPI.get_session_schema_types"><code class="name flex">
+<span>def <span class="ident">get_session_schema_types</span></span>(<span>self, session_id: str, conn: sqlite3.Connection | None = None) ‑> list[dict[str, typing.Any]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_session_schema_types(
+    self, session_id: str, conn: sqlite3.Connection | None = None
+) -&gt; list[dict[str, Any]]:
+    &#34;&#34;&#34;Get schema type distribution for a specific session.&#34;&#34;&#34;
+    return self._fetch_dicts(&#34;&#34;&#34;
+        SELECT
+            schema_type,
+            COUNT(*) as count
+        FROM files
+        WHERE session_id = ? AND schema_type IS NOT NULL
+        GROUP BY schema_type
+        ORDER BY count DESC
+    &#34;&#34;&#34;, (session_id,), conn)</code></pre>
+</details>
+<div class="desc"><p>Get schema type distribution for a specific session.</p></div>
+</dd>
+<dt id="src.api.timeline_api.TimelineAPI.get_sessions"><code class="name flex">
+<span>def <span class="ident">get_sessions</span></span>(<span>self, conn: sqlite3.Connection | None = None) ‑> list[dict[str, typing.Any]]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def get_sessions(
+    self, conn: sqlite3.Connection | None = None
+) -&gt; list[dict[str, Any]]:
+    &#34;&#34;&#34;Get all non-empty organization sessions with their stats, oldest first.&#34;&#34;&#34;
+    with self._cursor(conn) as cursor:
+        cursor.execute(&#34;&#34;&#34;
+            SELECT
+                id,
+                started_at,
+                completed_at,
+                dry_run,
+                source_directories,
+                base_path,
+                file_limit,
+                total_files,
+                organized_count,
+                skipped_count,
+                error_count,
+                total_cost,
+                total_processing_time_sec
+            FROM organization_sessions
+            WHERE total_files &gt; 0
+            ORDER BY started_at ASC
+        &#34;&#34;&#34;)
+
+        sessions = []
+        for row in cursor.fetchall():
+            session = dict(row)
+            session[&#39;id_short&#39;] = session[&#39;id&#39;][:8]
+
+            # Parse JSON fields
+            if session[&#39;source_directories&#39;]:
+                try:
+                    session[&#39;source_directories&#39;] = json.loads(
+                        session[&#39;source_directories&#39;]
+                    )
+                except (json.JSONDecodeError, TypeError):
+                    session[&#39;source_directories&#39;] = []
+            else:
+                session[&#39;source_directories&#39;] = []
+
+            # Calculate success rate
+            if session[&#39;total_files&#39;] &gt; 0:
+                session[&#39;success_rate&#39;] = round(
+                    (session[&#39;organized_count&#39;] / session[&#39;total_files&#39;]) * 100, 1
+                )
+            else:
+                session[&#39;success_rate&#39;] = 0
+
+            sessions.append(session)
+
+    return sessions</code></pre>
+</details>
+<div class="desc"><p>Get all non-empty organization sessions with their stats, oldest first.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.api" href="index.html">src.api</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="src.api.timeline_api.generate_timeline_data" href="#src.api.timeline_api.generate_timeline_data">generate_timeline_data</a></code></li>
+<li><code><a title="src.api.timeline_api.main" href="#src.api.timeline_api.main">main</a></code></li>
+<li><code><a title="src.api.timeline_api.run" href="#src.api.timeline_api.run">run</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.api.timeline_api.TimelineAPI" href="#src.api.timeline_api.TimelineAPI">TimelineAPI</a></code></h4>
+<ul class="">
+<li><code><a title="src.api.timeline_api.TimelineAPI.calculate_session_changes" href="#src.api.timeline_api.TimelineAPI.calculate_session_changes">calculate_session_changes</a></code></li>
+<li><code><a title="src.api.timeline_api.TimelineAPI.export_to_json" href="#src.api.timeline_api.TimelineAPI.export_to_json">export_to_json</a></code></li>
+<li><code><a title="src.api.timeline_api.TimelineAPI.generate_document" href="#src.api.timeline_api.TimelineAPI.generate_document">generate_document</a></code></li>
+<li><code><a title="src.api.timeline_api.TimelineAPI.get_cumulative_stats" href="#src.api.timeline_api.TimelineAPI.get_cumulative_stats">get_cumulative_stats</a></code></li>
+<li><code><a title="src.api.timeline_api.TimelineAPI.get_session_categories" href="#src.api.timeline_api.TimelineAPI.get_session_categories">get_session_categories</a></code></li>
+<li><code><a title="src.api.timeline_api.TimelineAPI.get_session_extensions" href="#src.api.timeline_api.TimelineAPI.get_session_extensions">get_session_extensions</a></code></li>
+<li><code><a title="src.api.timeline_api.TimelineAPI.get_session_schema_types" href="#src.api.timeline_api.TimelineAPI.get_session_schema_types">get_session_schema_types</a></code></li>
+<li><code><a title="src.api.timeline_api.TimelineAPI.get_sessions" href="#src.api.timeline_api.TimelineAPI.get_sessions">get_sessions</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

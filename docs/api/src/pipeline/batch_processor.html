@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.pipeline.batch_processor API documentation</title>
+<meta name="description" content="BatchProcessor: directory scanning and multi-directory batch orchestration.">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.pipeline.batch_processor</code></h1>
+</header>
+<section id="section-intro">
+<p>BatchProcessor: directory scanning and multi-directory batch orchestration.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.pipeline.batch_processor.BatchProcessor"><code class="flex name class">
+<span>class <span class="ident">BatchProcessor</span></span>
+<span>(</span><span>file_processor: Any)</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class BatchProcessor:
+    &#34;&#34;&#34;
+    Orchestrates batch file organization across one or more directories.
+
+    Args:
+        file_processor: Injected FileProcessor (or compatible organizer) instance.
+    &#34;&#34;&#34;
+
+    def __init__(self, file_processor: Any) -&gt; None:
+        self.file_processor = file_processor
+
+    @property
+    def _effective_organizer(self) -&gt; Any:
+        &#34;&#34;&#34;Return the underlying organizer, unwrapping FileProcessor._organizer if set.&#34;&#34;&#34;
+        return getattr(self.file_processor, &#34;_organizer&#34;, self.file_processor)
+
+    def scan_directory(self, directory: Path) -&gt; List[Path]:
+        &#34;&#34;&#34;Scan directory recursively for organizable files.&#34;&#34;&#34;
+        files: List[Path] = []
+        should_skip = getattr(self._effective_organizer, &#34;should_skip_file&#34;, lambda p: False)
+        try:
+            for item in directory.rglob(&#34;*&#34;):
+                if item.is_file() and not should_skip(item):
+                    files.append(item)
+        except PermissionError:
+            print(f&#34;Permission denied: {directory}&#34;)
+        return files
+
+    def organize_directories(
+        self,
+        source_dirs: List[str],
+        dry_run: bool = False,
+        limit: Optional[int] = None,
+        force: bool = False,
+    ) -&gt; Dict[str, Any]:
+        &#34;&#34;&#34;
+        Organize files from multiple source directories.
+
+        Args:
+            source_dirs: List of directory paths to organize.
+            dry_run: If True, simulate organization without moving files.
+            limit: Maximum number of files to process (for testing).
+            force: If True, re-organize files even if already in correct location.
+
+        Returns:
+            Dictionary with organization results.
+        &#34;&#34;&#34;
+        results: List[Dict[str, Any]] = []
+
+        print(f&#34;\n{_SEPARATOR}&#34;)
+        print(f&#34;Content-Based File Organization {&#39;(DRY RUN)&#39; if dry_run else &#39;&#39;}&#34;)
+        print(f&#34;{_SEPARATOR}\n&#34;)
+
+        organizer = self._effective_organizer
+        ocr_available = getattr(organizer, &#34;ocr_available&#34;, True)
+        stats = getattr(organizer, &#34;stats&#34;, defaultdict(int))
+        registry = getattr(organizer, &#34;registry&#34;, None)
+
+        if not ocr_available:
+            print(&#34;⚠️  WARNING: OCR libraries not available&#34;)
+            print(&#34;   Install with: pip install python-doctr[torch] Pillow pypdf&#34;)
+            print(&#34;   Content classification will be limited to filenames\n&#34;)
+
+        all_files: List[Path] = []
+        for source_dir in source_dirs:
+            source_path = Path(source_dir).expanduser()
+            if source_path.exists():
+                print(f&#34;Scanning: {source_path}&#34;)
+                files = self.scan_directory(source_path)
+                all_files.extend(files)
+                print(f&#34;  Found {len(files)} files&#34;)
+            else:
+                print(f&#34;Directory not found: {source_path}&#34;)
+
+        if limit:
+            all_files = all_files[:limit]
+            print(f&#34;\n⚠️  Processing limited to first {limit} files for testing\n&#34;)
+
+        print(f&#34;\nTotal files to process: {len(all_files)}\n&#34;)
+
+        if _BATCH_PREWARM_AVAILABLE:
+            image_paths = [p for p in all_files if p.suffix.lower() in _IMAGE_EXTENSIONS]
+            if image_paths:
+                print(f&#34;\nPre-warming CLIP cache: {len(image_paths)} images (batch={CLIP_BATCH_SIZE})&#34;)
+                for chunk_start in range(0, len(image_paths), CLIP_BATCH_SIZE):
+                    chunk = image_paths[chunk_start : chunk_start + CLIP_BATCH_SIZE]
+                    get_cached_embeddings_batch(chunk, CLIP_CONTENT_LABELS)
+                print(&#34;CLIP cache pre-warm complete\n&#34;)
+
+        if _EASYOCR_PREWARM_AVAILABLE:
+            screenshot_count = sum(
+                1 for p in all_files if p.suffix.lower() in _SCREENSHOT_EXTENSIONS
+            )
+            if screenshot_count:
+                print(f&#34;Pre-warming easyocr Reader ({screenshot_count} potential screenshot(s))&#34;)
+                try:
+                    _easyocr_prewarm()
+                    print(&#34;easyocr Reader pre-warm complete\n&#34;)
+                except Exception as exc:
+                    print(f&#34;easyocr pre-warm failed (will load on first use): {exc}\n&#34;)
+
+        for i, file_path in enumerate(all_files, 1):
+            print(f&#34;[{i}/{len(all_files)}] Processing: {file_path.name}&#34;)
+            result = self.file_processor.organize_file(file_path, dry_run=dry_run, force=force)
+            results.append(result)
+
+            if result[&#34;status&#34;] in (&#34;organized&#34;, &#34;would_organize&#34;):
+                print(f&#34;  → {result[&#39;destination&#39;]}&#34;)
+            elif result[&#34;status&#34;] == &#34;error&#34;:
+                print(f&#34;  ✗ Error: {result[&#39;reason&#39;]}&#34;)
+
+        summary: Dict[str, Any] = {
+            &#34;total_files&#34;: len(all_files),
+            &#34;organized&#34;: stats[&#34;organized&#34;],
+            &#34;already_organized&#34;: stats[&#34;already_organized&#34;],
+            &#34;skipped&#34;: stats[&#34;skipped&#34;],
+            &#34;errors&#34;: stats[&#34;errors&#34;],
+            &#34;dry_run&#34;: dry_run,
+            &#34;results&#34;: results,
+            &#34;registry_stats&#34;: registry.get_statistics() if registry and not dry_run else None,
+        }
+
+        return summary
+
+    def print_summary(self, summary: Dict[str, Any]) -&gt; None:
+        &#34;&#34;&#34;Print organization summary.&#34;&#34;&#34;
+        print(f&#34;\n{_SEPARATOR}&#34;)
+        print(&#34;Organization Summary&#34;)
+        print(f&#34;{_SEPARATOR}\n&#34;)
+
+        print(f&#34;Total files processed: {summary[&#39;total_files&#39;]}&#34;)
+        print(f&#34;Successfully organized: {summary[&#39;organized&#39;]}&#34;)
+        print(f&#34;Already organized: {summary[&#39;already_organized&#39;]}&#34;)
+        print(f&#34;Skipped: {summary[&#39;skipped&#39;]}&#34;)
+        print(f&#34;Errors: {summary[&#39;errors&#39;]}&#34;)
+
+        if summary[&#34;dry_run&#34;]:
+            print(&#34;\n⚠️  This was a DRY RUN - no files were moved&#34;)
+
+        print(f&#34;\n{_SEPARATOR}&#34;)
+        print(&#34;Category Breakdown&#34;)
+        print(f&#34;{_SEPARATOR}\n&#34;)
+
+        category_stats: Dict[str, int] = defaultdict(int)
+        for result in summary[&#34;results&#34;]:
+            if result.get(&#34;category&#34;):
+                category_stats[result[&#34;category&#34;]] += 1
+
+        for category, count in sorted(category_stats.items()):
+            print(f&#34;{category.capitalize()}: {count} files&#34;)
+
+        ocr_count = sum(1 for r in summary[&#34;results&#34;] if r.get(&#34;extracted_text_length&#34;, 0) &gt; 0)
+        print(f&#34;\n{_SEPARATOR}&#34;)
+        print(&#34;Content Extraction Stats&#34;)
+        print(f&#34;{_SEPARATOR}\n&#34;)
+        print(f&#34;Files with extracted text: {ocr_count}/{summary[&#39;total_files&#39;]}&#34;)
+
+        company_files = [r for r in summary[&#34;results&#34;] if r.get(&#34;company_name&#34;)]
+        if company_files:
+            print(f&#34;\n{_SEPARATOR}&#34;)
+            print(&#34;Detected Companies&#34;)
+            print(f&#34;{_SEPARATOR}\n&#34;)
+            company_counts: Dict[str, int] = defaultdict(int)
+            for result in company_files:
+                company_counts[result[&#34;company_name&#34;]] += 1
+
+            print(f&#34;Total files with detected companies: {len(company_files)}&#34;)
+            print(&#34;\nCompanies found:&#34;)
+            for company, count in sorted(company_counts.items(), key=lambda x: x[1], reverse=True):
+                print(f&#34;  {company}: {count} files&#34;)
+
+        if summary.get(&#34;registry_stats&#34;):
+            print(f&#34;\n{_SEPARATOR}&#34;)
+            print(&#34;Schema Registry&#34;)
+            print(f&#34;{_SEPARATOR}\n&#34;)
+            stats = summary[&#34;registry_stats&#34;]
+            print(f&#34;Total schemas: {stats[&#39;total_schemas&#39;]}&#34;)
+            print(f&#34;Types: {&#39;, &#39;.join(stats[&#39;types&#39;])}&#34;)
+
+        # Cost tracking summary
+        if getattr(self.file_processor, &#34;cost_calculator&#34;, None):
+            cost_printer = getattr(self.file_processor, &#34;_print_cost_summary&#34;, None)
+            if cost_printer is not None:
+                cost_printer()</code></pre>
+</details>
+<div class="desc"><p>Orchestrates batch file organization across one or more directories.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>file_processor</code></strong></dt>
+<dd>Injected FileProcessor (or compatible organizer) instance.</dd>
+</dl></div>
+<h3>Methods</h3>
+<dl>
+<dt id="src.pipeline.batch_processor.BatchProcessor.organize_directories"><code class="name flex">
+<span>def <span class="ident">organize_directories</span></span>(<span>self,<br>source_dirs: List[str],<br>dry_run: bool = False,<br>limit: int | None = None,<br>force: bool = False) ‑> Dict[str, Any]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def organize_directories(
+    self,
+    source_dirs: List[str],
+    dry_run: bool = False,
+    limit: Optional[int] = None,
+    force: bool = False,
+) -&gt; Dict[str, Any]:
+    &#34;&#34;&#34;
+    Organize files from multiple source directories.
+
+    Args:
+        source_dirs: List of directory paths to organize.
+        dry_run: If True, simulate organization without moving files.
+        limit: Maximum number of files to process (for testing).
+        force: If True, re-organize files even if already in correct location.
+
+    Returns:
+        Dictionary with organization results.
+    &#34;&#34;&#34;
+    results: List[Dict[str, Any]] = []
+
+    print(f&#34;\n{_SEPARATOR}&#34;)
+    print(f&#34;Content-Based File Organization {&#39;(DRY RUN)&#39; if dry_run else &#39;&#39;}&#34;)
+    print(f&#34;{_SEPARATOR}\n&#34;)
+
+    organizer = self._effective_organizer
+    ocr_available = getattr(organizer, &#34;ocr_available&#34;, True)
+    stats = getattr(organizer, &#34;stats&#34;, defaultdict(int))
+    registry = getattr(organizer, &#34;registry&#34;, None)
+
+    if not ocr_available:
+        print(&#34;⚠️  WARNING: OCR libraries not available&#34;)
+        print(&#34;   Install with: pip install python-doctr[torch] Pillow pypdf&#34;)
+        print(&#34;   Content classification will be limited to filenames\n&#34;)
+
+    all_files: List[Path] = []
+    for source_dir in source_dirs:
+        source_path = Path(source_dir).expanduser()
+        if source_path.exists():
+            print(f&#34;Scanning: {source_path}&#34;)
+            files = self.scan_directory(source_path)
+            all_files.extend(files)
+            print(f&#34;  Found {len(files)} files&#34;)
+        else:
+            print(f&#34;Directory not found: {source_path}&#34;)
+
+    if limit:
+        all_files = all_files[:limit]
+        print(f&#34;\n⚠️  Processing limited to first {limit} files for testing\n&#34;)
+
+    print(f&#34;\nTotal files to process: {len(all_files)}\n&#34;)
+
+    if _BATCH_PREWARM_AVAILABLE:
+        image_paths = [p for p in all_files if p.suffix.lower() in _IMAGE_EXTENSIONS]
+        if image_paths:
+            print(f&#34;\nPre-warming CLIP cache: {len(image_paths)} images (batch={CLIP_BATCH_SIZE})&#34;)
+            for chunk_start in range(0, len(image_paths), CLIP_BATCH_SIZE):
+                chunk = image_paths[chunk_start : chunk_start + CLIP_BATCH_SIZE]
+                get_cached_embeddings_batch(chunk, CLIP_CONTENT_LABELS)
+            print(&#34;CLIP cache pre-warm complete\n&#34;)
+
+    if _EASYOCR_PREWARM_AVAILABLE:
+        screenshot_count = sum(
+            1 for p in all_files if p.suffix.lower() in _SCREENSHOT_EXTENSIONS
+        )
+        if screenshot_count:
+            print(f&#34;Pre-warming easyocr Reader ({screenshot_count} potential screenshot(s))&#34;)
+            try:
+                _easyocr_prewarm()
+                print(&#34;easyocr Reader pre-warm complete\n&#34;)
+            except Exception as exc:
+                print(f&#34;easyocr pre-warm failed (will load on first use): {exc}\n&#34;)
+
+    for i, file_path in enumerate(all_files, 1):
+        print(f&#34;[{i}/{len(all_files)}] Processing: {file_path.name}&#34;)
+        result = self.file_processor.organize_file(file_path, dry_run=dry_run, force=force)
+        results.append(result)
+
+        if result[&#34;status&#34;] in (&#34;organized&#34;, &#34;would_organize&#34;):
+            print(f&#34;  → {result[&#39;destination&#39;]}&#34;)
+        elif result[&#34;status&#34;] == &#34;error&#34;:
+            print(f&#34;  ✗ Error: {result[&#39;reason&#39;]}&#34;)
+
+    summary: Dict[str, Any] = {
+        &#34;total_files&#34;: len(all_files),
+        &#34;organized&#34;: stats[&#34;organized&#34;],
+        &#34;already_organized&#34;: stats[&#34;already_organized&#34;],
+        &#34;skipped&#34;: stats[&#34;skipped&#34;],
+        &#34;errors&#34;: stats[&#34;errors&#34;],
+        &#34;dry_run&#34;: dry_run,
+        &#34;results&#34;: results,
+        &#34;registry_stats&#34;: registry.get_statistics() if registry and not dry_run else None,
+    }
+
+    return summary</code></pre>
+</details>
+<div class="desc"><p>Organize files from multiple source directories.</p>
+<h2 id="args">Args</h2>
+<dl>
+<dt><strong><code>source_dirs</code></strong></dt>
+<dd>List of directory paths to organize.</dd>
+<dt><strong><code>dry_run</code></strong></dt>
+<dd>If True, simulate organization without moving files.</dd>
+<dt><strong><code>limit</code></strong></dt>
+<dd>Maximum number of files to process (for testing).</dd>
+<dt><strong><code>force</code></strong></dt>
+<dd>If True, re-organize files even if already in correct location.</dd>
+</dl>
+<h2 id="returns">Returns</h2>
+<p>Dictionary with organization results.</p></div>
+</dd>
+<dt id="src.pipeline.batch_processor.BatchProcessor.print_summary"><code class="name flex">
+<span>def <span class="ident">print_summary</span></span>(<span>self, summary: Dict[str, Any]) ‑> None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def print_summary(self, summary: Dict[str, Any]) -&gt; None:
+    &#34;&#34;&#34;Print organization summary.&#34;&#34;&#34;
+    print(f&#34;\n{_SEPARATOR}&#34;)
+    print(&#34;Organization Summary&#34;)
+    print(f&#34;{_SEPARATOR}\n&#34;)
+
+    print(f&#34;Total files processed: {summary[&#39;total_files&#39;]}&#34;)
+    print(f&#34;Successfully organized: {summary[&#39;organized&#39;]}&#34;)
+    print(f&#34;Already organized: {summary[&#39;already_organized&#39;]}&#34;)
+    print(f&#34;Skipped: {summary[&#39;skipped&#39;]}&#34;)
+    print(f&#34;Errors: {summary[&#39;errors&#39;]}&#34;)
+
+    if summary[&#34;dry_run&#34;]:
+        print(&#34;\n⚠️  This was a DRY RUN - no files were moved&#34;)
+
+    print(f&#34;\n{_SEPARATOR}&#34;)
+    print(&#34;Category Breakdown&#34;)
+    print(f&#34;{_SEPARATOR}\n&#34;)
+
+    category_stats: Dict[str, int] = defaultdict(int)
+    for result in summary[&#34;results&#34;]:
+        if result.get(&#34;category&#34;):
+            category_stats[result[&#34;category&#34;]] += 1
+
+    for category, count in sorted(category_stats.items()):
+        print(f&#34;{category.capitalize()}: {count} files&#34;)
+
+    ocr_count = sum(1 for r in summary[&#34;results&#34;] if r.get(&#34;extracted_text_length&#34;, 0) &gt; 0)
+    print(f&#34;\n{_SEPARATOR}&#34;)
+    print(&#34;Content Extraction Stats&#34;)
+    print(f&#34;{_SEPARATOR}\n&#34;)
+    print(f&#34;Files with extracted text: {ocr_count}/{summary[&#39;total_files&#39;]}&#34;)
+
+    company_files = [r for r in summary[&#34;results&#34;] if r.get(&#34;company_name&#34;)]
+    if company_files:
+        print(f&#34;\n{_SEPARATOR}&#34;)
+        print(&#34;Detected Companies&#34;)
+        print(f&#34;{_SEPARATOR}\n&#34;)
+        company_counts: Dict[str, int] = defaultdict(int)
+        for result in company_files:
+            company_counts[result[&#34;company_name&#34;]] += 1
+
+        print(f&#34;Total files with detected companies: {len(company_files)}&#34;)
+        print(&#34;\nCompanies found:&#34;)
+        for company, count in sorted(company_counts.items(), key=lambda x: x[1], reverse=True):
+            print(f&#34;  {company}: {count} files&#34;)
+
+    if summary.get(&#34;registry_stats&#34;):
+        print(f&#34;\n{_SEPARATOR}&#34;)
+        print(&#34;Schema Registry&#34;)
+        print(f&#34;{_SEPARATOR}\n&#34;)
+        stats = summary[&#34;registry_stats&#34;]
+        print(f&#34;Total schemas: {stats[&#39;total_schemas&#39;]}&#34;)
+        print(f&#34;Types: {&#39;, &#39;.join(stats[&#39;types&#39;])}&#34;)
+
+    # Cost tracking summary
+    if getattr(self.file_processor, &#34;cost_calculator&#34;, None):
+        cost_printer = getattr(self.file_processor, &#34;_print_cost_summary&#34;, None)
+        if cost_printer is not None:
+            cost_printer()</code></pre>
+</details>
+<div class="desc"><p>Print organization summary.</p></div>
+</dd>
+<dt id="src.pipeline.batch_processor.BatchProcessor.scan_directory"><code class="name flex">
+<span>def <span class="ident">scan_directory</span></span>(<span>self, directory: pathlib.Path) ‑> List[pathlib.Path]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def scan_directory(self, directory: Path) -&gt; List[Path]:
+    &#34;&#34;&#34;Scan directory recursively for organizable files.&#34;&#34;&#34;
+    files: List[Path] = []
+    should_skip = getattr(self._effective_organizer, &#34;should_skip_file&#34;, lambda p: False)
+    try:
+        for item in directory.rglob(&#34;*&#34;):
+            if item.is_file() and not should_skip(item):
+                files.append(item)
+    except PermissionError:
+        print(f&#34;Permission denied: {directory}&#34;)
+    return files</code></pre>
+</details>
+<div class="desc"><p>Scan directory recursively for organizable files.</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.pipeline" href="index.html">src.pipeline</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.pipeline.batch_processor.BatchProcessor" href="#src.pipeline.batch_processor.BatchProcessor">BatchProcessor</a></code></h4>
+<ul class="">
+<li><code><a title="src.pipeline.batch_processor.BatchProcessor.organize_directories" href="#src.pipeline.batch_processor.BatchProcessor.organize_directories">organize_directories</a></code></li>
+<li><code><a title="src.pipeline.batch_processor.BatchProcessor.print_summary" href="#src.pipeline.batch_processor.BatchProcessor.print_summary">print_summary</a></code></li>
+<li><code><a title="src.pipeline.batch_processor.BatchProcessor.scan_directory" href="#src.pipeline.batch_processor.BatchProcessor.scan_directory">scan_directory</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>

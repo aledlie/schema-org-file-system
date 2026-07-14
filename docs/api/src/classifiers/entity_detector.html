@@ -1,0 +1,792 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1">
+<meta name="generator" content="pdoc3 0.11.6">
+<title>src.classifiers.entity_detector API documentation</title>
+<meta name="description" content="EntityDetector: extracts companies, people, and their relationships from text …">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/sanitize.min.css" integrity="sha512-y1dtMcuvtTMJc1yPgEqF0ZjQbhnc/bFhyvIyVNb9Zk5mIGtqVaAB1Ttl28su8AvFMOY0EwRbAe+HCLqj6W7/KA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/13.0.0/typography.min.css" integrity="sha512-Y1DYSb995BAfxobCkKepB1BqJJTPrOp3zPL74AWFugHHmmdcvO+C48WLrUOlhGMc0QG7AE3f7gmvvcrmX2fDoA==" crossorigin>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:1.5em;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:2em 0 .50em 0}h3{font-size:1.4em;margin:1.6em 0 .7em 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .2s ease-in-out}a:visited{color:#503}a:hover{color:#b62}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900;font-weight:bold}pre code{font-size:.8em;line-height:1.4em;padding:1em;display:block}code{background:#f3f3f3;font-family:"DejaVu Sans Mono",monospace;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source > summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible;min-width:max-content}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em 1em;margin:1em 0}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul ul{padding-left:1em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js" integrity="sha512-D9gUyxqja7hBtkWpPWGt9wfbfaMGVt9gnyCvYa+jojwwPHLCzUm5i8rpk7vD7wNee9bA35eYIjobYPaQuKS1MQ==" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => {
+hljs.configure({languages: ['bash', 'css', 'diff', 'graphql', 'ini', 'javascript', 'json', 'plaintext', 'python', 'python-repl', 'rust', 'shell', 'sql', 'typescript', 'xml', 'yaml']});
+hljs.highlightAll();
+/* Collapse source docstrings */
+setTimeout(() => {
+[...document.querySelectorAll('.hljs.language-python > .hljs-string')]
+.filter(el => el.innerHTML.length > 200 && ['"""', "'''"].includes(el.innerHTML.substring(0, 3)))
+.forEach(el => {
+let d = document.createElement('details');
+d.classList.add('hljs-string');
+d.innerHTML = '<summary>"""</summary>' + el.innerHTML.substring(3);
+el.replaceWith(d);
+});
+}, 100);
+})</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>src.classifiers.entity_detector</code></h1>
+</header>
+<section id="section-intro">
+<p>EntityDetector: extracts companies, people, and their relationships from text.</p>
+<p>Split out of <code>ContentClassifier</code> (God Script #1 refactor, plan Part 2): the
+company/people/relationship regex extraction and company-name
+validation/normalization/sanitization are a self-contained concern, independent
+of the keyword-based category scoring that remains in <code>ContentClassifier</code>.
+<code>ContentClassifier</code> now composes an <code><a title="src.classifiers.entity_detector.EntityDetector" href="#src.classifiers.entity_detector.EntityDetector">EntityDetector</a></code> and delegates to it, so
+the public method surface (<code>extract_company_names</code> etc.) is unchanged.</p>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="src.classifiers.entity_detector.EntityDetector"><code class="flex name class">
+<span>class <span class="ident">EntityDetector</span></span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class EntityDetector:
+    &#34;&#34;&#34;Detects Schema.org-style entities (Organization, Person) in document text.&#34;&#34;&#34;
+
+    def __init__(self) -&gt; None:
+        &#34;&#34;&#34;Compile the entity-extraction regex patterns once (hot path).&#34;&#34;&#34;
+        # Company name patterns
+        self.company_patterns = [
+            r&#39;\b([A-Z][A-Za-z0-9\s&amp;\-\.]{2,50})\s+LLC\b&#39;,
+            r&#39;\b([A-Z][A-Za-z0-9\s&amp;\-\.]{2,50})\s+L\.L\.C\.\b&#39;,
+            r&#39;\b([A-Z][A-Za-z0-9\s&amp;\-\.]{2,50})\s+Inc\.?\b&#39;,
+            r&#39;\b([A-Z][A-Za-z0-9\s&amp;\-\.]{2,50})\s+Incorporated\b&#39;,
+            r&#39;\b([A-Z][A-Za-z0-9\s&amp;\-\.]{2,50})\s+Corp\.?\b&#39;,
+            r&#39;\b([A-Z][A-Za-z0-9\s&amp;\-\.]{2,50})\s+Corporation\b&#39;,
+            r&#39;\b([A-Z][A-Za-z0-9\s&amp;\-\.]{2,50})\s+Company\b&#39;,
+            r&#39;\b([A-Z][A-Za-z0-9\s&amp;\-\.]{2,50})\s+Co\.\b&#39;,
+            r&#39;\b([A-Z][A-Za-z0-9\s&amp;\-\.]{2,50})\s+Ltd\.?\b&#39;,
+            r&#39;\b([A-Z][A-Za-z0-9\s&amp;\-\.]{2,50})\s+Limited\b&#39;,
+            r&#39;\b([A-Z][A-Za-z0-9\s&amp;\-\.]{2,50})\s+LLP\b&#39;,
+            r&#39;\b([A-Z][A-Za-z0-9\s&amp;\-\.]{2,50})\s+L\.L\.P\.\b&#39;,
+        ]
+
+        # People name patterns - look for common name patterns
+        self.people_patterns = [
+            # ALL-CAPS names at start of resume (common in templates)
+            # Matches: &#34;ISABEL BUDENZ\nLLM&#34; or &#34;JOHN DOE\nSoftware Engineer&#34;
+            r&#39;^([A-Z]{2,})\s+([A-Z]{2,})\s*\n&#39;,
+            # ALL-CAPS name followed by title/degree
+            r&#39;\b([A-Z]{2,})\s+([A-Z]{2,})\s*\n\s*(?:LLM|MBA|PhD|MD|JD|CPA|Software|Engineer|Manager|Director|Analyst)&#39;,
+            # Name with document type indicators
+            r&#39;\b([A-Z][a-z]+)\s+([A-Z][a-z]+)\s+(?:Resume|CV|Cover Letter)\b&#39;,
+            r&#39;\b([A-Z][a-z]+)\s+([A-Z][a-z]+)\s+(?:Portfolio|Biography|Bio)\b&#39;,
+            # Field labels followed by names
+            r&#39;\b(?:Name|Contact|From|To|Attn|Author|Client|Patient|Student):\s+([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+)\b&#39;,
+            # Email signatures (name before email)
+            r&#39;\b([A-Z][a-z]+\s+[A-Z][a-z]+)\s+&lt;[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}&gt;&#39;,
+            # Name in &#34;Prepared by/for&#34; statements
+            r&#39;\b(?:Prepared|Written|Submitted|Signed)\s+(?:by|for):\s+([A-Z][a-z]+\s+[A-Z][a-z]+)\b&#39;,
+            # Name followed by credentials (MD, PhD, Esq, etc.)
+            r&#39;\b([A-Z][a-z]+\s+[A-Z][a-z]+),?\s+(?:MD|PhD|Esq|DDS|CPA|MBA|JD|RN)\b&#39;,
+            # Mr./Mrs./Ms./Dr. followed by name
+            r&#39;\b(?:Mr|Mrs|Ms|Dr|Prof)\.?\s+([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+)\b&#39;,
+            # Name in meeting notes format
+            r&#39;\b(?:Attendee|Participant|Speaker|Presenter):\s+([A-Z][a-z]+\s+[A-Z][a-z]+)\b&#39;,
+        ]
+
+        # Pre-compile regex patterns once (hot path: extract_* methods)
+        self._company_regexes = [re.compile(p) for p in self.company_patterns]
+        self._people_regexes = [re.compile(p) for p in self.people_patterns]
+        self._relationship_regexes = [
+            re.compile(p) for p in (
+                r&#39;([A-Z][a-z]+\s+[A-Z][a-z]+)\s+(?:at|from)\s+([A-Z][A-Za-z0-9\s&amp;\-\.]{2,50}(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))&#39;,
+                r&#39;([A-Z][a-z]+\s+[A-Z][a-z]+),?\s+(?:CEO|CFO|CTO|COO|President|Director|Manager|Founder)\s+(?:of|at)\s+([A-Z][A-Za-z0-9\s&amp;\-\.]{2,50}(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))&#39;,
+                r&#39;([A-Z][A-Za-z0-9\s&amp;\-\.]{2,50}(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))\s*[-:]\s*(?:Contact|Representative):\s*([A-Z][a-z]+\s+[A-Z][a-z]+)&#39;,
+                r&#39;([A-Z][a-z]+\s+[A-Z][a-z]+)\s+\(([A-Z][A-Za-z0-9\s&amp;\-\.]{2,50}(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))\)&#39;,
+                r&#39;([A-Z][a-z]+\s+[A-Z][a-z]+)\s+&lt;[a-zA-Z0-9._%+-]+@([a-zA-Z0-9.-]+)\.[a-zA-Z]{2,}&gt;&#39;,
+            )
+        ]
+        self._spaced_letters_re = re.compile(r&#39;\b([A-Z] ){2,}[A-Z]\b&#39;)
+        self._sentence_regexes = [
+            re.compile(p) for p in (
+                r&#39;\b(?:is|are|was|were|be|been|being)\b&#39;,
+                r&#39;\b(?:to|of|in|on|at|by)\s+(?:the|a|an)\b&#39;,
+                r&#39;\b(?:you|your|we|our|they|their|it|its)\b&#39;,
+                r&#39;\b(?:can|could|will|would|shall|should|may|might|must)\b&#39;,
+                r&#39;\b(?:and|or|but|nor|yet|so)\s+\w+\s+\w+&#39;,
+            )
+        ]
+        self._copyright_regexes = [
+            re.compile(p, re.IGNORECASE) for p in (
+                r&#39;(?:copyright|©|\(c\))\s*(?:\(c\))?\s*(?:\d{4}(?:\s*[-–—]\s*\d{4})?)\s+(.+)&#39;,
+                r&#39;^\d{4}(?:\s*[-–—]\s*\d{4})?\s+([A-Z][A-Za-z0-9\s&amp;\-\.]+)$&#39;,
+                r&#39;(?:copyright|©|\(c\))\s+([A-Z][A-Za-z0-9\s&amp;\-\.]+?)\s+\d{4}&#39;,
+                r&#39;^(?:copyright|©|\(c\))\s+([A-Za-z][A-Za-z0-9\s&amp;\-\.]+)$&#39;,
+            )
+        ]
+        self._year_prefix_re = re.compile(r&#39;^(\d{4}(?:\s*[-–—]\s*\d{4})?)\s+(.+)$&#39;)
+        # Legal suffixes stripped from the *end* of a company name.  Order
+        # matters (longer suffixes first) and each pattern is applied once in
+        # sequence, so stacked suffixes like &#34;Foo Co. Inc.&#34; collapse to &#34;Foo&#34;
+        # (&#34;Inc.&#34; strips first, then &#34;Co.&#34; — matches the production organizer).
+        self._legal_suffix_regexes = [
+            re.compile(p, re.IGNORECASE) for p in (
+                # Full words with variations
+                r&#39;\s+Incorporated$&#39;,
+                r&#39;\s+Corporation$&#39;,
+                r&#39;\s+Limited$&#39;,
+                r&#39;\s+Company$&#39;,
+                # Abbreviations with optional period
+                r&#39;\s+L\.L\.C\.$&#39;,
+                r&#39;\s+L\.L\.P\.$&#39;,
+                r&#39;\s+LLC\.?$&#39;,
+                r&#39;\s+LLP\.?$&#39;,
+                r&#39;\s+Inc\.?$&#39;,
+                r&#39;\s+Corp\.?$&#39;,
+                r&#39;\s+Ltd\.?$&#39;,
+                r&#39;\s+Co\.?$&#39;,
+                # Other common suffixes
+                r&#39;\s+PLC\.?$&#39;,
+                r&#39;\s+LP\.?$&#39;,
+                r&#39;\s+SA$&#39;,
+                r&#39;\s+GmbH$&#39;,
+                r&#39;\s+AG$&#39;,
+            )
+        ]
+        self._folder_sanitize_re = re.compile(r&#39;[&lt;&gt;:&#34;/\\|?*]&#39;)
+
+    def extract_company_names(self, text: str) -&gt; list[str]:
+        &#34;&#34;&#34;
+        Extract company names from text using regex patterns.
+
+        Returns:
+            List of detected company names
+        &#34;&#34;&#34;
+        companies: list[str] = []
+        for regex in self._company_regexes:
+            companies.extend(regex.findall(text))
+
+        # Remove duplicates and clean up
+        unique_companies: list[str] = []
+        seen: set[str] = set()
+        for company in companies:
+            # Clean up whitespace
+            clean = &#39; &#39;.join(company.split())
+            # Skip if too short or already seen
+            if len(clean) &gt; 2 and clean.lower() not in seen:
+                seen.add(clean.lower())
+                unique_companies.append(clean)
+
+        return unique_companies
+
+    def _collapse_spaced_text(self, text: str) -&gt; str:
+        &#34;&#34;&#34;
+        Collapse spaced-out text like &#34;I S A B E L  B U D E N Z&#34; to &#34;ISABEL BUDENZ&#34;.
+        Common in stylized resume/CV templates.
+        &#34;&#34;&#34;
+        # Pattern: single letters separated by spaces (at least 3 in a row)
+        # Match sequences like &#34;I S A B E L&#34; (single chars with single spaces)
+        def collapse_match(match: re.Match) -&gt; str:
+            spaced = match.group(0)
+            # Remove single spaces between single characters
+            collapsed = re.sub(r&#39;(?&lt;=\b[A-Z]) (?=[A-Z]\b)&#39;, &#39;&#39;, spaced)
+            return collapsed
+
+        # Find sequences of spaced single uppercase letters
+        # Pattern matches: capital letter, space, capital letter (repeated)
+        return self._spaced_letters_re.sub(collapse_match, text)
+
+    def extract_people_names(self, text: str) -&gt; list[str]:
+        &#34;&#34;&#34;
+        Extract people names from text using regex patterns.
+
+        Returns:
+            List of detected people names
+        &#34;&#34;&#34;
+        # Preprocess: collapse spaced-out text (common in stylized resumes)
+        text = self._collapse_spaced_text(text)
+
+        people: list[str] = []
+        for regex in self._people_regexes:
+            matches = regex.findall(text)
+            # Pattern can return tuples (first, last) or single strings
+            for match in matches:
+                if isinstance(match, tuple):
+                    # Join tuple elements (e.g., first name + last name)
+                    full_name = &#39; &#39;.join([m for m in match if m])
+                else:
+                    full_name = match
+                people.append(full_name)
+
+        # Remove duplicates and clean up
+        unique_people: list[str] = []
+        seen: set[str] = set()
+        for person in people:
+            # Clean up whitespace
+            clean = &#39; &#39;.join(person.split())
+            # Convert ALL-CAPS to Title Case (common in resume headers)
+            if clean.isupper():
+                clean = clean.title()
+            # Skip if too short or already seen
+            if len(clean) &gt; 2 and clean.lower() not in seen:
+                seen.add(clean.lower())
+                unique_people.append(clean)
+
+        return unique_people
+
+    def extract_person_company_relationships(self, text: str) -&gt; dict[str, str]:
+        &#34;&#34;&#34;
+        Extract relationships between people and companies from text.
+        Uses Schema.org-style connections (Person worksFor/memberOf Organization).
+
+        Returns:
+            Dictionary mapping person names to company names
+        &#34;&#34;&#34;
+        relationships: dict[str, str] = {}
+
+        for regex in self._relationship_regexes:
+            matches = regex.findall(text)
+            for match in matches:
+                if len(match) == 2:
+                    person, company = match
+                    # Clean up
+                    person_clean = &#39; &#39;.join(person.split())
+                    company_clean = &#39; &#39;.join(company.split())
+
+                    # For email domains, capitalize company name
+                    if &#39;@&#39; in text and &#39;.&#39; in company_clean and len(company_clean.split(&#39;.&#39;)) &gt;= 2:
+                        # This is likely a domain name, extract company name
+                        domain_parts = company_clean.split(&#39;.&#39;)
+                        if domain_parts[0].lower() not in [&#39;gmail&#39;, &#39;yahoo&#39;, &#39;hotmail&#39;, &#39;outlook&#39;, &#39;mail&#39;]:
+                            company_clean = domain_parts[0].capitalize()
+
+                    # Store relationship (person -&gt; company)
+                    if len(person_clean) &gt; 2 and len(company_clean) &gt; 2:
+                        relationships[person_clean] = company_clean
+
+        return relationships
+
+    def is_valid_company_name(self, name: str) -&gt; bool:
+        &#34;&#34;&#34;
+        Check if a string is a valid company name (not a sentence fragment).
+
+        Returns:
+            True if valid company name, False if likely a sentence fragment
+        &#34;&#34;&#34;
+        if not name:
+            return False
+
+        name_lower = name.lower().strip()
+        words = name.split()
+
+        # Reject if too long (real company names are usually &lt; 60 chars)
+        if len(name) &gt; 60:
+            return False
+
+        # Reject if too many words (company names rarely have &gt; 6 words)
+        if len(words) &gt; 6:
+            return False
+
+        # Sentence fragment indicators - words that start sentences, not companies
+        sentence_starters = {
+            &#39;neither&#39;, &#39;either&#39;, &#39;total&#39;, &#39;the&#39;, &#39;a&#39;, &#39;an&#39;, &#39;if&#39;, &#39;when&#39;,
+            &#39;where&#39;, &#39;while&#39;, &#39;although&#39;, &#39;because&#39;, &#39;since&#39;, &#39;unless&#39;,
+            &#39;however&#39;, &#39;therefore&#39;, &#39;moreover&#39;, &#39;furthermore&#39;, &#39;additionally&#39;,
+            &#39;please&#39;, &#39;note&#39;, &#39;see&#39;, &#39;refer&#39;, &#39;click&#39;, &#39;visit&#39;, &#39;contact&#39;,
+            &#39;for&#39;, &#39;with&#39;, &#39;from&#39;, &#39;into&#39;, &#39;about&#39;, &#39;above&#39;, &#39;below&#39;,
+            &#39;between&#39;, &#39;under&#39;, &#39;over&#39;, &#39;after&#39;, &#39;before&#39;, &#39;during&#39;,
+            &#39;this&#39;, &#39;that&#39;, &#39;these&#39;, &#39;those&#39;, &#39;which&#39;, &#39;what&#39;, &#39;who&#39;,
+            &#39;all&#39;, &#39;any&#39;, &#39;each&#39;, &#39;every&#39;, &#39;both&#39;, &#39;few&#39;, &#39;many&#39;, &#39;most&#39;,
+            &#39;other&#39;, &#39;some&#39;, &#39;such&#39;, &#39;no&#39;, &#39;not&#39;, &#39;only&#39;, &#39;own&#39;, &#39;same&#39;,
+            &#39;output&#39;, &#39;input&#39;, &#39;return&#39;, &#39;returns&#39;, &#39;required&#39;, &#39;optional&#39;,
+        }
+
+        # Check first word
+        if words and words[0].lower() in sentence_starters:
+            return False
+
+        # Sentence patterns - these indicate full sentences, not company names
+        for regex in self._sentence_regexes:
+            if regex.search(name_lower):
+                return False
+
+        # Check for specific problematic patterns
+        problematic_phrases = [
+            &#39;the name of&#39;, &#39;in usd&#39;, &#39;total in&#39;, &#39;output only&#39;,
+            &#39;required for&#39;, &#39;agreement between&#39;, &#39;agreement of&#39;,
+            &#39;certificate of&#39;, &#39;description of&#39;, &#39;operating agreement&#39;,
+            &#39;license this&#39;, &#39;http rule&#39;, &#39;member-managed&#39;,
+            &#39;need some&#39;, &#39;print out&#39;, &#39;user provided&#39;,
+            &#39;ceo of&#39;, &#39;cfo of&#39;, &#39;cto of&#39;, &#39;coo of&#39;,  # Title patterns
+            &#39;president of&#39;, &#39;director of&#39;, &#39;manager of&#39;,
+            &#39;taxpayer number&#39;, &#39;tax id&#39;, &#39;ein number&#39;,  # Tax/ID patterns
+            &#39;student award&#39;, &#39;professional access&#39;,  # Award patterns
+            &#39;proprietor general&#39;, &#39;general partnership&#39;,  # Legal entity types
+            &#39;personal workload&#39;, &#39;workload and&#39;,  # Incomplete phrases
+            &#39;data usage agreement&#39;, &#39;service agreement&#39;,
+            &#39;contributions on behalf&#39;, &#39;on behalf of&#39;,
+        ]
+
+        for phrase in problematic_phrases:
+            if phrase in name_lower:
+                return False
+
+        # Reject names ending with conjunctions (incomplete phrases)
+        if words and words[-1].lower() in {&#39;and&#39;, &#39;or&#39;, &#39;but&#39;, &#39;nor&#39;, &#39;yet&#39;, &#39;so&#39;, &#39;the&#39;, &#39;a&#39;, &#39;an&#39;, &#39;of&#39;, &#39;to&#39;, &#39;in&#39;, &#39;on&#39;, &#39;at&#39;, &#39;by&#39;}:
+            return False
+
+        # Reject names starting with titles followed by &#34;of&#34;
+        if len(words) &gt;= 3 and words[1].lower() == &#39;of&#39;:
+            title_words = {&#39;ceo&#39;, &#39;cfo&#39;, &#39;cto&#39;, &#39;coo&#39;, &#39;president&#39;, &#39;director&#39;, &#39;manager&#39;, &#39;chairman&#39;, &#39;founder&#39;}
+            if words[0].lower() in title_words:
+                return False
+
+        return True
+
+    def normalize_company_name(self, company_name: str) -&gt; str:
+        &#34;&#34;&#34;
+        Normalize company name by extracting actual company from common patterns.
+
+        Handles patterns like:
+        - &#34;Copyright 2024 Google&#34; -&gt; &#34;Google&#34;
+        - &#34;© 2020 Microsoft Corporation&#34; -&gt; &#34;Microsoft&#34;
+        - &#34;(c) 2019-2024 Apple Inc&#34; -&gt; &#34;Apple&#34;
+        - &#34;Copyright (C) 2023 Amazon&#34; -&gt; &#34;Amazon&#34;
+        - &#34;Google LLC&#34; -&gt; &#34;Google&#34;
+        - &#34;Apple Inc.&#34; -&gt; &#34;Apple&#34;
+
+        Returns:
+            Normalized company name, or None if invalid
+        &#34;&#34;&#34;
+        if not company_name:
+            return company_name
+
+        name_lower = company_name.lower().strip()
+        result = company_name
+
+        # Check if this looks like a copyright notice
+        if any(indicator in name_lower for indicator in (&#39;copyright&#39;, &#39;©&#39;, &#39;(c)&#39;)):
+            for regex in self._copyright_regexes:
+                match = regex.search(company_name)
+                if match:
+                    extracted = match.group(1).strip()
+                    # Clean up trailing punctuation
+                    extracted = extracted.rstrip(&#39;.,;:&#39;).strip()
+                    if extracted and len(extracted) &gt;= 2:
+                        result = extracted
+                        break
+
+        # Check for year prefix pattern (e.g., &#34;2024 Google&#34;)
+        if result == company_name:
+            year_prefix_match = self._year_prefix_re.match(company_name)
+            if year_prefix_match:
+                extracted = year_prefix_match.group(2).strip()
+                if extracted and len(extracted) &gt;= 2:
+                    result = extracted
+
+        # Strip legal suffixes to consolidate company variants.  One ordered
+        # pass over the suffix list, so stacked suffixes are all removed
+        # (e.g. &#34;Foo Co. Inc.&#34; -&gt; &#34;Foo&#34;) — matches the production organizer.
+        for suffix_regex in self._legal_suffix_regexes:
+            result = suffix_regex.sub(&#39;&#39;, result).strip()
+        return result
+
+    def sanitize_company_name(self, company_name: str) -&gt; str | None:
+        &#34;&#34;&#34;
+        Sanitize company name for use in folder names.
+
+        Returns:
+            Sanitized folder name, or None if the name is invalid (sentence fragment)
+        &#34;&#34;&#34;
+        # First normalize the company name (extract from copyright patterns, etc.)
+        normalized = self.normalize_company_name(company_name)
+
+        # Validate that this is a real company name, not a sentence fragment
+        if not self.is_valid_company_name(normalized):
+            return None
+
+        # Remove special characters that aren&#39;t allowed in folder names
+        sanitized = self._folder_sanitize_re.sub(&#39;&#39;, normalized)
+        # Replace multiple spaces with single space
+        sanitized = &#39; &#39;.join(sanitized.split())
+        # Limit length
+        if len(sanitized) &gt; 50:
+            sanitized = sanitized[:50].strip()
+        return sanitized if sanitized else None</code></pre>
+</details>
+<div class="desc"><p>Detects Schema.org-style entities (Organization, Person) in document text.</p>
+<p>Compile the entity-extraction regex patterns once (hot path).</p></div>
+<h3>Methods</h3>
+<dl>
+<dt id="src.classifiers.entity_detector.EntityDetector.extract_company_names"><code class="name flex">
+<span>def <span class="ident">extract_company_names</span></span>(<span>self, text: str) ‑> list[str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_company_names(self, text: str) -&gt; list[str]:
+    &#34;&#34;&#34;
+    Extract company names from text using regex patterns.
+
+    Returns:
+        List of detected company names
+    &#34;&#34;&#34;
+    companies: list[str] = []
+    for regex in self._company_regexes:
+        companies.extend(regex.findall(text))
+
+    # Remove duplicates and clean up
+    unique_companies: list[str] = []
+    seen: set[str] = set()
+    for company in companies:
+        # Clean up whitespace
+        clean = &#39; &#39;.join(company.split())
+        # Skip if too short or already seen
+        if len(clean) &gt; 2 and clean.lower() not in seen:
+            seen.add(clean.lower())
+            unique_companies.append(clean)
+
+    return unique_companies</code></pre>
+</details>
+<div class="desc"><p>Extract company names from text using regex patterns.</p>
+<h2 id="returns">Returns</h2>
+<p>List of detected company names</p></div>
+</dd>
+<dt id="src.classifiers.entity_detector.EntityDetector.extract_people_names"><code class="name flex">
+<span>def <span class="ident">extract_people_names</span></span>(<span>self, text: str) ‑> list[str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_people_names(self, text: str) -&gt; list[str]:
+    &#34;&#34;&#34;
+    Extract people names from text using regex patterns.
+
+    Returns:
+        List of detected people names
+    &#34;&#34;&#34;
+    # Preprocess: collapse spaced-out text (common in stylized resumes)
+    text = self._collapse_spaced_text(text)
+
+    people: list[str] = []
+    for regex in self._people_regexes:
+        matches = regex.findall(text)
+        # Pattern can return tuples (first, last) or single strings
+        for match in matches:
+            if isinstance(match, tuple):
+                # Join tuple elements (e.g., first name + last name)
+                full_name = &#39; &#39;.join([m for m in match if m])
+            else:
+                full_name = match
+            people.append(full_name)
+
+    # Remove duplicates and clean up
+    unique_people: list[str] = []
+    seen: set[str] = set()
+    for person in people:
+        # Clean up whitespace
+        clean = &#39; &#39;.join(person.split())
+        # Convert ALL-CAPS to Title Case (common in resume headers)
+        if clean.isupper():
+            clean = clean.title()
+        # Skip if too short or already seen
+        if len(clean) &gt; 2 and clean.lower() not in seen:
+            seen.add(clean.lower())
+            unique_people.append(clean)
+
+    return unique_people</code></pre>
+</details>
+<div class="desc"><p>Extract people names from text using regex patterns.</p>
+<h2 id="returns">Returns</h2>
+<p>List of detected people names</p></div>
+</dd>
+<dt id="src.classifiers.entity_detector.EntityDetector.extract_person_company_relationships"><code class="name flex">
+<span>def <span class="ident">extract_person_company_relationships</span></span>(<span>self, text: str) ‑> dict[str, str]</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def extract_person_company_relationships(self, text: str) -&gt; dict[str, str]:
+    &#34;&#34;&#34;
+    Extract relationships between people and companies from text.
+    Uses Schema.org-style connections (Person worksFor/memberOf Organization).
+
+    Returns:
+        Dictionary mapping person names to company names
+    &#34;&#34;&#34;
+    relationships: dict[str, str] = {}
+
+    for regex in self._relationship_regexes:
+        matches = regex.findall(text)
+        for match in matches:
+            if len(match) == 2:
+                person, company = match
+                # Clean up
+                person_clean = &#39; &#39;.join(person.split())
+                company_clean = &#39; &#39;.join(company.split())
+
+                # For email domains, capitalize company name
+                if &#39;@&#39; in text and &#39;.&#39; in company_clean and len(company_clean.split(&#39;.&#39;)) &gt;= 2:
+                    # This is likely a domain name, extract company name
+                    domain_parts = company_clean.split(&#39;.&#39;)
+                    if domain_parts[0].lower() not in [&#39;gmail&#39;, &#39;yahoo&#39;, &#39;hotmail&#39;, &#39;outlook&#39;, &#39;mail&#39;]:
+                        company_clean = domain_parts[0].capitalize()
+
+                # Store relationship (person -&gt; company)
+                if len(person_clean) &gt; 2 and len(company_clean) &gt; 2:
+                    relationships[person_clean] = company_clean
+
+    return relationships</code></pre>
+</details>
+<div class="desc"><p>Extract relationships between people and companies from text.
+Uses Schema.org-style connections (Person worksFor/memberOf Organization).</p>
+<h2 id="returns">Returns</h2>
+<p>Dictionary mapping person names to company names</p></div>
+</dd>
+<dt id="src.classifiers.entity_detector.EntityDetector.is_valid_company_name"><code class="name flex">
+<span>def <span class="ident">is_valid_company_name</span></span>(<span>self, name: str) ‑> bool</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def is_valid_company_name(self, name: str) -&gt; bool:
+    &#34;&#34;&#34;
+    Check if a string is a valid company name (not a sentence fragment).
+
+    Returns:
+        True if valid company name, False if likely a sentence fragment
+    &#34;&#34;&#34;
+    if not name:
+        return False
+
+    name_lower = name.lower().strip()
+    words = name.split()
+
+    # Reject if too long (real company names are usually &lt; 60 chars)
+    if len(name) &gt; 60:
+        return False
+
+    # Reject if too many words (company names rarely have &gt; 6 words)
+    if len(words) &gt; 6:
+        return False
+
+    # Sentence fragment indicators - words that start sentences, not companies
+    sentence_starters = {
+        &#39;neither&#39;, &#39;either&#39;, &#39;total&#39;, &#39;the&#39;, &#39;a&#39;, &#39;an&#39;, &#39;if&#39;, &#39;when&#39;,
+        &#39;where&#39;, &#39;while&#39;, &#39;although&#39;, &#39;because&#39;, &#39;since&#39;, &#39;unless&#39;,
+        &#39;however&#39;, &#39;therefore&#39;, &#39;moreover&#39;, &#39;furthermore&#39;, &#39;additionally&#39;,
+        &#39;please&#39;, &#39;note&#39;, &#39;see&#39;, &#39;refer&#39;, &#39;click&#39;, &#39;visit&#39;, &#39;contact&#39;,
+        &#39;for&#39;, &#39;with&#39;, &#39;from&#39;, &#39;into&#39;, &#39;about&#39;, &#39;above&#39;, &#39;below&#39;,
+        &#39;between&#39;, &#39;under&#39;, &#39;over&#39;, &#39;after&#39;, &#39;before&#39;, &#39;during&#39;,
+        &#39;this&#39;, &#39;that&#39;, &#39;these&#39;, &#39;those&#39;, &#39;which&#39;, &#39;what&#39;, &#39;who&#39;,
+        &#39;all&#39;, &#39;any&#39;, &#39;each&#39;, &#39;every&#39;, &#39;both&#39;, &#39;few&#39;, &#39;many&#39;, &#39;most&#39;,
+        &#39;other&#39;, &#39;some&#39;, &#39;such&#39;, &#39;no&#39;, &#39;not&#39;, &#39;only&#39;, &#39;own&#39;, &#39;same&#39;,
+        &#39;output&#39;, &#39;input&#39;, &#39;return&#39;, &#39;returns&#39;, &#39;required&#39;, &#39;optional&#39;,
+    }
+
+    # Check first word
+    if words and words[0].lower() in sentence_starters:
+        return False
+
+    # Sentence patterns - these indicate full sentences, not company names
+    for regex in self._sentence_regexes:
+        if regex.search(name_lower):
+            return False
+
+    # Check for specific problematic patterns
+    problematic_phrases = [
+        &#39;the name of&#39;, &#39;in usd&#39;, &#39;total in&#39;, &#39;output only&#39;,
+        &#39;required for&#39;, &#39;agreement between&#39;, &#39;agreement of&#39;,
+        &#39;certificate of&#39;, &#39;description of&#39;, &#39;operating agreement&#39;,
+        &#39;license this&#39;, &#39;http rule&#39;, &#39;member-managed&#39;,
+        &#39;need some&#39;, &#39;print out&#39;, &#39;user provided&#39;,
+        &#39;ceo of&#39;, &#39;cfo of&#39;, &#39;cto of&#39;, &#39;coo of&#39;,  # Title patterns
+        &#39;president of&#39;, &#39;director of&#39;, &#39;manager of&#39;,
+        &#39;taxpayer number&#39;, &#39;tax id&#39;, &#39;ein number&#39;,  # Tax/ID patterns
+        &#39;student award&#39;, &#39;professional access&#39;,  # Award patterns
+        &#39;proprietor general&#39;, &#39;general partnership&#39;,  # Legal entity types
+        &#39;personal workload&#39;, &#39;workload and&#39;,  # Incomplete phrases
+        &#39;data usage agreement&#39;, &#39;service agreement&#39;,
+        &#39;contributions on behalf&#39;, &#39;on behalf of&#39;,
+    ]
+
+    for phrase in problematic_phrases:
+        if phrase in name_lower:
+            return False
+
+    # Reject names ending with conjunctions (incomplete phrases)
+    if words and words[-1].lower() in {&#39;and&#39;, &#39;or&#39;, &#39;but&#39;, &#39;nor&#39;, &#39;yet&#39;, &#39;so&#39;, &#39;the&#39;, &#39;a&#39;, &#39;an&#39;, &#39;of&#39;, &#39;to&#39;, &#39;in&#39;, &#39;on&#39;, &#39;at&#39;, &#39;by&#39;}:
+        return False
+
+    # Reject names starting with titles followed by &#34;of&#34;
+    if len(words) &gt;= 3 and words[1].lower() == &#39;of&#39;:
+        title_words = {&#39;ceo&#39;, &#39;cfo&#39;, &#39;cto&#39;, &#39;coo&#39;, &#39;president&#39;, &#39;director&#39;, &#39;manager&#39;, &#39;chairman&#39;, &#39;founder&#39;}
+        if words[0].lower() in title_words:
+            return False
+
+    return True</code></pre>
+</details>
+<div class="desc"><p>Check if a string is a valid company name (not a sentence fragment).</p>
+<h2 id="returns">Returns</h2>
+<p>True if valid company name, False if likely a sentence fragment</p></div>
+</dd>
+<dt id="src.classifiers.entity_detector.EntityDetector.normalize_company_name"><code class="name flex">
+<span>def <span class="ident">normalize_company_name</span></span>(<span>self, company_name: str) ‑> str</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def normalize_company_name(self, company_name: str) -&gt; str:
+    &#34;&#34;&#34;
+    Normalize company name by extracting actual company from common patterns.
+
+    Handles patterns like:
+    - &#34;Copyright 2024 Google&#34; -&gt; &#34;Google&#34;
+    - &#34;© 2020 Microsoft Corporation&#34; -&gt; &#34;Microsoft&#34;
+    - &#34;(c) 2019-2024 Apple Inc&#34; -&gt; &#34;Apple&#34;
+    - &#34;Copyright (C) 2023 Amazon&#34; -&gt; &#34;Amazon&#34;
+    - &#34;Google LLC&#34; -&gt; &#34;Google&#34;
+    - &#34;Apple Inc.&#34; -&gt; &#34;Apple&#34;
+
+    Returns:
+        Normalized company name, or None if invalid
+    &#34;&#34;&#34;
+    if not company_name:
+        return company_name
+
+    name_lower = company_name.lower().strip()
+    result = company_name
+
+    # Check if this looks like a copyright notice
+    if any(indicator in name_lower for indicator in (&#39;copyright&#39;, &#39;©&#39;, &#39;(c)&#39;)):
+        for regex in self._copyright_regexes:
+            match = regex.search(company_name)
+            if match:
+                extracted = match.group(1).strip()
+                # Clean up trailing punctuation
+                extracted = extracted.rstrip(&#39;.,;:&#39;).strip()
+                if extracted and len(extracted) &gt;= 2:
+                    result = extracted
+                    break
+
+    # Check for year prefix pattern (e.g., &#34;2024 Google&#34;)
+    if result == company_name:
+        year_prefix_match = self._year_prefix_re.match(company_name)
+        if year_prefix_match:
+            extracted = year_prefix_match.group(2).strip()
+            if extracted and len(extracted) &gt;= 2:
+                result = extracted
+
+    # Strip legal suffixes to consolidate company variants.  One ordered
+    # pass over the suffix list, so stacked suffixes are all removed
+    # (e.g. &#34;Foo Co. Inc.&#34; -&gt; &#34;Foo&#34;) — matches the production organizer.
+    for suffix_regex in self._legal_suffix_regexes:
+        result = suffix_regex.sub(&#39;&#39;, result).strip()
+    return result</code></pre>
+</details>
+<div class="desc"><p>Normalize company name by extracting actual company from common patterns.</p>
+<p>Handles patterns like:
+- "Copyright 2024 Google" -&gt; "Google"
+- "© 2020 Microsoft Corporation" -&gt; "Microsoft"
+- "(c) 2019-2024 Apple Inc" -&gt; "Apple"
+- "Copyright (C) 2023 Amazon" -&gt; "Amazon"
+- "Google LLC" -&gt; "Google"
+- "Apple Inc." -&gt; "Apple"</p>
+<h2 id="returns">Returns</h2>
+<p>Normalized company name, or None if invalid</p></div>
+</dd>
+<dt id="src.classifiers.entity_detector.EntityDetector.sanitize_company_name"><code class="name flex">
+<span>def <span class="ident">sanitize_company_name</span></span>(<span>self, company_name: str) ‑> str | None</span>
+</code></dt>
+<dd>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def sanitize_company_name(self, company_name: str) -&gt; str | None:
+    &#34;&#34;&#34;
+    Sanitize company name for use in folder names.
+
+    Returns:
+        Sanitized folder name, or None if the name is invalid (sentence fragment)
+    &#34;&#34;&#34;
+    # First normalize the company name (extract from copyright patterns, etc.)
+    normalized = self.normalize_company_name(company_name)
+
+    # Validate that this is a real company name, not a sentence fragment
+    if not self.is_valid_company_name(normalized):
+        return None
+
+    # Remove special characters that aren&#39;t allowed in folder names
+    sanitized = self._folder_sanitize_re.sub(&#39;&#39;, normalized)
+    # Replace multiple spaces with single space
+    sanitized = &#39; &#39;.join(sanitized.split())
+    # Limit length
+    if len(sanitized) &gt; 50:
+        sanitized = sanitized[:50].strip()
+    return sanitized if sanitized else None</code></pre>
+</details>
+<div class="desc"><p>Sanitize company name for use in folder names.</p>
+<h2 id="returns">Returns</h2>
+<p>Sanitized folder name, or None if the name is invalid (sentence fragment)</p></div>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="src.classifiers" href="index.html">src.classifiers</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="src.classifiers.entity_detector.EntityDetector" href="#src.classifiers.entity_detector.EntityDetector">EntityDetector</a></code></h4>
+<ul class="">
+<li><code><a title="src.classifiers.entity_detector.EntityDetector.extract_company_names" href="#src.classifiers.entity_detector.EntityDetector.extract_company_names">extract_company_names</a></code></li>
+<li><code><a title="src.classifiers.entity_detector.EntityDetector.extract_people_names" href="#src.classifiers.entity_detector.EntityDetector.extract_people_names">extract_people_names</a></code></li>
+<li><code><a title="src.classifiers.entity_detector.EntityDetector.extract_person_company_relationships" href="#src.classifiers.entity_detector.EntityDetector.extract_person_company_relationships">extract_person_company_relationships</a></code></li>
+<li><code><a title="src.classifiers.entity_detector.EntityDetector.is_valid_company_name" href="#src.classifiers.entity_detector.EntityDetector.is_valid_company_name">is_valid_company_name</a></code></li>
+<li><code><a title="src.classifiers.entity_detector.EntityDetector.normalize_company_name" href="#src.classifiers.entity_detector.EntityDetector.normalize_company_name">normalize_company_name</a></code></li>
+<li><code><a title="src.classifiers.entity_detector.EntityDetector.sanitize_company_name" href="#src.classifiers.entity_detector.EntityDetector.sanitize_company_name">sanitize_company_name</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc" title="pdoc: Python API documentation generator"><cite>pdoc</cite> 0.11.6</a>.</p>
+</footer>
+</body>
+</html>
