@@ -6,7 +6,7 @@
 
 **Result: 53 confirmed findings** (5 high, 45 medium, 3 low), grouped into 7 duplication zones below.
 
-**Progress:** 8 of 53 resolved (game keywords `cc06190`; `ae561f8` `42a5ae3` `4a0d98d` `ecdcdf6` `f085830` this session), plus the archive half of the software/archive finding (`6521f65`). ~45 open.
+**Progress:** 10 of 53 resolved (game keywords `cc06190`; `ae561f8` `42a5ae3` `4a0d98d` `ecdcdf6` `f085830` `6521f65`; plus the format-classifier consolidation `1b1f3e9`→`148b16d` resolving `software_extensions + archive_extensions` and `FileTypeOrganizer.type_mapping / get_category_for_file`). ~43 open.
 
 **Structural note that keeps this list honest:** `src/` imports heavily *from* `scripts/shared` (`GAME_SPRITE_KEYWORDS`, `SCREENSHOT_KEYWORDS`, `SCREENSHOT_PATTERNS`/`DOCUMENT_PATTERNS`, `IMAGE_EXTENSIONS_WIDE`, `classify_by_ocr`, `kie_*` are single-sourced via `from shared.x import y`). Those were spot-checked and are shared single sources, not copies — everything listed below is a genuine second implementation or second data table.
 
@@ -273,8 +273,9 @@ The script's `type_mapping` routes the same extensions to different destinations
 - **Divergence:** src version adds pre-classification image rename, schema generation/validation, registry registration, graph-store persistence, and a force flag; script adds resolve_collision on name clash and per-category stats counters.
 - **Recommendation:** Fold the plain move path (collision-resolving mkdir+shutil.move with already_organized/would_organize statuses) into src/pipeline (FileProcessor or a shared helper) and have the script delegate, keeping only the type-specific classification local.
 
-### [MEDIUM] FileTypeOrganizer.type_mapping / get_category_for_file
+### [MEDIUM] FileTypeOrganizer.type_mapping / get_category_for_file — RESOLVED (`148b16d`)
 
+- **Resolution:** `type_mapping` deleted; `get_category_for_file` now delegates to the canonical `classify_by_mime(file_path, None)` mapped through `CATEGORY_PATHS`, keeping only the name/structure pre-checks (screenshot, game-asset, extension-less timezone). `classify_by_mime` was first made a superset of both maps (`baf34d0`): installer/package split, extension fallbacks for every MIME-gated format, code/data subcategories, font delegation. Type-mode destinations shifted to the canonical taxonomy (all user-approved — raster→Images/Graphics, xls→Documents/Spreadsheets, csv→Data/CSV, audio→Media/Music, fonts→CreativeWork/Fonts/*, executables→Software/Installers, deb/rpm/snap/flatpak/appimage→Software/Packages); dry-run diff verified against the approved change table, no regressions to Uncategorized, +39 tests. Content mode untouched. See `docs/reviews/` plan for the full phased record.
 - **Kind:** partial-overlap
 - **Script:** `scripts/file_organizer_by_type.py:30-93`
 - **Src counterpart:** `src/organizers/mime_classifier.py:15-119` — `FONT_EXTENSIONS / classify_font / classify_by_mime`
@@ -429,15 +430,16 @@ The `GAME_SPRITE_KEYWORDS` pattern (single-homed in `shared.constants`, imported
 - **Divergence:** Script adds NDA/CLA/release-of-liability boundary-safe handling absent from src. Also inconsistent inside the script: the later legal_keywords tier (1545-1548) routes 'contract'/'agreement'/'terms'/'amendment' matches to ("business", "legal") — a subcategory that does not exist in CONTENT_CATEGORY_PATHS['business'] (category_config.py:107-117), so those files land in Business/Other instead of Legal/*.
 - **Recommendation:** Derive the filename variants from the src legal vocabulary, and reconcile the ("business", "legal") tier with the legal category (or add the missing path mapping).
 
-### [MEDIUM] software_extensions + archive_extensions
+### [MEDIUM] software_extensions + archive_extensions — RESOLVED (`6521f65`, `1b1f3e9`, `c010ee4`, `baf34d0`, `148b16d`)
 
+- **Resolution:** Both sets are now single-homed in `shared.constants`. ARCHIVE (`6521f65`): identical six-member set, both consumers reference `ARCHIVE_EXTENSIONS`. SOFTWARE: split into `SOFTWARE_INSTALLER_EXTENSIONS`/`SOFTWARE_PACKAGE_EXTENSIONS` (`1b1f3e9`); `filename_classifier` consumes their union with unchanged membership/destination (`c010ee4`); `mime_classifier` consumes them with the installer/package split feeding `Software/Installers` vs the previously-dormant `Software/Packages` (`baf34d0`); the type organizer resolves through them via the canonical classifier (`148b16d`). The membership-reconciliation the note below flagged was made explicit: `.app` sits in INSTALLERS (forced by the content-mode invariant), and the type organizer's routing of `.app/.snap/.flatpak/.appimage` was a user-approved behavior change.
 - **Kind:** duplicated-constants
 - **Script:** `scripts/shared/filename_classifier.py:615-632, 1376-1382`
 - **Src counterpart:** `src/organizers/mime_classifier.py:90-99` — `classify_by_mime (archive/software extension branches)`
 - **Evidence:** Script 1379 archive_extensions = {".zip", ".tar", ".gz", ".rar", ".7z", ".bz2"} vs mime_classifier 91-95: '.zip' plus ['.tar', '.gz', '.bz2', '.7z', '.rar'] — identical six-member set. Script 618-629 software_extensions includes ".dmg", ".pkg", ".msi", ".deb", ".rpm", ".exe" vs mime_classifier 98: ['.dmg', '.pkg', '.exe', '.msi', '.deb', '.rpm'] — identical six installers.
 - **Divergence:** Script extends software with .app/.snap/.flatpak/.appimage and routes to technical/software_packages and technical/archives; mime_classifier routes to software/installers and archives/* in the type-organizer's CATEGORY_PATHS taxonomy. Different CLI modes, but the extension membership is the same data maintained twice.
 - **Recommendation:** Share the archive/software extension-set constants (single-home in shared constants or src.organizers) and keep only the per-organizer destination mapping local.
-- **Implementation note (2026-07-14):** Split outcome. The ARCHIVE set (`.zip,.tar,.gz,.rar,.7z,.bz2`) is identical on both sides and was single-homed into `shared.constants.ARCHIVE_EXTENSIONS` in `6521f65` (both consumers now reference it; `mime_classifier` keeps its `.zip` special-case). The SOFTWARE set is NOT identical: the script has 10 members incl. `.app/.snap/.flatpak/.appimage`; `mime_classifier` has only 6. Single-homing software would either add those 4 to `mime_classifier` (changing where the type-organizer routes `.app/.snap/.flatpak/.appimage`) or subset them — a membership-reconciliation decision, not a mechanical move. Software half deferred.
+- **Implementation note (2026-07-14):** Split outcome. The ARCHIVE set (`.zip,.tar,.gz,.rar,.7z,.bz2`) is identical on both sides and was single-homed into `shared.constants.ARCHIVE_EXTENSIONS` in `6521f65` (both consumers now reference it; `mime_classifier` keeps its `.zip` special-case). The SOFTWARE set is NOT identical: the script has 10 members incl. `.app/.snap/.flatpak/.appimage`; `mime_classifier` has only 6. Single-homing software would either add those 4 to `mime_classifier` (changing where the type-organizer routes `.app/.snap/.flatpak/.appimage`) or subset them — a membership-reconciliation decision, not a mechanical move. Software half deferred at the time — subsequently resolved via the format-classifier consolidation (see the Resolution bullet above).
 
 ### [MEDIUM] _GENERIC_FILENAME_PATTERNS
 
