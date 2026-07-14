@@ -6,19 +6,23 @@
 
 **Result: 53 confirmed findings** (5 high, 45 medium, 3 low), grouped into 7 duplication zones below.
 
+**Resolution status (updated 2026-07-14):** 10 of 53 findings resolved. The entire Timeline zone (7 findings) was consolidated into a single `TimelineAPI` class with the script reduced to a launcher (`a2146fe`), and the three game-keyword tables (`GAME_{FONT,AUDIO,MUSIC}_KEYWORDS`) were single-homed in `shared.constants` (`cc06190`). The remaining 43 findings are open.
+
 **Structural note that keeps this list honest:** `src/` imports heavily *from* `scripts/shared` (`GAME_SPRITE_KEYWORDS`, `SCREENSHOT_KEYWORDS`, `SCREENSHOT_PATTERNS`/`DOCUMENT_PATTERNS`, `IMAGE_EXTENSIONS_WIDE`, `classify_by_ocr`, `kie_*` are single-sourced via `from shared.x import y`). Those were spot-checked and are shared single sources, not copies — everything listed below is a genuine second implementation or second data table.
 
 ## Recommended priority order
 
-1. Consolidate the timeline exporter (or delete the orphaned `TimelineAPI` export path) — two writers emit incompatible schemas to the same `_site/timeline_data.json`.
+1. ~~Consolidate the timeline exporter (or delete the orphaned `TimelineAPI` export path) — two writers emit incompatible schemas to the same `_site/timeline_data.json`.~~ **DONE (`a2146fe`)** — folded into the `TimelineAPI` class; `scripts/generate_timeline_data.py` is now a launcher and there is a single writer of the artifact.
 2. Fix `regenerate_schemas.py` metadata-dropping drift (regeneration silently loses ScholarlyArticle/CLIP properties src now emits).
-3. Single-home the game keyword tables (union the bidirectional fixes; re-run the eval).
+3. ~~Single-home the game keyword tables (union the bidirectional fixes; re-run the eval).~~ **DONE (`cc06190`)** — `GAME_{FONT,AUDIO,MUSIC}_KEYWORDS` single-homed in `shared.constants` and imported by `ContentOrganizer`, unioning the bidirectional divergence.
 4. Auto-generate `scripts/d1/schema.sql` from `Base.metadata` (whole `merge_events` table is missing).
 5. The rest opportunistically, when the owning script is next touched.
 
 ## Timeline generation — `scripts/generate_timeline_data.py` vs `src/api/timeline_api.py`
 
 Both sides build and write the same artifact `_site/timeline_data.json` with already-incompatible output schemas. The live code path is the script (`src/cli.py:230`, `scripts/update_site_data.py:163`); `TimelineAPI` has zero code references outside its own file — a dead parallel implementation whose own `main()` would clobber the dashboard data file with a divergent document. Consolidate to one exporter: either fold the script-only enrichments into `TimelineAPI` and reduce the script to a launcher (matching the repo's launcher refactors), or delete the orphaned `TimelineAPI` export path.
+
+> **Resolved (`a2146fe`) — entire zone.** `src/api/timeline_api.py` now owns a single `TimelineAPI` class that builds the `_site/timeline_data.json` document (per-session category/schema-type/extension breakdowns + consecutive-session deltas + cumulative stats). `scripts/generate_timeline_data.py` is a thin launcher, and the `organize-files timeline` / `update-site` callers import the class entry point — so there is exactly one writer of the artifact. Output is byte-identical to the prior script (verified via snapshot parity). The individual findings below are retained for the historical record.
 
 ### [HIGH] get_sessions
 
@@ -292,6 +296,8 @@ The script's `type_mapping` routes the same extensions to different destinations
 
 The `GAME_SPRITE_KEYWORDS` pattern (single-homed in `shared.constants`, imported by `content_organizer.py:22`) is the model; these tables never got the same treatment. Notable: `GAME_FONT_KEYWORDS` is element-for-element identical on both sides; `GAME_AUDIO/MUSIC_KEYWORDS` diverged in both directions — src added ~34 terms the script lacks, while the script fixed the `'cast'`-matches-`'podcast'` false positive (`'spellcast'`) that src still has.
 
+> **Update (`cc06190`):** the three game-keyword findings in this zone — `GAME_FONT_KEYWORDS`, `GAME_AUDIO_KEYWORDS`, `GAME_MUSIC_KEYWORDS` — are **resolved** (single-homed in `shared.constants`, imported by `ContentOrganizer`, bidirectional divergence unioned). The other findings in this zone (extension sets, the `filename_classifier.py` copies, entity/business/legal/journal/font/sprite tables, `_GENERIC_FILENAME_PATTERNS`) remain **open**.
+
 ### [MEDIUM] IMAGE_EXTENSIONS / IMAGE_EXTENSIONS_WIDE
 
 - **Kind:** diverged-copy
@@ -312,6 +318,8 @@ The `GAME_SPRITE_KEYWORDS` pattern (single-homed in `shared.constants`, imported
 
 ### [MEDIUM] GAME_FONT_KEYWORDS
 
+> **Resolved (`cc06190`).** Single-homed in `shared.constants.GAME_FONT_KEYWORDS` and imported by `ContentOrganizer` (content_organizer.py:24, assigned at :379).
+
 - **Kind:** identical-copy
 - **Script:** `scripts/shared/constants.py:438-453`
 - **Src counterpart:** `src/organizers/content_organizer.py:393-398` — `ContentOrganizer.__init__ self.game_font_keywords`
@@ -321,6 +329,8 @@ The `GAME_SPRITE_KEYWORDS` pattern (single-homed in `shared.constants`, imported
 
 ### [MEDIUM] GAME_AUDIO_KEYWORDS
 
+> **Resolved (`cc06190`).** Single-homed in `shared.constants.GAME_AUDIO_KEYWORDS`, unioning src's extra terms with the script's `'spellcast'` fix; imported by `ContentOrganizer` (content_organizer.py:23, assigned at :358).
+
 - **Kind:** diverged-copy
 - **Script:** `scripts/shared/constants.py:377-408`
 - **Src counterpart:** `src/organizers/content_organizer.py:352-363` — `ContentOrganizer.__init__ self.game_audio_keywords`
@@ -329,6 +339,8 @@ The `GAME_SPRITE_KEYWORDS` pattern (single-homed in `shared.constants`, imported
 - **Recommendation:** Reconcile into one list (union or deliberate curation) in shared.constants.GAME_AUDIO_KEYWORDS, then have ContentOrganizer assign self.game_audio_keywords from it, mirroring the GAME_SPRITE_KEYWORDS pattern at content_organizer.py:22,377. Re-run the eval (scripts/evaluate_model.py consumes the same constant) to confirm no regression.
 
 ### [MEDIUM] GAME_MUSIC_KEYWORDS
+
+> **Resolved (`cc06190`).** Single-homed in `shared.constants.GAME_MUSIC_KEYWORDS` and imported by `ContentOrganizer` (content_organizer.py:25, assigned at :359).
 
 - **Kind:** diverged-copy
 - **Script:** `scripts/shared/constants.py:410-436`
