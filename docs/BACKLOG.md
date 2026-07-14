@@ -1,7 +1,7 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-07-13.
+Last updated: 2026-07-14.
 
 ## Open Items
 
@@ -52,6 +52,26 @@ Coverage run 2026-07-13 (`pytest tests/unit tests/integration --cov=src`): overa
 
 Test design approach: Stub the expensive classifiers (`CLIPClassifier.encode`, `ocr_classifier.classify`) with deterministic mock implementations that return known scores, then drive realistic file-organization scenarios (e.g., mixed content types with classifier disagreement, OCR fallback triggering, confidence-gate rejections).
 
+
+### scripts/ ↔ src/ duplication cleanup (53 confirmed findings)
+
+Full copypasta audit of `scripts/` against the canonical `src/` library found 53 verified duplications across 7 zones.
+
+**Status:** Open
+**Priority:** P2 (top items are active correctness drift; bulk is P3/P4 consolidation)
+**Source:** multi-agent scripts↔src duplication audit, 2026-07-14
+
+Full findings with line-level evidence, divergence notes, and per-item recommendations: [`docs/reviews/SCRIPTS_SRC_DUPLICATION_AUDIT.md`](reviews/SCRIPTS_SRC_DUPLICATION_AUDIT.md).
+
+Priority order from the review:
+
+1. **Timeline exporter split-brain** — `scripts/generate_timeline_data.py` and the orphaned `src/api/timeline_api.py` both write `_site/timeline_data.json` with incompatible document schemas; consolidate or delete the dead src path.
+2. **`regenerate_schemas.py` metadata-dropping drift** — its copied schema builder's `preserve_keys` omits `identifier`/`sameAs`/`publisher`/`description`, so regeneration silently strips ScholarlyArticle/CLIP metadata that `FileProcessor.generate_schema` now emits.
+3. **Game keyword tables split-brained** — `GAME_AUDIO/MUSIC/FONT_KEYWORDS` duplicated between `scripts/shared/constants.py` and `content_organizer.py` with fixes on *both* sides (src still has the `'cast'`→`'podcast'` false positive the script fixed); single-home like `GAME_SPRITE_KEYWORDS`.
+4. **`scripts/d1/schema.sql` stale ORM mirror** — missing `files` columns (`ocr_confidence`, `detected_language`, `kie_fields`) and the entire `merge_events` table; generate from `Base.metadata` instead of hand-maintaining.
+5. Remaining ~40 items (type-organizer taxonomy drift, `filename_classifier` keyword overlaps, `DEFAULT_DB_PATH` ×11 call sites, small helper copies) opportunistically when the owning script is touched.
+
+Subsumes the pre-existing item below (generator import list) into the same cleanup effort.
 
 ### `regenerate_schemas.py` mirrors the src generator import list
 

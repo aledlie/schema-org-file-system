@@ -16,6 +16,10 @@
 > `tests/unit/`; and `file_organizer_content_based.py` **was** reduced to a thin wrapper
 > (2026-07-13: ~4.1k → ~500 LOC; `ContentBasedFileOrganizer` subclasses
 > `ContentOrganizer` and composes `FileProcessor`/`BatchProcessor`).
+> Follow-up 2026-07-14: the forwarded-subcommand CLI boundary gained typed
+> input contracts (`src/cli_inputs.py` frozen dataclasses + strict
+> `from_namespace()`; drift guard at `tests/unit/test_cli_inputs.py`),
+> closing the argv/namespace-drift concern noted under the Week 4 workflow item.
 > Checklist items below are marked accordingly.
 
 ---
@@ -522,7 +526,7 @@ class ContentBasedFileOrganizer:
 - [x] Create `src/organizers/base_organizer.py` (abstract base) — ✅ COMPLETE
 - [x] Refactor `ContentBasedFileOrganizer` → `src/organizers/content_organizer.py` — ✅ COMPLETE
 - [x] Create `src/pipeline/` module — ✅ COMPLETE
-- [x] Extract workflow → `src/pipeline/workflow.py` — ✅ SUPERSEDED (orchestration landed as `file_processor.py` + `batch_processor.py`; the thin-wrapper reduction of 2026-07-13 realized the end state this item existed to enable — no `OrganizationWorkflow` class needed. The one residual concern, argv re-serialization fragility in `src/cli.py`, is tracked in `docs/BACKLOG.md`.)
+- [x] Extract workflow → `src/pipeline/workflow.py` — ✅ SUPERSEDED (orchestration landed as `file_processor.py` + `batch_processor.py`; the thin-wrapper reduction of 2026-07-13 realized the end state this item existed to enable — no `OrganizationWorkflow` class needed. The one residual concern, argv re-serialization fragility in `src/cli.py`, was resolved 2026-07-14: each forwarded subcommand now converts its parsed namespace into a frozen dataclass from `src/cli_inputs.py` at both entry points (unified CLI and standalone script `main()`s), with strict field matching that fails loudly on parser↔consumer drift; parity locked by `tests/unit/test_cli_inputs.py`.)
 - [x] Update `scripts/file_organizer_content_based.py` to thin wrapper — ✅ COMPLETE (2026-07-13: ~500 LOC; classification inherited from `ContentOrganizer`, pipeline composed from `FileProcessor`/`BatchProcessor`, script keeps availability probes, re-exports for tests, and `main()`)
 - [x] Write integration tests for organizer — ✅ COMPLETE (`tests/unit/test_content_organizer.py`)
 
