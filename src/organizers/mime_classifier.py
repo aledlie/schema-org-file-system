@@ -10,6 +10,14 @@ schema_type)`` triple whose category/subcategory key into
 from pathlib import Path
 from typing import Dict, Optional, Tuple
 
+try:
+    from shared.constants import ARCHIVE_EXTENSIONS
+except ImportError:  # scripts/shared not on sys.path (e.g. direct-import tests)
+    ARCHIVE_EXTENSIONS = {".zip", ".tar", ".gz", ".rar", ".7z", ".bz2"}
+
+# .zip is classified separately (archives/zip); the rest route to archives/other.
+_NON_ZIP_ARCHIVE_EXTENSIONS = ARCHIVE_EXTENSIONS - {".zip"}
+
 Classification = Tuple[str, str, str]
 
 FONT_EXTENSIONS: Dict[str, Classification] = {
@@ -91,7 +99,7 @@ def classify_by_mime(file_path: Path, mime_type: Optional[str]) -> Classificatio
     elif mime_type in ['application/zip', 'application/x-zip-compressed'] or file_ext == '.zip':
         return ('archives', 'zip', 'DigitalDocument')
 
-    elif file_ext in ['.tar', '.gz', '.bz2', '.7z', '.rar']:
+    elif file_ext in _NON_ZIP_ARCHIVE_EXTENSIONS:
         return ('archives', 'other', 'DigitalDocument')
 
     # Software

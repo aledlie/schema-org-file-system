@@ -17,6 +17,9 @@ SIDECAR_DIR_SUFFIXES = (
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".heic", ".webp", ".gif", ".bmp"}
 IMAGE_EXTENSIONS_WIDE = IMAGE_EXTENSIONS | {".tiff", ".tif", ".svg", ".ico", ".raw"}
 
+# Archive extensions -- single source shared by filename_classifier and mime_classifier
+ARCHIVE_EXTENSIONS = {".zip", ".tar", ".gz", ".rar", ".7z", ".bz2"}
+
 # CLIP content labels -- canonical list used by analyze_renamed_files, organize_by_content, etc.
 CLIP_CONTENT_LABELS = [
     "a landscape or nature scene",

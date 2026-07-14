@@ -27,6 +27,8 @@ import re
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 
+from shared.constants import ARCHIVE_EXTENSIONS
+
 # Research category key and Schema.org type for scholarly articles.
 # See: https://schema.org/ScholarlyArticle
 RESEARCH_CATEGORY = "research"
@@ -1376,8 +1378,7 @@ def classify_by_filename_patterns(
     # =========================================================
     # ARCHIVE FILES: .zip, .tar, .gz, .rar → Technical/Archives
     # =========================================================
-    archive_extensions = {".zip", ".tar", ".gz", ".rar", ".7z", ".bz2"}
-    if ext in archive_extensions:
+    if ext in ARCHIVE_EXTENSIONS:
         print(f"  ✓ Filename pattern: Archive file ({ext})")
         return ("technical", "archives", None, [])
 
