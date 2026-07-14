@@ -1,7 +1,6 @@
 """Feedback integration for applying learned corrections to organization.
 
-Extracted from scripts/feedback_integration.py (companion to the
-TEST_AND_REFACTOR_PLAN Part 2 "Large Script #5" extraction):
+Provides three integration points:
 
 1. Apply learned corrections before categorization
 2. Integrate feedback patterns into the categorization logic

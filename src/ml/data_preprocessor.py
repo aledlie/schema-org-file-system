@@ -1,7 +1,6 @@
 """Preprocessing pipeline for file-organization ML training data.
 
-Extracted from scripts/data_preprocessing.py (TEST_AND_REFACTOR_PLAN Part 2,
-"Large Script #4"):
+Pipeline stages:
 
 1. Feature extraction from filenames, paths, and metadata
 2. Text normalization and tokenization

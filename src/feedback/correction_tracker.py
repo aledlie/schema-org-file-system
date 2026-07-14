@@ -1,7 +1,6 @@
 """Correction feedback storage for miscategorized files.
 
-Extracted from scripts/correction_feedback.py (TEST_AND_REFACTOR_PLAN Part 2,
-"Large Script #5"). Stores user corrections in a persistent JSON hashmap keyed
+Stores user corrections in a persistent JSON hashmap keyed
 by file hash, learns filename-pattern -> category associations from them, and
 serves suggestions/rules back to the organizer.
 

@@ -1,7 +1,6 @@
 """Feature engineering for file-organization ML.
 
-Extracted from scripts/data_preprocessing.py (TEST_AND_REFACTOR_PLAN Part 2,
-"Large Script #4"). Turns a single organization-report record into a flat
+Turns a single organization-report record into a flat
 feature dict consumed by DataPreprocessor.
 """
 
