@@ -55,13 +55,13 @@ Test design approach: Stub the expensive classifiers (`CLIPClassifier.encode`, `
 
 ### Non-AI-path coverage tail + developer docs (migrated from retired TEST_AND_REFACTOR_PLAN.md)
 
-**Status:** Partially done — commit 8eaf056 brought `validator.py` 28% → 100% and overall to 82%.
+**Status:** Partially done — commit 8eaf056 brought `validator.py` 28% → 100% and overall to 82%; commits a1248b6 + 1ed4b64 added 85 tests for `src/integration.py` (~23% → ~95%) and `src/error_tracking.py` (~50% → ~80%).
 **Priority:** P3
 **Source:** coverage measurement + doc-TODO migration, 2026-07-14
 
 The 2026-07-14 coverage run (`pytest tests/unit tests/integration --cov=src`) measured **79% overall** (7,365 stmts) — hitting the plan's Month-1 75% bar but short of its 80%/85% goals. 2026-07-14 session raised this to **82%**. Remaining gaps in non-AI glue:
 
-- `src/integration.py` 23% · `src/cost_integration.py` 0% · `src/utils/tracking.py` 26% · `src/error_tracking.py` 50% · `src/api/schema_org_api.py` 64%.
+- `src/cost_integration.py` 0% (import fails without `cost_roi_calculator` on top-level path; test requires env setup or import refactor) · `src/utils/tracking.py` 26% (stubs unreachable in normal test env) · `src/api/schema_org_api.py` 64%.
 
 One documentation TODO also carries over from the retired plan (never done):
 
