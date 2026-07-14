@@ -48,11 +48,17 @@ CATEGORY_PATHS: Dict[str, Union[str, Dict[str, str]]] = {
     'code': {
         'python': 'Code/Python',
         'javascript': 'Code/JavaScript',
+        'typescript': 'Code/TypeScript',
+        'shell': 'Code/Shell',
+        'web': 'Code/Web',
         'other': 'Code/Other'
     },
     'data': {
         'json': 'Data/JSON',
         'csv': 'Data/CSV',
+        'yaml': 'Data/YAML',
+        'xml': 'Data/XML',
+        'config': 'Data/Config',
         'databases': 'Data/Databases',
         'other': 'Data/Other'
     },
