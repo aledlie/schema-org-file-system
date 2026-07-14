@@ -7,17 +7,11 @@ from the labeling sessions stored in the database.
 """
 
 import json
-import hashlib
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple
 
 from shared.db_utils import db_connection
-
-
-def compute_file_id(filepath: str) -> str:
-    """Compute the file ID (SHA-256 hash of the path)."""
-    return hashlib.sha256(filepath.encode()).hexdigest()
 
 
 def get_labeled_categories(db_path: str, ml_session: str) -> Tuple[Dict, Dict]:
