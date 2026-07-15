@@ -271,6 +271,46 @@ class TestPiexifFallback:
              patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", False):
             assert parser.extract_exif_data(dummy_path) == {}
 
+    def test_piexif_loaded_at_most_once_when_no_gps(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        """PIL empty + piexif has no GPS: piexif.load() must run once (extract),
+        not twice (the old GPS retry re-loaded the same file)."""
+        piexif_mock = _piexif_stub({"Exif": {0x9003: b"2023:11:26 14:30:00"}})
+        with patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()), \
+             patch("src.analyzers.image_metadata.piexif", piexif_mock), \
+             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
+             patch("src.analyzers.image_metadata.TAGS", _PIEXIF_TAGS):
+            coords = parser.extract_gps_coordinates(dummy_path)
+        assert coords is None
+        piexif_mock.load.assert_called_once()
+
+    def test_non_gps_pil_exif_never_loads_piexif(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        """A non-GPS image PIL can read (no GPSInfo key) must not touch piexif."""
+        mock_img = MagicMock()
+        mock_img._getexif.return_value = {0x0132: "2023:01:01 00:00:00"}
+        piexif_mock = _piexif_stub({})
+        with patch("src.analyzers.image_metadata.Image.open", return_value=mock_img), \
+             patch("src.analyzers.image_metadata.piexif", piexif_mock), \
+             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
+             patch("src.analyzers.image_metadata.TAGS", _PIEXIF_TAGS):
+            coords = parser.extract_gps_coordinates(dummy_path)
+        assert coords is None
+        piexif_mock.load.assert_not_called()
+
+    def test_bare_offset_gpsinfo_normalized_to_dict_in_exif(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        """extract_exif_data itself resolves a bare-offset GPSInfo into a dict,
+        so callers reusing the returned exif_data get GPS without a re-read."""
+        mock_img = MagicMock()
+        mock_img._getexif.return_value = {0x8825: 746}  # GPSInfo as bare IFD offset
+        piexif_data = {"GPS": {1: b"N", 2: ((37, 1), (46, 1), (294, 10)),
+                               3: b"W", 4: ((122, 1), (25, 1), (0, 1))}}
+        with patch("src.analyzers.image_metadata.Image.open", return_value=mock_img), \
+             patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)), \
+             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
+             patch("src.analyzers.image_metadata.TAGS", {0x8825: "GPSInfo"}):
+            exif_data = parser.extract_exif_data(dummy_path)
+        assert isinstance(exif_data["GPSInfo"], dict)
+        assert exif_data["GPSInfo"][1] == "N"
+
 
 # ---------------------------------------------------------------------------
 # extract_datetime

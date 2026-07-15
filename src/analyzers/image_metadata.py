@@ -111,8 +111,22 @@ class ImageMetadataParser:
         except Exception as e:
             print(f"  EXIF extraction error: {e}")
 
-        if not exif_data:
-            exif_data = self._extract_exif_via_piexif(image_path)
+        # piexif fallback, consolidated so piexif.load() runs at most once per
+        # call:
+        #  - PIL read empty (a format PIL can't decode) → take piexif's EXIF.
+        #  - GPSInfo present but a bare IFD offset (int) rather than a dict → PIL
+        #    left the GPS IFD undecoded; recover just that from piexif.
+        # A missing GPSInfo key means the file carries no GPS, so piexif is
+        # skipped entirely for non-GPS images.
+        gps_is_bare_offset = "GPSInfo" in exif_data and not isinstance(
+            exif_data["GPSInfo"], dict
+        )
+        if not exif_data or gps_is_bare_offset:
+            piexif_data = self._extract_exif_via_piexif(image_path)
+            if not exif_data:
+                exif_data = piexif_data
+            elif isinstance(piexif_data.get("GPSInfo"), dict):
+                exif_data["GPSInfo"] = piexif_data["GPSInfo"]
 
         return exif_data
 
@@ -257,14 +271,9 @@ class ImageMetadataParser:
             return None
         if exif_data is None:
             exif_data = self.extract_exif_data(image_path)
-        coords = self._extract_gps_from_exif(exif_data)
-        if coords is None and not isinstance(exif_data.get("GPSInfo"), dict):
-            # PIL sometimes surfaces GPSInfo as a bare IFD offset (int) even
-            # when the file carries GPS data; retry that part via piexif.
-            fallback = self._extract_exif_via_piexif(image_path)
-            if isinstance(fallback.get("GPSInfo"), dict):
-                coords = self._extract_gps_from_exif({"GPSInfo": fallback["GPSInfo"]})
-        return coords
+        # extract_exif_data already normalizes a bare-offset GPSInfo into a dict
+        # via piexif, so no separate GPS retry is needed here.
+        return self._extract_gps_from_exif(exif_data)
 
     def _extract_gps_from_exif(self, exif_data: Dict[str, Any]) -> Optional[Tuple[float, float]]:
         try:
