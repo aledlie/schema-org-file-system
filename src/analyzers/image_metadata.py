@@ -134,7 +134,9 @@ class ImageMetadataParser:
         """Fallback EXIF read via piexif, normalized to the same shape as the
         PIL path: tag names as keys, ASCII bytes decoded to str, and the GPS
         IFD nested under "GPSInfo" keyed by numeric GPS tag ids."""
-        if not PIEXIF_AVAILABLE:
+        # TAGS/GPSTAGS are only imported when PIL is available; guard so a caller
+        # that bypasses the outer metadata_available check can't hit a NameError.
+        if not PIEXIF_AVAILABLE or not METADATA_AVAILABLE:
             return {}
 
         try:

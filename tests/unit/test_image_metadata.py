@@ -311,6 +311,38 @@ class TestPiexifFallback:
         assert isinstance(exif_data["GPSInfo"], dict)
         assert exif_data["GPSInfo"][1] == "N"
 
+    def test_gps_southern_eastern_hemisphere(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        """S latitude ref negates the latitude; E longitude ref leaves the
+        longitude positive (covers the GPSLatitudeRef == 'S' branch)."""
+        piexif_data = {
+            "GPS": {
+                1: b"S",
+                2: ((33, 1), (52, 1), (0, 1)),
+                3: b"E",
+                4: ((151, 1), (12, 1), (0, 1)),
+            }
+        }
+        with patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()), \
+             patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)), \
+             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
+             patch("src.analyzers.image_metadata.GPSTAGS", _PIEXIF_GPSTAGS):
+            coords = parser.extract_gps_coordinates(dummy_path)
+
+        assert coords is not None
+        lat, lon = coords
+        assert abs(lat - -(33 + 52 / 60)) < 1e-6
+        assert abs(lon - (151 + 12 / 60)) < 1e-6
+
+    def test_metadata_unavailable_returns_empty(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+        """_extract_exif_via_piexif guards on METADATA_AVAILABLE (TAGS/GPSTAGS
+        are undefined without PIL), returning {} before touching piexif."""
+        piexif_mock = _piexif_stub({"Exif": {0x9003: b"2023:11:26 14:30:00"}})
+        with patch("src.analyzers.image_metadata.piexif", piexif_mock), \
+             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
+             patch("src.analyzers.image_metadata.METADATA_AVAILABLE", False):
+            assert parser._extract_exif_via_piexif(dummy_path) == {}
+        piexif_mock.load.assert_not_called()
+
 
 # ---------------------------------------------------------------------------
 # extract_datetime
