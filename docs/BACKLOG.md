@@ -98,10 +98,10 @@ Full findings with line-level evidence, divergence notes, and per-item recommend
 
 Priority order from the review:
 
-1. **Timeline exporter split-brain** — `scripts/generate_timeline_data.py` and the orphaned `src/api/timeline_api.py` both write `_site/timeline_data.json` with incompatible document schemas; consolidate or delete the dead src path.
-5. Remaining ~40 items (type-organizer taxonomy drift, `filename_classifier` keyword overlaps) opportunistically when the owning script is touched.
+1. ~~**Timeline exporter split-brain** — `scripts/generate_timeline_data.py` and the orphaned `src/api/timeline_api.py` both write `_site/timeline_data.json` with incompatible document schemas; consolidate or delete the dead src path.~~ **DONE (`4437a25`)** — the entire Timeline zone (7 findings) was consolidated; `scripts/generate_timeline_data.py` is now a thin launcher over the `TimelineAPI` class. See the resolution note in the review doc.
+5. Remaining ~35 items (type-organizer scan/summary loop, `filename_classifier` keyword/entity tables) opportunistically when the owning script is touched.
 
-Subsumes the pre-existing generator import-list item into the same cleanup effort — all resolved in a single 2026-07-14 multi-commit session.
+Resolved so far (2026-07-14–15): items 1–4 from the original priority list plus `file_iri` single-sourcing (`src/storage/models.py`) and `financial_doc_keywords` billing inconsistency fix (`scripts/shared/filename_classifier.py`). See the review doc for per-finding resolution notes.
 
 
 ### Cross-file duplication within `src/` (investigation)

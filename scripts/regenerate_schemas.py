@@ -35,6 +35,7 @@ from src import (
     MetadataEnricher,
 )
 from src.base import PropertyType
+from src.storage.models import file_iri
 
 
 def get_generator_for_type(schema_type: str, entity_id: str):
@@ -87,7 +88,7 @@ def regenerate_schema(
         Updated schema dictionary with @id
     """
     # Use canonical_id as entity_id (it's already in urn:sha256:... format)
-    entity_id = canonical_id if canonical_id else f"urn:sha256:{file_id}"
+    entity_id = file_iri(file_id, canonical_id)
 
     # Create generator with @id
     generator = get_generator_for_type(schema_type or 'DigitalDocument', entity_id)

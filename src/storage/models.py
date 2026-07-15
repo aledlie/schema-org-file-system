@@ -257,9 +257,7 @@ class File(Base, SchemaOrgSerializable):
 
     def get_iri(self) -> str:
         """Get the JSON-LD @id IRI for this file."""
-        if self.canonical_id:
-            return self.canonical_id
-        return f"urn:sha256:{self.id}"
+        return file_iri(self.id, self.canonical_id)
 
     def get_schema_type(self) -> str:
         """Return the schema.org @type for this file."""
@@ -735,6 +733,19 @@ class Location(Base, SchemaOrgSerializable):
 # ---------------------------------------------------------------------------
 
 
+def file_iri(file_id: str, canonical_id: Optional[str] = None) -> str:
+    """Return the canonical JSON-LD ``@id`` IRI for a file record.
+
+    Prefer *canonical_id* when present (it is already in ``urn:sha256:…``
+    format); fall back to ``urn:sha256:{file_id}`` so that callers during
+    migration backfill (before canonical IDs are assigned) get a stable IRI.
+
+    Single source of truth for the ``urn:sha256:{id}`` fallback expression.
+    Any future URN-scheme change only needs to be made here.
+    """
+    return canonical_id or f"urn:sha256:{file_id}"
+
+
 def build_file_relationships(categories, companies, people, locations) -> Dict[str, Any]:
     """Build a File's schema.org relationship properties from related entities."""
     relationships: Dict[str, Any] = {}
@@ -792,7 +803,7 @@ def build_file_jsonld(f, categories, companies, people, locations) -> Dict[str, 
     result = {
         "@context": "https://schema.org",
         "@type": schema_type,
-        "@id": f.canonical_id or f"urn:sha256:{f.id}",
+        "@id": file_iri(f.id, f.canonical_id),
         "name": f.filename,
     }
 

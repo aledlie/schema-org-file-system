@@ -18,7 +18,8 @@ from sqlalchemy.orm import Session
 
 from .models import (
     File, Person,
-    OrganizationSession, FileStatus
+    OrganizationSession, FileStatus,
+    file_iri,
 )
 from .graph_store import GraphStore
 from .kv_store import KeyValueStorage
@@ -692,7 +693,7 @@ def run_migration(db_path: Union[str, Path] = DEFAULT_DB_PATH, dry_run: bool = F
             if rows:
                 print(f"  Backfilling {len(rows)} files...")
                 for file_id, _ in rows:
-                    canonical_id = f"urn:sha256:{file_id}"
+                    canonical_id = file_iri(file_id)
                     if not dry_run:
                         conn.execute("UPDATE files SET canonical_id = ? WHERE id = ?", (canonical_id, file_id))
                     stats['files_backfilled'] += 1

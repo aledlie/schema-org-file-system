@@ -1546,10 +1546,15 @@ def classify_by_filename_patterns(
     # Must check BEFORE event documents (month names in filenames,
     # e.g. "May 2026 Billing Statement.pdf")
     # =========================================================
+    # Dict is checked in insertion order.  "statement" precedes "billing" so
+    # that "billing statement" filenames match the more-specific "statement"
+    # first and route to financial/statements.  A bare "billing" (no
+    # "statement" in the name) routes to "invoices", aligning with
+    # content_classifier.py ('invoices': ['invoice', 'bill', 'billing', ...]).
     financial_doc_keywords = {
         "invoice": "invoices",
-        "billing": "statements",
         "statement": "statements",
+        "billing": "invoices",
         "receipt": "other",
     }
     if ext in {".pdf", ".docx", ".doc"}:

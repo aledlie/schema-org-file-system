@@ -109,8 +109,9 @@ Diverged copy with verbatim shared lines (`file_url = f"https://localhost/files/
 - **Divergence:** The script's dispatch table is a superset: it adds Photograph -> ImageGenerator, VideoObject/MovieClip -> VideoGenerator, AudioObject/MusicRecording/PodcastEpisode -> AudioGenerator, SoftwareSourceCode -> CodeGenerator, Dataset -> DatasetGenerator, Archive -> ArchiveGenerator, and passes entity_id to every constructor; src routes all of those types to the plain DocumentGenerator fallback and never sets entity_id.
 - **Recommendation:** Promote the fuller dispatch (including video/audio/code/dataset/archive entries and the entity_id parameter) into src — e.g. a factory function in src/generators.py or src/pipeline/file_processor.py — have FileProcessor.generate_schema use it, and make the script import it instead of defining its own table.
 
-### [MEDIUM] regenerate_schema (entity_id fallback expression)
+### [MEDIUM] regenerate_schema (entity_id fallback expression) — RESOLVED
 
+- **Resolution:** Added module-level `file_iri(file_id, canonical_id=None)` helper to `src/storage/models.py`. `File.get_iri()`, `build_file_jsonld()`, `migration.py` backfill loop, and `regenerate_schemas.py` entity_id line all delegate to it. Any future URN-scheme change needs only one edit.
 - **Kind:** reimplementation
 - **Script:** `scripts/regenerate_schemas.py:88-89`
 - **Src counterpart:** `src/storage/models.py:254-258` — `File.get_iri (canonical-ID URN fallback; format also from File.generate_canonical_id lines 239-252, and inlined at models.py:792 and src/storage/migration.py:693)`
@@ -368,8 +369,9 @@ The `GAME_SPRITE_KEYWORDS` pattern (single-homed in `shared.constants`, imported
 - **Divergence:** Key space differs (concatenated/underscore filename stems vs spaced text phrases). src adds 'new beginnings child development'; script adds Fisterra/DotFun/EnsoCo/Google/Microsoft/Adobe/Amazon/Apple. Internally inconsistent too: company_patterns (278-283) routes Integrity Studio to subcategory "other" while entity_patterns (561-563) and src both use "vendors".
 - **Recommendation:** Extract one canonical company -> (category, subcategory, display_name) table into src (e.g. beside EntityDetector), derive stem-variant and text-phrase keys from it programmatically, and import it in the script; reconcile the missing entries and the Integrity Studio other/vendors inconsistency while merging.
 
-### [MEDIUM] financial_doc_keywords
+### [MEDIUM] financial_doc_keywords — RESOLVED
 
+- **Resolution:** Reordered the `financial_doc_keywords` dict so `"statement"` is checked before `"billing"`. A bare `"billing"` stem now routes to `"invoices"` (matching `content_classifier.py`'s `'invoices': [..., 'billing', ...]`). A `"billing statement"` stem hits `"statement"` first → `"statements"` (existing test passes; semantics correct for monthly billing statements). Full-suite unit tests (1,426) green after the change.
 - **Kind:** partial-overlap
 - **Script:** `scripts/shared/filename_classifier.py:1550-1565`
 - **Src counterpart:** `src/classifiers/content_classifier.py:49-62` — `ContentClassifier.patterns['financial']['subcategories']`
