@@ -43,7 +43,12 @@ uvicorn src.api.schema_org_api:app --reload
 black src/ scripts/           # format
 flake8 src/ scripts/          # lint
 mypy src/ scripts/            # type check
+
+# Regenerate pdoc3 API docs (writes into the docs/api submodule)
+npm run docs:api             # = bash scripts/gen_api_docs.sh
 ```
+
+**API docs:** `docs/api` is a git submodule (`integritystudio/schema-org-file-system-apidocs`) holding the generated pdoc3 HTML under `docs/api/src/`. Regenerate with `npm run docs:api` (sets `PYTHONPATH=src` — inner modules use bare intra-`src` imports), then commit+push inside `docs/api` and commit the bumped gitlink in the parent. Fresh clones need `--recurse-submodules` (or `git submodule update --init`) to populate it.
 
 ## Project Structure
 
