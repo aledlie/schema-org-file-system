@@ -54,10 +54,12 @@ _INTERIOR_CATEGORIES = [
     "a photo of furniture",
 ]
 
+_SCREENSHOT_LABEL = "a screenshot of a computer screen"
+
 _ALL_CATEGORIES = _INTERIOR_CATEGORIES + [
     "a photo of a house exterior",
     "a photo of people",
-    "a screenshot",
+    _SCREENSHOT_LABEL,
     "a photo of outdoors",
     "a photo of nature",
 ]
@@ -189,7 +191,7 @@ class ImageContentAnalyzer:
 
         interior_score = max(scores.get(cat, 0) for cat in _INTERIOR_CATEGORIES)
         people_score = scores.get("a photo of people", 0)
-        screenshot_score = scores.get("a screenshot", 0)
+        screenshot_score = scores.get(_SCREENSHOT_LABEL, 0)
 
         is_interior = interior_score > _INTERIOR_SCORE_THRESHOLD
         clip_has_people = people_score > _PEOPLE_SCORE_THRESHOLD
@@ -217,7 +219,7 @@ class ImageContentAnalyzer:
 
         people_score = scores.get("a photo of people", 0)
         has_faces = self.detect_people(image_path)
-        screenshot_score = scores.get("a screenshot", 0)
+        screenshot_score = scores.get(_SCREENSHOT_LABEL, 0)
         is_screenshot = screenshot_score > _SCREENSHOT_SCORE_THRESHOLD
 
         has_people = (people_score > _PEOPLE_SCORE_LOW_THRESHOLD or has_faces) and not is_screenshot

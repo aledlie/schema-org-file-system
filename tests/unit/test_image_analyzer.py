@@ -222,7 +222,7 @@ class TestHasPeopleInPhoto:
         assert result is False
 
     def test_detects_people_via_score(self, dummy_path: Path, analyzer: ImageContentAnalyzer) -> None:
-        scores = {cat: 0.0 for cat in ["a photo of people", "a screenshot"]}
+        scores = {cat: 0.0 for cat in ["a photo of people", _analyzer_module._SCREENSHOT_LABEL]}
         scores["a photo of people"] = 0.5
 
         with patch.object(analyzer, "classify_image_content", return_value=scores), \
@@ -231,7 +231,7 @@ class TestHasPeopleInPhoto:
         assert result is True
 
     def test_detects_people_via_face_detection(self, dummy_path: Path, analyzer: ImageContentAnalyzer) -> None:
-        scores = {"a photo of people": 0.0, "a screenshot": 0.0}
+        scores = {"a photo of people": 0.0, _analyzer_module._SCREENSHOT_LABEL: 0.0}
 
         with patch.object(analyzer, "classify_image_content", return_value=scores), \
              patch.object(analyzer, "detect_people", return_value=True):
@@ -239,7 +239,7 @@ class TestHasPeopleInPhoto:
         assert result is True
 
     def test_screenshot_suppresses_people_detection(self, dummy_path: Path, analyzer: ImageContentAnalyzer) -> None:
-        scores = {"a photo of people": 0.9, "a screenshot": 0.9}
+        scores = {"a photo of people": 0.9, _analyzer_module._SCREENSHOT_LABEL: 0.9}
 
         with patch.object(analyzer, "classify_image_content", return_value=scores), \
              patch.object(analyzer, "detect_people", return_value=True):
