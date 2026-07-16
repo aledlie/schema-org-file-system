@@ -8,12 +8,40 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
 
 import pytest
 
-# Ensure scripts/ is importable.
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / "scripts"))
+# Ensure scripts/ and src/ are importable.
+_ROOT = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(_ROOT / "scripts"))
+sys.path.insert(0, str(_ROOT / "src"))
+
+
+def _make_kie_result(fields_dict):
+    """Build a ``KIEResult`` from ``{class_name: [(value, confidence), ...]}``."""
+    from shared.kie_utils import KIEField, KIEResult
+
+    fields = {}
+    confs = []
+    for cls, entries in fields_dict.items():
+        kie_fields = []
+        for value, confidence in entries:
+            kie_fields.append(KIEField(class_name=cls, value=value, confidence=confidence))
+            confs.append(confidence)
+        fields[cls] = kie_fields
+    return KIEResult(
+        fields=fields,
+        page_count=1,
+        overall_confidence=sum(confs) / len(confs) if confs else 0.0,
+    )
+
+
+@pytest.fixture()
+def kie_classifier():
+    """A ``ContentClassifier`` instance for ``classify_with_kie`` tests."""
+    from classifiers.content_classifier import ContentClassifier
+
+    return ContentClassifier()
 
 
 # ---------------------------------------------------------------------------
@@ -69,27 +97,10 @@ class TestKIEDataclasses:
 # ---------------------------------------------------------------------------
 
 class TestKIESchemaMapping:
-    def _make_result(self, fields_dict):
-        from shared.kie_utils import KIEField, KIEResult
-
-        fields = {}
-        confs = []
-        for cls, entries in fields_dict.items():
-            kie_fields = []
-            for value, confidence in entries:
-                kie_fields.append(KIEField(class_name=cls, value=value, confidence=confidence))
-                confs.append(confidence)
-            fields[cls] = kie_fields
-        return KIEResult(
-            fields=fields,
-            page_count=1,
-            overall_confidence=sum(confs) / len(confs) if confs else 0.0,
-        )
-
     def test_basic_invoice_mapping(self):
         from shared.kie_schema_mapping import kie_result_to_schema_org
 
-        result = self._make_result({
+        result = _make_kie_result({
             "vendor_name": [("Acme Corp", 0.9)],
             "total_amount": [("1500.00", 0.85)],
             "currency": [("USD", 0.8)],
@@ -110,7 +121,7 @@ class TestKIESchemaMapping:
     def test_low_confidence_fields_excluded(self):
         from shared.kie_schema_mapping import kie_result_to_schema_org
 
-        result = self._make_result({
+        result = _make_kie_result({
             "vendor_name": [("Acme Corp", 0.9)],
             "total_amount": [("???", 0.2)],  # below threshold
         })
@@ -122,7 +133,7 @@ class TestKIESchemaMapping:
     def test_picks_highest_confidence_field(self):
         from shared.kie_schema_mapping import kie_result_to_schema_org
 
-        result = self._make_result({
+        result = _make_kie_result({
             "vendor_name": [("Wrong Corp", 0.4), ("Acme Corp", 0.9)],
         })
 
@@ -132,7 +143,7 @@ class TestKIESchemaMapping:
     def test_receipt_fields_map_to_invoice(self):
         from shared.kie_schema_mapping import kie_result_to_schema_org
 
-        result = self._make_result({
+        result = _make_kie_result({
             "store_name": [("Target", 0.85)],
             "receipt_total": [("42.99", 0.9)],
             "receipt_date": [("2024-01-20", 0.7)],
@@ -190,91 +201,54 @@ class TestKIEAvailability:
 # ---------------------------------------------------------------------------
 
 class TestClassifyWithKIE:
-    def _make_result(self, fields_dict):
-        from shared.kie_utils import KIEField, KIEResult
-
-        fields = {}
-        confs = []
-        for cls, entries in fields_dict.items():
-            kie_fields = []
-            for value, confidence in entries:
-                kie_fields.append(KIEField(class_name=cls, value=value, confidence=confidence))
-                confs.append(confidence)
-            fields[cls] = kie_fields
-        return KIEResult(
-            fields=fields,
-            page_count=1,
-            overall_confidence=sum(confs) / len(confs) if confs else 0.0,
-        )
-
-    def test_classifies_invoice_with_vendor_and_amount(self):
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-        from classifiers.content_classifier import ContentClassifier
-
-        classifier = ContentClassifier()
-        kie_result = self._make_result({
+    def test_classifies_invoice_with_vendor_and_amount(self, kie_classifier):
+        kie_result = _make_kie_result({
             "vendor_name": [("Acme Corp", 0.9)],
             "total_amount": [("500.00", 0.85)],
         })
 
-        result = classifier.classify_with_kie(kie_result)
+        result = kie_classifier.classify_with_kie(kie_result)
         assert result is not None
         category, subcategory, company_name, people = result
         assert category == "financial"
         assert subcategory == "invoices"
         assert company_name == "Acme Corp"
 
-    def test_classifies_invoice_with_vendor_and_date(self):
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-        from classifiers.content_classifier import ContentClassifier
-
-        classifier = ContentClassifier()
-        kie_result = self._make_result({
+    def test_classifies_invoice_with_vendor_and_date(self, kie_classifier):
+        kie_result = _make_kie_result({
             "store_name": [("Target", 0.8)],
             "receipt_date": [("2024-01-15", 0.75)],
         })
 
-        result = classifier.classify_with_kie(kie_result)
+        result = kie_classifier.classify_with_kie(kie_result)
         assert result is not None
         assert result[0] == "financial"
         assert result[2] == "Target"
 
-    def test_returns_none_without_vendor(self):
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-        from classifiers.content_classifier import ContentClassifier
-
-        classifier = ContentClassifier()
-        kie_result = self._make_result({
+    def test_returns_none_without_vendor(self, kie_classifier):
+        kie_result = _make_kie_result({
             "total_amount": [("500.00", 0.85)],
         })
 
-        result = classifier.classify_with_kie(kie_result)
+        result = kie_classifier.classify_with_kie(kie_result)
         assert result is None
 
-    def test_returns_none_with_low_confidence(self):
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-        from classifiers.content_classifier import ContentClassifier
-
-        classifier = ContentClassifier()
-        kie_result = self._make_result({
+    def test_returns_none_with_low_confidence(self, kie_classifier):
+        kie_result = _make_kie_result({
             "vendor_name": [("Maybe Corp", 0.3)],  # below 0.5 threshold
             "total_amount": [("100.00", 0.3)],
         })
 
-        result = classifier.classify_with_kie(kie_result)
+        result = kie_classifier.classify_with_kie(kie_result)
         assert result is None
 
-    def test_returns_none_with_vendor_only(self):
-        sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
-        from classifiers.content_classifier import ContentClassifier
-
-        classifier = ContentClassifier()
-        kie_result = self._make_result({
+    def test_returns_none_with_vendor_only(self, kie_classifier):
+        kie_result = _make_kie_result({
             "vendor_name": [("Acme Corp", 0.9)],
         })
 
         # Vendor alone is not enough — need amount OR date.
-        result = classifier.classify_with_kie(kie_result)
+        result = kie_classifier.classify_with_kie(kie_result)
         assert result is None
 
 
