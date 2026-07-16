@@ -1333,9 +1333,7 @@ class ContentOrganizer(BaseOrganizer):
                     print(f"  ✓ Screenshot OCR sub-class: {ocr_category} ({ocr_confidence:.0%})")
                 else:
                     # OCR matched a non-screenshot Schema.org category — use it
-                    print(
-                        f"  ✓ Screenshot OCR reclassified: {ocr_category} ({ocr_confidence:.0%})"
-                    )
+                    print(f"  ✓ Screenshot OCR reclassified: {ocr_category} ({ocr_confidence:.0%})")
                 return (
                     routed_category,
                     routed_subcategory,
