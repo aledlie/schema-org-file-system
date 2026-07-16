@@ -6,6 +6,7 @@ from shared.constants import GAME_SPRITE_KEYWORDS
 
 from src.scoring.signals.filename_pattern import (
     FILENAME_MATCH_CONFIDENCE,
+    FILENAME_WEAK_CONFIDENCE,
     FilenamePatternSignal,
 )
 from src.scoring.context import FileContext
@@ -43,6 +44,17 @@ class TestRun:
         assert score.signal_name == "filename_pattern"
         assert "company_name" not in score.evidence
         assert "people_names" not in score.evidence
+
+    def test_weak_photos_other_result_emits_graduated_confidence(self):
+        """The 'Named image'/'Hash/ID image' catch-alls are enhancement
+        triggers in the legacy chain (Point A), not answers — they must not
+        early-exit the cheap wave ahead of OCR/CLIP evidence."""
+        scores = make_signal().run(make_ctx("/photos/medellin_bloodwork.png"))
+        assert len(scores) == 1
+        score = scores[0]
+        assert (score.category, score.subcategory) == ("media", "photos_other")
+        assert score.confidence == FILENAME_WEAK_CONFIDENCE
+        assert FILENAME_WEAK_CONFIDENCE < FILENAME_MATCH_CONFIDENCE
 
     def test_duplicate_passes_through_as_skip_score(self):
         scores = make_signal().run(make_ctx("/photos/photo_20250101_123456.png"))
