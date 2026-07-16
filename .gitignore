@@ -43,6 +43,7 @@ results/*.json
 results/*.db*
 results/*.bak
 results/*.txt
+results/*.jsonl
 results/ml_data*/
 
 # Corrections data (user-specific)

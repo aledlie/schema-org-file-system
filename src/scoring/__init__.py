@@ -6,7 +6,6 @@ scorer, behind ``organize-files content --scorer {legacy,unified,shadow}``.
 """
 
 from .context import FileContext
-from .registry import build_default_signals
 from .scorer import Scorer
 from .types import (
     SCORER_DEFAULT,
@@ -18,6 +17,24 @@ from .types import (
     ClassificationDecision,
     Signal,
 )
+
+# ``build_default_signals`` is exposed lazily (PEP 562): the registry imports
+# every signal module, and several of those import ``shared.*`` — which is
+# only on ``sys.path`` once a CLI subcommand has inserted ``scripts/``.
+# Importing ``src.scoring.types`` (e.g. for the --scorer flag definition)
+# must not cascade into that dependency.
+_LAZY_EXPORTS = {"build_default_signals": ("src.scoring.registry", "build_default_signals")}
+
+
+def __getattr__(name: str):
+    try:
+        module_name, attr = _LAZY_EXPORTS[name]
+    except KeyError:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}") from None
+    import importlib
+
+    return getattr(importlib.import_module(module_name), attr)
+
 
 __all__ = [
     "CategoryScore",
