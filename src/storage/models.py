@@ -99,6 +99,10 @@ file_categories = Table(
     Column('file_id', String(SHA256_HEX_LENGTH), ForeignKey('files.id'), primary_key=True),
     Column('category_id', Integer, ForeignKey('categories.id'), primary_key=True),
     Column('confidence', Float, default=1.0),
+    # Per-signal scoring evidence for backtesting (UNIFIED_SCORING_PLAN §5.4).
+    # Nullable and additive: legacy runs persist NULL; existing databases gain
+    # the column via `organize-files migrate-scoring` (scoring_migration.py).
+    Column('signal_evidence', JSON, nullable=True),
     Column('created_at', DateTime, default=utcnow)
 )
 Index('ix_file_categories_category_id', file_categories.c.category_id)
