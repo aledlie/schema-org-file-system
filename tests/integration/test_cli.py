@@ -306,12 +306,29 @@ class TestStubbedWiring:
         monkeypatch.setattr(
             migration_module,
             "run_migration",
-            lambda db_path: calls.setdefault("db_path", db_path),
+            # run_migration_with_banner calls run_migration(db_path, dry_run=...),
+            # so the stub must accept the dry_run kwarg the banner wrapper forwards.
+            lambda db_path, dry_run=False: calls.update(db_path=db_path, dry_run=dry_run),
         )
         db_path = str(tmp_path / "migrate.db")
         run_cli(monkeypatch, "migrate-ids", "--db-path", db_path)
         assert calls["db_path"] == db_path
+        assert calls["dry_run"] is False
         assert "Migration complete" in capsys.readouterr().out
+
+    def test_migrate_ids_dry_run_forwards_flag(self, monkeypatch, capsys, tmp_path):
+        import storage.migration as migration_module
+
+        calls = {}
+        monkeypatch.setattr(
+            migration_module,
+            "run_migration",
+            lambda db_path, dry_run=False: calls.update(db_path=db_path, dry_run=dry_run),
+        )
+        db_path = str(tmp_path / "migrate.db")
+        run_cli(monkeypatch, "migrate-ids", "--db-path", db_path, "--dry-run")
+        assert calls["dry_run"] is True
+        assert "[DRY RUN] No changes were made." in capsys.readouterr().out
 
     def test_preprocess_passes_typed_inputs(self, monkeypatch):
         """Verify preprocess flags land on the right typed-input attributes."""

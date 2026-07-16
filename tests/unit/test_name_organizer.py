@@ -84,6 +84,12 @@ class TestCategorizeByFilename:
         ("IMG_1234.jpg", ("Media/Photos", "Camera")),
         ("PXL_20240101_123456.jpg", ("Media/Photos", "Camera")),
         ("20240101_123456.jpg", ("Media/Photos", "Camera")),
+        # Camera-vendor prefixes are single-homed in shared.constants and matched
+        # with re.IGNORECASE, so both DSC_ (Sony/Nikon) and its no-underscore
+        # variant, plus lowercase forms, route to Camera.
+        ("DSC_5678.jpg", ("Media/Photos", "Camera")),
+        ("DSC0001.JPG", ("Media/Photos", "Camera")),   # dsc_? — optional underscore
+        ("img_9.jpg", ("Media/Photos", "Camera")),      # IGNORECASE — lowercase prefix
         ("123_456_789_012_345_n.jpg", ("Media/Photos", "Social_Media")),
         # Game assets: image extensions route to the photo view
         ("char_a_01.png", ("Media/Photos", "Games")),

@@ -90,7 +90,7 @@ def cmd_migrate(args: argparse.Namespace) -> None:
     from storage.migration import run_migration_with_banner
 
     db_path = args.db_path or DEFAULT_DB_PATH
-    run_migration_with_banner(db_path)
+    run_migration_with_banner(db_path, dry_run=args.dry_run)
 
 
 def _prune_missing_edges(graph_store: Any, apply: bool) -> None:
@@ -445,6 +445,8 @@ For more help on a specific command:
     )
     migrate_parser.add_argument('--db-path', default=DEFAULT_DB_PATH,
                                 help='Path to SQLite database')
+    migrate_parser.add_argument('--dry-run', action='store_true',
+                                help='Preview the migration without writing any changes')
     migrate_parser.set_defaults(func=cmd_migrate)
 
     # Person symlink view (derived from graph edges)
