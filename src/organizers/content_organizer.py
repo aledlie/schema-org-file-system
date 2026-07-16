@@ -24,6 +24,8 @@ from src.organizers.mime_classifier import classify_by_mime
 from src.scoring.context import FileContext
 from src.scoring.registry import build_default_signals
 from src.scoring.scorer import Scorer
+from src.scoring.signals.clip_vision import GEOGRAPHIC_LABELS, map_clip_label
+from src.scoring.signals.identity_document import ID_MIN_TEXT_CHARS, detect_identity_document
 from src.scoring.types import (
     SCORER_LEGACY,
     SCORER_MODES,
@@ -254,13 +256,9 @@ class ContentOrganizer(BaseOrganizer):
     organizer stays constructible in lightweight/test contexts.
     """
 
-    _GEOGRAPHIC_LABELS = frozenset(
-        {
-            "a landscape or nature scene",
-            "a cityscape or urban scene",
-            "a building or architecture",
-        }
-    )
+    # Canonical set lives in src.scoring.signals.clip_vision; kept as a class
+    # attribute alias for backward compatibility with existing consumers.
+    _GEOGRAPHIC_LABELS = GEOGRAPHIC_LABELS
 
     # Subset of game_sprite_keywords that implies sprite (vs texture) classification.
     _SPRITE_DISCRIMINATOR_KEYWORDS = frozenset(
@@ -918,18 +916,15 @@ class ContentOrganizer(BaseOrganizer):
     def _map_clip_label(
         self, label: str, image_metadata: Optional[Dict[str, Any]] = None
     ) -> Optional[Tuple[str, str]]:
-        """Map a CLIP label to (category, subcategory), upgrading to travel if GPS present."""
-        mapping = CLIP_LABEL_TO_ORGANIZER.get(label)
-        if not mapping:
-            return None
-        cat, subcat = mapping
-        if (
-            image_metadata
-            and image_metadata.get("gps_coordinates")
-            and label in self._GEOGRAPHIC_LABELS
-        ):
-            cat, subcat = "media", "photos_travel"
-        return (cat, subcat)
+        """Map a CLIP label to (category, subcategory), upgrading to travel if GPS present.
+
+        Delegates to the pure ``map_clip_label`` in
+        ``src.scoring.signals.clip_vision`` (passing this module's
+        import-guarded ``CLIP_LABEL_TO_ORGANIZER``).
+        """
+        return map_clip_label(
+            label, image_metadata, CLIP_LABEL_TO_ORGANIZER, self._GEOGRAPHIC_LABELS
+        )
 
     def _merge_clip_text_scores(
         self,
@@ -1614,60 +1609,16 @@ class ContentOrganizer(BaseOrganizer):
         if KIE_AVAILABLE and _ocr_conf is not None and _ocr_conf >= _OCR_CONFIDENCE_THRESHOLD:
             self._last_file_state["kie_result"] = extract_kie_fields(file_path)
         _id_conf_ok = _ocr_conf is None or _ocr_conf >= _OCR_CONFIDENCE_THRESHOLD
-        if ocr_text and len(ocr_text) >= 30 and _id_conf_ok:
-            ocr_lower = ocr_text.lower()
-            # Check for identification document keywords
-            id_keywords = [
-                "passport",
-                "driver license",
-                "driver's license",
-                "identification",
-                "united states of america",
-                "department of state",
-                "nationality",
-                "date of birth",
-                "place of birth",
-                "surname",
-                "given names",
-                "social security",
-                "state id",
-                "national id",
-            ]
-            if any(kw in ocr_lower for kw in id_keywords):
+        if ocr_text and len(ocr_text) >= ID_MIN_TEXT_CHARS and _id_conf_ok:
+            # Keyword check + MRZ/name-field/extractor name parsing live in
+            # the pure detect_identity_document (src.scoring.signals.identity_document).
+            id_match = detect_identity_document(
+                ocr_text,
+                extract_people_names=self.classifier.extract_people_names,
+            )
+            if id_match is not None:
                 print("  ✓ Identification document detected via OCR")
-                people_names = []
-
-                # Method 1: Parse passport MRZ (Machine Readable Zone)
-                # Format: P<COUNTRY{SURNAME}<<{GIVEN_NAME}<...
-                mrz_match = re.search(r"P<[A-Z]{3}([A-Z]+)<<([A-Z]+)<", ocr_text)
-                if mrz_match:
-                    surname = mrz_match.group(1).title()
-                    given = mrz_match.group(2).title()
-                    people_names = [f"{given} {surname}"]
-
-                # Method 2: Look for name fields with values on next line or after colon
-                # Passport format: "Surname\nLEDLIE" or "Surname/Nom\nLEDLIE"
-                if not people_names:
-                    # Find surname (all caps, standalone on line)
-                    surname_match = re.search(
-                        r"(?:surname|nom|apellidos)[/\w\s]*\n\s*([A-Z]{2,})\b",
-                        ocr_text,
-                        re.IGNORECASE,
-                    )
-                    given_match = re.search(
-                        r"(?:given\s*names?|pr[ée]noms?|nombres)[/\w\s]*\n\s*([A-Z]{2,})\b",
-                        ocr_text,
-                        re.IGNORECASE,
-                    )
-                    if surname_match and given_match:
-                        people_names = [
-                            f"{given_match.group(1).title()} {surname_match.group(1).title()}"
-                        ]
-
-                # Method 3: General name extraction patterns
-                if not people_names:
-                    people_names = self.classifier.extract_people_names(ocr_text)
-
+                people_names = id_match.people_names
                 if people_names:
                     print(f"  ✓ Person identified: {people_names[0]}")
                 return (

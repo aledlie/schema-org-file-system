@@ -299,6 +299,91 @@ class ContentClassifier:
 
         return scores
 
+    def _count_category_scores(
+        self, combined: str
+    ) -> tuple[dict[str, int], dict[str, dict[str, int]]]:
+        """Occurrence-count scoring core shared by ``classify_content`` and
+        ``score_categories_detailed``.
+
+        Returns ``(scores, category_subcats)``: ``scores`` maps each hit
+        category to its total keyword-occurrence count; ``category_subcats``
+        maps hit categories to per-subcategory occurrence counts (only
+        subcategories with at least one hit are present, and categories whose
+        subcategory lists all missed are absent).
+        """
+        scores: dict[str, int] = defaultdict(int)
+        category_subcats: dict[str, dict[str, int]] = {}
+
+        for category, keywords in self._keywords_lower.items():
+            # Short-circuit: skip count() pass entirely if no keyword is present.
+            # `in` stops at first hit; count() always scans the full string.
+            if not any(kw in combined for kw in keywords):
+                continue
+
+            for keyword in keywords:
+                scores[category] += combined.count(keyword)
+
+            subcat_scores = {
+                sc: sum(combined.count(sk) for sk in sc_kws)
+                for sc, sc_kws in self._subcats_lower[category].items()
+                if any(sk in combined for sk in sc_kws)
+            }
+            if subcat_scores:
+                category_subcats[category] = subcat_scores
+
+        return scores, category_subcats
+
+    @staticmethod
+    def _resolve_best_subcategory(
+        category: str, category_subcats: dict[str, dict[str, int]]
+    ) -> str:
+        """Highest-scoring subcategory for *category*, or ``"other"``.
+
+        Exactly the resolution ``classify_content`` applies to its winning
+        category: occurrence-count max over the category's subcategory
+        keyword lists, defaulting to ``"other"`` when none hit.
+        """
+        subcat_scores = category_subcats.get(category)
+        if subcat_scores:
+            return max(subcat_scores.items(), key=lambda x: x[1])[0]
+        return "other"
+
+    def score_categories_detailed(
+        self, text: str, filename: str = ""
+    ) -> dict[str, tuple[str, float]]:
+        """Subcategory-aware keyword scoring across ALL hit categories.
+
+        Returns ``{category: (best_subcategory, normalized_score)}`` where
+        ``normalized_score`` is that category's occurrence-count total divided
+        by the max category total (the top category scores 1.0), and
+        ``best_subcategory`` is resolved exactly as ``classify_content``
+        resolves its winner (occurrence-count max over the category's
+        subcategory lists, ``"other"`` default).
+
+        Pure keyword counting only — the entity-dependent adjustments of
+        ``classify_content`` (the known-company shortcut and the
+        business+company → ``clients`` subcategory override) are deliberately
+        excluded; callers that need them use ``classify_content`` for the
+        winner. Empty text returns ``{}`` (mirroring ``classify_content``'s
+        empty-text early return, even when the filename alone would match).
+        """
+        if not text:
+            return {}
+
+        combined = f"{text.lower()} {filename.lower()}"
+        scores, category_subcats = self._count_category_scores(combined)
+        if not scores:
+            return {}
+
+        max_total = max(scores.values())
+        return {
+            category: (
+                self._resolve_best_subcategory(category, category_subcats),
+                total / max_total,
+            )
+            for category, total in scores.items()
+        }
+
     def classify_content(
         self,
         text: str,
@@ -387,25 +472,7 @@ class ContentClassifier:
         # not the first-listed subcategory with any hit (the old behavior gave
         # every matched subcategory an identical copy of the category total,
         # making max() a dict-insertion-order tie-break).
-        scores: dict[str, int] = defaultdict(int)
-        category_subcats: dict[str, dict[str, int]] = {}
-
-        for category, keywords in self._keywords_lower.items():
-            # Short-circuit: skip count() pass entirely if no keyword is present.
-            # `in` stops at first hit; count() always scans the full string.
-            if not any(kw in combined for kw in keywords):
-                continue
-
-            for keyword in keywords:
-                scores[category] += combined.count(keyword)
-
-            subcat_scores = {
-                sc: sum(combined.count(sk) for sk in sc_kws)
-                for sc, sc_kws in self._subcats_lower[category].items()
-                if any(sk in combined for sk in sc_kws)
-            }
-            if subcat_scores:
-                category_subcats[category] = subcat_scores
+        scores, category_subcats = self._count_category_scores(combined)
 
         if not scores:
             return ('uncategorized', 'other', primary_company, people_names)
@@ -414,14 +481,7 @@ class ContentClassifier:
         best_category = max(scores.items(), key=lambda x: x[1])[0]
 
         # Get subcategory with highest score for this category
-        if best_category in category_subcats:
-            subcat_scores = category_subcats[best_category]
-            if subcat_scores:
-                best_subcategory = max(subcat_scores.items(), key=lambda x: x[1])[0]
-            else:
-                best_subcategory = 'other'
-        else:
-            best_subcategory = 'other'
+        best_subcategory = self._resolve_best_subcategory(best_category, category_subcats)
 
         # If we detected a company (either directly or via person relationship)
         # and it's business-related, use clients subcategory
