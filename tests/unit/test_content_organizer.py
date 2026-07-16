@@ -16,6 +16,7 @@ from src.organizers.content_organizer import (
     RESEARCH_CATEGORY,
     SCHOLARLY_ARTICLE_SCHEMA_TYPE,
     ContentOrganizer,
+    _mime_result_to_content_category,
 )
 
 MODULE = "src.organizers.content_organizer"
@@ -1197,6 +1198,79 @@ class TestDetectFileCategoryPriorities:
         cat, subcat, schema_type, *_ = org.detect_file_category(Path("album_01.m4a"))
         assert (cat, subcat) == ("media", "audio_music")
         assert schema_type == "AudioObject"
+
+    def test_uncategorized_image_falls_back_to_mime(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        # A .gif with no extractable text and no CLIP rescue reaches Priority 6
+        # uncategorized; the MIME fallback routes it to media/graphics_other
+        # instead of Uncategorized.
+        org = self._stubbed_organizer(tmp_path, mock_classifier, "image/gif")
+        org.classify_by_filename_patterns = MagicMock(return_value=None)
+        org.enhance_weak_image_classification = MagicMock(return_value=None)
+        cat, subcat, *_ = org.detect_file_category(Path("/pics/animation.gif"))
+        assert (cat, subcat) == ("media", "graphics_other")
+
+
+# ------------------------------------------------------------------ #
+# _mime_result_to_content_category (last-resort format translation)     #
+# ------------------------------------------------------------------ #
+
+class TestMimeResultToContentCategory:
+    @pytest.mark.parametrize(
+        "mime_result,expected",
+        [
+            (("images", "graphics"), ("media", "graphics_other")),
+            (("images", "photos"), ("media", "photos_other")),
+            (("images", "screenshots"), ("media", "photos_screenshots")),
+            (("media", "videos"), ("media", "videos_other")),
+            (("media", "music"), ("media", "audio_music")),
+            (("media", "audio"), ("media", "audio_other")),
+            (("fonts", "truetype"), ("fonts", "truetype")),
+            (("software", "packages"), ("technical", "software_packages")),
+            (("code", "python"), ("technical", "other")),
+            (("code", "web"), ("technical", "web")),
+            (("data", "json"), ("technical", "data")),
+            (("data", "config"), ("technical", "config")),
+            (("research", "papers"), ("research", "other")),
+        ],
+    )
+    def test_translates_into_content_taxonomy(
+        self, mime_result: tuple, expected: tuple
+    ) -> None:
+        assert _mime_result_to_content_category(*mime_result) == expected
+
+    @pytest.mark.parametrize(
+        "mime_result",
+        [("documents", "pdf"), ("archives", "zip"), ("other", "other")],
+    )
+    def test_no_content_home_returns_none(self, mime_result: tuple) -> None:
+        # Text-classifiable / homeless formats stay uncategorized.
+        assert _mime_result_to_content_category(*mime_result) is None
+
+    def test_all_targets_resolve_in_content_taxonomy(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        # Every translated (category, subcategory) must produce a real path (not
+        # the Uncategorized default) via get_destination_path.
+        org = ContentOrganizer(base_path=tmp_path, content_classifier=mock_classifier)
+        for mime_result in [
+            ("images", "graphics"),
+            ("images", "photos"),
+            ("images", "screenshots"),
+            ("media", "videos"),
+            ("media", "music"),
+            ("media", "audio"),
+            ("fonts", "truetype"),
+            ("software", "packages"),
+            ("code", "python"),
+            ("data", "json"),
+            ("research", "papers"),
+        ]:
+            translated = _mime_result_to_content_category(*mime_result)
+            assert translated is not None
+            dest = org.get_destination_path(Path("/x/f.bin"), translated[0], translated[1])
+            assert "Uncategorized" not in str(dest)
 
 
 # ------------------------------------------------------------------ #

@@ -18,7 +18,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 from src.classifiers.entity_detector import _has_human_name_signal
 from src.organizers.base_organizer import BaseOrganizer
-from src.organizers.category_config import CONTENT_CATEGORY_PATHS
+from src.organizers.category_config import CONTENT_CATEGORY_PATHS, FONTS_PATHS
+from src.organizers.mime_classifier import classify_by_mime
 from shared.constants import (
     GAME_AUDIO_KEYWORDS,
     GAME_FONT_KEYWORDS,
@@ -173,6 +174,49 @@ _LEGAL_SIGNAL_MIN_HITS = 2
 _DOCUMENT_CONTENT_CATEGORIES = frozenset(
     {"financial", "medical", "legal", "business", "personal", "technical", "research", "education"}
 )
+
+
+# Translation from ``classify_by_mime``'s ``CATEGORY_PATHS`` namespace
+# (``images``/``code``/``data``/…, absent from ``CONTENT_CATEGORY_PATHS``) into
+# the content taxonomy. Each mime category maps to a {subcategory: content
+# (cat, subcat)} branch; the ``None`` key is the default for any other
+# subcategory of that category — so new ``classify_by_mime`` subcats route
+# sensibly instead of falling through to uncategorized. Media targets use the
+# underscored ``media_type_subcat`` form that ``get_destination_path`` resolves.
+# Categories absent here (documents, archives, generic ``other``) have no
+# content home: they are text-classifiable types that stay uncategorized rather
+# than being force-filed. ``fonts`` passes subcategories through unchanged,
+# keying off ``FONTS_PATHS`` as the single source for its subcategory set.
+_MIME_TO_CONTENT: Dict[str, Dict[Optional[str], Tuple[str, str]]] = {
+    "images": {
+        "screenshots": ("media", "photos_screenshots"),
+        "graphics": ("media", "graphics_other"),
+        None: ("media", "photos_other"),  # photos / other
+    },
+    "media": {
+        "music": ("media", "audio_music"),
+        "videos": ("media", "videos_other"),
+        None: ("media", "audio_other"),  # audio
+    },
+    "software": {None: ("technical", "software_packages")},
+    "code": {"web": ("technical", "web"), None: ("technical", "other")},
+    "data": {"config": ("technical", "config"), None: ("technical", "data")},
+    "research": {None: ("research", "other")},
+    "fonts": {k: ("fonts", k) for k in FONTS_PATHS},  # identity passthrough
+}
+
+
+def _mime_result_to_content_category(category: str, subcategory: str) -> Optional[Tuple[str, str]]:
+    """Translate a ``classify_by_mime`` result into the content taxonomy.
+
+    Returns the content (category, subcategory) that ``get_destination_path``
+    resolves, or ``None`` for formats with no content home (documents, archives,
+    generic ``other``) — see ``_MIME_TO_CONTENT`` for the mapping rationale.
+    """
+    branch = _MIME_TO_CONTENT.get(category)
+    if branch is None:
+        return None
+    return branch.get(subcategory, branch.get(None))
 
 
 class ContentOrganizer(BaseOrganizer):
@@ -1567,6 +1611,16 @@ class ContentOrganizer(BaseOrganizer):
                     [],
                     image_metadata,
                 )
+
+        # Final fallback: route by MIME/extension when no content signal produced
+        # a category. Rescues binary media (gif/webp/video/audio/fonts) that carry
+        # no extractable text and would otherwise land in Uncategorized.
+        if category == "uncategorized":
+            mime_category, mime_subcategory, _ = classify_by_mime(file_path, None)
+            fallback = _mime_result_to_content_category(mime_category, mime_subcategory)
+            if fallback is not None:
+                category, subcategory = fallback
+                print(f"  ✓ MIME fallback: {category}/{subcategory}")
 
         return (
             category,
