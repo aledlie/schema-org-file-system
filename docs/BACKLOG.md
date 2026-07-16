@@ -1,9 +1,21 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-07-15.
+Last updated: 2026-07-16.
 
 ## Open Items
+
+### Timeline data pinned to committed JSON — needs a populated DB
+
+`_site/timeline_data.json` is a stale committed snapshot; the current DB has no sessions to regenerate it from.
+
+**Status:** Open — workaround in place (restored committed JSON).
+**Priority:** P4
+**Source:** timeline doc-consolidation session, 2026-07-16
+
+`organize-files timeline` reads `organization_sessions` from `results/file_organization.db` and writes `_site/timeline_data.json` (fixed `OUTPUT_PATH`; only `--db-path` is configurable). Running it 2026-07-16 produced an **empty** document (0 sessions / 0 files): the current DB is a fresh/test state with `organization_sessions` = 0 rows (199 `files` rows, all `NULL session_id`). The committed `timeline_data.json` (**15 sessions / 41,614 files**) was restored from git so `timeline.html` still renders real data.
+
+To move off the pinned snapshot: point at a DB that has real `organization_sessions` rows (run live/dry-run organization passes that record sessions, or restore the source DB that produced the committed JSON), then `organize-files timeline` to regenerate. Until then the committed JSON is the source of truth and must not be overwritten by a run against the empty DB. Schema + CLI reference: [`docs/TIMELINE.md`](TIMELINE.md#data-structure-reference).
 
 ### Person-graph edge hygiene
 
