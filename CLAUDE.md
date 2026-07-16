@@ -160,7 +160,7 @@ pip install -e ".[all]" && brew install tesseract poppler
 
 ## Schema.org Reference
 
-See [`docs/SCHEMA_ORG_ARCHITECTURE.md`](docs/SCHEMA_ORG_ARCHITECTURE.md) for type mappings, IRI generation, JSON-LD context, per-entity `to_schema_org()` implementations, and relationship rules.
+See [`docs/SCHEMA_ORG_ARCHITECTURE.md`](docs/SCHEMA_ORG_ARCHITECTURE.md) for type mappings, IRI generation, JSON-LD context, the `build_*_jsonld` builder pattern (each `to_schema_org()` delegates), and relationship rules.
 
 ## REST API
 

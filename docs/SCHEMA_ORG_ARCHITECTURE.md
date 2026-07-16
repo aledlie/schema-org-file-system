@@ -135,7 +135,7 @@ All relationships use `@id` references only — no inline embedding.
 
 | Relationship | Property | Notes |
 |---|---|---|
-| File → Category | `about` | Array of DefinedTerm refs |
+| File → Category | `mainEntityOfPage` + `about` | Primary category → `mainEntityOfPage` (single ref); remaining → `about` (array) |
 | File → Company | `mentions` | Array of Organization refs |
 | File → Person | `mentions` | Array of Person refs |
 | File → Location | `spatialCoverage` | Place ref (scalar or array) |
@@ -175,160 +175,57 @@ Context document served at `GET /schema/context` via `src/storage/schema_org_con
 
 ---
 
-## Implementation Examples
+## Implementation
 
-### File
+Serialization lives in **pure builder functions** in `src/storage/models.py`
+(`build_file_jsonld`, `build_category_jsonld`, `build_company_jsonld`,
+`build_person_jsonld`, `build_location_jsonld`, plus the shared
+`build_file_relationships` and the `file_iri` IRI helper). These are the single
+source of truth for JSON-LD output.
 
-```python
-def get_iri(self) -> str:
-    return self.canonical_id or f"urn:sha256:{self.id}"
-
-def to_schema_org(self) -> Dict[str, Any]:
-    schema_type = self.schema_type or self.get_schema_type_from_mime(self.mime_type)
-    result = {
-        "@context": "https://schema.org",
-        "@type": schema_type,
-        "@id": self.get_iri(),
-        "name": self.filename,
-    }
-    if self.created_at:   result["dateCreated"]    = self.created_at.isoformat()
-    if self.modified_at:  result["dateModified"]   = self.modified_at.isoformat()
-    if self.mime_type:    result["encodingFormat"]  = self.mime_type
-    if self.file_size:    result["contentSize"]     = str(self.file_size)
-    if self.original_path: result["url"]            = self.original_path
-    if self.extracted_text: result["text"]          = self.extracted_text[:2000]
-
-    if schema_type == "ImageObject":
-        if self.image_width:   result["width"]  = self.image_width
-        if self.image_height:  result["height"] = self.image_height
-        if self.gps_latitude and self.gps_longitude:
-            result["contentLocation"] = {
-                "@type": "Place",
-                "geo": {"@type": "GeoCoordinates",
-                        "latitude": self.gps_latitude,
-                        "longitude": self.gps_longitude}
-            }
-
-    result.update(self._build_relationships())
-    return result
-
-def _build_relationships(self) -> Dict[str, Any]:
-    rel = {}
-    if self.categories:
-        rel["about"] = [{"@type": "DefinedTerm", "@id": c.get_iri(), "name": c.name}
-                        for c in self.categories]
-    mentions = (
-        [{"@type": "Organization", "@id": c.get_iri(), "name": c.name} for c in self.companies] +
-        [{"@type": "Person",       "@id": p.get_iri(), "name": p.name} for p in self.people]
-    )
-    if mentions:
-        rel["mentions"] = mentions
-    if self.locations:
-        locs = [{"@type": "Place", "@id": l.get_iri(), "name": l.name} for l in self.locations]
-        rel["spatialCoverage"] = locs[0] if len(locs) == 1 else locs
-    return rel
-```
-
-### Category
+Each entity's `to_schema_org()` is a **thin delegator** to its builder:
 
 ```python
-def get_iri(self) -> str:
-    return f"urn:uuid:{self.canonical_id}" if self.canonical_id else f"urn:uuid:{self.id}"
-
+# src/storage/models.py — Location example (all five entities follow this shape)
 def to_schema_org(self) -> Dict[str, Any]:
-    result = {
-        "@context": "https://schema.org",
-        "@type": "DefinedTerm",
-        "@id": self.get_iri(),
-        "name": self.name,
-        "definition": self.description or f"Category: {self.name}",
-        "inDefinedTermSet": {"@type": "DefinedTermSet",
-                             "@id": "urn:uuid:categories-taxonomy",
-                             "name": "File Organization Categories"},
-        "fileCount": self.file_count or 0,
-        "hierarchyLevel": self.level or 0,
-    }
-    if self.full_path:
-        result["identifier"] = self.full_path.lower().replace('/', '-')
-    if self.parent:
-        result["broader"] = {"@type": "DefinedTerm", "@id": self.parent.get_iri(),
-                             "name": self.parent.name}
-    if self.subcategories:
-        result["narrower"] = [{"@type": "DefinedTerm", "@id": s.get_iri(), "name": s.name}
-                              for s in self.subcategories]
-    if self.icon:  result["icon"]  = self.icon
-    if self.color: result["color"] = self.color
-    return result
+    """Convert Location to schema.org JSON-LD (delegates to build_location_jsonld)."""
+    return build_location_jsonld(self)
 ```
 
-### Company
+Builders take column values (and, for `File`, sequences of related entities)
+rather than an ORM instance, so they run identically over:
+
+- an **ORM instance** — the `to_schema_org()` path, and
+- a **lightweight Core-query row** — `SchemaOrgExporter(use_core=True)`, the
+  streaming bulk-export path (the default).
+
+Both paths produce byte-identical output; parity is locked by
+`tests/integration/test_core_export_parity.py`.
+
+> **When changing serialization, edit the builder — not `to_schema_org()`.**
+> The methods only delegate; editing them (or reintroducing inline
+> serialization) breaks the ORM ↔ Core-export parity the tests enforce.
+
+### File builder (representative)
+
+`build_file_jsonld(f, categories, companies, people, locations)` maps columns to
+schema.org properties (`@type` from `schema_type` or the MIME fallback, `@id`
+from `file_iri()`, `dateCreated`/`dateModified`, `encodingFormat`, `contentSize`,
+`url`, truncated `text`, `inLanguage`, and `ImageObject` `width`/`height`/`geo`),
+then merges the relationship block from `build_file_relationships()`:
 
 ```python
-def to_schema_org(self) -> Dict[str, Any]:
-    result = {
-        "@context": "https://schema.org",
-        "@type": "Organization",
-        "@id": self.get_iri(),
-        "name": self.name,
-        "mentionCount": self.file_count or 0,
-    }
-    if self.domain:
-        url = self.domain if self.domain.startswith(('http://', 'https://')) else f"https://{self.domain}"
-        result["url"] = url
-        result["sameAs"] = [url]
-    if self.industry:   result["knowsAbout"]   = self.industry
-    if self.first_seen: result["dateCreated"]  = self.first_seen.isoformat()
-    if self.last_seen:  result["dateModified"] = self.last_seen.isoformat()
-    return result
+# build_file_relationships — the canonical relationship shape
+# Primary category  -> mainEntityOfPage (single DefinedTerm ref)
+# Remaining categories -> about (list of DefinedTerm refs)
+# Companies + people   -> mentions (Organization / Person refs)
+# Locations            -> spatialCoverage (single ref, or list when >1)
 ```
 
-### Person
-
-```python
-def to_schema_org(self) -> Dict[str, Any]:
-    result = {
-        "@context": "https://schema.org",
-        "@type": "Person",
-        "@id": self.get_iri(),
-        "name": self.name,
-        "mentionCount": self.file_count or 0,
-    }
-    if self.email:      result["email"]        = self.email
-    if self.role:       result["jobTitle"]     = self.role
-    if self.first_seen: result["dateCreated"]  = self.first_seen.isoformat()
-    if self.last_seen:  result["dateModified"] = self.last_seen.isoformat()
-    return result
-```
-
-### Location
-
-```python
-def infer_schema_type(self) -> str:
-    if self.country and not self.state and not self.city: return "Country"
-    if self.city: return "City"
-    return "Place"
-
-def to_schema_org(self) -> Dict[str, Any]:
-    result = {
-        "@context": "https://schema.org",
-        "@type": self.infer_schema_type(),
-        "@id": self.get_iri(),
-        "name": self.name,
-        "mentionCount": self.file_count or 0,
-    }
-    address = {}
-    if self.city:    address["addressLocality"] = self.city
-    if self.state:   address["addressRegion"]   = self.state
-    if self.country: address["addressCountry"]  = self.country[:2]
-    if address:
-        result["address"] = {"@type": "PostalAddress", **address}
-    if self.latitude is not None and self.longitude is not None:
-        result["geo"] = {"@type": "GeoCoordinates",
-                         "latitude": self.latitude, "longitude": self.longitude}
-    if self.geohash:    result["geoHash"]     = self.geohash
-    if self.created_at: result["dateCreated"] = self.created_at.isoformat()
-    return result
-```
+All relationships are emitted as `@id` references (`get_iri()` + `name`), never
+inline-embedded entities. See the builder source for the exact per-property
+conditionals; the other four builders follow the same column-to-property pattern
+described in the **Entity Details** section above.
 
 ---
 
