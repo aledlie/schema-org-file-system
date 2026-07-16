@@ -6,16 +6,16 @@
 
 **Result: 53 confirmed findings** (5 high, 45 medium, 3 low), grouped into 7 duplication zones below.
 
-**Resolution status (updated 2026-07-14, after merging both parallel sessions):** 18 of 53 findings resolved, ~35 open. The entire Timeline zone (7 findings) was consolidated into a single `TimelineAPI` class with the script reduced to a launcher (`a2146fe`); the three game-keyword tables (`GAME_{FONT,AUDIO,MUSIC}_KEYWORDS`) were single-homed in `shared.constants` (`cc06190`); the two `_IMAGE_EXTENSIONS` copies were derived from `shared.constants` (`4a0d98d`, `ecdcdf6`); the format-classifier consolidation retired the duplicate `FileTypeOrganizer.type_mapping / get_category_for_file` (`148b16d`) and the `software_extensions + archive_extensions` vocabulary (`6521f65`, `1b1f3e9`, `c010ee4`, `baf34d0`, `148b16d`); `DEFAULT_DB_PATH` was single-sourced from `src/constants.py` (`5dcab58`); and three standalone findings (`ae561f8`, `42a5ae3`, `f085830`) landed. See each finding's per-section resolution note below.
+**Resolution status (updated 2026-07-15):** 34 of 53 findings resolved, ~19 open. The entire Timeline zone (7 findings) was consolidated into a single `TimelineAPI` class with the script reduced to a launcher (`a2146fe`); the three game-keyword tables (`GAME_{FONT,AUDIO,MUSIC}_KEYWORDS`) were single-homed in `shared.constants` (`cc06190`); the two `_IMAGE_EXTENSIONS` copies were derived from `shared.constants` (`4a0d98d`, `ecdcdf6`); the format-classifier consolidation retired the duplicate `FileTypeOrganizer.type_mapping / get_category_for_file` (`148b16d`) and the `software_extensions + archive_extensions` vocabulary (`6521f65`, `1b1f3e9`, `c010ee4`, `baf34d0`, `148b16d`); `DEFAULT_DB_PATH` was single-sourced from `src/constants.py` (`5dcab58`); three standalone findings (`ae561f8`, `42a5ae3`, `f085830`) landed; the schema regeneration zone (2 findings) was fixed in `3758e8a`, `a72bdc9`; the entire D1 DDL zone (11 findings, excluding `42a5ae3`) was auto-generated via `generate_schema.py` in `6faa5c1`; and KIE constants (`KIE_MIN_CONFIDENCE`, field-class groups) were single-sourced in `kie_schema_mapping.py` (current commit). See each finding's per-section resolution note below.
 
 **Structural note that keeps this list honest:** `src/` imports heavily *from* `scripts/shared` (`GAME_SPRITE_KEYWORDS`, `SCREENSHOT_KEYWORDS`, `SCREENSHOT_PATTERNS`/`DOCUMENT_PATTERNS`, `IMAGE_EXTENSIONS_WIDE`, `classify_by_ocr`, `kie_*` are single-sourced via `from shared.x import y`). Those were spot-checked and are shared single sources, not copies — everything listed below is a genuine second implementation or second data table.
 
 ## Recommended priority order
 
 1. ~~Consolidate the timeline exporter (or delete the orphaned `TimelineAPI` export path) — two writers emit incompatible schemas to the same `_site/timeline_data.json`.~~ **DONE (`a2146fe`)** — folded into the `TimelineAPI` class; `scripts/generate_timeline_data.py` is now a launcher and there is a single writer of the artifact.
-2. Fix `regenerate_schemas.py` metadata-dropping drift (regeneration silently loses ScholarlyArticle/CLIP properties src now emits).
+2. ~~Fix `regenerate_schemas.py` metadata-dropping drift (regeneration silently loses ScholarlyArticle/CLIP properties src now emits).~~ **DONE (`3758e8a`, `a72bdc9`)** — `preserve_keys` now includes `identifier/sameAs/publisher/description`; dispatch table expanded to Video/Audio/Code/Dataset/Archive.
 3. ~~Single-home the game keyword tables (union the bidirectional fixes; re-run the eval).~~ **DONE (`cc06190`)** — `GAME_{FONT,AUDIO,MUSIC}_KEYWORDS` single-homed in `shared.constants` and imported by `ContentOrganizer`, unioning the bidirectional divergence (eval re-run confirmed no regression; see the three resolved findings below).
-4. Auto-generate `scripts/d1/schema.sql` from `Base.metadata` (whole `merge_events` table is missing).
+4. ~~Auto-generate `scripts/d1/schema.sql` from `Base.metadata` (whole `merge_events` table is missing).~~ **DONE (`6faa5c1`)** — `scripts/d1/generate_schema.py` added; `schema.sql` now carries the "do not hand-edit" header and includes all 15 ORM tables including `merge_events`.
 5. The rest opportunistically, when the owning script is next touched.
 
 ## Timeline generation — `scripts/generate_timeline_data.py` vs `src/api/timeline_api.py`
@@ -91,7 +91,9 @@ Both sides build and write the same artifact `_site/timeline_data.json` with alr
 
 Diverged copy with verbatim shared lines (`file_url = f"https://localhost/files/{quote(...)}"` occurs exactly twice in the repo — once on each side). Drift already bites: the script's `preserve_keys` list omits `identifier`/`sameAs`/`publisher`/`description`, so regenerating schemas silently drops the ScholarlyArticle and CLIP metadata that src now emits. Extract a shared schema-builder in src with optional `entity_id`/preserve-keys parameters and have the script delegate. Related backlog item: the script also mirrors the src generator import list.
 
-### [HIGH] regenerate_schema
+> **Resolved (`a72bdc9`, `3758e8a`) — both findings below.** The original HIGH finding (drift/preserve_keys) and the MEDIUM finding (incomplete dispatch table) were addressed together: `a72bdc9` added `identifier/sameAs/publisher/description` to `preserve_keys` and switched to the `src` package boundary import; `3758e8a` expanded `get_generator_for_type` to the full dispatch table (Video/Audio/Code/Dataset/Archive) and fixed a multi-type crash where the old `set_basic_info` builder raised `TypeError` for non-Document generators. The script is now a SQLite-batch iteration shell around its own `regenerate_schema()` helper; the fuller dispatch (item 3 below) differs from src's `generate_schema` because the script intentionally threads `entity_id` and `preserve_keys` that the live pipeline doesn't need. The individual findings are retained for the historical record.
+
+### [HIGH] regenerate_schema — RESOLVED (`a72bdc9`, `3758e8a`)
 
 - **Kind:** diverged-copy
 - **Script:** `scripts/regenerate_schemas.py:66-154`
@@ -100,7 +102,7 @@ Diverged copy with verbatim shared lines (`file_url = f"https://localhost/files/
 - **Divergence:** Script threads entity_id (canonical_id) into generators to emit @id, guards on file_path.exists(), uses raw file_path.stat() instead of src's cached_stat, and merges preserve_keys ('abstract','text','keywords','author','creator','width','height','duration','bitrate') from the existing DB schema. src version instead adds extracted-text abstract/text properties (truncated to 1000/5000 chars), ScholarlyArticle publisher/identifier/sameAs metadata, and a CLIP-derived description; src sets description unconditionally while the script conditions on truthiness.
 - **Recommendation:** Extract a shared schema-builder in src (e.g. give FileProcessor.generate_schema — or a standalone function it calls — optional entity_id and existing_schema/preserve-keys parameters), then have regenerate_schemas.py delegate to it, keeping only the SQLite batch iteration and @id verification in the script.
 
-### [MEDIUM] get_generator_for_type
+### [MEDIUM] get_generator_for_type — RESOLVED (`3758e8a`)
 
 - **Kind:** partial-overlap
 - **Script:** `scripts/regenerate_schemas.py:39-63`
@@ -145,7 +147,9 @@ Diverged copy with verbatim shared lines (`file_url = f"https://localhost/files/
 
 Hand-maintained D1 DDL mirroring the ORM table-for-table, already stale: `files` is missing `ocr_confidence`, `detected_language`, `kie_fields`; the entire `merge_events` table (~18 columns) has no CREATE TABLE at all. Recommendation common to all rows: generate the DDL from `Base.metadata` (`sqlalchemy.schema.CreateTable(...).compile(dialect=sqlite)`) via a small generator invoked from `scripts/d1/export_to_d1.py`, so ORM columns can never silently drift out of the D1 schema.
 
-### [MEDIUM] CREATE TABLE files
+> **Resolved (`6faa5c1`) — entire zone (except file_categories/file_companies/file_people/file_locations, already resolved at `42a5ae3`).** `scripts/d1/generate_schema.py` was added; it drives SQLAlchemy's `CreateTable`/`CreateIndex` DDL compiler over `Base.metadata.sorted_tables` with `IF NOT EXISTS` and the SQLite dialect, then writes `scripts/d1/schema.sql`. The file now carries the header "Auto-generated from src/storage/models.py — do not hand-edit." All previously missing columns and tables (including the full `merge_events` table) are present. The `6faa5c1` commit also corrected duplicate ORM index declarations that had been preventing clean generation, and added the missing `session_id` and `parent_id` indexes that the old hand-maintained file had but the ORM lacked. The individual findings below are retained for the historical record.
+
+### [MEDIUM] CREATE TABLE files — RESOLVED (`6faa5c1`)
 
 - **Kind:** diverged-copy
 - **Script:** `scripts/d1/schema.sql:12-52`
@@ -154,7 +158,7 @@ Hand-maintained D1 DDL mirroring the ORM table-for-table, already stale: `files`
 - **Divergence:** SQL is missing three ORM columns added since it was written: ocr_confidence (models.py:179), detected_language (models.py:180), kie_fields (models.py:185). SQL also declares ix_files_session_id (schema.sql:52) which the ORM never defines (session_id at models.py:201 has no index=True).
 - **Recommendation:** Stop hand-maintaining; regenerate schema.sql from Base.metadata (sqlalchemy.schema.CreateTable(...).compile(dialect=sqlite.dialect()) per table) via a small generator invoked from scripts/d1/export_to_d1.py or a make target, so ORM columns can never silently drift out of the D1 DDL.
 
-### [MEDIUM] CREATE TABLE categories
+### [MEDIUM] CREATE TABLE categories — RESOLVED (`6faa5c1`)
 
 - **Kind:** diverged-copy
 - **Script:** `scripts/d1/schema.sql:55-75`
@@ -172,7 +176,7 @@ Hand-maintained D1 DDL mirroring the ORM table-for-table, already stale: `files`
 - **Divergence:** SQL has 'website TEXT' (schema.sql:84) but the ORM column is domain (models.py:465). SQL is missing merged_into_id (models.py:461) and first_seen (models.py:470), and carries db_created_at/db_updated_at (schema.sql:88-89) which do not exist on the Company model at all.
 - **Recommendation:** Regenerate from Base.metadata; the website-vs-domain rename alone means any column-name-driven export into this table breaks.
 
-### [MEDIUM] CREATE TABLE people
+### [MEDIUM] CREATE TABLE people — RESOLVED (`6faa5c1`)
 
 - **Kind:** diverged-copy
 - **Script:** `scripts/d1/schema.sql:96-111`
@@ -181,7 +185,7 @@ Hand-maintained D1 DDL mirroring the ORM table-for-table, already stale: `files`
 - **Divergence:** SQL is missing merged_into_id (models.py:552) and first_seen (models.py:561); SQL's db_created_at/db_updated_at (schema.sql:106-107) have no counterpart columns on the Person model.
 - **Recommendation:** Regenerate from Base.metadata so merge-tracking and first_seen columns exist in D1.
 
-### [MEDIUM] CREATE TABLE locations
+### [MEDIUM] CREATE TABLE locations — RESOLVED (`6faa5c1`)
 
 - **Kind:** diverged-copy
 - **Script:** `scripts/d1/schema.sql:114-130`
@@ -200,7 +204,7 @@ Hand-maintained D1 DDL mirroring the ORM table-for-table, already stale: `files`
 - **Divergence:** The ORM composite primary keys (two primary_key=True columns per table) were transcribed as two inline 'PRIMARY KEY' declarations per table (e.g. 'file_id TEXT PRIMARY KEY, category_id INTEGER PRIMARY KEY', schema.sql:134-135, also 146-147, 159-160, 172-173). That is invalid SQLite — 'table has more than one primary key' — so these four CREATE TABLEs fail when the file is piped to wrangler d1 execute (the documented usage in export_to_d1.py:86).
 - **Recommendation:** Regenerate from Base.metadata, which emits the correct 'PRIMARY KEY (file_id, category_id)' table constraint form.
 
-### [MEDIUM] CREATE TABLE file_relationships
+### [MEDIUM] CREATE TABLE file_relationships — RESOLVED (`6faa5c1`)
 
 - **Kind:** diverged-copy
 - **Script:** `scripts/d1/schema.sql:184-199`
@@ -209,7 +213,7 @@ Hand-maintained D1 DDL mirroring the ORM table-for-table, already stale: `files`
 - **Divergence:** SQL column 'metadata JSON' (schema.sql:190) vs ORM extra_data (models.py:998); SQL 'db_created_at' (schema.sql:191) vs ORM created_at (models.py:1001).
 - **Recommendation:** Regenerate from Base.metadata so the metadata/extra_data rename and timestamp name are reconciled.
 
-### [MEDIUM] CREATE TABLE organization_sessions
+### [MEDIUM] CREATE TABLE organization_sessions — RESOLVED (`6faa5c1`)
 
 - **Kind:** diverged-copy
 - **Script:** `scripts/d1/schema.sql:202-218`
@@ -218,7 +222,7 @@ Hand-maintained D1 DDL mirroring the ORM table-for-table, already stale: `files`
 - **Divergence:** SQL names the start timestamp created_at (schema.sql:214, plus index ix_organization_sessions_created_at at :218) but the ORM column is started_at (models.py:1023, indexed). SQL also adds NOT NULL to base_path which the ORM does not declare (models.py:1029).
 - **Recommendation:** Regenerate from Base.metadata; the created_at/started_at mismatch breaks any name-based insert or query against D1.
 
-### [MEDIUM] CREATE TABLE cost_records
+### [MEDIUM] CREATE TABLE cost_records — RESOLVED (`6faa5c1`)
 
 - **Kind:** diverged-copy
 - **Script:** `scripts/d1/schema.sql:221-236`
@@ -227,7 +231,7 @@ Hand-maintained D1 DDL mirroring the ORM table-for-table, already stale: `files`
 - **Divergence:** SQL is missing error_message (models.py:1074). Constraints on cost vs processing_time_sec are swapped: SQL has 'cost REAL NOT NULL, processing_time_sec REAL DEFAULT 0.0' (schema.sql:226-227) while the ORM has processing_time_sec nullable=False and cost default=0.0 (models.py:1071-1072). The composite index ix_cost_feature_date (models.py:1084) is absent from SQL.
 - **Recommendation:** Regenerate from Base.metadata to restore error_message, correct the swapped NOT NULL/default, and add the composite index.
 
-### [MEDIUM] CREATE TABLE schema_metadata
+### [MEDIUM] CREATE TABLE schema_metadata — RESOLVED (`6faa5c1`)
 
 - **Kind:** diverged-copy
 - **Script:** `scripts/d1/schema.sql:239-247`
@@ -236,7 +240,7 @@ Hand-maintained D1 DDL mirroring the ORM table-for-table, already stale: `files`
 - **Divergence:** Severely drifted: SQL has schema_version (schema.sql:242) which no longer exists in the ORM, and is missing schema_type (models.py:1100), schema_json JSON NOT NULL (models.py:1102), is_valid (1105), and validation_errors (1106). SQL types schema_context as JSON vs ORM String default 'https://schema.org' (1101); timestamps db_created_at/db_updated_at vs ORM created_at/updated_at (1109-1110).
 - **Recommendation:** Regenerate from Base.metadata — the current SQL cannot even hold the model's NOT NULL schema_json payload.
 
-### [MEDIUM] CREATE TABLE key_value_store
+### [MEDIUM] CREATE TABLE key_value_store — RESOLVED (`6faa5c1`)
 
 - **Kind:** diverged-copy
 - **Script:** `scripts/d1/schema.sql:250-256`
@@ -245,7 +249,7 @@ Hand-maintained D1 DDL mirroring the ORM table-for-table, already stale: `files`
 - **Divergence:** SQL is missing namespace (models.py:1126, NOT NULL + indexed), value_type (1129), file_id FK (1132), and expires_at (1135). SQL makes key globally UNIQUE while the ORM uniqueness is UniqueConstraint('namespace','key') (models.py:1142) — the SQL would reject the same key in two namespaces, which the KVStore design explicitly supports. Indexes ix_kv_namespace_key/ix_kv_expires (1143-1144) are absent; timestamps named db_* vs created_at/updated_at (1138-1139).
 - **Recommendation:** Regenerate from Base.metadata; the wrong uniqueness scope is a functional bug, not just cosmetic drift.
 
-### [MEDIUM] header enum comments + missing merge_events table
+### [MEDIUM] header enum comments + missing merge_events table — RESOLVED (`6faa5c1`)
 
 - **Kind:** partial-overlap
 - **Script:** `scripts/d1/schema.sql:1-9`
@@ -496,8 +500,9 @@ Independent small copies: `compute_file_id` verbatim; `DEFAULT_DB_PATH` defined 
 - **Recommendation:** Make the script's --run-migration branch delegate to the canonical handler (`from src.cli import cmd_migrate; cmd_migrate(args); return`), optionally keeping the GRAPH_STORE_AVAILABLE guard around the call — or extract a shared helper (e.g. a banner-owning wrapper in src/storage/migration.py) that both src/cli.py cmd_migrate and the script call, so the banner/completion strings and db-path defaulting live in one place.
 - **Implementation note (2026-07-14):** Not behavior-preserving as a direct delegation. `cmd_migrate` (src/cli.py) differs from the script branch two ways: it defaults `db_path = args.db_path or DEFAULT_DB_PATH` (the script passes `args.db_path` through with no fallback), and it lacks the script's `if GRAPH_STORE_AVAILABLE:` guard + "GraphStore not available" error branch. Naive delegation would drop the guard and add a default. Safe consolidation needs a shared helper that preserves both, or keeping the guard around the delegated call.
 
-### [MEDIUM] kie_result_to_schema_org / _KIE_SCHEMA_MIN_CONFIDENCE / KIE_FIELD_CLASSES
+### [MEDIUM] kie_result_to_schema_org / _KIE_SCHEMA_MIN_CONFIDENCE / KIE_FIELD_CLASSES — RESOLVED (current)
 
+- **Resolution:** `KIE_MIN_CONFIDENCE = 0.5` (public) added to `kie_schema_mapping.py` with backward-compat alias `_KIE_SCHEMA_MIN_CONFIDENCE`. Three field-class group tuples (`KIE_VENDOR_CLASSES`, `KIE_AMOUNT_CLASSES`, `KIE_DATE_CLASSES`) added alongside `KIE_FIELD_CLASSES`. `content_classifier.py` now imports all four via a module-level try/except block (with fallback literals for unusual paths where `scripts/shared` is not on `sys.path`); the private class attribute `_KIE_CLASSIFICATION_MIN_CONFIDENCE = 0.5` and hardcoded field-class tuples in `classify_with_kie` were removed. The `_best_kie_field` static method is intentionally kept in `ContentClassifier` — it operates on objects from `kie_utils.py` and serves a different calling pattern than `kie_result_to_schema_org`'s inline max+gate; sharing the method body would add no value.
 - **Kind:** partial-overlap
 - **Script:** `scripts/shared/kie_schema_mapping.py:14-25, 95, 109-120`
 - **Src counterpart:** `src/classifiers/content_classifier.py:210-252` — `ContentClassifier.classify_with_kie / _best_kie_field / _KIE_CLASSIFICATION_MIN_CONFIDENCE`

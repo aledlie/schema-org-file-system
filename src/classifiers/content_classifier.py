@@ -9,6 +9,25 @@ from src.classifiers.entity_detector import EntityDetector
 if TYPE_CHECKING:
     from shared.kie_utils import KIEResult
 
+# Single-source the KIE confidence threshold and field-class groups from the
+# canonical kie_schema_mapping module (scripts/shared/).  The previous private
+# class attribute _KIE_CLASSIFICATION_MIN_CONFIDENCE = 0.5 was identical to
+# kie_schema_mapping._KIE_SCHEMA_MIN_CONFIDENCE but maintained separately,
+# so the two could silently drift.  The same applies to the hardcoded
+# ("vendor_name", "store_name") etc. tuples.
+try:
+    from shared.kie_schema_mapping import (
+        KIE_MIN_CONFIDENCE as _KIE_CLASSIFICATION_MIN_CONFIDENCE,
+        KIE_VENDOR_CLASSES as _KIE_VENDOR_CLASSES,
+        KIE_AMOUNT_CLASSES as _KIE_AMOUNT_CLASSES,
+        KIE_DATE_CLASSES as _KIE_DATE_CLASSES,
+    )
+except ImportError:  # scripts/shared/ not on sys.path (unusual; fallback keeps tests green)
+    _KIE_CLASSIFICATION_MIN_CONFIDENCE = 0.5
+    _KIE_VENDOR_CLASSES: tuple[str, ...] = ("vendor_name", "store_name")
+    _KIE_AMOUNT_CLASSES: tuple[str, ...] = ("total_amount", "receipt_total")
+    _KIE_DATE_CLASSES: tuple[str, ...] = ("invoice_date", "receipt_date")
+
 
 class ContentClassifier:
     """Classifies document content into categories.
@@ -207,9 +226,6 @@ class ContentClassifier:
     # KIE-based classification (structured document extraction)
     # ------------------------------------------------------------------
 
-    # Minimum per-field confidence for KIE to drive classification.
-    _KIE_CLASSIFICATION_MIN_CONFIDENCE = 0.5
-
     def classify_with_kie(
         self,
         kie_result: KIEResult,
@@ -222,14 +238,17 @@ class ContentClassifier:
         tuple when high-confidence invoice/receipt fields are detected.
         Returns ``None`` when the KIE result is insufficient and the caller
         should fall through to keyword-based ``classify_content()``.
+
+        Confidence threshold and field-class groups are imported from
+        ``shared.kie_schema_mapping`` so all KIE consumers share one value.
         """
-        threshold = self._KIE_CLASSIFICATION_MIN_CONFIDENCE
+        threshold = _KIE_CLASSIFICATION_MIN_CONFIDENCE
 
         # Look for strong financial document signals: a vendor/store AND
         # an amount OR a date.
-        vendor = self._best_kie_field(kie_result, ("vendor_name", "store_name"), threshold)
-        amount = self._best_kie_field(kie_result, ("total_amount", "receipt_total"), threshold)
-        date = self._best_kie_field(kie_result, ("invoice_date", "receipt_date"), threshold)
+        vendor = self._best_kie_field(kie_result, _KIE_VENDOR_CLASSES, threshold)
+        amount = self._best_kie_field(kie_result, _KIE_AMOUNT_CLASSES, threshold)
+        date = self._best_kie_field(kie_result, _KIE_DATE_CLASSES, threshold)
 
         if vendor and (amount or date):
             people_names = self.extract_people_names(text) if text else []

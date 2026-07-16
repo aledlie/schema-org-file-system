@@ -91,16 +91,36 @@ KIE_FIELD_TO_SCHEMA: dict[str, dict[str, str]] = {
     },
 }
 
-# Minimum confidence for a KIE field to be included in schema output.
-_KIE_SCHEMA_MIN_CONFIDENCE = 0.5
+# ---------------------------------------------------------------------------
+# Shared confidence threshold and classification field groups
+#
+# Both kie_result_to_schema_org (below) and ContentClassifier.classify_with_kie
+# (src/classifiers/content_classifier.py) use the same 0.5 gate and the same
+# field-class groupings. Single-sourcing them here eliminates the silent-drift
+# risk that previously existed when the two private copies could diverge.
+# ---------------------------------------------------------------------------
+
+# Public constant; content_classifier.py imports this instead of maintaining
+# its own private copy.
+KIE_MIN_CONFIDENCE: float = 0.5
+
+# Backward-compat private alias so existing code referencing the old name
+# continues to work without changes.
+_KIE_SCHEMA_MIN_CONFIDENCE = KIE_MIN_CONFIDENCE
+
+# Field-class groups for classification. content_classifier.py imports these
+# so the tuples are defined in one place alongside KIE_FIELD_CLASSES above.
+KIE_VENDOR_CLASSES: tuple[str, ...] = ("vendor_name", "store_name")
+KIE_AMOUNT_CLASSES: tuple[str, ...] = ("total_amount", "receipt_total")
+KIE_DATE_CLASSES: tuple[str, ...] = ("invoice_date", "receipt_date")
 
 
 def kie_result_to_schema_org(kie_result: KIEResult) -> dict:
     """Convert a KIEResult into a Schema.org JSON-LD fragment.
 
     Returns a dict suitable for merging into an existing ``schema_data`` JSON
-    blob.  Only fields whose best prediction exceeds
-    ``_KIE_SCHEMA_MIN_CONFIDENCE`` are included.
+    blob.  Only fields whose best prediction exceeds ``KIE_MIN_CONFIDENCE``
+    are included.
     """
     schema: dict = {
         "@type": "Invoice",
@@ -116,7 +136,7 @@ def kie_result_to_schema_org(kie_result: KIEResult) -> dict:
 
         # Pick the highest-confidence prediction for this class.
         best = max(fields, key=lambda f: f.confidence)
-        if best.confidence < _KIE_SCHEMA_MIN_CONFIDENCE:
+        if best.confidence < KIE_MIN_CONFIDENCE:
             continue
 
         prop = mapping["property"]

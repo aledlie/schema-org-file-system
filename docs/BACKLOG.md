@@ -90,7 +90,7 @@ Storage layer (90%), generators+base (91%), enrichment (98%), and validator (100
 
 Full copypasta audit of `scripts/` against the canonical `src/` library found 53 verified duplications across 7 zones.
 
-**Status:** Open
+**Status:** Open — 34 of 53 resolved; ~19 open (type-organizer loop, `filename_classifier` keyword/entity/legal tables, sprite/font regexes, OCR probe, migration banner, classify_by_ocr scoring loop, `_GENERIC_FILENAME_PATTERNS`, `_DOCUMENT_LABEL_MAP`, analyze_report summary sections).
 **Priority:** P2 (top items are active correctness drift; bulk is P3/P4 consolidation)
 **Source:** multi-agent scripts↔src duplication audit, 2026-07-14
 
@@ -99,9 +99,9 @@ Full findings with line-level evidence, divergence notes, and per-item recommend
 Priority order from the review:
 
 1. ~~**Timeline exporter split-brain** — `scripts/generate_timeline_data.py` and the orphaned `src/api/timeline_api.py` both write `_site/timeline_data.json` with incompatible document schemas; consolidate or delete the dead src path.~~ **DONE (`4437a25`)** — the entire Timeline zone (7 findings) was consolidated; `scripts/generate_timeline_data.py` is now a thin launcher over the `TimelineAPI` class. See the resolution note in the review doc.
-5. Remaining ~35 items (type-organizer scan/summary loop, `filename_classifier` keyword/entity tables) opportunistically when the owning script is touched.
+5. Remaining ~19 items (type-organizer scan/summary loop, `filename_classifier` keyword/entity tables) opportunistically when the owning script is touched.
 
-Resolved so far (2026-07-14–15): items 1–4 from the original priority list plus `file_iri` single-sourcing (`src/storage/models.py`) and `financial_doc_keywords` billing inconsistency fix (`scripts/shared/filename_classifier.py`). See the review doc for per-finding resolution notes.
+Resolved so far (2026-07-14–15): items 1–4 from the original priority list plus `file_iri` single-sourcing (`src/storage/models.py`), `financial_doc_keywords` billing inconsistency fix (`scripts/shared/filename_classifier.py`), and KIE constants single-sourcing — `KIE_MIN_CONFIDENCE` + `KIE_VENDOR/AMOUNT/DATE_CLASSES` now single-homed in `kie_schema_mapping.py`, imported by `content_classifier.py`; removes the silent-drift risk from two private 0.5 copies. See the review doc for per-finding resolution notes.
 
 
 ### Cross-file duplication within `src/` (investigation)
