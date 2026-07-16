@@ -261,6 +261,7 @@ class FileProcessor:
         ocr_confidence: Optional[float] = None,
         detected_language: Optional[str] = None,
         kie_result: Any = None,
+        scoring_decision: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Persist file and its relationships to the graph store with canonical IDs.
@@ -272,6 +273,11 @@ class FileProcessor:
         - Person records with canonical_id (UUID v5 from name)
         - Location record with canonical_id (UUID v5 from name)
         - Relationships between file and entities
+
+        ``scoring_decision`` (a JSON-serializable dict produced by the unified
+        scorer, UNIFIED_SCORING_PLAN §5.4) is stored verbatim on the file's
+        category association as ``file_categories.signal_evidence``; None
+        (legacy runs) persists NULL.
         """
         if not self.graph_store:
             return
@@ -321,12 +327,13 @@ class FileProcessor:
 
             file_id = file_record.id
 
-            # Add category relationship
+            # Add category relationship (with scoring evidence when present)
             self.graph_store.add_file_to_category(
                 file_id=file_id,
                 category_name=category,
                 subcategory_name=subcategory,
                 session=session,
+                signal_evidence=scoring_decision,
             )
 
             # Add company relationship if detected
@@ -548,6 +555,9 @@ class FileProcessor:
                         ocr_confidence=organizer._last_file_ocr_confidence,
                         detected_language=organizer._last_file_detected_language,
                         kie_result=organizer._last_file_state.get("kie_result"),
+                        # Absent on legacy runs (the unified adapter populates
+                        # it) -> None -> file_categories.signal_evidence NULL.
+                        scoring_decision=organizer._last_file_state.get("scoring_decision"),
                     )
 
             result["status"] = "organized" if not dry_run else "would_organize"

@@ -94,6 +94,14 @@ def cmd_migrate(args: argparse.Namespace) -> None:
     run_migration_with_banner(db_path, dry_run=args.dry_run)
 
 
+def cmd_migrate_scoring(args: argparse.Namespace) -> None:
+    """Run database migration for the scoring signal_evidence column."""
+    from storage.scoring_migration import run_scoring_migration_with_banner
+
+    db_path = args.db_path or DEFAULT_DB_PATH
+    run_scoring_migration_with_banner(db_path, dry_run=args.dry_run)
+
+
 def _prune_missing_edges(graph_store: Any, apply: bool) -> None:
     """Drop file->person edges whose file path no longer exists; print each."""
     label = "APPLIED" if apply else "DRY RUN"
@@ -509,6 +517,21 @@ For more help on a specific command:
         "--dry-run", action="store_true", help="Preview the migration without writing any changes"
     )
     migrate_parser.set_defaults(func=cmd_migrate)
+
+    # Scoring evidence migration
+    migrate_scoring_parser = subparsers.add_parser(
+        "migrate-scoring",
+        help="Add the signal_evidence column to file_categories",
+        description="Add the nullable signal_evidence JSON column used to persist "
+        "per-signal scoring evidence (UNIFIED_SCORING_PLAN §5.4)",
+    )
+    migrate_scoring_parser.add_argument(
+        "--db-path", default=DEFAULT_DB_PATH, help="Path to SQLite database"
+    )
+    migrate_scoring_parser.add_argument(
+        "--dry-run", action="store_true", help="Preview the migration without writing any changes"
+    )
+    migrate_scoring_parser.set_defaults(func=cmd_migrate_scoring)
 
     # Person symlink view (derived from graph edges)
     person_view_parser = subparsers.add_parser(

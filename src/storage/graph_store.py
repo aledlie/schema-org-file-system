@@ -14,7 +14,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple, Union
 from collections import defaultdict
 
-from sqlalchemy import create_engine, event, func, and_, or_
+from sqlalchemy import create_engine, event, func, and_, or_, inspect as sqla_inspect
 from sqlalchemy.orm import Session, sessionmaker, joinedload, selectinload
 from sqlalchemy.exc import IntegrityError
 
@@ -91,6 +91,10 @@ class GraphStore:
 
         # Session factory
         self.SessionLocal = sessionmaker(bind=self.engine)
+
+        # Lazily-resolved support flag for file_categories.signal_evidence
+        # (None until first checked; see _supports_signal_evidence).
+        self._signal_evidence_supported: Optional[bool] = None
 
     def get_session(self) -> Session:
         """Get a new database session."""
@@ -343,13 +347,36 @@ class GraphStore:
             if close_session:
                 session.close()
 
+    def _supports_signal_evidence(self) -> bool:
+        """True when file_categories has the signal_evidence column (§5.4).
+
+        Fresh databases get the column via ``Base.metadata.create_all``;
+        databases created before it existed need ``organize-files
+        migrate-scoring``. Checked once per store instance so unmigrated
+        databases keep working (evidence is skipped with a one-time warning)
+        instead of poisoning the write transaction.
+        """
+        if self._signal_evidence_supported is None:
+            columns = sqla_inspect(self.engine).get_columns(file_categories.name)
+            supported = any(
+                column["name"] == file_categories.c.signal_evidence.name for column in columns
+            )
+            if not supported:
+                print(
+                    "  ⚠ file_categories.signal_evidence column missing — run "
+                    "`organize-files migrate-scoring` to persist scoring evidence"
+                )
+            self._signal_evidence_supported = supported
+        return self._signal_evidence_supported
+
     def add_file_to_category(
         self,
         file_id: str,
         category_name: str,
         subcategory_name: str = None,
         confidence: float = 1.0,
-        session: Session = None
+        session: Session = None,
+        signal_evidence: Optional[Dict[str, Any]] = None
     ) -> bool:
         """
         Associate a file with a category.
@@ -360,6 +387,9 @@ class GraphStore:
             subcategory_name: Optional subcategory
             confidence: Classification confidence
             session: Optional existing session
+            signal_evidence: Optional JSON-serializable scoring evidence
+                (UNIFIED_SCORING_PLAN §5.4) stored verbatim on the
+                association row; None (legacy runs) leaves the column NULL
 
         Returns:
             True if successful
@@ -385,12 +415,28 @@ class GraphStore:
                 return False
 
             # Add relationship if not exists
+            changed = False
             if category not in file.categories:
                 file.categories.append(category)
                 category.file_count += 1
-                # Only commit if we own the session
-                if close_session:
-                    session.commit()
+                changed = True
+
+            # Persist scoring evidence on the association row (nullable,
+            # additive: absent evidence means a legacy run -> NULL).
+            if signal_evidence is not None and self._supports_signal_evidence():
+                # Flush so a newly-appended association row exists to update.
+                session.flush()
+                session.execute(
+                    file_categories.update()
+                    .where(file_categories.c.file_id == file_id)
+                    .where(file_categories.c.category_id == category.id)
+                    .values(signal_evidence=signal_evidence)
+                )
+                changed = True
+
+            # Only commit if we own the session
+            if changed and close_session:
+                session.commit()
 
             return True
 
