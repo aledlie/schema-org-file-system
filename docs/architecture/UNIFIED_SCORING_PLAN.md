@@ -257,7 +257,7 @@ references: `src/organizers/content_organizer.py` unless stated.
 | # | Legacy source | New Signal | Output vocabulary | Prior | Cost | Notes / edge cases |
 |---|---|---|---|---|---|---|
 | 1 | inline tier 0a (L1141) | `RenamedScreenshotSignal` | `media/photos_screenshots_*` | `W_RENAMED = 1.2` | cheap | only when `display_path != file_path`; very high precision |
-| 2 | `classify_by_filename_patterns` → `shared/filename_classifier.py:87` | `FilenamePatternSignal` | full vocabulary + `skip/duplicate` | `W_FILENAME = 1.1` | cheap | wraps the whole 1,645-line rule module as ONE signal in v2 (decomposition is OQ #5); research-publisher provenance moves from `last_file_state` side-channel into `evidence` |
+| 2 | `classify_by_filename_patterns` → `shared/filename_classifier.py:87` | `FilenamePatternSignal` | full vocabulary + `skip/duplicate` | `W_FILENAME = 1.1` | cheap | wraps the whole 1,644-line rule module as ONE signal in v2 (decomposition is OQ #5); research-publisher provenance moves from `last_file_state` side-channel into `evidence` |
 | 3 | `ContentClassifier.classify_with_kie` (`content_classifier.py:241`) | `KieStructuredSignal` | `financial/invoices` (+vendor) | `W_KIE = 1.1` | heavy | field conf ≥ 0.5 retained inside the signal |
 | 4 | `_classify_identification_document` (L1311) | `IdentityDocumentSignal` | `personal/identification` + people | `W_ID = 1.0` | heavy | MRZ regex high-precision; OCR conf ≥ 0.3 gate retained; emits people for graph edges |
 | 5 | `classify_by_organization` (L583) | `OrganizationKeywordSignal` | `organization/{government,healthcare,financial,educational,nonprofit,employers,vendors,clients}` | `W_ORG = 1.0` | mid | needs ≥2 indicators + extractable org name; brand-as-person collisions resolved by competition with #6 |
@@ -269,7 +269,7 @@ references: `src/organizers/content_organizer.py` unless stated.
 | 11 | `_run_clip_signal` (L967) | `ClipVisionSignal` | `CLIP_LABEL_TO_ORGANIZER` vocabulary | `W_CLIP = 0.7` | heavy | embedding cache reused; GPS→travel upgrade from `_map_clip_label` kept; `CLIP_ENHANCE_THRESHOLD` becomes a soft floor |
 | 12 | `classify_media_file` (L727) | `MediaHeuristicSignal` | `media/{videos,audio,photos}_*` | `W_MEDIA = 0.65` | cheap | EXIF GPS/datetime aware; PNG ambiguity falls to other signals instead of returning None |
 | 13 | `_classify_photo_composition` (L1501) | `PhotoCompositionSignal` | `media/photos_social`, `property_management/other` | `W_PEOPLE_PHOTO = 0.65` | heavy | single CLIP pass yields both flags; stock-photo people in marketing remain the known weakness |
-| 14 | `classify_by_filepath` (L407) | `FilepathSignal` | path-mapped categories (+project name) | `W_PATH = 0.6` | cheap | brittle on `~/Downloads`; `.zip` named "Photos" now loses to content signals by weight |
+| 14 | `classify_by_filepath` (L429) | `FilepathSignal` | path-mapped categories (+project name) | `W_PATH = 0.6` | cheap | brittle on `~/Downloads`; `.zip` named "Photos" now loses to content signals by weight |
 | 15 | MIME/extension fallback | `MimeFallbackSignal` | broad category by `schema_type`/ext | `W_MIME = 0.3` | cheap | always fires; deliberately too weak to override anything |
 
 **Format-drift fix:** every signal contributes to a shared `(cat, sub)` score,
@@ -290,7 +290,7 @@ today in `classify_content`) so graph attribution is unchanged.
 
 Replaces the per-file instance state on `ContentOrganizer`
 (`_last_file_ocr_text/_confidence/_detected_language`,
-`_last_file_state["kie_result"]`, `_clip_enhance_cache` — reset at L1066).
+`_last_file_state["kie_result"]`, `_clip_enhance_cache` — reset at L1113).
 Lazy fields are computed by memoizing `ensure_*()` methods so signals declare
 what they need; nothing observes mutation order.
 
@@ -299,7 +299,7 @@ what they need; nothing observes mutation order.
 | `path` | `Path` | input | always |
 | `display_path` | `Path \| None` | renamer dry-run flow (`FileProcessor._maybe_rename_image`) | when renamed |
 | `mime_type` | `str \| None` | `enricher.detect_mime_type` | always |
-| `schema_type` | `Literal["ImageObject","DigitalDocument","VideoObject","AudioObject"]` | derived (as L1074-1090) | always |
+| `schema_type` | `Literal["ImageObject","DigitalDocument","VideoObject","AudioObject"]` | derived (as L1119-1135) | always |
 | `extracted_text` | `str \| None` | `TextExtractor` via `ensure_text()` | lazy |
 | `text_length` | `int` | derived | with text |
 | `ocr_text` / `ocr_confidence` / `ocr_language` | via `extract_ocr_with_confidence` | `ensure_ocr()` | images, lazy |
@@ -327,12 +327,12 @@ class ClassificationDecision:
 
 Adapter: `detect_file_category`'s 7-tuple return is preserved under both
 scorers (the unified path derives it from `ClassificationDecision`), so
-`FileProcessor.organize_file` (`file_processor.py:411`) is untouched in
+`FileProcessor.organize_file` (`file_processor.py:416`, call site L481) is untouched in
 Phases 0–4.
 
 ### 5.4 DB columns (reuse + one addition)
 
-`src/storage/models.py:96-101` — `file_categories` already has `confidence`.
+`src/storage/models.py:96-102` — `file_categories` already has `confidence` (L101).
 Add **one nullable column** `signal_evidence JSON` to persist `all_scores` for
 backtesting. No alembic in this repo: ship a migration in the established
 pattern (`src/storage/migration.py`, surfaced as an `organize-files migrate-*`
@@ -346,8 +346,10 @@ subcommand). Downstream readers unaffected (nullable, additive).
 1. Create `src/scoring/` package skeleton (types, weights, context, scorer,
    registry, signals/).
 2. Add `--scorer {legacy,unified,shadow}` to `organize-files content`
-   (`src/cli.py:278` + `_args_to_argv`) and to the script's `main()` argparse;
-   plumb into `ContentBasedFileOrganizer.__init__` → `ContentOrganizer`.
+   (`src/cli.py` `add_content_arguments` L259 + the `ContentInputs` dataclass —
+   note `_args_to_argv` no longer exists; args flow via `ContentInputs.from_namespace`
+   → the script's `run()` L338); plumb into `ContentBasedFileOrganizer.__init__`
+   → `ContentOrganizer`.
 3. Wire `Scorer.classify()` inside `ContentOrganizer.detect_file_category`
    behind the flag. Default `legacy`.
 
@@ -366,8 +368,8 @@ Suggested order: cheap/pure first (2, 8, 12, 14, 15, 1), then mid (5, 6, 7,
   disagreements by category pair, surfaces top regressions.
 
 ### Phase 3 — Calibration
-- Replay stored runs from `results/file_organization.db` (exists; ~737 KB as of
-  2026-07-12). Labeled ground truth: `results/ml_data_labeled_*` refreshed via
+- Replay stored runs from `results/file_organization.db` (exists; ~748 KB as of
+  2026-07-15). Labeled ground truth: `results/ml_data_labeled_*` refreshed via
   `scripts/relabel_test_set.py`. Grid-search weights to minimize disagreement
   on known-correct cases.
 - Surface as `organize-files evaluate --classifier unified` alongside the
@@ -381,7 +383,7 @@ Suggested order: cheap/pure first (2, 8, 12, 14, 15, 1), then mid (5, 6, 7,
   Priority" → §"Unified Scoring".
 
 ### Phase 5 — Removal (future)
-- Delete the tier orchestration in `detect_file_category` (L1092-1264); the
+- Delete the tier orchestration in `detect_file_category` (L1137-1310); the
   `classify_*` methods become thin shims over their Signals (kept while
   `tests/unit/test_content_organizer.py` exercises them directly).
 - ~~Decide fate of the `content_organizer.py` mirror~~ — resolved by the
@@ -547,7 +549,7 @@ new disagreements.
 4. **Early-exit aggressiveness** — should `EARLY_EXIT_CONFIDENCE` (skip heavy
    signals) be tunable per cost budget (CI vs interactive), or a global
    constant?
-5. **`FilenamePatternSignal` decomposition** — v2 wraps the 1,645-line rule
+5. **`FilenamePatternSignal` decomposition** — v2 wraps the 1,644-line rule
    module as one signal (matching how the code is actually structured). Split
    into per-domain signals (legal, financial, research, entity, …) later so
    their weights calibrate independently, or keep monolithic while precision
