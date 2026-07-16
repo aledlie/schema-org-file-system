@@ -91,6 +91,7 @@ class TestClassifyByMime:
         ("app.tsx", None, ("code", "typescript", "SoftwareSourceCode")),
         ("app.js", None, ("code", "javascript", "SoftwareSourceCode")),
         ("bundle.mjs", None, ("code", "javascript", "SoftwareSourceCode")),
+        ("widget.dart", None, ("code", "dart", "SoftwareSourceCode")),
         ("deploy.sh", None, ("code", "shell", "SoftwareSourceCode")),
         ("index.html", None, ("code", "web", "SoftwareSourceCode")),
         # Data

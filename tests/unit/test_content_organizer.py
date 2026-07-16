@@ -1229,6 +1229,7 @@ class TestMimeResultToContentCategory:
             (("fonts", "truetype"), ("fonts", "truetype")),
             (("software", "packages"), ("technical", "software_packages")),
             (("code", "python"), ("technical", "other")),
+            (("code", "dart"), ("technical", "other")),
             (("code", "web"), ("technical", "web")),
             (("data", "json"), ("technical", "data")),
             (("data", "config"), ("technical", "config")),

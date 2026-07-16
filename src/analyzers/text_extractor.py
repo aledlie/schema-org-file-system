@@ -9,6 +9,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Optional
 
+from shared.constants import TEXT_EXTENSIONS
+
 # OCR (docTR via shared.ocr_classifier) imports
 try:
     from shared.ocr_classifier import (
@@ -281,7 +283,7 @@ class TextExtractor:
             return self.extract_text_from_docx(file_path)
         elif file_ext in [".xlsx", ".xls"]:
             return self.extract_text_from_xlsx(file_path)
-        elif (mime_type and mime_type.startswith("text/")) or file_ext in [".txt", ".md", ".csv"]:
+        elif (mime_type and mime_type.startswith("text/")) or file_ext in TEXT_EXTENSIONS:
             try:
                 with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     return f.read(_MAX_TEXT_BYTES)
@@ -313,7 +315,7 @@ class TextExtractor:
                 confidence=1.0,
                 source="xlsx",
             )
-        elif (mime_type and mime_type.startswith("text/")) or file_ext in [".txt", ".md", ".csv"]:
+        elif (mime_type and mime_type.startswith("text/")) or file_ext in TEXT_EXTENSIONS:
             try:
                 with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                     return ExtractionResult(

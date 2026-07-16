@@ -1,0 +1,15 @@
+{
+  "@context": "https://schema.org",
+  "@id": "<normalized>",
+  "@type": "DigitalDocument",
+  "abstract": "version=\"2.5.*\"\nname=\"Beautiful Universe v2.0\"\ntags={\n\t\"Graphics\"\n}\npicture=\"beautiful_universe.png\"\npath=\"/Steam/steamapps/workshop/content/281990/697938908\"\nremote_file_id=\"697938908\"",
+  "contentSize": "185B",
+  "dateCreated": "<normalized>",
+  "dateModified": "<normalized>",
+  "description": "ugc_697938908.mod",
+  "encodingFormat": "application/octet-stream",
+  "filePath": "<normalized>",
+  "name": "ugc_697938908.mod",
+  "text": "version=\"2.5.*\"\nname=\"Beautiful Universe v2.0\"\ntags={\n\t\"Graphics\"\n}\npicture=\"beautiful_universe.png\"\npath=\"/Steam/steamapps/workshop/content/281990/697938908\"\nremote_file_id=\"697938908\"",
+  "url": "https://localhost/files/ugc_697938908.mod"
+}

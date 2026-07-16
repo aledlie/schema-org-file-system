@@ -70,6 +70,7 @@ CATEGORY_PATHS: Dict[str, Union[str, Dict[str, str]]] = {
         'python': 'Code/Python',
         'javascript': 'Code/JavaScript',
         'typescript': 'Code/TypeScript',
+        'dart': 'Code/Flutter',
         'shell': 'Code/Shell',
         'web': 'Code/Web',
         'other': 'Code/Other'

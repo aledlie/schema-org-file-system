@@ -26,6 +26,18 @@ class TestClassifyContent:
         cat, subcat, company, people = clf.classify_content(text)
         assert cat == "financial"
 
+    def test_steam_workshop_descriptor_categorized(self, clf: ContentClassifier) -> None:
+        # A Steam Workshop .mod manifest routes to game_assets on its unique
+        # descriptor strings, outscoring the incidental "graphics" tag match.
+        text = (
+            'name="Beautiful Universe v2.0"\ntags={"Graphics"}\n'
+            'path="/Steam/steamapps/workshop/content/281990/697938908"\n'
+            'remote_file_id="697938908"'
+        )
+        cat, subcat, company, people = clf.classify_content(text, "ugc_697938908.mod")
+        assert cat == "game_assets"
+        assert subcat == "other"
+
     def test_known_company_shortcut(self, clf: ContentClassifier) -> None:
         text = "Thank you for your business with Integrity Studio."
         cat, subcat, company, people = clf.classify_content(text)

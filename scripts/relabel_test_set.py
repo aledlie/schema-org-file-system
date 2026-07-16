@@ -57,7 +57,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from shared.constants import GAME_SPRITE_KEYWORDS  # noqa: E402
+from shared.constants import DOCUMENT_PATTERNS, GAME_SPRITE_KEYWORDS  # noqa: E402
 
 SPRITE_VOCAB = frozenset(
     {
@@ -88,8 +88,10 @@ SPRITE_VOCAB = frozenset(
 
 _SPRITE_KEYWORD_SET = frozenset(k.lstrip("_").lower() for k in GAME_SPRITE_KEYWORDS)
 
-# Map document-pattern hits to (category, subcategory). Patterns not listed
-# here are skipped (avoid clobbering a 'media' label with a vague 'report').
+# Map document-pattern hits to (category, subcategory). Keys must be a subset
+# of DOCUMENT_PATTERNS; 'report' is intentionally excluded (too vague — avoids
+# clobbering a 'media' label).  The assertion below guards against key drift if
+# DOCUMENT_PATTERNS is updated without updating this map.
 _DOCUMENT_LABEL_MAP: dict[str, tuple[str, str]] = {
     "invoice": ("financial", "invoice"),
     "receipt": ("financial", "receipt"),
@@ -100,6 +102,12 @@ _DOCUMENT_LABEL_MAP: dict[str, tuple[str, str]] = {
     "cv": ("personal", "resume"),
     "letter": ("personal", "letter"),
 }
+# All keys are substrings used by DOCUMENT_PATTERNS — validate at import time.
+_DOCUMENT_PATTERNS_SET = frozenset(DOCUMENT_PATTERNS)
+assert all(k in _DOCUMENT_PATTERNS_SET for k in _DOCUMENT_LABEL_MAP), (
+    "_DOCUMENT_LABEL_MAP contains keys absent from DOCUMENT_PATTERNS; "
+    "update shared.constants.DOCUMENT_PATTERNS or remove the stale key"
+)
 
 _TRIAGE_PARENTS = frozenset({"Uncategorized", "Desktop", "Downloads"})
 _TRIAGE_PATH_FRAGMENTS = ("/Desktop/", "/Downloads/", "/Uncategorized/")
@@ -189,10 +197,16 @@ def relabel(samples: list[dict]) -> tuple[list[dict], dict[str, Counter]]:
                 s["category"] = "media"
                 s["subcategory"] = "screenshot"
             else:
-                doc_label = _document_label(filename)
-                if doc_label is not None:
-                    counters["pass5"][cat] += 1
-                    s["category"], s["subcategory"] = doc_label
+                # Pass 5 (triage document): use the precomputed is_document flag
+                # (set by FileFeatureExtractor via DOCUMENT_PATTERNS) as a cheap
+                # prefilter before the word-boundary regex in _document_label.
+                # Samples without the key (not from the feature extractor) still
+                # run the regex, preserving backward compatibility.
+                if s.get("is_document", True):
+                    doc_label = _document_label(filename)
+                    if doc_label is not None:
+                        counters["pass5"][cat] += 1
+                        s["category"], s["subcategory"] = doc_label
         out.append(s)
     return out, counters
 

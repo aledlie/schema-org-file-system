@@ -374,13 +374,9 @@ def run(args: "ContentInputs") -> None:
     # Run migration if requested
     if args.run_migration:
         if GRAPH_STORE_AVAILABLE:
-            from storage.migration import run_migration
+            from storage.migration import run_migration_with_banner
 
-            print(f"\n{'='*60}")
-            print("Running ID Generation Migration")
-            print(f"{'='*60}\n")
-            run_migration(args.db_path)
-            print("\nMigration complete. Canonical IDs have been generated for existing records.")
+            run_migration_with_banner(args.db_path)
             return
         else:
             print("Error: GraphStore not available. Cannot run migration.")

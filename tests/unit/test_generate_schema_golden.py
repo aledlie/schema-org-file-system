@@ -158,3 +158,22 @@ def test_golden_document_with_extracted_text(processor, temp_dir):
         "document_with_extracted_text",
         processor.generate_schema(path, "DigitalDocument", extracted_text=long_text),
     )
+
+
+def test_golden_game_mod_descriptor(processor, temp_dir):
+    """Steam Workshop .mod manifest -> game_assets classification resolves to the
+    DigitalDocument branch (its MIME is text/None); pins the descriptor content
+    flowing into abstract/text for this feature."""
+    descriptor = (
+        'version="2.5.*"\n'
+        'name="Beautiful Universe v2.0"\n'
+        'tags={\n\t"Graphics"\n}\n'
+        'picture="beautiful_universe.png"\n'
+        'path="/Steam/steamapps/workshop/content/281990/697938908"\n'
+        'remote_file_id="697938908"'
+    )
+    path = _write(temp_dir, "ugc_697938908.mod", descriptor)
+    _assert_golden(
+        "game_mod_descriptor",
+        processor.generate_schema(path, "DigitalDocument", extracted_text=descriptor),
+    )

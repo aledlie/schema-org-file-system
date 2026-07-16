@@ -180,6 +180,18 @@ class ContentClassifier:
                     'photos': ['photo', 'photography', 'image'],
                     'other': []
                 }
+            },
+            # Game mod/workshop descriptors (e.g. Steam Workshop `.mod` manifests).
+            # Keyed on strings unique to those descriptors so it only fires on real
+            # game-mod content, never on generic documents that mention "game".
+            'game_assets': {
+                'keywords': [
+                    'steamapps/workshop', 'remote_file_id', 'steam workshop',
+                    'workshop/content',
+                ],
+                'subcategories': {
+                    'other': []
+                }
             }
         }
 

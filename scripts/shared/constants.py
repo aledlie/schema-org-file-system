@@ -27,6 +27,20 @@ ARCHIVE_EXTENSIONS = {".zip", ".tar", ".gz", ".rar", ".7z", ".bz2"}
 SOFTWARE_INSTALLER_EXTENSIONS = {".dmg", ".pkg", ".exe", ".msi", ".app"}
 SOFTWARE_PACKAGE_EXTENSIONS = {".deb", ".rpm", ".snap", ".flatpak", ".appimage"}
 
+# Plain-text extensions the TextExtractor reads directly (UTF-8, capped at
+# _MAX_TEXT_BYTES) so their *content* — not just their extension — drives
+# classification. Limited to formats where content classifies better than the
+# extension alone: prose/markup, personal-data text (vCard/calendar/email), and
+# structured descriptors (Steam/Valve manifests, Linux launchers). Deliberately
+# excludes source code and bulk data (.json/.xml/.yaml) — those already route to
+# technical/data by extension and reading them only risks keyword false matches.
+TEXT_EXTENSIONS = {
+    ".txt", ".text", ".md", ".markdown", ".mdown", ".mkd", ".csv",
+    ".rst", ".adoc", ".asciidoc", ".org", ".tex", ".log", ".vtt", ".srt",
+    ".vcf", ".ics", ".eml",
+    ".mod", ".vdf", ".acf", ".desktop",
+}
+
 # CLIP content labels -- canonical list used by analyze_renamed_files, organize_by_content, etc.
 CLIP_CONTENT_LABELS = [
     "a landscape or nature scene",
@@ -554,3 +568,14 @@ DOCUMENT_PATTERNS = [
     r"cv",
     r"letter",
 ]
+
+# Camera-vendor prefix patterns.  Single-homed here so both
+# filename_utils._GENERIC_FILENAME_PATTERNS (case-folds stem before matching)
+# and name_organizer.py camera_photos (uses re.IGNORECASE) stay in sync when
+# new device vendors appear.  All patterns are lowercase anchored-start regexes.
+CAMERA_VENDOR_PREFIX_PATTERNS: tuple[str, ...] = (
+    r"^img_\d+",   # IMG_1234 (Apple / Android camera roll)
+    r"^pxl_\d+",   # PXL_20250425 (Google Pixel)
+    r"^dsc_?\d+",  # DSC_1234 / DSC1234 (Sony / Nikon; optional underscore)
+    r"^dcim_\d+",  # DCIM_1234 (generic DCIM roll)
+)

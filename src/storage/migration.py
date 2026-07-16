@@ -819,6 +819,19 @@ def run_migration(db_path: Union[str, Path] = DEFAULT_DB_PATH, dry_run: bool = F
     return dict(stats)
 
 
+def run_migration_with_banner(db_path: Union[str, Path] = DEFAULT_DB_PATH) -> None:
+    """Print the ID-generation migration banner, run the migration, then print the completion line.
+
+    Single-sources the banner text (header separator, title, footer separator, and completion
+    message) so callers in both ``src/cli.py`` and ``scripts/`` stay in sync.
+    """
+    print(f"\n{'='*60}")
+    print("Running ID Generation Migration")
+    print(f"{'='*60}\n")
+    run_migration(db_path)
+    print("\nMigration complete. Canonical IDs have been generated for existing records.")
+
+
 def main() -> None:
     """Run the migration."""
     import argparse

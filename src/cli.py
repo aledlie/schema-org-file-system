@@ -87,14 +87,10 @@ def cmd_evaluate(args: argparse.Namespace) -> None:
 
 def cmd_migrate(args: argparse.Namespace) -> None:
     """Run database migration for ID generation."""
-    from storage.migration import run_migration
+    from storage.migration import run_migration_with_banner
 
     db_path = args.db_path or DEFAULT_DB_PATH
-    print(f"\n{'='*60}")
-    print("Running ID Generation Migration")
-    print(f"{'='*60}\n")
-    run_migration(db_path)
-    print("\nMigration complete. Canonical IDs have been generated for existing records.")
+    run_migration_with_banner(db_path)
 
 
 def _prune_missing_edges(graph_store: Any, apply: bool) -> None:

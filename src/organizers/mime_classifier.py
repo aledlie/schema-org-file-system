@@ -159,6 +159,9 @@ def classify_by_mime(file_path: Path, mime_type: Optional[str]) -> Classificatio
     elif file_ext in ['.js', '.jsx', '.mjs']:
         return ('code', 'javascript', 'SoftwareSourceCode')
 
+    elif file_ext == '.dart':
+        return ('code', 'dart', 'SoftwareSourceCode')
+
     elif file_ext in ['.sh', '.bash', '.zsh']:
         return ('code', 'shell', 'SoftwareSourceCode')
 

@@ -16,6 +16,7 @@ from datetime import datetime
 # shared/ lives in scripts/ — add to path so shared.file_ops resolves.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 
+from shared.constants import CAMERA_VENDOR_PREFIX_PATTERNS  # noqa: E402
 from shared.file_ops import resolve_collision  # noqa: E402
 import json
 from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
@@ -228,14 +229,13 @@ class FileNameOrganizer:
                 r'^WhatsApp Video',
                 r'^WA\d+',
             ],
-            # Camera photos
+            # Camera photos — vendor prefixes single-homed in shared.constants;
+            # use re.IGNORECASE at match time so lowercase patterns match the
+            # uppercase filenames real cameras produce.
             'camera_photos': [
-                r'^IMG_\d+',
-                r'^PXL_\d+',
-                r'^DSC_\d+',
-                r'^DCIM_\d+',
-                r'^\d{8}_\d{6}',  # YYYYMMDD_HHMMSS
-                r'^\d{14}',        # YYYYMMDDHHMMSS
+                *CAMERA_VENDOR_PREFIX_PATTERNS,
+                r'^\d{8}_\d{6}',          # YYYYMMDD_HHMMSS
+                r'^\d{14}',               # YYYYMMDDHHMMSS
                 r'^\d{8}_[A-Za-z]+_\d{6}',  # YYYYMMDD_Location_HHMMSS
             ],
             # Social media downloads
@@ -464,9 +464,10 @@ class FileNameOrganizer:
             if re.search(pattern, filename, re.IGNORECASE):
                 return ('Media/Photos', 'WhatsApp')
 
-        # Check camera photos
+        # Check camera photos — IGNORECASE because CAMERA_VENDOR_PREFIX_PATTERNS
+        # uses lowercase patterns that must match uppercase camera filenames.
         for pattern in self.filename_patterns['camera_photos']:
-            if re.search(pattern, filename):
+            if re.search(pattern, filename, re.IGNORECASE):
                 return ('Media/Photos', 'Camera')
 
         # Check social media

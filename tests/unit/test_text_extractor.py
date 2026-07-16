@@ -298,6 +298,16 @@ class TestExtractTextDispatch:
         result = ext.extract_text(p, mime_type=None)
         assert "hello text file" in result
 
+    def test_routes_descriptor_text_by_extension(self, tmp_path):
+        # Extensions in TEXT_EXTENSIONS (e.g. Steam .mod manifests) are read as
+        # plain text even though they have no registered text/* MIME type.
+        p = tmp_path / "ugc_1.mod"
+        p.write_text('name="Beautiful Universe"\nremote_file_id="1"')
+
+        ext = self._extractor()
+        result = ext.extract_text(p, mime_type=None)
+        assert "remote_file_id" in result
+
     def test_returns_empty_for_unknown_type(self, tmp_path):
         p = tmp_path / "binary.bin"
         p.write_bytes(b"\x00\x01\x02")

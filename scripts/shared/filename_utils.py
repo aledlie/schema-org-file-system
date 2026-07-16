@@ -10,15 +10,15 @@ from __future__ import annotations
 import re
 from pathlib import Path
 
+from shared.constants import CAMERA_VENDOR_PREFIX_PATTERNS  # noqa: E402
+
 # Compiled at module load; matched against the lowercased file stem.
 _GENERIC_FILENAME_PATTERNS: tuple[re.Pattern[str], ...] = tuple(
     re.compile(p)
     for p in (
-        # Camera vendor prefixes
-        r"^img_\d+",  # IMG_1234.jpg
-        r"^pxl_\d+",  # PXL_20250425.jpg
-        r"^dsc_?\d+",  # DSC_1234.jpg / DSC1234.jpg
-        r"^dcim_\d+",  # DCIM_1234.jpg
+        # Camera vendor prefixes — single-homed in shared.constants so
+        # name_organizer.py's camera_photos group stays in sync.
+        *CAMERA_VENDOR_PREFIX_PATTERNS,
         # Screenshots — [\s_-] superset covers "screenshot 2025..." too
         r"^screenshot[\s_-]",
         # Timestamps
