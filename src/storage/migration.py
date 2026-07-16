@@ -819,17 +819,27 @@ def run_migration(db_path: Union[str, Path] = DEFAULT_DB_PATH, dry_run: bool = F
     return dict(stats)
 
 
-def run_migration_with_banner(db_path: Union[str, Path] = DEFAULT_DB_PATH) -> None:
+def run_migration_with_banner(
+    db_path: Union[str, Path] = DEFAULT_DB_PATH,
+    dry_run: bool = False,
+) -> None:
     """Print the ID-generation migration banner, run the migration, then print the completion line.
 
     Single-sources the banner text (header separator, title, footer separator, and completion
     message) so callers in both ``src/cli.py`` and ``scripts/`` stay in sync.
+
+    :param db_path: Path to the SQLite database.
+    :param dry_run: If True, passes ``dry_run=True`` to :func:`run_migration` and prints a
+        dry-run notice instead of the completion message.
     """
     print(f"\n{'='*60}")
     print("Running ID Generation Migration")
     print(f"{'='*60}\n")
-    run_migration(db_path)
-    print("\nMigration complete. Canonical IDs have been generated for existing records.")
+    run_migration(db_path, dry_run=dry_run)
+    if dry_run:
+        print("\n[DRY RUN] No changes were made.")
+    else:
+        print("\nMigration complete. Canonical IDs have been generated for existing records.")
 
 
 def main() -> None:

@@ -102,12 +102,19 @@ _DOCUMENT_LABEL_MAP: dict[str, tuple[str, str]] = {
     "cv": ("personal", "resume"),
     "letter": ("personal", "letter"),
 }
-# All keys are substrings used by DOCUMENT_PATTERNS — validate at import time.
-_DOCUMENT_PATTERNS_SET = frozenset(DOCUMENT_PATTERNS)
-assert all(k in _DOCUMENT_PATTERNS_SET for k in _DOCUMENT_LABEL_MAP), (
-    "_DOCUMENT_LABEL_MAP contains keys absent from DOCUMENT_PATTERNS; "
-    "update shared.constants.DOCUMENT_PATTERNS or remove the stale key"
-)
+# All keys must appear as substrings in at least one DOCUMENT_PATTERNS entry.
+# Explicit ValueError (not assert) so it fires even under python -O.
+# Substring check (not literal equality) so patterns like r"\binvoice\b" still
+# satisfy the "invoice" key without breaking this guard.
+_LABEL_KEYS_NOT_IN_PATTERNS = [
+    k for k in _DOCUMENT_LABEL_MAP if not any(k in p for p in DOCUMENT_PATTERNS)
+]
+if _LABEL_KEYS_NOT_IN_PATTERNS:
+    raise ValueError(
+        f"_DOCUMENT_LABEL_MAP contains keys absent from DOCUMENT_PATTERNS: "
+        f"{_LABEL_KEYS_NOT_IN_PATTERNS}; "
+        "update shared.constants.DOCUMENT_PATTERNS or remove the stale key"
+    )
 
 _TRIAGE_PARENTS = frozenset({"Uncategorized", "Desktop", "Downloads"})
 _TRIAGE_PATH_FRAGMENTS = ("/Desktop/", "/Downloads/", "/Uncategorized/")
