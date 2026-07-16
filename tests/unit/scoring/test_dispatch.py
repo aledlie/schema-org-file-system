@@ -32,7 +32,9 @@ class TestScorerModePlumbing:
 
 
 class TestUnifiedDispatch:
-    def test_unified_empty_registry_returns_fallback_tuple(self, tmp_path):
+    def test_unified_no_signal_match_returns_fallback_tuple(self, tmp_path):
+        """A file no registered signal can commit on routes to the fallback
+        bucket (classifier=None here, so only the degraded registry runs)."""
         organizer = make_organizer(tmp_path, scorer="unified")
         sample = tmp_path / "mystery.bin"
         sample.write_bytes(b"\x00\x01")
@@ -45,6 +47,18 @@ class TestUnifiedDispatch:
         assert company is None
         assert people == []
         assert metadata == {}
+
+    def test_unified_commits_on_strong_cheap_signal(self, tmp_path):
+        """Populated registry: a numbered-sprite filename commits via
+        GameAssetSignal (+ FilenamePatternSignal) without content extraction."""
+        organizer = make_organizer(tmp_path, scorer="unified")
+        sample = tmp_path / "frame_1.png"
+        sample.write_bytes(b"\x89PNG\r\n")
+        category, subcategory, *_ = organizer.detect_file_category(sample)
+        assert (category, subcategory) == ("game_assets", "sprites")
+        snapshot = organizer._last_file_state["scoring_decision"]
+        assert snapshot["decision"]["decision_state"] == "committed"
+        assert snapshot["scorer"] == "unified"
 
     def test_unified_resets_per_file_state(self, tmp_path):
         organizer = make_organizer(tmp_path, scorer="unified")
@@ -73,8 +87,13 @@ class TestShadowDispatch:
         record = json.loads(log_path.read_text().splitlines()[-1])
         assert record["path"] == str(sample)
         assert record["legacy_decision"]["category"] == legacy_expected[0]
-        assert record["decision"]["decision_state"] == "low_confidence"
-        assert record["agrees"] is False
+        # frame_1.png: both engines resolve game_assets/sprites (cheap signals).
+        assert record["decision"]["decision_state"] == "committed"
+        assert (record["decision"]["category"], record["decision"]["subcategory"]) == (
+            legacy_expected[0],
+            legacy_expected[1],
+        )
+        assert record["agrees"] is True
 
     def test_shadow_never_breaks_classification(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
