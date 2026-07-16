@@ -136,7 +136,9 @@ class Scorer:
 
     def _aggregate(
         self, collected: List[CategoryScore]
-    ) -> Tuple[Dict[CategoryKey, float], Dict[CategoryKey, Dict[str, float]], Dict[CategoryKey, int]]:
+    ) -> Tuple[
+        Dict[CategoryKey, float], Dict[CategoryKey, Dict[str, float]], Dict[CategoryKey, int]
+    ]:
         """Raw weighted sums, per-candidate contributor map, first-seen order."""
         totals: Dict[CategoryKey, float] = {}
         contributors: Dict[CategoryKey, Dict[str, float]] = {}
@@ -174,9 +176,7 @@ class Scorer:
             best_tier = max(
                 COST_TIER_PRIORITY[self._by_name[name][2]] for name in candidate_contributors
             )
-            earliest_registry = min(
-                self._by_name[name][0] for name in candidate_contributors
-            )
+            earliest_registry = min(self._by_name[name][0] for name in candidate_contributors)
             return (
                 totals[key],
                 len(candidate_contributors),
@@ -187,14 +187,10 @@ class Scorer:
 
         winner = max(totals, key=sort_key)
         raw_total = totals[winner]
-        runner_up = max(
-            (total for key, total in totals.items() if key != winner), default=None
-        )
+        runner_up = max((total for key, total in totals.items() if key != winner), default=None)
         margin = raw_total - runner_up if runner_up is not None else raw_total
 
-        winning_names = tuple(
-            sorted(contributors[winner], key=lambda name: self._by_name[name][0])
-        )
+        winning_names = tuple(sorted(contributors[winner], key=lambda name: self._by_name[name][0]))
 
         if raw_total < self._min_decision_confidence:
             decision_state = "low_confidence"
@@ -208,7 +204,9 @@ class Scorer:
 
         schema_type = ctx.schema_type
         if decision_state == "committed":
-            schema_type = self._schema_type_override(collected, winner, winning_names) or schema_type
+            schema_type = (
+                self._schema_type_override(collected, winner, winning_names) or schema_type
+            )
 
         return ClassificationDecision(
             category=category,
@@ -227,9 +225,7 @@ class Scorer:
     # Entity + schema-type assembly (§4 "entity side-channel")             #
     # ------------------------------------------------------------------ #
 
-    def _iter_registry_order(
-        self, collected: List[CategoryScore]
-    ) -> List[CategoryScore]:
+    def _iter_registry_order(self, collected: List[CategoryScore]) -> List[CategoryScore]:
         return sorted(
             collected,
             key=lambda score: (self._by_name[score.signal_name][0],),

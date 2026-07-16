@@ -72,9 +72,7 @@ class TestAggregation:
         assert decision.winning_signals == []
 
     def test_single_strong_signal_commits(self):
-        signal = FakeSignal(
-            "filename", 1.1, "cheap", [score_entry("financial", "invoices", 0.9)]
-        )
+        signal = FakeSignal("filename", 1.1, "cheap", [score_entry("financial", "invoices", 0.9)])
         decision = Scorer([signal]).classify(make_ctx())
         assert (decision.category, decision.subcategory) == ("financial", "invoices")
         assert decision.decision_state == "committed"

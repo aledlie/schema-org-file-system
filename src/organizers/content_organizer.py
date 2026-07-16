@@ -52,7 +52,9 @@ from shared.filename_classifier import (
 try:
     import pypdf  # noqa: F401 — availability probe
     from PIL import Image  # noqa: F401 — availability probe
-    from shared.ocr_classifier import OCR_AVAILABLE  # shared module-level flag; avoids duplicate probe
+    from shared.ocr_classifier import (
+        OCR_AVAILABLE,
+    )  # shared module-level flag; avoids duplicate probe
     from shared.ocr_classifier import SCREENSHOT_KEYWORDS
     from shared.ocr_classifier import classify_by_ocr as _shared_classify_by_ocr
     from shared.ocr_classifier import extract_ocr_with_confidence
@@ -170,10 +172,19 @@ _CONTACTS_MIN_KEYWORD_HITS = 3
 # _LEGAL_SIGNAL_MIN_HITS of these appear, classify_by_person defers so content
 # analysis (which classifies these as legal) decides; person attribution still
 # lands via the people_names that classification returns.
-_LEGAL_DOCUMENT_SIGNALS = frozenset({
-    "court", "cause no", "docket", "plaintiff", "defendant",
-    "hearing", "petitioner", "respondent", "judicial",
-})
+_LEGAL_DOCUMENT_SIGNALS = frozenset(
+    {
+        "court",
+        "cause no",
+        "docket",
+        "plaintiff",
+        "defendant",
+        "hearing",
+        "petitioner",
+        "respondent",
+        "judicial",
+    }
+)
 _LEGAL_SIGNAL_MIN_HITS = 2
 
 # Content categories that indicate a *document* (as opposed to a photo, game
@@ -265,14 +276,47 @@ class ContentOrganizer(BaseOrganizer):
     )
 
     # Subset of game_sprite_keywords that implies sprite (vs texture) classification.
-    _SPRITE_DISCRIMINATOR_KEYWORDS = frozenset({
-        'frame', 'sprite', 'leg', 'arm', 'head', 'torso', 'body',
-        'wing', 'hair', 'face', 'mouth', '_grey', '_gray',
-        'assassins', 'atonement', 'arrow_v', 'arrow_h', 'add',
-        '2h_', '1h_', 'dagger', 'sword', 'axe', 'hammer', 'mace',
-        'beard', 'bling', 'hiero', 'mustache', 'scar', 'tattoo',
-        'earring', 'necklace', 'bracelet', 'glasses', 'mask', 'hood',
-    })
+    _SPRITE_DISCRIMINATOR_KEYWORDS = frozenset(
+        {
+            "frame",
+            "sprite",
+            "leg",
+            "arm",
+            "head",
+            "torso",
+            "body",
+            "wing",
+            "hair",
+            "face",
+            "mouth",
+            "_grey",
+            "_gray",
+            "assassins",
+            "atonement",
+            "arrow_v",
+            "arrow_h",
+            "add",
+            "2h_",
+            "1h_",
+            "dagger",
+            "sword",
+            "axe",
+            "hammer",
+            "mace",
+            "beard",
+            "bling",
+            "hiero",
+            "mustache",
+            "scar",
+            "tattoo",
+            "earring",
+            "necklace",
+            "bracelet",
+            "glasses",
+            "mask",
+            "hood",
+        }
+    )
 
     def __init__(
         self,
@@ -329,92 +373,92 @@ class ContentOrganizer(BaseOrganizer):
         # Filepath-based classification (checked FIRST before content analysis)
         self.filepath_patterns: Dict[str, str] = {
             # Log files
-            '.log': 'Technical/Logs',
-            '.log.gz': 'Technical/Logs',
-            '.out': 'Technical/Logs',
+            ".log": "Technical/Logs",
+            ".log.gz": "Technical/Logs",
+            ".out": "Technical/Logs",
             # Python
-            '.py': 'Technical/Python',
-            '.pyc': 'Technical/Python/Compiled',
-            '.pyw': 'Technical/Python',
-            '.pyx': 'Technical/Python',
-            '.pyd': 'Technical/Python',
+            ".py": "Technical/Python",
+            ".pyc": "Technical/Python/Compiled",
+            ".pyw": "Technical/Python",
+            ".pyx": "Technical/Python",
+            ".pyd": "Technical/Python",
             # JavaScript/TypeScript
-            '.js': 'Technical/JavaScript',
-            '.jsx': 'Technical/JavaScript',
-            '.mjs': 'Technical/JavaScript',
-            '.cjs': 'Technical/JavaScript',
-            '.ts': 'Technical/TypeScript',
-            '.tsx': 'Technical/TypeScript',
+            ".js": "Technical/JavaScript",
+            ".jsx": "Technical/JavaScript",
+            ".mjs": "Technical/JavaScript",
+            ".cjs": "Technical/JavaScript",
+            ".ts": "Technical/TypeScript",
+            ".tsx": "Technical/TypeScript",
             # Web
-            '.html': 'Technical/Web',
-            '.htm': 'Technical/Web',
-            '.css': 'Technical/Web',
-            '.scss': 'Technical/Web',
-            '.sass': 'Technical/Web',
-            '.less': 'Technical/Web',
+            ".html": "Technical/Web",
+            ".htm": "Technical/Web",
+            ".css": "Technical/Web",
+            ".scss": "Technical/Web",
+            ".sass": "Technical/Web",
+            ".less": "Technical/Web",
             # Shell scripts
-            '.sh': 'Technical/Shell',
-            '.bash': 'Technical/Shell',
-            '.zsh': 'Technical/Shell',
-            '.fish': 'Technical/Shell',
+            ".sh": "Technical/Shell",
+            ".bash": "Technical/Shell",
+            ".zsh": "Technical/Shell",
+            ".fish": "Technical/Shell",
             # Config files
-            '.json': 'Technical/Config',
-            '.yaml': 'Technical/Config',
-            '.yml': 'Technical/Config',
-            '.toml': 'Technical/Config',
-            '.ini': 'Technical/Config',
-            '.conf': 'Technical/Config',
-            '.config': 'Technical/Config',
-            '.env': 'Technical/Config',
+            ".json": "Technical/Config",
+            ".yaml": "Technical/Config",
+            ".yml": "Technical/Config",
+            ".toml": "Technical/Config",
+            ".ini": "Technical/Config",
+            ".conf": "Technical/Config",
+            ".config": "Technical/Config",
+            ".env": "Technical/Config",
             # Database
-            '.sql': 'Technical/Database',
-            '.db': 'Technical/Database',
-            '.sqlite': 'Technical/Database',
-            '.sqlite3': 'Technical/Database',
+            ".sql": "Technical/Database",
+            ".db": "Technical/Database",
+            ".sqlite": "Technical/Database",
+            ".sqlite3": "Technical/Database",
             # Java/Kotlin
-            '.java': 'Technical/Java',
-            '.class': 'Technical/Java/Compiled',
-            '.jar': 'Technical/Java/Archives',
-            '.kt': 'Technical/Kotlin',
-            '.kts': 'Technical/Kotlin',
+            ".java": "Technical/Java",
+            ".class": "Technical/Java/Compiled",
+            ".jar": "Technical/Java/Archives",
+            ".kt": "Technical/Kotlin",
+            ".kts": "Technical/Kotlin",
             # C/C++
-            '.c': 'Technical/C',
-            '.cpp': 'Technical/C++',
-            '.cc': 'Technical/C++',
-            '.cxx': 'Technical/C++',
-            '.h': 'Technical/C/Headers',
-            '.hpp': 'Technical/C++/Headers',
+            ".c": "Technical/C",
+            ".cpp": "Technical/C++",
+            ".cc": "Technical/C++",
+            ".cxx": "Technical/C++",
+            ".h": "Technical/C/Headers",
+            ".hpp": "Technical/C++/Headers",
             # Go
-            '.go': 'Technical/Go',
+            ".go": "Technical/Go",
             # Rust
-            '.rs': 'Technical/Rust',
+            ".rs": "Technical/Rust",
             # Ruby
-            '.rb': 'Technical/Ruby',
-            '.rake': 'Technical/Ruby',
+            ".rb": "Technical/Ruby",
+            ".rake": "Technical/Ruby",
             # PHP
-            '.php': 'Technical/PHP',
+            ".php": "Technical/PHP",
             # Swift
-            '.swift': 'Technical/Swift',
+            ".swift": "Technical/Swift",
             # Markdown and docs
-            '.md': 'Technical/Documentation',
-            '.markdown': 'Technical/Documentation',
-            '.rst': 'Technical/Documentation',
-            '.adoc': 'Technical/Documentation',
+            ".md": "Technical/Documentation",
+            ".markdown": "Technical/Documentation",
+            ".rst": "Technical/Documentation",
+            ".adoc": "Technical/Documentation",
             # Version control
-            '.gitignore': 'Technical/VersionControl',
-            '.gitattributes': 'Technical/VersionControl',
+            ".gitignore": "Technical/VersionControl",
+            ".gitattributes": "Technical/VersionControl",
             # Build/Package files
-            'Makefile': 'Technical/Build',
-            'Dockerfile': 'Technical/Build',
-            'docker-compose.yml': 'Technical/Build',
-            'package.json': 'Technical/Build',
-            'package-lock.json': 'Technical/Build',
-            'yarn.lock': 'Technical/Build',
-            'Cargo.toml': 'Technical/Build',
-            'go.mod': 'Technical/Build',
-            'requirements.txt': 'Technical/Build',
-            'Pipfile': 'Technical/Build',
-            'pyproject.toml': 'Technical/Build',
+            "Makefile": "Technical/Build",
+            "Dockerfile": "Technical/Build",
+            "docker-compose.yml": "Technical/Build",
+            "package.json": "Technical/Build",
+            "package-lock.json": "Technical/Build",
+            "yarn.lock": "Technical/Build",
+            "Cargo.toml": "Technical/Build",
+            "go.mod": "Technical/Build",
+            "requirements.txt": "Technical/Build",
+            "Pipfile": "Technical/Build",
+            "pyproject.toml": "Technical/Build",
         }
 
         # Content-based organization structure: shared taxonomy, deepcopied
@@ -442,16 +486,18 @@ class ContentOrganizer(BaseOrganizer):
 
         # Regex patterns for game asset detection (numbered sprites, variants)
         self.game_sprite_patterns: List[re.Pattern[str]] = [
-            re.compile(r'^\d+_\d+$'),  # 42_8, 51_3, 16_3 (sprite sheets)
-            re.compile(r'^\d+_grey(_\d+)?$', re.IGNORECASE),  # 10_grey, 10_grey_1
-            re.compile(r'^\d+_f(_\d+)?$', re.IGNORECASE),  # 283_f, 283_f_1
-            re.compile(r'^[a-z]+_\d+$', re.IGNORECASE),  # frame_1, item_42
-            re.compile(r'^[a-z]+_[a-z]+_\d+$', re.IGNORECASE),  # assassins_deed_1
-            re.compile(r'^\d+h_[a-z]+(_\d+)?$', re.IGNORECASE),  # 2h_axe, 2h_axe_1
-            re.compile(r'^[a-z]+_v(_\d+)?$', re.IGNORECASE),  # arrow_v, arrow_v_1
-            re.compile(r'^[a-z]+_h(_\d+)?$', re.IGNORECASE),  # arrow_h, arrow_h_1
-            re.compile(r'^(head|torso|arm|leg|body|wing|hair)_\w+', re.IGNORECASE),  # body parts
-            re.compile(r'^(weapon|armor|item|sprite|frame|tile)\d*_', re.IGNORECASE),  # game prefixes
+            re.compile(r"^\d+_\d+$"),  # 42_8, 51_3, 16_3 (sprite sheets)
+            re.compile(r"^\d+_grey(_\d+)?$", re.IGNORECASE),  # 10_grey, 10_grey_1
+            re.compile(r"^\d+_f(_\d+)?$", re.IGNORECASE),  # 283_f, 283_f_1
+            re.compile(r"^[a-z]+_\d+$", re.IGNORECASE),  # frame_1, item_42
+            re.compile(r"^[a-z]+_[a-z]+_\d+$", re.IGNORECASE),  # assassins_deed_1
+            re.compile(r"^\d+h_[a-z]+(_\d+)?$", re.IGNORECASE),  # 2h_axe, 2h_axe_1
+            re.compile(r"^[a-z]+_v(_\d+)?$", re.IGNORECASE),  # arrow_v, arrow_v_1
+            re.compile(r"^[a-z]+_h(_\d+)?$", re.IGNORECASE),  # arrow_h, arrow_h_1
+            re.compile(r"^(head|torso|arm|leg|body|wing|hair)_\w+", re.IGNORECASE),  # body parts
+            re.compile(
+                r"^(weapon|armor|item|sprite|frame|tile)\d*_", re.IGNORECASE
+            ),  # game prefixes
         ]
 
         # Game font sprite sheet patterns — single-homed in shared.constants
@@ -488,7 +534,7 @@ class ContentOrganizer(BaseOrganizer):
 
         # Check double extensions (e.g., .log.gz)
         if len(file_path.suffixes) >= 2:
-            double_ext = ''.join(file_path.suffixes[-2:]).lower()
+            double_ext = "".join(file_path.suffixes[-2:]).lower()
             if double_ext in self.filepath_patterns:
                 return self.filepath_patterns[double_ext]
 
@@ -506,12 +552,40 @@ class ContentOrganizer(BaseOrganizer):
             Project name if found, None otherwise
         """
         skip_dirs = {
-            'src', 'lib', 'bin', 'dist', 'build', 'out', 'target',
-            'node_modules', 'venv', '.venv', 'env', '__pycache__',
-            'scripts', 'tests', 'test', 'docs', 'doc', 'examples',
-            'static', 'public', 'assets', 'resources', 'config',
-            'home', 'users', 'documents', 'downloads', 'desktop',
-            'code', 'projects', 'dev', 'work', 'repos', 'git',
+            "src",
+            "lib",
+            "bin",
+            "dist",
+            "build",
+            "out",
+            "target",
+            "node_modules",
+            "venv",
+            ".venv",
+            "env",
+            "__pycache__",
+            "scripts",
+            "tests",
+            "test",
+            "docs",
+            "doc",
+            "examples",
+            "static",
+            "public",
+            "assets",
+            "resources",
+            "config",
+            "home",
+            "users",
+            "documents",
+            "downloads",
+            "desktop",
+            "code",
+            "projects",
+            "dev",
+            "work",
+            "repos",
+            "git",
         }
 
         # Also skip the running user's home-directory name so that files
@@ -520,7 +594,7 @@ class ContentOrganizer(BaseOrganizer):
         home_name = Path.home().name.lower()
         # Set of dir-name parents that introduce a per-user directory:
         # /Users/<name>  or  /home/<name>  on Linux.
-        user_container_dirs = {'users', 'home'}
+        user_container_dirs = {"users", "home"}
 
         # Get all parent directories
         parts = file_path.parts
@@ -534,11 +608,11 @@ class ContentOrganizer(BaseOrganizer):
                 continue
 
             # Skip hidden directories
-            if dir_name.startswith('.'):
+            if dir_name.startswith("."):
                 continue
 
             # Skip filesystem root and empty segments
-            if parts[i] in ('/', '\\', ''):
+            if parts[i] in ("/", "\\", ""):
                 continue
 
             # Skip the user's own home-directory segment (e.g. "alyshialedlie")
@@ -565,59 +639,59 @@ class ContentOrganizer(BaseOrganizer):
         ext = file_path.suffix.lower()
 
         # Remove timestamp suffixes for pattern matching (e.g., _20251120_164506)
-        clean_stem = re.sub(r'_\d{8}_\d{6}$', '', stem)
+        clean_stem = re.sub(r"_\d{8}_\d{6}$", "", stem)
 
         # Check for audio files (.wav, .ogg, .mp3)
-        if ext in ['.wav', '.ogg', '.mp3', '.flac', '.aac']:
+        if ext in [".wav", ".ogg", ".mp3", ".flac", ".aac"]:
             # Check for game music patterns (usually .ogg files with specific names)
-            if ext == '.ogg':
+            if ext == ".ogg":
                 for keyword in self.game_music_keywords:
                     if keyword in stem:
-                        return ('game_assets', 'music')
+                        return ("game_assets", "music")
 
             # Check for game sound effects
             for keyword in self.game_audio_keywords:
                 if keyword in stem:
-                    return ('game_assets', 'audio')
+                    return ("game_assets", "audio")
 
         # Check for image files that are game sprites/textures
         # Exclude files with 'screenshot' in name — those are screen captures
-        if ext in ['.png', '.jpg', '.jpeg', '.bmp', '.tga', '.dds'] and 'screenshot' not in stem:
+        if ext in [".png", ".jpg", ".jpeg", ".bmp", ".tga", ".dds"] and "screenshot" not in stem:
             # Check for game font sprite sheets first
             for keyword in self.game_font_keywords:
                 if keyword in stem or keyword in clean_stem:
-                    return ('game_assets', 'fonts')
+                    return ("game_assets", "fonts")
 
             # Check regex patterns for numbered sprites and variants
             for pattern in self.game_sprite_patterns:
                 if pattern.match(clean_stem):
-                    return ('game_assets', 'sprites')
+                    return ("game_assets", "sprites")
 
             # Check for sprite/texture keyword patterns
             for keyword in self.game_sprite_keywords:
                 if keyword in stem or keyword in clean_stem:
                     # Distinguish between sprites and textures
-                    if any(kw in stem or kw in clean_stem for kw in self._SPRITE_DISCRIMINATOR_KEYWORDS):
-                        return ('game_assets', 'sprites')
+                    if any(
+                        kw in stem or kw in clean_stem for kw in self._SPRITE_DISCRIMINATOR_KEYWORDS
+                    ):
+                        return ("game_assets", "sprites")
                     else:
-                        return ('game_assets', 'textures')
+                        return ("game_assets", "textures")
 
         # Check for font files
-        if ext in ['.ttf', '.otf', '.woff', '.woff2', '.eot', '.fon', '.fnt']:
-            if ext == '.ttf':
-                return ('fonts', 'truetype')
-            elif ext == '.otf':
-                return ('fonts', 'opentype')
-            elif ext in ['.woff', '.woff2', '.eot']:
-                return ('fonts', 'web')
+        if ext in [".ttf", ".otf", ".woff", ".woff2", ".eot", ".fon", ".fnt"]:
+            if ext == ".ttf":
+                return ("fonts", "truetype")
+            elif ext == ".otf":
+                return ("fonts", "opentype")
+            elif ext in [".woff", ".woff2", ".eot"]:
+                return ("fonts", "web")
             else:
-                return ('fonts', 'other')
+                return ("fonts", "other")
 
         return None
 
-    def classify_by_organization(
-        self, text: str, filename: str
-    ) -> Optional[Tuple[str, str, str]]:
+    def classify_by_organization(self, text: str, filename: str) -> Optional[Tuple[str, str, str]]:
         """
         Classify file primarily by Organization entity detection.
 
@@ -637,44 +711,123 @@ class ContentOrganizer(BaseOrganizer):
 
         # Organization type indicators
         org_indicators: Dict[str, List[str]] = {
-            'government': [
-                'department of', 'internal revenue', 'irs', 'social security',
-                'state of', 'county of', 'city of', 'municipality', 'federal',
-                'government', 'agency', 'bureau', 'commission', 'dmv',
-                'passport', 'immigration', 'customs', 'treasury',
+            "government": [
+                "department of",
+                "internal revenue",
+                "irs",
+                "social security",
+                "state of",
+                "county of",
+                "city of",
+                "municipality",
+                "federal",
+                "government",
+                "agency",
+                "bureau",
+                "commission",
+                "dmv",
+                "passport",
+                "immigration",
+                "customs",
+                "treasury",
             ],
-            'healthcare': [
-                'hospital', 'clinic', 'medical center', 'health system',
-                'healthcare', 'physicians', 'doctor', 'patient', 'diagnosis',
-                'prescription', 'pharmacy', 'insurance claim', 'medicare',
-                'medicaid', 'hipaa', 'medical record', 'lab results',
+            "healthcare": [
+                "hospital",
+                "clinic",
+                "medical center",
+                "health system",
+                "healthcare",
+                "physicians",
+                "doctor",
+                "patient",
+                "diagnosis",
+                "prescription",
+                "pharmacy",
+                "insurance claim",
+                "medicare",
+                "medicaid",
+                "hipaa",
+                "medical record",
+                "lab results",
             ],
-            'financial': [
-                'bank', 'credit union', 'investment', 'brokerage', 'mortgage',
-                'loan', 'account statement', 'transaction', 'wire transfer',
-                'routing number', 'account number', 'fdic', 'securities',
+            "financial": [
+                "bank",
+                "credit union",
+                "investment",
+                "brokerage",
+                "mortgage",
+                "loan",
+                "account statement",
+                "transaction",
+                "wire transfer",
+                "routing number",
+                "account number",
+                "fdic",
+                "securities",
             ],
-            'educational': [
-                'university', 'college', 'school', 'academy', 'institute',
-                'transcript', 'diploma', 'degree', 'enrollment', 'registrar',
-                'financial aid', 'tuition', 'semester', 'course', 'student id',
+            "educational": [
+                "university",
+                "college",
+                "school",
+                "academy",
+                "institute",
+                "transcript",
+                "diploma",
+                "degree",
+                "enrollment",
+                "registrar",
+                "financial aid",
+                "tuition",
+                "semester",
+                "course",
+                "student id",
             ],
-            'nonprofit': [
-                'foundation', 'charity', 'nonprofit', 'non-profit', '501(c)',
-                'donation', 'volunteer', 'mission', 'charitable',
+            "nonprofit": [
+                "foundation",
+                "charity",
+                "nonprofit",
+                "non-profit",
+                "501(c)",
+                "donation",
+                "volunteer",
+                "mission",
+                "charitable",
             ],
-            'employers': [
-                'offer letter', 'employment agreement', 'w-2', 'w2', 'pay stub',
-                'payroll', 'human resources', 'hr department', 'employee id',
-                'benefits enrollment', 'performance review', 'termination',
+            "employers": [
+                "offer letter",
+                "employment agreement",
+                "w-2",
+                "w2",
+                "pay stub",
+                "payroll",
+                "human resources",
+                "hr department",
+                "employee id",
+                "benefits enrollment",
+                "performance review",
+                "termination",
             ],
-            'vendors': [
-                'invoice', 'purchase order', 'po number', 'vendor id',
-                'supplier', 'bill to', 'ship to', 'payment terms', 'net 30',
+            "vendors": [
+                "invoice",
+                "purchase order",
+                "po number",
+                "vendor id",
+                "supplier",
+                "bill to",
+                "ship to",
+                "payment terms",
+                "net 30",
             ],
-            'clients': [
-                'client', 'customer', 'service agreement', 'statement of work',
-                'sow', 'proposal', 'quote', 'estimate', 'engagement letter',
+            "clients": [
+                "client",
+                "customer",
+                "service agreement",
+                "statement of work",
+                "sow",
+                "proposal",
+                "quote",
+                "estimate",
+                "engagement letter",
             ],
         }
 
@@ -686,13 +839,11 @@ class ContentOrganizer(BaseOrganizer):
                 companies = self.classifier.extract_company_names(text)
                 org_name = companies[0] if companies else None
                 if org_name:
-                    return ('organization', org_type, org_name)
+                    return ("organization", org_type, org_name)
 
         return None
 
-    def classify_by_person(
-        self, text: str, filename: str
-    ) -> Optional[Tuple[str, str, List[str]]]:
+    def classify_by_person(self, text: str, filename: str) -> Optional[Tuple[str, str, List[str]]]:
         """
         Classify file primarily by Person entity detection.
 
@@ -713,29 +864,52 @@ class ContentOrganizer(BaseOrganizer):
 
         # Person type indicators
         person_indicators: Dict[str, List[str]] = {
-            'contacts': [
-                'contact', 'phone:', 'email:', 'address:', 'mobile:',
-                'tel:', 'fax:', 'linkedin', 'twitter', '@',
+            "contacts": [
+                "contact",
+                "phone:",
+                "email:",
+                "address:",
+                "mobile:",
+                "tel:",
+                "fax:",
+                "linkedin",
+                "twitter",
+                "@",
             ],
-            'employees': [
-                'employee', 'staff', 'team member', 'department:', 'title:',
-                'hire date', 'start date', 'position:', 'role:',
+            "employees": [
+                "employee",
+                "staff",
+                "team member",
+                "department:",
+                "title:",
+                "hire date",
+                "start date",
+                "position:",
+                "role:",
             ],
-            'references': [
-                'reference', 'recommendation', 'letter of', 'to whom it may concern',
-                'i am pleased to', 'i highly recommend', 'worked with',
+            "references": [
+                "reference",
+                "recommendation",
+                "letter of",
+                "to whom it may concern",
+                "i am pleased to",
+                "i highly recommend",
+                "worked with",
             ],
-            'clients': [
-                'client profile', 'customer profile', 'client information',
-                'account holder', 'policyholder',
+            "clients": [
+                "client profile",
+                "customer profile",
+                "client information",
+                "account holder",
+                "policyholder",
             ],
         }
 
         # Check filename patterns for resumes/CVs
-        resume_patterns = ['resume', 'cv', 'curriculum', 'vitae']
+        resume_patterns = ["resume", "cv", "curriculum", "vitae"]
         if any(pat in filename_lower for pat in resume_patterns):
             people = self.classifier.extract_people_names(text)
-            return ('personal', 'contacts', people if people else [])
+            return ("personal", "contacts", people if people else [])
 
         # Legal-document veto: court filings carry clerk contact info that
         # satisfies the generic indicators below; defer to content analysis.
@@ -748,14 +922,14 @@ class ContentOrganizer(BaseOrganizer):
             matches = sum(1 for kw in keywords if kw in text_lower)
             min_hits = (
                 _CONTACTS_MIN_KEYWORD_HITS
-                if person_type == 'contacts'
+                if person_type == "contacts"
                 else _PERSON_MIN_KEYWORD_HITS
             )
             if matches >= min_hits:
                 people = self.classifier.extract_people_names(text)
                 if people and _has_human_name_signal(text):
                     subcat = _PERSON_SUBCAT_TO_PERSONAL_SUBCAT[person_type]
-                    return ('personal', subcat, people)
+                    return ("personal", subcat, people)
 
         return None
 
@@ -774,62 +948,62 @@ class ContentOrganizer(BaseOrganizer):
         ext = file_path.suffix.lower()
 
         # Videos - .mp4, .mov, .avi, .mkv, .webm, .m4v
-        if ext in ['.mp4', '.mov', '.avi', '.mkv', '.webm', '.m4v', '.flv', '.wmv']:
+        if ext in [".mp4", ".mov", ".avi", ".mkv", ".webm", ".m4v", ".flv", ".wmv"]:
             # Screen recordings
-            if 'screen' in stem or 'recording' in stem or 'capture' in stem:
-                return ('media', 'videos', 'screencasts')
+            if "screen" in stem or "recording" in stem or "capture" in stem:
+                return ("media", "videos", "screencasts")
             # Exports (from video editors)
-            elif 'export' in stem or 'render' in stem or 'final' in stem or 'cut' in stem:
-                return ('media', 'videos', 'exports')
+            elif "export" in stem or "render" in stem or "final" in stem or "cut" in stem:
+                return ("media", "videos", "exports")
             # Default to recordings
             else:
-                return ('media', 'videos', 'recordings')
+                return ("media", "videos", "recordings")
 
         # Audio - .mp3, .wav, .m4a, .aac, .flac, .ogg (but not game music)
-        if ext in ['.mp3', '.m4a', '.aac', '.flac', '.wma']:
+        if ext in [".mp3", ".m4a", ".aac", ".flac", ".wma"]:
             # Podcasts
-            if 'podcast' in stem or 'episode' in stem or 'interview' in stem:
-                return ('media', 'audio', 'podcasts')
+            if "podcast" in stem or "episode" in stem or "interview" in stem:
+                return ("media", "audio", "podcasts")
             # Music
-            elif 'song' in stem or 'album' in stem or 'track' in stem or 'music' in stem:
-                return ('media', 'audio', 'music')
+            elif "song" in stem or "album" in stem or "track" in stem or "music" in stem:
+                return ("media", "audio", "music")
             # Voice recordings
-            elif 'recording' in stem or 'voice' in stem or 'memo' in stem or 'audio' in stem:
-                return ('media', 'audio', 'recordings')
+            elif "recording" in stem or "voice" in stem or "memo" in stem or "audio" in stem:
+                return ("media", "audio", "recordings")
             # Default to recordings
             else:
-                return ('media', 'audio', 'recordings')
+                return ("media", "audio", "recordings")
 
         # Photos - .jpg, .jpeg, .png, .heic, .gif, .webp, .bmp
-        if ext in ['.jpg', '.jpeg', '.png', '.heic', '.gif', '.webp', '.bmp', '.tiff', '.tif']:
+        if ext in [".jpg", ".jpeg", ".png", ".heic", ".gif", ".webp", ".bmp", ".tiff", ".tif"]:
             # Screenshots — fall through to None so CLIP/OCR sub-classification
             # at Priority 4.5 can route to Browser/Terminal/Docs/etc.
             if (
-                filename.startswith('screenshot')
-                or 'screen shot' in filename
-                or 'screenshot' in stem
+                filename.startswith("screenshot")
+                or "screen shot" in filename
+                or "screenshot" in stem
             ):
                 return None
 
             # Scanned documents/receipts (OCR will detect text)
-            if 'scan' in stem or 'receipt' in stem or 'document' in stem or 'invoice' in stem:
-                return ('media', 'photos', 'documents')
+            if "scan" in stem or "receipt" in stem or "document" in stem or "invoice" in stem:
+                return ("media", "photos", "documents")
 
             # Travel photos (has GPS metadata)
-            if image_metadata and image_metadata.get('gps_coordinates'):
+            if image_metadata and image_metadata.get("gps_coordinates"):
                 # If we have GPS coordinates, it's likely a travel photo
-                return ('media', 'photos', 'travel')
+                return ("media", "photos", "travel")
 
             # Photos with datetime (camera photos) - organize by type
-            if image_metadata and image_metadata.get('datetime'):
+            if image_metadata and image_metadata.get("datetime"):
                 # Photos with camera EXIF data are likely personal photos
                 # Default to 'other' category for general photos
-                return ('media', 'photos', 'other')
+                return ("media", "photos", "other")
 
             # Photos without metadata - still categorize as media if they're actual photos
             # (as opposed to game sprites which would be caught earlier)
-            if ext in ['.jpg', '.jpeg', '.heic']:
-                return ('media', 'photos', 'other')
+            if ext in [".jpg", ".jpeg", ".heic"]:
+                return ("media", "photos", "other")
 
             # PNG files without clear classification fall through
             # (could be screenshots, documents, or game assets that weren't caught)
@@ -1408,9 +1582,7 @@ class ContentOrganizer(BaseOrganizer):
         except Exception as e:
             print(f"  CLIP signal error: {e}")
             return None
-        return {
-            _CLIP_PROMPT_TO_LABEL.get(prompt, prompt): score for prompt, score in results
-        }
+        return {_CLIP_PROMPT_TO_LABEL.get(prompt, prompt): score for prompt, score in results}
 
     def _build_file_context(
         self, file_path: Path, display_path: Optional[Path] = None
@@ -1490,6 +1662,7 @@ class ContentOrganizer(BaseOrganizer):
             kie = ctx.kie_if_loaded
             if kie is not None:
                 self._last_file_state["kie_result"] = kie
+            self._stash_decision_state(decision, scorer_label=SCORER_UNIFIED)
 
         return (
             decision.category,
@@ -1500,6 +1673,58 @@ class ContentOrganizer(BaseOrganizer):
             decision.people_names,
             ctx.image_metadata_if_loaded or {},
         )
+
+    def _stash_decision_state(self, decision: Any, *, scorer_label: str) -> None:
+        """Populate ``_last_file_state`` from decision evidence.
+
+        Mirrors the legacy side-channels downstream consumers read:
+        ``research`` (ScholarlyArticle provenance for schema generation),
+        ``clip_description`` ((label, score) for description composition),
+        plus the JSON-safe ``scoring_decision`` snapshot persisted into
+        ``file_categories.signal_evidence``.
+        """
+        for score in decision.all_scores:
+            research = score.evidence.get("research")
+            if research and "research" not in self._last_file_state:
+                self._last_file_state["research"] = research
+            clip_label = score.evidence.get("clip_label")
+            if clip_label is not None and "clip_description" not in self._last_file_state:
+                self._last_file_state["clip_description"] = (
+                    clip_label,
+                    score.evidence.get("clip_score", score.confidence),
+                )
+        self._last_file_state["scoring_decision"] = self._decision_snapshot(
+            decision, scorer_label=scorer_label
+        )
+
+    @staticmethod
+    def _decision_snapshot(decision: Any, *, scorer_label: str) -> Dict[str, Any]:
+        """JSON-safe snapshot of a ClassificationDecision (§7.1 record core)."""
+        snapshot = {
+            "scorer": scorer_label,
+            "decision": {
+                "category": decision.category,
+                "subcategory": decision.subcategory,
+                "schema_type": decision.schema_type,
+                "confidence": round(decision.confidence, 4),
+                "margin": round(decision.margin, 4),
+                "decision_state": decision.decision_state,
+            },
+            "winning_signals": list(decision.winning_signals),
+            "all_scores": [
+                {
+                    "signal": score.signal_name,
+                    "cat": score.category,
+                    "sub": score.subcategory,
+                    "conf": round(score.confidence, 4),
+                    "evidence": score.evidence,
+                }
+                for score in decision.all_scores
+            ],
+        }
+        # Round-trip through json to guarantee persistability (EXIF datetimes
+        # and other rich objects inside evidence degrade to strings).
+        return json.loads(json.dumps(snapshot, default=str))
 
     def _log_shadow_comparison(
         self,
@@ -1515,29 +1740,15 @@ class ContentOrganizer(BaseOrganizer):
         try:
             ctx = self._build_file_context(file_path, display_path)
             decision = self._get_unified_scorer().classify(ctx)
+            # Persist the unified decision alongside legacy placement
+            # (plan §6 Phase 2: source tag 'shadow_unified').
+            snapshot = self._decision_snapshot(decision, scorer_label="shadow_unified")
+            self._last_file_state["scoring_decision"] = snapshot
             record = {
                 "ts": datetime.now(timezone.utc).isoformat(),
                 "path": str(file_path),
                 "scorer": SCORER_SHADOW,
-                "decision": {
-                    "category": decision.category,
-                    "subcategory": decision.subcategory,
-                    "schema_type": decision.schema_type,
-                    "confidence": round(decision.confidence, 4),
-                    "margin": round(decision.margin, 4),
-                    "decision_state": decision.decision_state,
-                },
-                "winning_signals": decision.winning_signals,
-                "all_scores": [
-                    {
-                        "signal": score.signal_name,
-                        "cat": score.category,
-                        "sub": score.subcategory,
-                        "conf": round(score.confidence, 4),
-                        "evidence": score.evidence,
-                    }
-                    for score in decision.all_scores
-                ],
+                **{k: snapshot[k] for k in ("decision", "winning_signals", "all_scores")},
                 "legacy_decision": {
                     "category": legacy_result[0],
                     "subcategory": legacy_result[1],
@@ -1900,78 +2111,80 @@ class ContentOrganizer(BaseOrganizer):
             Destination path for the file
         """
         # Special handling for filepath-based classification
-        if category == 'filepath':
+        if category == "filepath":
             # subcategory contains the full path (e.g., "Technical/Python/MyProject")
             relative_path = subcategory
         # Special handling for media files with nested structure
-        elif category == 'media' and '_' in subcategory:
+        elif category == "media" and "_" in subcategory:
             # subcategory format: "photos_screenshots" or "photos_screenshots_browser"
-            parts = subcategory.split('_', 1)  # Split into at most 2 parts
+            parts = subcategory.split("_", 1)  # Split into at most 2 parts
             if len(parts) == 2:
                 media_type, media_subcat = parts
-                if media_type in self.category_paths['media']:
-                    media_dict = self.category_paths['media'][media_type]
+                if media_type in self.category_paths["media"]:
+                    media_dict = self.category_paths["media"][media_type]
                     if isinstance(media_dict, dict):
                         # Check for 3-level nesting (e.g., screenshots_browser)
-                        if '_' in media_subcat:
-                            parent_key, child_key = media_subcat.split('_', 1)
+                        if "_" in media_subcat:
+                            parent_key, child_key = media_subcat.split("_", 1)
                             parent_val = media_dict.get(parent_key)
                             if isinstance(parent_val, dict):
                                 relative_path = parent_val.get(
                                     child_key,
                                     parent_val.get(
-                                        'other',
-                                        f'Media/{media_type.capitalize()}/{parent_key.capitalize()}',
+                                        "other",
+                                        f"Media/{media_type.capitalize()}/{parent_key.capitalize()}",
                                     ),
                                 )
                             else:
                                 relative_path = media_dict.get(
                                     media_subcat,
-                                    media_dict.get('other', f'Media/{media_type.capitalize()}/Other'),
+                                    media_dict.get(
+                                        "other", f"Media/{media_type.capitalize()}/Other"
+                                    ),
                                 )
                         else:
                             val = media_dict.get(media_subcat)
                             if isinstance(val, dict):
                                 relative_path = val.get(
-                                    'other',
-                                    f'Media/{media_type.capitalize()}/{media_subcat.capitalize()}',
+                                    "other",
+                                    f"Media/{media_type.capitalize()}/{media_subcat.capitalize()}",
                                 )
                             elif val:
                                 relative_path = val
                             else:
                                 relative_path = media_dict.get(
-                                    'other', f'Media/{media_type.capitalize()}/Other'
+                                    "other", f"Media/{media_type.capitalize()}/Other"
                                 )
                     else:
                         relative_path = media_dict
                 else:
-                    relative_path = 'Media/Other'
+                    relative_path = "Media/Other"
             else:
-                relative_path = 'Media/Other'
+                relative_path = "Media/Other"
         elif category in self.category_paths:
             if isinstance(self.category_paths[category], dict):
                 if subcategory in self.category_paths[category]:
                     relative_path = self.category_paths[category][subcategory]
                 else:
                     relative_path = self.category_paths[category].get(
-                        'other', f'{category.capitalize()}/Other'
+                        "other", f"{category.capitalize()}/Other"
                     )
             else:
                 relative_path = self.category_paths[category]
         else:
-            relative_path = 'Uncategorized'
+            relative_path = "Uncategorized"
 
         # Organization: Create entity-named subfolders under Organization/
         # Structure: Organization/{OrgName}/ for most types
         # Exception: Organization/Clients/{OrgName}/ for clients (nested subfolders)
-        if category == 'organization' and company_name:
+        if category == "organization" and company_name:
             sanitized_company = self.classifier.sanitize_company_name(company_name)
             # Only create company subfolder if name is valid (not a sentence fragment)
             if sanitized_company:
-                if subcategory == 'clients':
+                if subcategory == "clients":
                     # Clients get nested: Organization/Clients/{OrgName}/
                     relative_path = f"{relative_path}/{sanitized_company}"
-                elif subcategory == 'meeting_notes':
+                elif subcategory == "meeting_notes":
                     # Meeting notes get nested: Organization/{OrgName}/Meeting Notes/
                     relative_path = f"{relative_path}/{sanitized_company}/Meeting Notes"
                 else:
@@ -1979,26 +2192,26 @@ class ContentOrganizer(BaseOrganizer):
                     relative_path = f"{relative_path}/{sanitized_company}"
 
         # Legacy: client files from business category with company name
-        if category == 'business' and subcategory == 'clients' and company_name:
+        if category == "business" and subcategory == "clients" and company_name:
             sanitized_company = self.classifier.sanitize_company_name(company_name)
             # Only create company subfolder if name is valid
             if sanitized_company:
                 relative_path = f"{relative_path}/{sanitized_company}"
 
         # Date-based organization for images (if enabled and metadata available)
-        if self.organize_by_date and image_metadata and image_metadata.get('year'):
-            year = image_metadata['year']
-            month = image_metadata['month']
+        if self.organize_by_date and image_metadata and image_metadata.get("year"):
+            year = image_metadata["year"]
+            month = image_metadata["month"]
             relative_path = f"Photos/{year}/{month:02d}"
 
         # Location-based organization for images (if enabled and location available)
-        elif self.organize_by_location and image_metadata and image_metadata.get('location_name'):
+        elif self.organize_by_location and image_metadata and image_metadata.get("location_name"):
             # Clean location name for folder
-            location = image_metadata['location_name']
+            location = image_metadata["location_name"]
             # Take first part (usually city)
-            city = location.split(',')[0].strip()
+            city = location.split(",")[0].strip()
             # Sanitize for folder name
-            safe_city = re.sub(r'[<>:"/\\|?*]', '', city)
+            safe_city = re.sub(r'[<>:"/\\|?*]', "", city)
             relative_path = f"Photos/Locations/{safe_city}"
 
         dest_dir = self.base_path / relative_path
