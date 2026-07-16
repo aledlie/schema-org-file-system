@@ -351,6 +351,15 @@ class TestClassifyByFilenamePatterns:
         assert result[0] == 'financial'
         assert result[1] == 'statements'
 
+    def test_bare_billing_maps_to_financial_invoices(self, organizer: ContentOrganizer) -> None:
+        # Guards the financial_doc_keywords reorder: a bare "billing" stem (no
+        # "statement") routes to financial/invoices. "statement" precedes
+        # "billing" in the dict, so "Billing Statement" above still → statements.
+        result = organizer.classify_by_filename_patterns(Path("/docs/acme_billing.pdf"))
+        assert result is not None
+        assert result[0] == 'financial'
+        assert result[1] == 'invoices'
+
     def test_invoice_filename_maps_to_financial_invoices(
         self, organizer: ContentOrganizer
     ) -> None:

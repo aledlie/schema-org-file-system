@@ -104,10 +104,6 @@ KIE_FIELD_TO_SCHEMA: dict[str, dict[str, str]] = {
 # its own private copy.
 KIE_MIN_CONFIDENCE: float = 0.5
 
-# Backward-compat private alias so existing code referencing the old name
-# continues to work without changes.
-_KIE_SCHEMA_MIN_CONFIDENCE = KIE_MIN_CONFIDENCE
-
 # Field-class groups for classification. content_classifier.py imports these
 # so the tuples are defined in one place alongside KIE_FIELD_CLASSES above.
 KIE_VENDOR_CLASSES: tuple[str, ...] = ("vendor_name", "store_name")

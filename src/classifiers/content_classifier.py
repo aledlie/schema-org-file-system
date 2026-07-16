@@ -11,10 +11,10 @@ if TYPE_CHECKING:
 
 # Single-source the KIE confidence threshold and field-class groups from the
 # canonical kie_schema_mapping module (scripts/shared/).  The previous private
-# class attribute _KIE_CLASSIFICATION_MIN_CONFIDENCE = 0.5 was identical to
-# kie_schema_mapping._KIE_SCHEMA_MIN_CONFIDENCE but maintained separately,
-# so the two could silently drift.  The same applies to the hardcoded
-# ("vendor_name", "store_name") etc. tuples.
+# class attribute _KIE_CLASSIFICATION_MIN_CONFIDENCE = 0.5 duplicated the same
+# 0.5 gate used by kie_schema_mapping.kie_result_to_schema_org but was
+# maintained separately, so the two could silently drift.  The same applies to
+# the hardcoded ("vendor_name", "store_name") etc. tuples.
 try:
     from shared.kie_schema_mapping import (
         KIE_MIN_CONFIDENCE as _KIE_CLASSIFICATION_MIN_CONFIDENCE,
