@@ -30,6 +30,29 @@ from src.scoring.types import (
     SCORER_SHADOW,
     SCORER_UNIFIED,
 )
+
+# Extracted mid-tier signal cores (UNIFIED_SCORING_PLAN Phase 1, batch B).
+# The classify_* methods below delegate to these pure functions so the legacy
+# chain and the unified signals share one implementation; the moved module
+# constants are aliased further down under their historical underscore names.
+from src.scoring.signals.legal_content import (
+    LEGAL_DOCUMENT_SIGNALS,
+    LEGAL_SIGNAL_MIN_HITS,
+)
+from src.scoring.signals.organization import ORG_MIN_TEXT_CHARS, detect_organization
+from src.scoring.signals.personal_doc import (
+    CONTACTS_MIN_KEYWORD_HITS,
+    PERSON_MIN_KEYWORD_HITS,
+    PERSON_MIN_TEXT_CHARS,
+    PERSON_SUBCAT_TO_PERSONAL_SUBCAT,
+    detect_person_indicators,
+    is_resume_filename,
+)
+from src.scoring.signals.screenshot_ocr import (
+    SCREENSHOT_OCR_KEYWORD_THRESHOLD,
+    is_screenshot_named,
+    route_screenshot_ocr,
+)
 from shared.constants import (
     GAME_AUDIO_KEYWORDS,
     GAME_FONT_KEYWORDS,
@@ -120,14 +143,10 @@ _CLIP_PROMPT_TO_LABEL: dict = (
 # Uses docTR word-level confidence (true 0–1 scale).
 _OCR_CONFIDENCE_THRESHOLD = 0.3
 
-# Minimum keyword-hit ratio to accept a screenshot OCR sub-classification.
-# classify_by_ocr() scores as hits/len(keywords), so this is calibrated to that
-# scale — NOT to CLIP probability space.  With SCREENSHOT_MIN_HITS=2 and the
-# largest category having 14 keywords, 2 hits = 14.3%.  A threshold of 0.10
-# accepts any category that cleared SCREENSHOT_MIN_HITS (the real quality bar);
-# the 0.30 gate previously used was copied from _OCR_CONFIDENCE_THRESHOLD and
-# silently rejected valid 3–18% scores as "low confidence".
-_SCREENSHOT_OCR_KEYWORD_THRESHOLD = 0.10
+# Screenshot OCR keyword-ratio threshold — moved (with its calibration
+# comment) to src/scoring/signals/screenshot_ocr.py; aliased for existing
+# importers (scripts/file_organizer_content_based.py re-exports it).
+_SCREENSHOT_OCR_KEYWORD_THRESHOLD = SCREENSHOT_OCR_KEYWORD_THRESHOLD
 
 # Unified-scoring weights for the image classification path.
 # CLIP score (already 0-1) is used as-is; OCR-text contributes a prior scaled by
@@ -140,41 +159,18 @@ _TEXT_LENGTH_FULL_CHARS = 200
 _TEXT_MIN_CHARS = 30
 _SIGNAL_AGREEMENT_BOOST = 0.15
 
-# Option C: `person` is demoted from a category to a graph relationship.
-# classify_by_person() still detects *which kind* of person document this is,
-# but now maps that detection onto the `personal` category's subcategories
-# instead of returning a separate `person` category. See
-# docs/changelog/2.1.0/PERSON_TAXONOMY_OPTION_C_PLAN.md for the full rationale.
-_PERSON_SUBCAT_TO_PERSONAL_SUBCAT = {
-    "contacts": "contacts",
-    "employees": "employment",
-    "references": "employment",
-    "clients": "other",
-    "travel": "other",
-    "events": "events",
-    "journal": "journal",
-    "family": "other",
-    "other": "other",
-}
+# Option C person→personal subcategory map and person keyword thresholds —
+# moved (with their rationale comments) to src/scoring/signals/personal_doc.py;
+# aliased for existing importers.
+_PERSON_SUBCAT_TO_PERSONAL_SUBCAT = PERSON_SUBCAT_TO_PERSONAL_SUBCAT
+_PERSON_MIN_KEYWORD_HITS = PERSON_MIN_KEYWORD_HITS
+_CONTACTS_MIN_KEYWORD_HITS = CONTACTS_MIN_KEYWORD_HITS
 
-# Person-detection keyword thresholds. The generic person types need two
-# indicator hits; `contacts` needs three because its indicators ('contact',
-# 'phone:', '@', …) appear in the footer of virtually any official letter —
-# two hits is just a letterhead, three implies an actual contact-card layout.
-_PERSON_MIN_KEYWORD_HITS = 2
-_CONTACTS_MIN_KEYWORD_HITS = 3
-
-# Legal-document veto for the person keyword tier: court documents carry clerk
-# contact blocks that satisfy the generic contacts indicators and were misfiled
-# under Personal/Contacts (e.g. "NOTICE OF CT SETTING"). When at least
-# _LEGAL_SIGNAL_MIN_HITS of these appear, classify_by_person defers so content
-# analysis (which classifies these as legal) decides; person attribution still
-# lands via the people_names that classification returns.
-_LEGAL_DOCUMENT_SIGNALS = frozenset({
-    "court", "cause no", "docket", "plaintiff", "defendant",
-    "hearing", "petitioner", "respondent", "judicial",
-})
-_LEGAL_SIGNAL_MIN_HITS = 2
+# Legal-document veto vocabulary for the person keyword tier — moved (with its
+# rationale comment) to src/scoring/signals/legal_content.py; aliased for the
+# veto in classify_by_person and existing importers.
+_LEGAL_DOCUMENT_SIGNALS = LEGAL_DOCUMENT_SIGNALS
+_LEGAL_SIGNAL_MIN_HITS = LEGAL_SIGNAL_MIN_HITS
 
 # Content categories that indicate a *document* (as opposed to a photo, game
 # asset, or generic media). Used to let clean, high-confidence OCR text override
@@ -629,66 +625,22 @@ class ContentOrganizer(BaseOrganizer):
 
         Returns:
             Tuple of (category, subcategory, org_name) or None if no strong organization match
+
+        The indicator vocabulary and matching rules moved to
+        ``src/scoring/signals/organization.py`` (``ORG_INDICATORS`` /
+        ``detect_organization``); this method delegates so the legacy chain
+        and ``OrganizationKeywordSignal`` share one implementation.
         """
-        if not text or len(text) < 50:
+        if not text or len(text) < ORG_MIN_TEXT_CHARS:
             return None
 
-        text_lower = text.lower()
-
-        # Organization type indicators
-        org_indicators: Dict[str, List[str]] = {
-            'government': [
-                'department of', 'internal revenue', 'irs', 'social security',
-                'state of', 'county of', 'city of', 'municipality', 'federal',
-                'government', 'agency', 'bureau', 'commission', 'dmv',
-                'passport', 'immigration', 'customs', 'treasury',
-            ],
-            'healthcare': [
-                'hospital', 'clinic', 'medical center', 'health system',
-                'healthcare', 'physicians', 'doctor', 'patient', 'diagnosis',
-                'prescription', 'pharmacy', 'insurance claim', 'medicare',
-                'medicaid', 'hipaa', 'medical record', 'lab results',
-            ],
-            'financial': [
-                'bank', 'credit union', 'investment', 'brokerage', 'mortgage',
-                'loan', 'account statement', 'transaction', 'wire transfer',
-                'routing number', 'account number', 'fdic', 'securities',
-            ],
-            'educational': [
-                'university', 'college', 'school', 'academy', 'institute',
-                'transcript', 'diploma', 'degree', 'enrollment', 'registrar',
-                'financial aid', 'tuition', 'semester', 'course', 'student id',
-            ],
-            'nonprofit': [
-                'foundation', 'charity', 'nonprofit', 'non-profit', '501(c)',
-                'donation', 'volunteer', 'mission', 'charitable',
-            ],
-            'employers': [
-                'offer letter', 'employment agreement', 'w-2', 'w2', 'pay stub',
-                'payroll', 'human resources', 'hr department', 'employee id',
-                'benefits enrollment', 'performance review', 'termination',
-            ],
-            'vendors': [
-                'invoice', 'purchase order', 'po number', 'vendor id',
-                'supplier', 'bill to', 'ship to', 'payment terms', 'net 30',
-            ],
-            'clients': [
-                'client', 'customer', 'service agreement', 'statement of work',
-                'sow', 'proposal', 'quote', 'estimate', 'engagement letter',
-            ],
-        }
-
-        # Check for organization type indicators
-        for org_type, keywords in org_indicators.items():
-            matches = sum(1 for kw in keywords if kw in text_lower)
-            if matches >= 2:  # Require at least 2 keyword matches
-                # Try to extract organization name
-                companies = self.classifier.extract_company_names(text)
-                org_name = companies[0] if companies else None
-                if org_name:
-                    return ('organization', org_type, org_name)
-
-        return None
+        detected = detect_organization(
+            text, extract_company_names=self.classifier.extract_company_names
+        )
+        if detected is None:
+            return None
+        org_type, org_name, _hits = detected
+        return ("organization", org_type, org_name)
 
     def classify_by_person(
         self, text: str, filename: str
@@ -704,60 +656,37 @@ class ContentOrganizer(BaseOrganizer):
 
         Returns:
             Tuple of (category, subcategory, person_names) or None if no strong person match
+
+        The indicator vocabulary and matching core moved to
+        ``src/scoring/signals/personal_doc.py`` (``PERSON_INDICATORS`` /
+        ``detect_person_indicators``); this method delegates but KEEPS the
+        legal-document veto and the binary name gate — ``PersonalDocSignal``
+        replaces both with competition/graduated confidence in the unified
+        scorer.
         """
-        if not text or len(text) < 50:
+        if not text or len(text) < PERSON_MIN_TEXT_CHARS:
             return None
 
-        text_lower = text.lower()
-        filename_lower = filename.lower()
-
-        # Person type indicators
-        person_indicators: Dict[str, List[str]] = {
-            'contacts': [
-                'contact', 'phone:', 'email:', 'address:', 'mobile:',
-                'tel:', 'fax:', 'linkedin', 'twitter', '@',
-            ],
-            'employees': [
-                'employee', 'staff', 'team member', 'department:', 'title:',
-                'hire date', 'start date', 'position:', 'role:',
-            ],
-            'references': [
-                'reference', 'recommendation', 'letter of', 'to whom it may concern',
-                'i am pleased to', 'i highly recommend', 'worked with',
-            ],
-            'clients': [
-                'client profile', 'customer profile', 'client information',
-                'account holder', 'policyholder',
-            ],
-        }
-
         # Check filename patterns for resumes/CVs
-        resume_patterns = ['resume', 'cv', 'curriculum', 'vitae']
-        if any(pat in filename_lower for pat in resume_patterns):
+        if is_resume_filename(filename):
             people = self.classifier.extract_people_names(text)
-            return ('personal', 'contacts', people if people else [])
+            return ("personal", "contacts", people if people else [])
 
         # Legal-document veto: court filings carry clerk contact info that
-        # satisfies the generic indicators below; defer to content analysis.
+        # satisfies the generic person indicators; defer to content analysis.
+        text_lower = text.lower()
         legal_hits = sum(1 for kw in _LEGAL_DOCUMENT_SIGNALS if kw in text_lower)
         if legal_hits >= _LEGAL_SIGNAL_MIN_HITS:
             return None
 
-        # Check for person type indicators
-        for person_type, keywords in person_indicators.items():
-            matches = sum(1 for kw in keywords if kw in text_lower)
-            min_hits = (
-                _CONTACTS_MIN_KEYWORD_HITS
-                if person_type == 'contacts'
-                else _PERSON_MIN_KEYWORD_HITS
-            )
-            if matches >= min_hits:
-                people = self.classifier.extract_people_names(text)
-                if people and _has_human_name_signal(text):
-                    subcat = _PERSON_SUBCAT_TO_PERSONAL_SUBCAT[person_type]
-                    return ('personal', subcat, people)
-
-        return None
+        match = detect_person_indicators(
+            text,
+            extract_people_names=self.classifier.extract_people_names,
+            has_human_name_signal=_has_human_name_signal,
+        )
+        if match is None or not match.people or not match.name_gate:
+            return None
+        return ("personal", match.subcategory, match.people)
 
     def classify_media_file(
         self, file_path: Path, image_metadata: Optional[Dict[str, Any]] = None
@@ -1667,25 +1596,14 @@ class ContentOrganizer(BaseOrganizer):
         for any screenshot-named image, or None for non-screenshots.
         """
         _stem_lower = file_path.stem.lower()
-        if not (
-            schema_type == "ImageObject"
-            and (
-                _stem_lower.startswith("screenshot")
-                or "screen shot" in _stem_lower
-                or (
-                    "screenshot" in _stem_lower
-                    and not re.match(
-                        r"^(browser|terminal|code|docs|settings|product|chat|dashboard)_",
-                        _stem_lower,
-                    )
-                )
-            )
-        ):
+        if not (schema_type == "ImageObject" and is_screenshot_named(_stem_lower)):
             return None
 
         screenshots_dict = self.category_paths["media"]["photos"]["screenshots"]
 
-        # Step 1: OCR-based sub-classification (dashboard, terminal, etc.)
+        # Step 1: OCR-based sub-classification (dashboard, terminal, etc.).
+        # Branch decisions are shared with ScreenshotOcrSignal via
+        # route_screenshot_ocr; the prints and step-2/fallback flow stay here.
         ocr_result = None
         if _shared_classify_by_ocr is not None:
             ocr_result = _shared_classify_by_ocr(
@@ -1696,28 +1614,24 @@ class ContentOrganizer(BaseOrganizer):
             ocr_category, ocr_confidence, _ocr_scores, ocr_text = ocr_result
             if ocr_text:
                 self._last_file_ocr_text = ocr_text
+            routed = route_screenshot_ocr(ocr_category, ocr_confidence, screenshots_dict)
             if ocr_confidence < _SCREENSHOT_OCR_KEYWORD_THRESHOLD:
                 print(
                     f"  ↪ Screenshot OCR low confidence ({ocr_confidence:.0%} < "
                     f"{_SCREENSHOT_OCR_KEYWORD_THRESHOLD:.0%}) — falling back to CLIP"
                 )
-            elif ocr_category in screenshots_dict:
-                print(f"  ✓ Screenshot OCR sub-class: {ocr_category} ({ocr_confidence:.0%})")
+            elif routed is not None:
+                routed_category, routed_subcategory = routed
+                if ocr_category in screenshots_dict:
+                    print(f"  ✓ Screenshot OCR sub-class: {ocr_category} ({ocr_confidence:.0%})")
+                else:
+                    # OCR matched a non-screenshot Schema.org category — use it
+                    print(
+                        f"  ✓ Screenshot OCR reclassified: {ocr_category} ({ocr_confidence:.0%})"
+                    )
                 return (
-                    "media",
-                    f"photos_screenshots_{ocr_category}",
-                    schema_type,
-                    "",
-                    None,
-                    [],
-                    image_metadata,
-                )
-            # OCR matched a non-screenshot Schema.org category — use it
-            elif "_" in ocr_category:
-                print(f"  ✓ Screenshot OCR reclassified: {ocr_category} ({ocr_confidence:.0%})")
-                return (
-                    ocr_category.split("_")[0],
-                    ocr_category,
+                    routed_category,
+                    routed_subcategory,
                     schema_type,
                     "",
                     None,
