@@ -44,7 +44,8 @@
       "lib/**",
       "bin/**",
       "schema_org_file_system.egg-info/**",
-      "_site/**"
+      "_site/**",
+      "docs/api/**"
     ]
   },
   "security": {
