@@ -90,7 +90,7 @@ Storage layer (90%), generators+base (91%), enrichment (98%), and validator (100
 
 Full copypasta audit of `scripts/` against the canonical `src/` library found 53 verified duplications across 7 zones.
 
-**Status:** Open — 34 of 53 resolved; ~19 open (type-organizer loop, `filename_classifier` keyword/entity/legal tables, sprite/font regexes, OCR probe, migration banner, classify_by_ocr scoring loop, `_GENERIC_FILENAME_PATTERNS`, `_DOCUMENT_LABEL_MAP`, analyze_report summary sections).
+**Status:** Open — 37 of 53 resolved; ~16 open (type-organizer loop, `filename_classifier` keyword/entity/legal tables, sprite/font regexes, OCR probe, classify_by_ocr scoring loop, analyze_report summary sections).
 **Priority:** P2 (top items are active correctness drift; bulk is P3/P4 consolidation)
 **Source:** multi-agent scripts↔src duplication audit, 2026-07-14
 
@@ -102,6 +102,11 @@ Priority order from the review:
 5. Remaining ~19 items (type-organizer scan/summary loop, `filename_classifier` keyword/entity tables) opportunistically when the owning script is touched.
 
 Resolved so far (2026-07-14–15): items 1–4 from the original priority list plus `file_iri` single-sourcing (`src/storage/models.py`), `financial_doc_keywords` billing inconsistency fix (`scripts/shared/filename_classifier.py`), and KIE constants single-sourcing — `KIE_MIN_CONFIDENCE` + `KIE_VENDOR/AMOUNT/DATE_CLASSES` now single-homed in `kie_schema_mapping.py`, imported by `content_classifier.py`; removes the silent-drift risk from two private 0.5 copies. See the review doc for per-finding resolution notes.
+
+Resolved 2026-07-15 (3 additional):
+- **`_DOCUMENT_LABEL_MAP` key validation** (`relabel_test_set.py`): imports `DOCUMENT_PATTERNS` from `shared.constants`, asserts all map keys are present, adds `is_document` prefilter so pass 5's word-boundary regex is skipped when the feature extractor already determined the filename contains no document pattern (backward-compat: missing key defaults to run).
+- **`CAMERA_VENDOR_PREFIX_PATTERNS`** (`shared.constants`): extracts the four camera-vendor prefix regexes (`^img_\d+`, `^pxl_\d+`, `^dsc_?\d+`, `^dcim_\d+`) into `shared.constants.CAMERA_VENDOR_PREFIX_PATTERNS`; `filename_utils._GENERIC_FILENAME_PATTERNS` unpacks them (no behavior change), `name_organizer.camera_photos` uses them via `re.IGNORECASE` (also picks up the `dsc_?` optional-underscore fix that was only in `filename_utils`).
+- **Migration banner** (`src/storage/migration.py`): adds `run_migration_with_banner()` wrapper that owns the header/footer separator, title, and completion message; `src/cli.py:cmd_migrate` and `scripts/file_organizer_content_based.py` both delegate to it, removing the verbatim 5-line duplicate.
 
 
 ### Cross-file duplication within `src/` (investigation)
