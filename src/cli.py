@@ -23,7 +23,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).parent))
 
 PROJECT_ROOT = Path(__file__).parent.parent
-SCRIPTS_DIR = PROJECT_ROOT / 'scripts'
+SCRIPTS_DIR = PROJECT_ROOT / "scripts"
 
 from cli_inputs import (  # noqa: E402  (needs the src path insert above)
     ContentInputs,
@@ -37,9 +37,9 @@ from cli_inputs import (  # noqa: E402  (needs the src path insert above)
 from constants import DEFAULT_DB_PATH  # noqa: E402  (src on path via insert above)
 
 # Shared option defaults, single-sourced for the parser definitions below.
-DEFAULT_SOURCES = ['~/Desktop', '~/Downloads']
-DEFAULT_TARGET = '~/Documents'
-DEFAULT_COST_REPORT = 'results/cost_report.json'
+DEFAULT_SOURCES = ["~/Desktop", "~/Downloads"]
+DEFAULT_TARGET = "~/Documents"
+DEFAULT_COST_REPORT = "results/cost_report.json"
 
 
 def cmd_content(args: argparse.Namespace) -> None:
@@ -98,7 +98,7 @@ def _prune_missing_edges(graph_store: Any, apply: bool) -> None:
     label = "APPLIED" if apply else "DRY RUN"
     pruned = graph_store.prune_missing_person_edges(dry_run=not apply)
     print(f"[{label}] Dead-path person edges pruned: {pruned['edges_removed']}")
-    for edge in pruned['edges']:
+    for edge in pruned["edges"]:
         print(f"    {edge['person']}: {edge['path']}")
 
 
@@ -119,10 +119,12 @@ def cmd_person_view(args: argparse.Namespace) -> None:
     summary = generator.generate(dry_run=not apply, apply=apply)
 
     label = "APPLIED" if apply else "DRY RUN"
-    print(f"\n[{label}] Person view: {summary['people']} people, "
-          f"{summary['symlinks_created']} symlinks, "
-          f"{summary['removed_stale']} stale removed")
-    for err in summary.get('errors', []):
+    print(
+        f"\n[{label}] Person view: {summary['people']} people, "
+        f"{summary['symlinks_created']} symlinks, "
+        f"{summary['removed_stale']} stale removed"
+    )
+    for err in summary.get("errors", []):
         print(f"  ! {err}")
 
 
@@ -191,8 +193,8 @@ def cmd_prune_person(args: argparse.Namespace) -> None:
     if apply:
         db_file = Path(args.db_path)
         if db_file.exists():
-            stamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            for suffix in ('', '-wal', '-shm'):
+            stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            for suffix in ("", "-wal", "-shm"):
                 src = Path(str(db_file) + suffix)
                 if src.exists():
                     shutil.copy2(src, Path(f"{db_file}.bak-{stamp}{suffix}"))
@@ -207,9 +209,11 @@ def cmd_prune_person(args: argparse.Namespace) -> None:
             print(f"[{label}] {target!r}: no matching person")
             missing += 1
             continue
-        print(f"[{label}] {summary['name']} (id={summary['person_id']}): "
-              f"{summary['edges_removed']} edge(s) removed, person deleted")
-        for path in summary['paths']:
+        print(
+            f"[{label}] {summary['name']} (id={summary['person_id']}): "
+            f"{summary['edges_removed']} edge(s) removed, person deleted"
+        )
+        for path in summary["paths"]:
             print(f"    {path}")
 
     if missing:
@@ -219,6 +223,7 @@ def cmd_prune_person(args: argparse.Namespace) -> None:
 def cmd_health(args: argparse.Namespace) -> None:
     """Run system health check."""
     from health_check import check_system
+
     check_system(verbose=True)
 
 
@@ -258,120 +263,167 @@ def cmd_timeline(args: argparse.Namespace) -> None:
 
 def add_content_arguments(parser: argparse.ArgumentParser) -> None:
     """Options for content-based organization (organize-files content)."""
-    parser.add_argument('--source', '--sources', nargs='+', dest='sources',
-                        default=DEFAULT_SOURCES,
-                        help='Source directories to organize')
-    parser.add_argument('--target', '--base-path', dest='base_path',
-                        default=DEFAULT_TARGET,
-                        help='Target directory for organized files')
-    parser.add_argument('--dry-run', action='store_true',
-                        help='Simulate without moving files')
-    parser.add_argument('--limit', type=int,
-                        help='Limit number of files to process')
-    parser.add_argument('--report', help='Path to save JSON report')
-    parser.add_argument('--force', action='store_true',
-                        help='Force re-organization of all files, even if '
-                             'already in correct location')
-    parser.add_argument('--no-cost-tracking', action='store_true',
-                        help='Disable cost tracking')
-    parser.add_argument('--cost-report', nargs='?', const=DEFAULT_COST_REPORT,
-                        default=DEFAULT_COST_REPORT,
-                        help=f'Path to save cost/ROI report (default: {DEFAULT_COST_REPORT}, '
-                             'use --no-cost-tracking to disable)')
-    parser.add_argument('--check-deps', action='store_true',
-                        help='Run system health check and show feature availability')
-    parser.add_argument('--skip-health-check', action='store_true',
-                        help='Skip startup health check')
-    parser.add_argument('--sentry-dsn',
-                        help='Sentry DSN for error tracking (or set SENTRY_DSN env var)')
-    parser.add_argument('--no-sentry', action='store_true',
-                        help='Disable Sentry error tracking')
-    parser.add_argument('--db-path', default=DEFAULT_DB_PATH,
-                        help='SQLite database path')
-    parser.add_argument('--no-db', action='store_true',
-                        help='Disable database persistence')
-    parser.add_argument('--run-migration', action='store_true',
-                        help='Run database migration to add canonical_id columns '
-                             'to existing records')
+    parser.add_argument(
+        "--source",
+        "--sources",
+        nargs="+",
+        dest="sources",
+        default=DEFAULT_SOURCES,
+        help="Source directories to organize",
+    )
+    parser.add_argument(
+        "--target",
+        "--base-path",
+        dest="base_path",
+        default=DEFAULT_TARGET,
+        help="Target directory for organized files",
+    )
+    parser.add_argument("--dry-run", action="store_true", help="Simulate without moving files")
+    parser.add_argument("--limit", type=int, help="Limit number of files to process")
+    parser.add_argument("--report", help="Path to save JSON report")
+    parser.add_argument(
+        "--force",
+        action="store_true",
+        help="Force re-organization of all files, even if " "already in correct location",
+    )
+    parser.add_argument("--no-cost-tracking", action="store_true", help="Disable cost tracking")
+    parser.add_argument(
+        "--cost-report",
+        nargs="?",
+        const=DEFAULT_COST_REPORT,
+        default=DEFAULT_COST_REPORT,
+        help=f"Path to save cost/ROI report (default: {DEFAULT_COST_REPORT}, "
+        "use --no-cost-tracking to disable)",
+    )
+    parser.add_argument(
+        "--check-deps",
+        action="store_true",
+        help="Run system health check and show feature availability",
+    )
+    parser.add_argument(
+        "--skip-health-check", action="store_true", help="Skip startup health check"
+    )
+    parser.add_argument(
+        "--sentry-dsn", help="Sentry DSN for error tracking (or set SENTRY_DSN env var)"
+    )
+    parser.add_argument("--no-sentry", action="store_true", help="Disable Sentry error tracking")
+    parser.add_argument("--db-path", default=DEFAULT_DB_PATH, help="SQLite database path")
+    parser.add_argument("--no-db", action="store_true", help="Disable database persistence")
+    parser.add_argument(
+        "--run-migration",
+        action="store_true",
+        help="Run database migration to add canonical_id columns " "to existing records",
+    )
 
 
 def add_name_arguments(parser: argparse.ArgumentParser) -> None:
     """Options for name-based organization (organize-files name)."""
-    parser.add_argument('--source', '--sources', nargs='+', dest='sources',
-                        default=DEFAULT_SOURCES,
-                        help='Source directories to organize')
-    parser.add_argument('--target', '--base-path', dest='base_path',
-                        default=DEFAULT_TARGET,
-                        help='Target directory for organized files')
-    parser.add_argument('--recursive', action='store_true',
-                        help='Process subdirectories recursively')
-    parser.add_argument('--dry-run', action='store_true',
-                        help='Simulate without moving files')
-    parser.add_argument('--limit', type=int,
-                        help='Limit number of files to process')
+    parser.add_argument(
+        "--source",
+        "--sources",
+        nargs="+",
+        dest="sources",
+        default=DEFAULT_SOURCES,
+        help="Source directories to organize",
+    )
+    parser.add_argument(
+        "--target",
+        "--base-path",
+        dest="base_path",
+        default=DEFAULT_TARGET,
+        help="Target directory for organized files",
+    )
+    parser.add_argument(
+        "--recursive", action="store_true", help="Process subdirectories recursively"
+    )
+    parser.add_argument("--dry-run", action="store_true", help="Simulate without moving files")
+    parser.add_argument("--limit", type=int, help="Limit number of files to process")
 
 
 def add_type_arguments(parser: argparse.ArgumentParser) -> None:
     """Options for type-based organization (organize-files type)."""
-    parser.add_argument('--source', '--sources', nargs='+', dest='sources',
-                        default=DEFAULT_SOURCES,
-                        help='Source directories to organize')
-    parser.add_argument('--target', '--base-path', dest='base_path',
-                        default=DEFAULT_TARGET,
-                        help='Target directory for organized files')
-    parser.add_argument('--dry-run', action='store_true',
-                        help='Simulate without moving files')
+    parser.add_argument(
+        "--source",
+        "--sources",
+        nargs="+",
+        dest="sources",
+        default=DEFAULT_SOURCES,
+        help="Source directories to organize",
+    )
+    parser.add_argument(
+        "--target",
+        "--base-path",
+        dest="base_path",
+        default=DEFAULT_TARGET,
+        help="Target directory for organized files",
+    )
+    parser.add_argument("--dry-run", action="store_true", help="Simulate without moving files")
 
 
 def add_preprocess_arguments(parser: argparse.ArgumentParser) -> None:
     """Options for ML data preprocessing (organize-files preprocess)."""
-    parser.add_argument('--input', '-i', required=True,
-                        help='Path to organization report JSON')
-    parser.add_argument('--output', '-o', default='./ml_data',
-                        help='Output directory for processed data')
-    parser.add_argument('--test-ratio', type=float, default=0.2,
-                        help='Test set ratio (default: 0.2)')
-    parser.add_argument('--min-freq', type=int, default=5,
-                        help='Minimum token frequency for vocabulary')
-    parser.add_argument('--report-only', action='store_true',
-                        help='Only generate report, no export')
+    parser.add_argument("--input", "-i", required=True, help="Path to organization report JSON")
+    parser.add_argument(
+        "--output", "-o", default="./ml_data", help="Output directory for processed data"
+    )
+    parser.add_argument(
+        "--test-ratio", type=float, default=0.2, help="Test set ratio (default: 0.2)"
+    )
+    parser.add_argument(
+        "--min-freq", type=int, default=5, help="Minimum token frequency for vocabulary"
+    )
+    parser.add_argument(
+        "--report-only", action="store_true", help="Only generate report, no export"
+    )
 
 
 def add_evaluate_arguments(parser: argparse.ArgumentParser) -> None:
     """Options for model evaluation (organize-files evaluate)."""
-    parser.add_argument('--test-data', '-t', default='results/ml_data/test.json',
-                        help='Path to test.json')
-    parser.add_argument('--output', '-o', default='results/model_evaluation.json',
-                        help='Output path for results JSON')
-    parser.add_argument('--classifier', '-c', choices=['baseline', 'content'],
-                        default='baseline',
-                        help='baseline = filename heuristic; content = production '
-                             'CLIP+OCR classifier (requires test files on disk)')
-    parser.add_argument('--min-support', type=int, default=None,
-                        help='Minimum per-class sample count for its metrics to be '
-                             'reported (default: evaluate_model.DEFAULT_MIN_SUPPORT)')
+    parser.add_argument(
+        "--test-data", "-t", default="results/ml_data/test.json", help="Path to test.json"
+    )
+    parser.add_argument(
+        "--output",
+        "-o",
+        default="results/model_evaluation.json",
+        help="Output path for results JSON",
+    )
+    parser.add_argument(
+        "--classifier",
+        "-c",
+        choices=["baseline", "content"],
+        default="baseline",
+        help="baseline = filename heuristic; content = production "
+        "CLIP+OCR classifier (requires test files on disk)",
+    )
+    parser.add_argument(
+        "--min-support",
+        type=int,
+        default=None,
+        help="Minimum per-class sample count for its metrics to be "
+        "reported (default: evaluate_model.DEFAULT_MIN_SUPPORT)",
+    )
 
 
 def add_update_site_arguments(parser: argparse.ArgumentParser) -> None:
     """Options for dashboard data refresh (organize-files update-site)."""
-    parser.add_argument('--results-dir', '-r', default='results',
-                        help='Results directory')
-    parser.add_argument('--site-dir', '-s', default='_site',
-                        help='Site directory')
-    parser.add_argument('--report', help='Specific report file to use')
+    parser.add_argument("--results-dir", "-r", default="results", help="Results directory")
+    parser.add_argument("--site-dir", "-s", default="_site", help="Site directory")
+    parser.add_argument("--report", help="Specific report file to use")
 
 
 def add_timeline_arguments(parser: argparse.ArgumentParser) -> None:
     """Options for timeline generation (organize-files timeline)."""
-    parser.add_argument('--db-path', default=None,
-                        help=f'Path to SQLite database (default: {DEFAULT_DB_PATH})')
+    parser.add_argument(
+        "--db-path", default=None, help=f"Path to SQLite database (default: {DEFAULT_DB_PATH})"
+    )
 
 
 def main() -> None:
     """Main CLI entry point."""
     parser = argparse.ArgumentParser(
-        prog='organize-files',
-        description='Schema.org File Organization System - AI-powered file organization',
+        prog="organize-files",
+        description="Schema.org File Organization System - AI-powered file organization",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -383,173 +435,197 @@ Examples:
 
 For more help on a specific command:
   organize-files <command> --help
-"""
+""",
     )
 
     subparsers = parser.add_subparsers(
-        title='commands',
-        description='Available organization commands',
-        dest='command'
+        title="commands", description="Available organization commands", dest="command"
     )
 
     # Content-based organization (main AI organizer)
     content_parser = subparsers.add_parser(
-        'content',
-        help='Organize files using AI content analysis (CLIP, OCR)',
-        description='AI-powered file organization using CLIP vision and OCR text extraction'
+        "content",
+        help="Organize files using AI content analysis (CLIP, OCR)",
+        description="AI-powered file organization using CLIP vision and OCR text extraction",
     )
     add_content_arguments(content_parser)
     content_parser.set_defaults(func=cmd_content)
 
     # Name-based organization (no AI)
     name_parser = subparsers.add_parser(
-        'name',
-        help='Organize files by filename patterns (no AI)',
-        description='Simple file organization based on filename patterns and paths'
+        "name",
+        help="Organize files by filename patterns (no AI)",
+        description="Simple file organization based on filename patterns and paths",
     )
     add_name_arguments(name_parser)
     name_parser.set_defaults(func=cmd_name)
 
     # Type-based organization (by extension)
     type_parser = subparsers.add_parser(
-        'type',
-        help='Organize files by file type/extension',
-        description='Simple file organization based on file extensions'
+        "type",
+        help="Organize files by file type/extension",
+        description="Simple file organization based on file extensions",
     )
     add_type_arguments(type_parser)
     type_parser.set_defaults(func=cmd_type)
 
     # ML preprocessing
     preprocess_parser = subparsers.add_parser(
-        'preprocess',
-        help='Prepare training data for ML models',
-        description='Data preprocessing pipeline for ML model training'
+        "preprocess",
+        help="Prepare training data for ML models",
+        description="Data preprocessing pipeline for ML model training",
     )
     add_preprocess_arguments(preprocess_parser)
     preprocess_parser.set_defaults(func=cmd_preprocess)
 
     # Model evaluation
     evaluate_parser = subparsers.add_parser(
-        'evaluate',
-        help='Evaluate model performance',
-        description='Run evaluation metrics on test dataset'
+        "evaluate",
+        help="Evaluate model performance",
+        description="Run evaluation metrics on test dataset",
     )
     add_evaluate_arguments(evaluate_parser)
     evaluate_parser.set_defaults(func=cmd_evaluate)
 
     # Database migration
     migrate_parser = subparsers.add_parser(
-        'migrate-ids',
-        help='Run database migration for canonical IDs',
-        description='Add canonical_id columns and generate UUIDs for existing records'
+        "migrate-ids",
+        help="Run database migration for canonical IDs",
+        description="Add canonical_id columns and generate UUIDs for existing records",
     )
-    migrate_parser.add_argument('--db-path', default=DEFAULT_DB_PATH,
-                                help='Path to SQLite database')
-    migrate_parser.add_argument('--dry-run', action='store_true',
-                                help='Preview the migration without writing any changes')
+    migrate_parser.add_argument(
+        "--db-path", default=DEFAULT_DB_PATH, help="Path to SQLite database"
+    )
+    migrate_parser.add_argument(
+        "--dry-run", action="store_true", help="Preview the migration without writing any changes"
+    )
     migrate_parser.set_defaults(func=cmd_migrate)
 
     # Person symlink view (derived from graph edges)
     person_view_parser = subparsers.add_parser(
-        'person-view',
-        help='Regenerate the derived Person/{Name}/ symlink view from graph edges',
-        description='Rebuild ~/Documents/Person/ as symlinks to doc-class files '
-                    '(idempotent; aborts if a real file is found under the view root)'
+        "person-view",
+        help="Regenerate the derived Person/{Name}/ symlink view from graph edges",
+        description="Rebuild ~/Documents/Person/ as symlinks to doc-class files "
+        "(idempotent; aborts if a real file is found under the view root)",
     )
-    person_view_parser.add_argument('--view-root',
-                                    help='Root directory for the symlink view (default ~/Documents/Person)')  # noqa: E501
-    person_view_parser.add_argument('--db-path', default=DEFAULT_DB_PATH,
-                                    help='Path to SQLite database')
-    person_view_parser.add_argument('--apply', action='store_true',
-                                    help='Write symlinks (default is dry-run)')
-    person_view_parser.add_argument('--prune-missing', action='store_true',
-                                    help='First drop file->person edges whose file path '
-                                         'no longer exists (honors --apply/dry-run)')
+    person_view_parser.add_argument(
+        "--view-root", help="Root directory for the symlink view (default ~/Documents/Person)"
+    )  # noqa: E501
+    person_view_parser.add_argument(
+        "--db-path", default=DEFAULT_DB_PATH, help="Path to SQLite database"
+    )
+    person_view_parser.add_argument(
+        "--apply", action="store_true", help="Write symlinks (default is dry-run)"
+    )
+    person_view_parser.add_argument(
+        "--prune-missing",
+        action="store_true",
+        help="First drop file->person edges whose file path "
+        "no longer exists (honors --apply/dry-run)",
+    )
     person_view_parser.set_defaults(func=cmd_person_view)
 
     # Migrate legacy on-disk Person/ files into Personal/{subcat}/
     migrate_person_parser = subparsers.add_parser(
-        'migrate-person',
-        help='Migrate legacy on-disk Person/ files into Personal/{subcat}/ folders',
-        description='Filesystem-walk migration of ~/Documents/Person/ into '
-                    'Personal/{subcat}/; dry-run by default, manifest-backed rollback'
+        "migrate-person",
+        help="Migrate legacy on-disk Person/ files into Personal/{subcat}/ folders",
+        description="Filesystem-walk migration of ~/Documents/Person/ into "
+        "Personal/{subcat}/; dry-run by default, manifest-backed rollback",
     )
-    migrate_person_parser.add_argument('--person-root',
-                                       help='Source root to migrate (default ~/Documents/Person)')
-    migrate_person_parser.add_argument('--documents-root',
-                                       help='Destination base for Personal/ (default ~/Documents)')
-    migrate_person_parser.add_argument('--manifest',
-                                       help='Manifest path (default person-migrate-manifest.json)')
-    migrate_person_parser.add_argument('--db-path', default=DEFAULT_DB_PATH,
-                                       help='Path to SQLite database')
-    migrate_person_parser.add_argument('--no-db', action='store_true',
-                                       help='Skip DB lookups and updates')
-    migrate_person_parser.add_argument('--apply', action='store_true',
-                                       help='Move files (default is dry-run)')
-    migrate_person_parser.add_argument('--rollback', action='store_true',
-                                       help='Reverse a prior apply using the manifest')
+    migrate_person_parser.add_argument(
+        "--person-root", help="Source root to migrate (default ~/Documents/Person)"
+    )
+    migrate_person_parser.add_argument(
+        "--documents-root", help="Destination base for Personal/ (default ~/Documents)"
+    )
+    migrate_person_parser.add_argument(
+        "--manifest", help="Manifest path (default person-migrate-manifest.json)"
+    )
+    migrate_person_parser.add_argument(
+        "--db-path", default=DEFAULT_DB_PATH, help="Path to SQLite database"
+    )
+    migrate_person_parser.add_argument(
+        "--no-db", action="store_true", help="Skip DB lookups and updates"
+    )
+    migrate_person_parser.add_argument(
+        "--apply", action="store_true", help="Move files (default is dry-run)"
+    )
+    migrate_person_parser.add_argument(
+        "--rollback", action="store_true", help="Reverse a prior apply using the manifest"
+    )
     migrate_person_parser.set_defaults(func=cmd_migrate_person)
 
     # Index migrated files into the graph with person edges (no file moves)
     index_people_parser = subparsers.add_parser(
-        'index-people',
-        help='Attach person->file graph edges for migrated files (no moves)',
-        description='Register migrated Personal/ files in the graph at their '
-                    'current path and attach person edges derived from the '
-                    'migration manifest, so person-view can populate. No files move.'
+        "index-people",
+        help="Attach person->file graph edges for migrated files (no moves)",
+        description="Register migrated Personal/ files in the graph at their "
+        "current path and attach person edges derived from the "
+        "migration manifest, so person-view can populate. No files move.",
     )
-    index_people_parser.add_argument('--manifest',
-                                     help='Migration manifest path (default person-migrate-manifest.json)')  # noqa: E501
-    index_people_parser.add_argument('--person-root',
-                                     help='Original Person/ root the manifest sources came from (default ~/Documents/Person)')  # noqa: E501
-    index_people_parser.add_argument('--db-path', default=DEFAULT_DB_PATH,
-                                     help='Path to SQLite database')
-    index_people_parser.add_argument('--apply', action='store_true',
-                                     help='Write graph rows/edges (default is dry-run)')
-    index_people_parser.add_argument('--prune-missing', action='store_true',
-                                     help='Afterwards drop file->person edges whose file '
-                                          'path no longer exists (honors --apply/dry-run)')
+    index_people_parser.add_argument(
+        "--manifest", help="Migration manifest path (default person-migrate-manifest.json)"
+    )  # noqa: E501
+    index_people_parser.add_argument(
+        "--person-root",
+        help="Original Person/ root the manifest sources came from (default ~/Documents/Person)",
+    )  # noqa: E501
+    index_people_parser.add_argument(
+        "--db-path", default=DEFAULT_DB_PATH, help="Path to SQLite database"
+    )
+    index_people_parser.add_argument(
+        "--apply", action="store_true", help="Write graph rows/edges (default is dry-run)"
+    )
+    index_people_parser.add_argument(
+        "--prune-missing",
+        action="store_true",
+        help="Afterwards drop file->person edges whose file "
+        "path no longer exists (honors --apply/dry-run)",
+    )
     index_people_parser.set_defaults(func=cmd_index_people)
 
     # Prune person nodes + their file edges from the graph
     prune_person_parser = subparsers.add_parser(
-        'prune-person',
-        help='Delete people and their file->person graph edges (no file moves)',
-        description='Remove false-positive or stale Person rows and all their '
-                    'file->person edges from the graph. Files on disk are never '
-                    'touched. Dry-run by default; --apply backs up the database '
-                    'first, then deletes.'
+        "prune-person",
+        help="Delete people and their file->person graph edges (no file moves)",
+        description="Remove false-positive or stale Person rows and all their "
+        "file->person edges from the graph. Files on disk are never "
+        "touched. Dry-run by default; --apply backs up the database "
+        "first, then deletes.",
     )
-    prune_person_parser.add_argument('people', nargs='+',
-                                     help='Person names or integer IDs to prune')
-    prune_person_parser.add_argument('--db-path', default=DEFAULT_DB_PATH,
-                                     help='Path to SQLite database')
-    prune_person_parser.add_argument('--apply', action='store_true',
-                                     help='Delete (default is dry-run)')
+    prune_person_parser.add_argument(
+        "people", nargs="+", help="Person names or integer IDs to prune"
+    )
+    prune_person_parser.add_argument(
+        "--db-path", default=DEFAULT_DB_PATH, help="Path to SQLite database"
+    )
+    prune_person_parser.add_argument(
+        "--apply", action="store_true", help="Delete (default is dry-run)"
+    )
     prune_person_parser.set_defaults(func=cmd_prune_person)
 
     # Health check
     health_parser = subparsers.add_parser(
-        'health',
-        help='Check system dependencies and feature availability',
-        description='Run system health check to verify all dependencies are installed'
+        "health",
+        help="Check system dependencies and feature availability",
+        description="Run system health check to verify all dependencies are installed",
     )
     health_parser.set_defaults(func=cmd_health)
 
     # Update site data
     update_site_parser = subparsers.add_parser(
-        'update-site',
-        help='Update _site dashboard data files',
-        description='Generate and update dashboard data in _site directory'
+        "update-site",
+        help="Update _site dashboard data files",
+        description="Generate and update dashboard data in _site directory",
     )
     add_update_site_arguments(update_site_parser)
     update_site_parser.set_defaults(func=cmd_update_site)
 
     # Generate timeline
     timeline_parser = subparsers.add_parser(
-        'timeline',
-        help='Generate timeline visualization data',
-        description='Query database and create timeline_data.json for frontend'
+        "timeline",
+        help="Generate timeline visualization data",
+        description="Query database and create timeline_data.json for frontend",
     )
     add_timeline_arguments(timeline_parser)
     timeline_parser.set_defaults(func=cmd_timeline)
@@ -565,5 +641,5 @@ For more help on a specific command:
     args.func(args)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
