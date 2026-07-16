@@ -10,9 +10,10 @@ unified CLIP+text scoring used for weak-image enhancement.
 pipeline concerns (schema generation, graph persistence, renaming, moves).
 """
 
+import json
 import re
 from copy import deepcopy
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -20,6 +21,15 @@ from src.classifiers.entity_detector import _has_human_name_signal
 from src.organizers.base_organizer import BaseOrganizer
 from src.organizers.category_config import CONTENT_CATEGORY_PATHS, FONTS_PATHS
 from src.organizers.mime_classifier import classify_by_mime
+from src.scoring.context import FileContext
+from src.scoring.registry import build_default_signals
+from src.scoring.scorer import Scorer
+from src.scoring.types import (
+    SCORER_LEGACY,
+    SCORER_MODES,
+    SCORER_SHADOW,
+    SCORER_UNIFIED,
+)
 from shared.constants import (
     GAME_AUDIO_KEYWORDS,
     GAME_FONT_KEYWORDS,
@@ -175,6 +185,24 @@ _DOCUMENT_CONTENT_CATEGORIES = frozenset(
     {"financial", "medical", "legal", "business", "personal", "technical", "research", "education"}
 )
 
+# Shadow-mode disagreement log (UNIFIED_SCORING_PLAN §6 Phase 2 / §7.1).
+# Relative to the working directory like the rest of the results/ artifacts.
+_SCORING_SHADOW_LOG = Path("results/scoring_shadow.jsonl")
+
+
+def _derive_schema_type(mime_type: Optional[str]) -> str:
+    """Map a MIME type onto the coarse Schema.org type the pipeline uses."""
+    if mime_type:
+        if mime_type.startswith("image/"):
+            return "ImageObject"
+        if mime_type == "application/pdf":
+            return "DigitalDocument"
+        if mime_type.startswith("video/"):
+            return "VideoObject"
+        if mime_type.startswith("audio/"):
+            return "AudioObject"
+    return "DigitalDocument"
+
 
 # Translation from ``classify_by_mime``'s ``CATEGORY_PATHS`` namespace
 # (``images``/``code``/``data``/…, absent from ``CONTENT_CATEGORY_PATHS``) into
@@ -261,6 +289,7 @@ class ContentOrganizer(BaseOrganizer):
         enricher: Any = None,
         screenshot_content_classifier: Any = None,
         ocr_available: Optional[bool] = None,
+        scorer: str = SCORER_LEGACY,
     ) -> None:
         super().__init__(
             base_path=base_path,
@@ -269,6 +298,12 @@ class ContentOrganizer(BaseOrganizer):
             enable_cost_tracking=enable_cost_tracking,
             db_path=db_path,
         )
+        if scorer not in SCORER_MODES:
+            raise ValueError(f"scorer must be one of {SCORER_MODES}, got {scorer!r}")
+        self.scorer_mode = scorer
+        # Built lazily on first unified/shadow classification (registry deps
+        # need the fully constructed organizer).
+        self._unified_scorer: Optional[Scorer] = None
         self.classifier = content_classifier
         self.image_analyzer = image_analyzer
         self.metadata_parser = metadata_parser
@@ -1085,12 +1120,37 @@ class ContentOrganizer(BaseOrganizer):
         """
         Detect file category based on content.
 
+        Dispatches on ``self.scorer_mode`` (UNIFIED_SCORING_PLAN §6 Phase 0):
+        ``legacy`` runs the 10-tier priority chain, ``unified`` runs the
+        weighted signal scorer, ``shadow`` runs both — legacy controls
+        placement while the unified decision is logged to
+        ``results/scoring_shadow.jsonl`` for disagreement analysis.
+
         Args:
             file_path: Physical path to the file on disk (used for content reading).
             display_path: Optional override path whose *name* is used for
                 filename-pattern classification.  When the image renamer proposes
                 a rename in dry-run mode, display_path carries the descriptive
                 name while file_path still points to the original file.
+
+        Returns:
+            Tuple of (main_category, subcategory, schema_type, extracted_text,
+            company_name, people_names, image_metadata)
+        """
+        if self.scorer_mode == SCORER_UNIFIED:
+            return self._detect_file_category_unified(file_path, display_path)
+        legacy_result = self._detect_file_category_legacy(file_path, display_path)
+        if self.scorer_mode == SCORER_SHADOW:
+            self._log_shadow_comparison(file_path, display_path, legacy_result)
+        return legacy_result
+
+    def _detect_file_category_legacy(
+        self,
+        file_path: Path,
+        display_path: Path | None = None,
+    ) -> Tuple[str, str, str, str, Optional[str], List[str], Dict[str, Any]]:
+        """
+        Detect file category via the legacy first-match-wins tier chain.
 
         Priority order (executed in this exact sequence; first match wins):
         0a. Renamed-screenshot content routing (display_path vs file_path)
@@ -1120,19 +1180,7 @@ class ContentOrganizer(BaseOrganizer):
         mime_type = (
             self.enricher.detect_mime_type(str(file_path)) if self.enricher is not None else None
         )
-        if mime_type:
-            if mime_type.startswith("image/"):
-                schema_type = "ImageObject"
-            elif mime_type == "application/pdf":
-                schema_type = "DigitalDocument"
-            elif mime_type.startswith("video/"):
-                schema_type = "VideoObject"
-            elif mime_type.startswith("audio/"):
-                schema_type = "AudioObject"
-            else:
-                schema_type = "DigitalDocument"
-        else:
-            schema_type = "DigitalDocument"
+        schema_type = _derive_schema_type(mime_type)
 
         # PRIORITY 0a: Renamed screenshots → route to category sub-folder
         # When the image renamer classified a screenshot (e.g. "Screenshot ..." →
@@ -1307,6 +1355,202 @@ class ContentOrganizer(BaseOrganizer):
             schema_type,
             image_metadata,
         )
+
+    # ------------------------------------------------------------------ #
+    # Unified scoring path (UNIFIED_SCORING_PLAN §3, behind --scorer)      #
+    # ------------------------------------------------------------------ #
+
+    def _get_unified_scorer(self) -> Scorer:
+        """Build the Scorer over the registered signals on first use."""
+        if self._unified_scorer is None:
+            signals = build_default_signals(
+                classifier=self.classifier,
+                screenshot_classifier=self.screenshot_content_classifier,
+                image_analyzer=self.image_analyzer,
+                category_paths=self.category_paths,
+                game_sprite_keywords=self.game_sprite_keywords,
+            )
+            self._unified_scorer = Scorer(signals)
+        return self._unified_scorer
+
+    def _extract_text_pure(self, file_path: Path, mime_type: Optional[str]) -> str:
+        """Text extraction without organizer per-file cache state.
+
+        Mirrors :meth:`extract_text` dispatch but never consults
+        ``_last_file_ocr_text`` — FileContext owns memoization on the unified
+        path (image OCR routes through ``FileContext.ensure_ocr``, so this
+        provider only serves non-image types).
+        """
+        if self.text_extractor is None:
+            return ""
+        file_ext = file_path.suffix.lower()
+        if mime_type == "application/pdf" or file_ext == ".pdf":
+            if not self.ocr_available:
+                return ""
+            return self.text_extractor.extract_text_from_pdf(file_path)
+        if file_ext in [".docx", ".doc"]:
+            return self.text_extractor.extract_text_from_docx(file_path)
+        if file_ext in [".xlsx", ".xls"]:
+            return self.text_extractor.extract_text_from_xlsx(file_path)
+        return self.text_extractor.extract_text(file_path, mime_type)
+
+    def _clip_scores_for_context(self, file_path: Path) -> Optional[Dict[str, float]]:
+        """Full CLIP label→score mapping for the unified path (cache-backed).
+
+        Same fetch as :meth:`_run_clip_signal` but returns every label score
+        (signals apply their own thresholds) and keeps no organizer state.
+        """
+        try:
+            if CLIP_CACHE_AVAILABLE:
+                results = get_cached_embedding(file_path, CLIP_CATEGORY_PROMPTS, prompt_prefix="")
+            else:
+                results = get_clip_classifier().classify_raw(file_path, CLIP_CATEGORY_PROMPTS)
+        except Exception as e:
+            print(f"  CLIP signal error: {e}")
+            return None
+        return {
+            _CLIP_PROMPT_TO_LABEL.get(prompt, prompt): score for prompt, score in results
+        }
+
+    def _build_file_context(
+        self, file_path: Path, display_path: Optional[Path] = None
+    ) -> FileContext:
+        """Assemble the lazily-populated per-file inputs for the scorer."""
+        mime_type = (
+            self.enricher.detect_mime_type(str(file_path)) if self.enricher is not None else None
+        )
+        schema_type = _derive_schema_type(mime_type)
+
+        ocr_provider = None
+        if self.ocr_available and extract_ocr_with_confidence is not None:
+
+            def ocr_provider(path: Path):  # noqa: F811 — conditional binding
+                return extract_ocr_with_confidence(path, max_chars=0)
+
+        clip_provider = None
+        if (
+            ENHANCED_CLIP_AVAILABLE
+            and self.image_analyzer is not None
+            and self.image_analyzer.vision_available
+        ):
+            clip_provider = self._clip_scores_for_context
+
+        metadata_provider = None
+        if self.metadata_parser is not None and self.metadata_parser.metadata_available:
+            metadata_provider = self.metadata_parser.get_metadata_summary
+
+        kie_provider = extract_kie_fields if KIE_AVAILABLE else None
+
+        def text_provider(path: Path) -> str:
+            return self._extract_text_pure(path, mime_type)
+
+        return FileContext(
+            path=file_path,
+            schema_type=schema_type,
+            mime_type=mime_type,
+            display_path=display_path,
+            text_provider=text_provider,
+            ocr_provider=ocr_provider,
+            clip_provider=clip_provider,
+            image_metadata_provider=metadata_provider,
+            kie_provider=kie_provider,
+            ocr_confidence_gate=_OCR_CONFIDENCE_THRESHOLD,
+        )
+
+    def _detect_file_category_unified(
+        self,
+        file_path: Path,
+        display_path: Path | None = None,
+        *,
+        update_state: bool = True,
+    ) -> Tuple[str, str, str, str, Optional[str], List[str], Dict[str, Any]]:
+        """Classify via the unified scorer, adapting to the legacy 7-tuple.
+
+        ``update_state=False`` (shadow mode) leaves the legacy per-file
+        instance state untouched so persistence keeps reading the legacy
+        chain's OCR/KIE metadata.
+        """
+        if update_state:
+            self._last_file_ocr_confidence = None
+            self._last_file_detected_language = None
+            self._last_file_ocr_text = None
+            self._last_file_state.clear()
+            self._clip_enhance_cache.clear()
+
+        ctx = self._build_file_context(file_path, display_path)
+        decision = self._get_unified_scorer().classify(ctx)
+
+        if update_state:
+            ocr = ctx.ocr_if_loaded
+            if ocr is not None:
+                self._last_file_ocr_confidence = ocr.confidence
+                self._last_file_detected_language = ocr.language
+                if ocr.text:
+                    self._last_file_ocr_text = ocr.text
+            kie = ctx.kie_if_loaded
+            if kie is not None:
+                self._last_file_state["kie_result"] = kie
+
+        return (
+            decision.category,
+            decision.subcategory,
+            decision.schema_type,
+            ctx.text_if_loaded or "",
+            decision.company_name,
+            decision.people_names,
+            ctx.image_metadata_if_loaded or {},
+        )
+
+    def _log_shadow_comparison(
+        self,
+        file_path: Path,
+        display_path: Optional[Path],
+        legacy_result: Tuple[str, str, str, str, Optional[str], List[str], Dict[str, Any]],
+    ) -> None:
+        """Run the unified scorer alongside legacy and append a JSONL record.
+
+        Never raises: shadow mode must not affect production placement.
+        Record shape per UNIFIED_SCORING_PLAN §7.1.
+        """
+        try:
+            ctx = self._build_file_context(file_path, display_path)
+            decision = self._get_unified_scorer().classify(ctx)
+            record = {
+                "ts": datetime.now(timezone.utc).isoformat(),
+                "path": str(file_path),
+                "scorer": SCORER_SHADOW,
+                "decision": {
+                    "category": decision.category,
+                    "subcategory": decision.subcategory,
+                    "schema_type": decision.schema_type,
+                    "confidence": round(decision.confidence, 4),
+                    "margin": round(decision.margin, 4),
+                    "decision_state": decision.decision_state,
+                },
+                "winning_signals": decision.winning_signals,
+                "all_scores": [
+                    {
+                        "signal": score.signal_name,
+                        "cat": score.category,
+                        "sub": score.subcategory,
+                        "conf": round(score.confidence, 4),
+                        "evidence": score.evidence,
+                    }
+                    for score in decision.all_scores
+                ],
+                "legacy_decision": {
+                    "category": legacy_result[0],
+                    "subcategory": legacy_result[1],
+                    "schema_type": legacy_result[2],
+                },
+                "agrees": (decision.category, decision.subcategory)
+                == (legacy_result[0], legacy_result[1]),
+            }
+            _SCORING_SHADOW_LOG.parent.mkdir(parents=True, exist_ok=True)
+            with _SCORING_SHADOW_LOG.open("a", encoding="utf-8") as handle:
+                handle.write(json.dumps(record, default=str) + "\n")
+        except Exception as e:
+            print(f"  Shadow scorer error: {e}")
 
     def _classify_identification_document(
         self,

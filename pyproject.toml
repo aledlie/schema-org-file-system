@@ -113,7 +113,7 @@ Repository = "https://github.com/aledlie/schema-org-file-system.git"
 Issues = "https://github.com/aledlie/schema-org-file-system/issues"
 
 [tool.setuptools]
-packages = ["src", "src.storage"]
+packages = ["src", "src.storage", "src.scoring", "src.scoring.signals"]
 package-dir = {"" = "."}
 
 [tool.setuptools.package-data]

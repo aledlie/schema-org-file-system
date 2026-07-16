@@ -35,6 +35,7 @@ from cli_inputs import (  # noqa: E402  (needs the src path insert above)
     UpdateSiteInputs,
 )
 from constants import DEFAULT_DB_PATH  # noqa: E402  (src on path via insert above)
+from scoring.types import SCORER_DEFAULT, SCORER_MODES  # noqa: E402  (src on path)
 
 # Shared option defaults, single-sourced for the parser definitions below.
 DEFAULT_SOURCES = ["~/Desktop", "~/Downloads"]
@@ -313,6 +314,14 @@ def add_content_arguments(parser: argparse.ArgumentParser) -> None:
         "--run-migration",
         action="store_true",
         help="Run database migration to add canonical_id columns " "to existing records",
+    )
+    parser.add_argument(
+        "--scorer",
+        choices=list(SCORER_MODES),
+        default=SCORER_DEFAULT,
+        help="Classification engine: legacy = 10-tier priority chain; "
+        "unified = weighted signal scorer; shadow = legacy placement "
+        "with unified decisions logged for disagreement analysis",
     )
 
 

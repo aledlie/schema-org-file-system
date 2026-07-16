@@ -71,6 +71,7 @@ from src.organizers.content_organizer import (  # noqa: E402,F401  (re-exported 
     _OCR_CONFIDENCE_THRESHOLD,
     _SCREENSHOT_OCR_KEYWORD_THRESHOLD,
 )
+from src.scoring.types import SCORER_DEFAULT  # noqa: E402
 
 # Pipeline layer (per-file processing + batch orchestration). Imported after
 # the sys.path inserts above so the flat module aliases (storage.*, shared.*)
@@ -143,6 +144,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         organize_by_location: bool = False,
         enable_cost_tracking: bool = True,
         db_path: str = "results/file_organization.db",
+        scorer: str = SCORER_DEFAULT,
     ):
         """
         Initialize the organizer.
@@ -153,6 +155,8 @@ class ContentBasedFileOrganizer(ContentOrganizer):
             organize_by_location: If True, organize photos by location when GPS data available
             enable_cost_tracking: If True, track costs and ROI for all features
             db_path: Path to SQLite database for persistent storage
+            scorer: Classification engine — legacy | unified | shadow
+                (UNIFIED_SCORING_PLAN §6 Phase 0)
         """
         base_path = Path(base_path or "~/Documents").expanduser()
 
@@ -196,6 +200,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
             enricher=enricher,
             screenshot_content_classifier=self.rename_analyzer.content_classifier,
             ocr_available=OCR_AVAILABLE,
+            scorer=scorer,
         )
 
         # Pipeline layer by composition: FileProcessor handles per-file schema
@@ -385,7 +390,10 @@ def run(args: "ContentInputs") -> None:
     # Create organizer with database path
     db_path = None if args.no_db else args.db_path
     organizer = ContentBasedFileOrganizer(
-        base_path=args.base_path, enable_cost_tracking=not args.no_cost_tracking, db_path=db_path
+        base_path=args.base_path,
+        enable_cost_tracking=not args.no_cost_tracking,
+        db_path=db_path,
+        scorer=args.scorer,
     )
 
     # Organize directories

@@ -70,6 +70,7 @@ class ContentInputs(CommandInputs):
     db_path: str
     no_db: bool
     run_migration: bool
+    scorer: str
 
 
 @dataclass(frozen=True)

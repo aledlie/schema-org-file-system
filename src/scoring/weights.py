@@ -1,0 +1,70 @@
+"""Signal priors and decision thresholds — single source of truth.
+
+See docs/architecture/UNIFIED_SCORING_PLAN.md §4 (priors) and §3.3
+(thresholds). Weights are priors: relative magnitude matters, not the sum.
+Aggregated scores are raw weighted sums over contributing signals — they can
+exceed 1.0 — and the decision thresholds below are calibrated to that raw
+scale. ``ClassificationDecision.confidence`` is clamped to [0, 1] for
+persistence; thresholding always happens on the raw aggregate.
+
+Phase 3 calibration re-tunes these values against
+``results/file_organization.db`` backtests; treat this module as versioned
+data and commit each re-tune with its backtest report (Open Question #3).
+"""
+
+# --------------------------------------------------------------------------- #
+# Signal priors (§4, one per registered signal, descending)                    #
+# --------------------------------------------------------------------------- #
+
+W_RENAMED = 1.2  # RenamedScreenshotSignal — renamer already classified content
+W_FILENAME = 1.1  # FilenamePatternSignal — shared/filename_classifier rules
+W_KIE = 1.1  # KieStructuredSignal — structured invoice/receipt fields
+W_ID = 1.0  # IdentityDocumentSignal — MRZ/OCR identity documents
+W_ORG = 1.0  # OrganizationKeywordSignal — org indicators + company name
+W_PERSON = 0.9  # PersonalDocSignal — person-document indicators (Option C)
+W_LEGAL = 0.85  # LegalContentSignal — replaces the hard person-tier veto
+W_GAME = 0.8  # GameAssetSignal — sprite/texture/audio filename heuristics
+W_TEXT = 0.8  # TextContentSignal — keyword taxonomy (= shipped _TEXT_SIGNAL_PRIOR)
+W_UI = 0.75  # ScreenshotOcrSignal — screenshot OCR keyword routing
+W_CLIP = 0.7  # ClipVisionSignal — 20-prompt CLIP pass
+W_MEDIA = 0.65  # MediaHeuristicSignal — extension/stem/EXIF media routing
+W_PEOPLE_PHOTO = 0.65  # PhotoCompositionSignal — people / home-interior flags
+W_PATH = 0.6  # FilepathSignal — extension/filename → Technical/* paths
+W_MIME = 0.3  # MimeFallbackSignal — deliberately too weak to override anything
+
+# --------------------------------------------------------------------------- #
+# Signal-internal confidence scaling shared with the legacy image path          #
+# --------------------------------------------------------------------------- #
+
+# OCR/extracted text contributes confidence scaled by extraction length:
+# min(1, chars / TEXT_LENGTH_FULL_CHARS), ignored entirely below
+# TEXT_MIN_CHARS. Mirrors _TEXT_LENGTH_FULL_CHARS / _TEXT_MIN_CHARS in
+# src/organizers/content_organizer.py (kept separate until Phase 5 removes
+# the legacy chain — do not let the values drift).
+TEXT_LENGTH_FULL_CHARS = 200
+TEXT_MIN_CHARS = 30
+
+# Minimum OCR word confidence for KIE extraction and identity-document
+# detection (mirrors _OCR_CONFIDENCE_THRESHOLD in content_organizer.py; the
+# tier-3.5 → tier-6 hidden dependency is encoded by FileContext.ensure_kie).
+OCR_CONFIDENCE_GATE = 0.3
+
+# --------------------------------------------------------------------------- #
+# Decision thresholds (§3.3) — raw aggregate scale                             #
+# --------------------------------------------------------------------------- #
+
+# Skip later cost-tier waves once the aggregate reaches this (aggregated, not
+# per-signal — preserves multi-evidence wins).
+EARLY_EXIT_CONFIDENCE = 0.95
+
+# Below this aggregate the decision routes to LOW_CONFIDENCE_FALLBACK.
+MIN_DECISION_CONFIDENCE = 0.35
+
+# Required lead over the runner-up to commit the winner.
+MIN_DECISION_MARGIN = 0.10
+
+# Open Question #1 (low-confidence bucket placement) is unresolved; both
+# low-confidence and low-margin decisions conservatively route to today's
+# uncategorized bucket while telemetry records decision_state for calibration.
+# Swap to ("review", "other") once OQ #1 resolves.
+LOW_CONFIDENCE_FALLBACK = ("uncategorized", "other")
