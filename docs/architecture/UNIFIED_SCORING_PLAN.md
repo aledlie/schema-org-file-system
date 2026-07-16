@@ -1,8 +1,9 @@
 # Unified Scoring Plan — File Classification Refactor
 
-> Status: Draft v2 · Owner: TBD · Last updated: 2026-07-13
+> Status: Draft v2 · Owner: TBD · Last updated: 2026-07-16
 > Mode: Coexist behind `--scorer={legacy,unified}` flag · Default flips after shadow window proves parity
-> Code references are as of 2026-07-13 (`main` @ `924d9ab`), post thin-wrapper refactor.
+> Code references are as of 2026-07-16 (`main` @ `feeccdc`), post thin-wrapper refactor.
+> Status: unimplemented — `src/scoring/` does not exist yet; all line refs below are current-state anchors for the extraction, not existing scorer code.
 
 ### Changes from v1 (2026-05-16)
 
@@ -38,7 +39,7 @@ script and are superseded. Substantive deltas:
 
 ### Goals
 - Replace the **first-match-wins 10-tier priority chain** in
-  `ContentOrganizer.detect_file_category` (`src/organizers/content_organizer.py:1035`)
+  `ContentOrganizer.detect_file_category` (`src/organizers/content_organizer.py:1080`)
   with a **single weighted scorer** that runs all relevant signals per file and
   picks the highest-scoring `(category, subcategory)` tuple.
 - Fix the remaining audit failure modes (status updated for v2):
@@ -58,7 +59,7 @@ script and are superseded. Substantive deltas:
 - Make every signal **independently testable**, **swappable**, and
   **observable** (per-signal score logged per file).
 - Replace the hidden per-file instance state (`_last_file_*`,
-  `_clip_enhance_cache`, reset at `content_organizer.py:1066`) with an explicit
+  `_clip_enhance_cache`, reset at `content_organizer.py:1113`) with an explicit
   memoizing `FileContext` — removes ordering coupling between tiers and makes
   per-file scoring parallel-safe.
 - Enable **backtest-driven weight calibration** against
@@ -84,43 +85,46 @@ script and are superseded. Substantive deltas:
 
 ### 2.1 The live chain — `ContentOrganizer.detect_file_category`
 
-Single orchestrator method at `src/organizers/content_organizer.py:1035-1264`;
+Single orchestrator method at `src/organizers/content_organizer.py:1080-1310`;
 tiers are methods on the same class (extracted from the old script during the
 refactor, logic unchanged). First match wins; confidence is implicit (a tier
 returns a tuple or `None`); thresholds are named module constants
-(`content_organizer.py:108-173`) — the magic numbers of v1 now have names, but
+(`content_organizer.py:108-174`) — the magic numbers of v1 now have names, but
 they gate rather than weigh.
 
 | Tier | Method | Line | Returns | Confidence model |
 |---|---|---|---|---|
-| 0a renamed screenshot | inline block | 1092 | tuple | substring match on renamed stem |
-| 0b filename patterns | `classify_by_filename_patterns` → `shared/filename_classifier.py:81` | 764 | `(cat, sub, company, people)` | ~40 ordered rule groups (research-publisher, legal, financial-doc, event-date, entity, …); first match wins |
-| 1a organization | `classify_by_organization` | 542 | `(cat, sub, org)` | ≥2 keyword hits per org type + `extract_company_names` |
-| 1b person | `classify_by_person` | 617 | `('personal', sub, people)` | ≥2 hits (≥3 for contacts) + `_has_human_name_signal` gate + legal-document veto (`_LEGAL_DOCUMENT_SIGNALS` ≥2 → defer) |
-| 3a game assets | `classify_game_asset` | 481 | `(cat, sub)` | extension + keyword/regex; `_ocr_document_override` (L1001) can flip ambiguous textures to document categories |
-| 3b filepath | `classify_by_filepath` | 407 | path string | exact filename/extension lookup + project-name extraction |
-| 3.5 ID document | `_classify_identification_document` | 1266 | `('personal', 'identification', …, people)` | OCR keywords + MRZ regex; gated on OCR conf ≥ `_OCR_CONFIDENCE_THRESHOLD` (0.3); stores OCR/KIE state for later tiers |
-| 4 media file | `classify_media_file` | 686 | `(cat, media_type, sub)` | extension + stem keywords + EXIF GPS/datetime |
-| 4.5 screenshot OCR/CLIP | `_classify_screenshot_ocr` | 1367 | tuple | `classify_by_ocr` keyword-ratio ≥ `_SCREENSHOT_OCR_KEYWORD_THRESHOLD` (0.10), then CLIP fallback |
-| 5 photo composition | `_classify_photo_composition` | 1456 | tuple | single CLIP pass → people / home-interior flags |
-| 6 text + KIE | `_classify_by_content_and_kie` | 1500 | tuple (terminal) | `classify_with_kie` (field conf ≥0.5) else `classify_content` keyword argmax; images then `_cross_check_with_clip` |
+| 0a renamed screenshot | inline block | 1141 | tuple | substring match on renamed stem |
+| 0b filename patterns | `classify_by_filename_patterns` → `shared/filename_classifier.py:87` | 805 | `(cat, sub, company, people)` | ~40 ordered rule groups (research-publisher, legal, financial-doc, event-date, entity, …); first match wins |
+| 1a organization | `classify_by_organization` | 583 | `(cat, sub, org)` | ≥2 keyword hits per org type + `extract_company_names` |
+| 1b person | `classify_by_person` | 658 | `('personal', sub, people)` | ≥2 hits (≥3 for contacts) + `_has_human_name_signal` gate + legal-document veto (`_LEGAL_DOCUMENT_SIGNALS` ≥2 → defer) |
+| 3a game assets | `classify_game_asset` | 522 | `(cat, sub)` | extension + keyword/regex; `_ocr_document_override` (call site L1207) can flip ambiguous textures to document categories |
+| 3b filepath | `classify_by_filepath` | 429 | path string | exact filename/extension lookup + project-name extraction |
+| 3.5 ID document | `_classify_identification_document` | 1311 | `('personal', 'identification', …, people)` | OCR keywords + MRZ regex; gated on OCR conf ≥ `_OCR_CONFIDENCE_THRESHOLD` (0.3); stores OCR/KIE state for later tiers |
+| 4 media file | `classify_media_file` | 727 | `(cat, media_type, sub)` | extension + stem keywords + EXIF GPS/datetime |
+| 4.5 screenshot OCR/CLIP | `_classify_screenshot_ocr` | 1412 | tuple | `classify_by_ocr` keyword-ratio ≥ `_SCREENSHOT_OCR_KEYWORD_THRESHOLD` (0.10), then CLIP fallback |
+| 5 photo composition | `_classify_photo_composition` | 1501 | tuple | single CLIP pass → people / home-interior flags |
+| 6 text + KIE | `_classify_by_content_and_kie` | 1545 | tuple (terminal) | `classify_with_kie` (field conf ≥0.5) else `classify_content` keyword argmax; images then `_cross_check_with_clip` |
 
 Support: `_has_human_name_signal` moved to
 `src/classifiers/entity_detector.py:39`. Keyword/category scoring lives in
 `ContentClassifier` (`src/classifiers/content_classifier.py`) — note
-`score_all_categories` (L249) already returns `{category: confidence}` for all
-keyword categories; `classify_content` (L266) argmaxes it. Non-English OCR text
-short-circuits to `uncategorized` (L292).
+`score_all_categories` (L285) already returns `{category: confidence}` for all
+keyword categories; `classify_content` (L302) argmaxes it. Non-English OCR text
+short-circuits to `uncategorized` (L328).
 
 ### 2.2 Entry points & pipeline wiring
 
 - `scripts/file_organizer_content_based.py` — `ContentBasedFileOrganizer(ContentOrganizer)`
-  (L127) adds only pipeline concerns (schema generation, graph persistence,
+  (L128) adds only pipeline concerns (schema generation, graph persistence,
   renaming, moves) and delegates them to `src/pipeline`.
-- `src/pipeline/file_processor.py:411` — the single call site of
+- `src/pipeline/file_processor.py:481` — the single call site of
   `detect_file_category` in the production flow.
-- `src/cli.py:278` — `organize-files content` argparse; `_args_to_argv` (L233)
-  re-serializes to the script's `main()`.
+- `src/cli.py` — `cmd_content` (L45) builds a typed `ContentInputs.from_namespace(args)`
+  and calls the script's `run()` (L338); argparse defined in `add_content_arguments`
+  (L259). The old `_args_to_argv` argv re-serialization is **gone** (replaced by the
+  `ContentInputs` dataclass), so Phase 0 plumbs `--scorer` through
+  `ContentInputs`/`add_content_arguments`, not an argv string.
 - The v1 "script vs mirror" split no longer exists; `src` is the single source
   of truth. The scorer lands in `src/scoring/` and is wired into
   `ContentOrganizer` directly.
@@ -128,15 +132,15 @@ short-circuits to `uncategorized` (L292).
 ### 2.3 Proto-unified scoring already in production
 
 The image path already contains a two-signal weighted scorer
-(`content_organizer.py:866-999`):
+(`content_organizer.py:907-1044`):
 
-- `_run_clip_signal` (L926) — 20-prompt CLIP pass → `(candidate, score)`,
+- `_run_clip_signal` (L967) — 20-prompt CLIP pass → `(candidate, score)`,
   gated on `CLIP_ENHANCE_THRESHOLD`, cached per file.
-- `_merge_clip_text_scores` (L866) — per-`(cat, sub)` weighted sum: CLIP score
+- `_merge_clip_text_scores` (L907) — per-`(cat, sub)` weighted sum: CLIP score
   as-is; OCR text contributes `_TEXT_SIGNAL_PRIOR (0.80) × min(1, chars/200)`;
   `+_SIGNAL_AGREEMENT_BOOST (0.15)` when both agree; argmax wins.
-- Consumed by `enhance_weak_image_classification` (L961, "Point A/B/C"
-  enhancement hooks) and `_cross_check_with_clip` (L897).
+- Consumed by `enhance_weak_image_classification` (L1006, "Point A/B/C"
+  enhancement hooks) and `_cross_check_with_clip` (L938).
 
 This validates the aggregation design on real traffic but only fires for
 images at specific chain positions. The unified scorer generalizes exactly this
@@ -147,7 +151,7 @@ aggregation, the Point A/B/C hooks dissolve (all signals always compete).
 
 | File | Role |
 |---|---|
-| `shared/filename_classifier.py` (1,645 lines) | single-homed filename rule set; `_detect_research_publisher` (L62) side-channels provenance via `last_file_state` |
+| `shared/filename_classifier.py` (1,644 lines) | single-homed filename rule set; `_detect_research_publisher` (L68) side-channels provenance via `last_file_state` |
 | `shared/clip_classification.py` | `CLIPResult` NamedTuple, `classify_with_ocr_fallback` — the model for a Signal's output shape |
 | `shared/clip_utils.py` / `shared/clip_cache.py` | CLIP singleton + embedding cache (`.cache/clip_embeddings_v2/`) |
 | `shared/ocr_classifier.py` | `extract_ocr_with_confidence` (text/conf/lang), `classify_by_ocr` → `(category, confidence, scores, text)` |
@@ -156,7 +160,7 @@ aggregation, the Point A/B/C hooks dissolve (all signals always compete).
 | `shared/kie_utils.py` | `extract_kie_fields`; result currently stashed in `_last_file_state["kie_result"]` by tier 3.5 for tier 6 |
 | `shared/constants.py` | `CLIP_CATEGORY_PROMPTS`, `CLIP_LABEL_TO_ORGANIZER`, `CLIP_ENHANCE_THRESHOLD` |
 | `src/organizers/category_config.py` | `CONTENT_CATEGORY_PATHS` — destination taxonomy |
-| `src/storage/models.py:96-101` | `file_categories` join table already carries `confidence`; `File.ocr_confidence` at L179 |
+| `src/storage/models.py:96-102` | `file_categories` join table already carries `confidence` (L101); `File.ocr_confidence` at L183 |
 
 ---
 
@@ -226,7 +230,7 @@ class CategoryScore:
 - **Chain behaviors that must emerge from calibration, not special cases**
   (goldens in §8 enforce each):
   - Legal-vs-person veto → `LegalContentSignal` outscores `PersonalDocSignal`
-    on court documents (the hard veto at `content_organizer.py:666` is
+    on court documents (the hard veto at `content_organizer.py:709` is
     replaced by competition).
   - `_ocr_document_override` (bloodwork/"blood" collision) → high-confidence
     `TextContentSignal` outscores keyword-only `GameAssetSignal`.
@@ -252,19 +256,19 @@ references: `src/organizers/content_organizer.py` unless stated.
 
 | # | Legacy source | New Signal | Output vocabulary | Prior | Cost | Notes / edge cases |
 |---|---|---|---|---|---|---|
-| 1 | inline tier 0a (L1092) | `RenamedScreenshotSignal` | `media/photos_screenshots_*` | `W_RENAMED = 1.2` | cheap | only when `display_path != file_path`; very high precision |
-| 2 | `classify_by_filename_patterns` → `shared/filename_classifier.py:81` | `FilenamePatternSignal` | full vocabulary + `skip/duplicate` | `W_FILENAME = 1.1` | cheap | wraps the whole 1,645-line rule module as ONE signal in v2 (decomposition is OQ #5); research-publisher provenance moves from `last_file_state` side-channel into `evidence` |
-| 3 | `ContentClassifier.classify_with_kie` (`content_classifier.py:208`) | `KieStructuredSignal` | `financial/invoices` (+vendor) | `W_KIE = 1.1` | heavy | field conf ≥ 0.5 retained inside the signal |
-| 4 | `_classify_identification_document` (L1266) | `IdentityDocumentSignal` | `personal/identification` + people | `W_ID = 1.0` | heavy | MRZ regex high-precision; OCR conf ≥ 0.3 gate retained; emits people for graph edges |
-| 5 | `classify_by_organization` (L542) | `OrganizationKeywordSignal` | `organization/{government,healthcare,financial,educational,nonprofit,employers,vendors,clients}` | `W_ORG = 1.0` | mid | needs ≥2 indicators + extractable org name; brand-as-person collisions resolved by competition with #6 |
-| 6 | `classify_by_person` (L617) | `PersonalDocSignal` | `personal/{contacts,employment,events,journal,other}` + people | `W_PERSON = 0.9` | mid | Option C: filing subcat via `_PERSON_SUBCAT_TO_PERSONAL_SUBCAT`; people_names → graph edges regardless of winner; graduated confidence (gated 0.9 / ungated-name-present 0.4) replaces the binary `_has_human_name_signal` gate |
-| 7 | `_LEGAL_DOCUMENT_SIGNALS` (L160) + `ContentClassifier` legal patterns | `LegalContentSignal` | `legal/{contracts,real_estate,corporate,other}`, `personal/legal` | `W_LEGAL = 0.85` | mid | replaces the hard person-tier veto; SSRN false-positives ("agreement") suppressed by #2 research rules + co-occurrence with org/person evidence |
-| 8 | `classify_game_asset` (L481) | `GameAssetSignal` | `game_assets/{sprites,textures,music,audio,fonts}`, `fonts/*` | `W_GAME = 0.8` | cheap | regex-numbered sprites → high conf; bare keyword → lower conf so document OCR can outscore (subsumes `_ocr_document_override`) |
-| 9 | `ContentClassifier.score_all_categories`/`classify_content` (L249/266) | `TextContentSignal` | full keyword vocabulary | `W_TEXT = 0.8` (= shipped `_TEXT_SIGNAL_PRIOR`) | heavy | confidence scaled by extraction length (`min(1, chars/200)`, as shipped); skips non-English OCR; also emits company/people entities |
+| 1 | inline tier 0a (L1141) | `RenamedScreenshotSignal` | `media/photos_screenshots_*` | `W_RENAMED = 1.2` | cheap | only when `display_path != file_path`; very high precision |
+| 2 | `classify_by_filename_patterns` → `shared/filename_classifier.py:87` | `FilenamePatternSignal` | full vocabulary + `skip/duplicate` | `W_FILENAME = 1.1` | cheap | wraps the whole 1,645-line rule module as ONE signal in v2 (decomposition is OQ #5); research-publisher provenance moves from `last_file_state` side-channel into `evidence` |
+| 3 | `ContentClassifier.classify_with_kie` (`content_classifier.py:241`) | `KieStructuredSignal` | `financial/invoices` (+vendor) | `W_KIE = 1.1` | heavy | field conf ≥ 0.5 retained inside the signal |
+| 4 | `_classify_identification_document` (L1311) | `IdentityDocumentSignal` | `personal/identification` + people | `W_ID = 1.0` | heavy | MRZ regex high-precision; OCR conf ≥ 0.3 gate retained; emits people for graph edges |
+| 5 | `classify_by_organization` (L583) | `OrganizationKeywordSignal` | `organization/{government,healthcare,financial,educational,nonprofit,employers,vendors,clients}` | `W_ORG = 1.0` | mid | needs ≥2 indicators + extractable org name; brand-as-person collisions resolved by competition with #6 |
+| 6 | `classify_by_person` (L658) | `PersonalDocSignal` | `personal/{contacts,employment,events,journal,other}` + people | `W_PERSON = 0.9` | mid | Option C: filing subcat via `_PERSON_SUBCAT_TO_PERSONAL_SUBCAT`; people_names → graph edges regardless of winner; graduated confidence (gated 0.9 / ungated-name-present 0.4) replaces the binary `_has_human_name_signal` gate |
+| 7 | `_LEGAL_DOCUMENT_SIGNALS` (L163) + `ContentClassifier` legal patterns | `LegalContentSignal` | `legal/{contracts,real_estate,corporate,other}`, `personal/legal` | `W_LEGAL = 0.85` | mid | replaces the hard person-tier veto; SSRN false-positives ("agreement") suppressed by #2 research rules + co-occurrence with org/person evidence |
+| 8 | `classify_game_asset` (L522) | `GameAssetSignal` | `game_assets/{sprites,textures,music,audio,fonts}`, `fonts/*` | `W_GAME = 0.8` | cheap | regex-numbered sprites → high conf; bare keyword → lower conf so document OCR can outscore (subsumes `_ocr_document_override`) |
+| 9 | `ContentClassifier.score_all_categories`/`classify_content` (L285/302) | `TextContentSignal` | full keyword vocabulary | `W_TEXT = 0.8` (= shipped `_TEXT_SIGNAL_PRIOR`) | heavy | confidence scaled by extraction length (`min(1, chars/200)`, as shipped); skips non-English OCR; also emits company/people entities |
 | 10 | `_classify_screenshot_ocr` step 1 / `classify_by_ocr` | `ScreenshotOcrSignal` | `media/photos_screenshots_*` + cross-category reclass | `W_UI = 0.75` | mid | keyword-ratio threshold 0.10 retained (calibrated to hits/len(keywords) scale — do not raise without eval) |
-| 11 | `_run_clip_signal` (L926) | `ClipVisionSignal` | `CLIP_LABEL_TO_ORGANIZER` vocabulary | `W_CLIP = 0.7` | heavy | embedding cache reused; GPS→travel upgrade from `_map_clip_label` kept; `CLIP_ENHANCE_THRESHOLD` becomes a soft floor |
-| 12 | `classify_media_file` (L686) | `MediaHeuristicSignal` | `media/{videos,audio,photos}_*` | `W_MEDIA = 0.65` | cheap | EXIF GPS/datetime aware; PNG ambiguity falls to other signals instead of returning None |
-| 13 | `_classify_photo_composition` (L1456) | `PhotoCompositionSignal` | `media/photos_social`, `property_management/other` | `W_PEOPLE_PHOTO = 0.65` | heavy | single CLIP pass yields both flags; stock-photo people in marketing remain the known weakness |
+| 11 | `_run_clip_signal` (L967) | `ClipVisionSignal` | `CLIP_LABEL_TO_ORGANIZER` vocabulary | `W_CLIP = 0.7` | heavy | embedding cache reused; GPS→travel upgrade from `_map_clip_label` kept; `CLIP_ENHANCE_THRESHOLD` becomes a soft floor |
+| 12 | `classify_media_file` (L727) | `MediaHeuristicSignal` | `media/{videos,audio,photos}_*` | `W_MEDIA = 0.65` | cheap | EXIF GPS/datetime aware; PNG ambiguity falls to other signals instead of returning None |
+| 13 | `_classify_photo_composition` (L1501) | `PhotoCompositionSignal` | `media/photos_social`, `property_management/other` | `W_PEOPLE_PHOTO = 0.65` | heavy | single CLIP pass yields both flags; stock-photo people in marketing remain the known weakness |
 | 14 | `classify_by_filepath` (L407) | `FilepathSignal` | path-mapped categories (+project name) | `W_PATH = 0.6` | cheap | brittle on `~/Downloads`; `.zip` named "Photos" now loses to content signals by weight |
 | 15 | MIME/extension fallback | `MimeFallbackSignal` | broad category by `schema_type`/ext | `W_MIME = 0.3` | cheap | always fires; deliberately too weak to override anything |
 
