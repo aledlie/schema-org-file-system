@@ -81,9 +81,17 @@ monitoring = [
     "sentry-sdk>=2.0.0",
 ]
 
+# Classical ML (scikit-learn) — backs src/ml (data_preprocessor: train/test
+# split, CountVectorizer, LabelEncoder) for `organize-files preprocess` /
+# `evaluate`, and the interior-probe prototype. Floor >=1.5.0 for numpy-2.0
+# compatibility (the `ai` extra pins numpy>=2.0.0).
+ml = [
+    "scikit-learn>=1.5.0",
+]
+
 # All optional features
 all = [
-    "schema-org-file-system[ai,docs,monitoring]",
+    "schema-org-file-system[ai,docs,monitoring,ml]",
 ]
 
 # Development dependencies

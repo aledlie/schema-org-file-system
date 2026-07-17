@@ -1,81 +1,62 @@
 {
   "metadata": {
-    "generated_at": "2026-07-16T19:14:49.278692",
-    "session_start": "2026-07-16T19:13:41.251166",
-    "session_duration_sec": 68.027531,
-    "total_usage_records": 6
+    "generated_at": "2026-07-17T18:10:05.358171",
+    "session_start": "2026-07-17T18:09:53.602376",
+    "session_duration_sec": 11.755799,
+    "total_usage_records": 7
   },
   "cost_summary": {
-    "total_cost": 0.00031,
-    "total_files_processed": 6,
-    "total_processing_time_sec": 0.5652668476104736,
-    "avg_cost_per_file": 5.1666666666666664e-05,
+    "total_cost": 0.00030000000000000003,
+    "total_files_processed": 7,
+    "total_processing_time_sec": 5.169340133666992,
+    "avg_cost_per_file": 4.285714285714286e-05,
     "feature_breakdown": {
-      "clip_vision": {
-        "feature_name": "clip_vision",
-        "total_invocations": 2,
-        "total_processing_time_sec": 0.4122450351715088,
-        "total_cost": 0.0002,
-        "avg_cost_per_file": 0.0001,
+      "doctr_ocr": {
+        "feature_name": "doctr_ocr",
+        "total_invocations": 1,
+        "total_processing_time_sec": 4.368327856063843,
+        "total_cost": 0.0,
+        "avg_cost_per_file": 0.0,
         "success_rate": 1.0,
-        "total_files_processed": 2
-      },
-      "face_detection": {
-        "feature_name": "face_detection",
-        "total_invocations": 2,
-        "total_processing_time_sec": 0.1157996654510498,
-        "total_cost": 1e-05,
-        "avg_cost_per_file": 5e-06,
-        "success_rate": 1.0,
-        "total_files_processed": 2
+        "total_files_processed": 1
       },
       "pdf_extraction": {
         "feature_name": "pdf_extraction",
-        "total_invocations": 2,
-        "total_processing_time_sec": 0.03722214698791504,
-        "total_cost": 0.0001,
+        "total_invocations": 6,
+        "total_processing_time_sec": 0.8010122776031494,
+        "total_cost": 0.00030000000000000003,
         "avg_cost_per_file": 5e-05,
         "success_rate": 1.0,
-        "total_files_processed": 2
+        "total_files_processed": 6
       }
     }
   },
   "roi_summary": {
-    "total_cost": 0.00031000000000000005,
-    "total_value": 1.7430555555555556,
-    "overall_roi_percentage": 562175.9856630823,
-    "total_manual_hours_saved": 0.06972222222222223,
+    "total_cost": 0.00030000000000000003,
+    "total_value": 4.341666666666668,
+    "overall_roi_percentage": 1447122.2222222225,
+    "total_manual_hours_saved": 0.1736666666666667,
     "hourly_rate_used": 25.0,
     "feature_breakdown": {
       "pdf_extraction": {
         "feature_name": "pdf_extraction",
-        "total_cost": 0.0001,
-        "total_value": 1.3333333333333335,
+        "total_cost": 0.00030000000000000003,
+        "total_value": 4.000000000000001,
         "roi_percentage": 1333233.3333333335,
-        "manual_hours_saved": 0.05333333333333334,
+        "manual_hours_saved": 0.16000000000000003,
         "cost_per_file": 5e-05,
         "value_per_file": 0.6666666666666667,
         "break_even_files": 1
       },
-      "clip_vision": {
-        "feature_name": "clip_vision",
-        "total_cost": 0.0002,
-        "total_value": 0.35416666666666663,
-        "roi_percentage": 176983.3333333333,
-        "manual_hours_saved": 0.014166666666666666,
-        "cost_per_file": 0.0001,
-        "value_per_file": 0.17708333333333334,
-        "break_even_files": 1
-      },
-      "face_detection": {
-        "feature_name": "face_detection",
-        "total_cost": 1e-05,
-        "total_value": 0.05555555555555555,
-        "roi_percentage": 555455.5555555555,
-        "manual_hours_saved": 0.0022222222222222222,
-        "cost_per_file": 5e-06,
-        "value_per_file": 0.02777777777777778,
-        "break_even_files": 1
+      "doctr_ocr": {
+        "feature_name": "doctr_ocr",
+        "total_cost": 0.0,
+        "total_value": 0.3416666666666666,
+        "roi_percentage": Infinity,
+        "manual_hours_saved": 0.013666666666666666,
+        "cost_per_file": 0.0,
+        "value_per_file": 0.3416666666666667,
+        "break_even_files": 0
       }
     }
   },
