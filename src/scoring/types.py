@@ -84,9 +84,12 @@ class ClassificationDecision:
 
     ``confidence`` is the argmax candidate's aggregate clamped to [0, 1];
     thresholds operate on the raw (unclamped) aggregate. ``margin`` is the raw
-    lead over the runner-up (the raw aggregate itself when unopposed).
-    ``winning_signals`` always describes the argmax candidate, even when
-    ``decision_state`` routed the file to the fallback bucket.
+    lead over the best runner-up in a *different* category (the raw aggregate
+    itself when no other-category candidate exists) — same-category
+    subcategory rivals do not count, so an unambiguous category commits its
+    best subcategory. ``winning_signals`` always describes the argmax
+    candidate, even when ``decision_state`` routed the file to the fallback
+    bucket.
     """
 
     category: str

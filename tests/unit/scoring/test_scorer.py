@@ -240,6 +240,62 @@ class TestThresholds:
         assert (decision.category, decision.subcategory) == ("technical", "other")
 
 
+class TestCategoryLevelMargin:
+    """Margin gates the CATEGORY decision (BACKLOG Phase-3 item #3): a
+    same-category subcategory rival does not block the commit; only a rival in
+    a different category does."""
+
+    def test_same_category_subcats_within_margin_still_commit(self):
+        # contacts 0.81 vs employment 0.71 — sub-margin gap 0.10, but same
+        # category → unambiguously personal → winning subcat commits.
+        signals = [
+            FakeSignal("person", 0.9, "mid", [score_entry("personal", "contacts", 0.9)]),
+            FakeSignal("text", 0.9, "heavy", [score_entry("personal", "employment", 0.79)]),
+        ]
+        decision = Scorer(signals).classify(make_ctx())
+        assert (decision.category, decision.subcategory) == ("personal", "contacts")
+        assert decision.decision_state == "committed"
+        # No other-category candidate → margin is the raw winning total.
+        assert decision.margin == pytest.approx(0.81)
+
+    def test_cross_category_rival_within_margin_still_gates(self):
+        # legal 0.50 vs technical 0.45 — different categories, gap < 0.10 →
+        # genuine category ambiguity → fallback (unchanged behavior).
+        signals = [
+            FakeSignal("a", 1.0, "cheap", [score_entry("legal", "contracts", 0.5)]),
+            FakeSignal("b", 1.0, "cheap", [score_entry("technical", "other", 0.45)]),
+        ]
+        decision = Scorer(signals).classify(make_ctx())
+        assert decision.decision_state == "low_margin"
+        assert (decision.category, decision.subcategory) == LOW_CONFIDENCE_FALLBACK
+
+    def test_cross_category_rival_between_same_category_subcats_gates(self):
+        # personal/contacts 0.81 (winner), legal 0.75, personal/employment 0.71.
+        # Best cross-category rival (legal 0.75) is within margin → still gated,
+        # even though a same-category subcat sits between.
+        signals = [
+            FakeSignal("person", 0.9, "mid", [score_entry("personal", "contacts", 0.9)]),
+            FakeSignal("legal", 1.0, "mid", [score_entry("legal", "contracts", 0.75)]),
+            FakeSignal("text", 0.9, "heavy", [score_entry("personal", "employment", 0.79)]),
+        ]
+        decision = Scorer(signals).classify(make_ctx())
+        assert decision.decision_state == "low_margin"
+        assert decision.margin == pytest.approx(0.81 - 0.75)
+
+    def test_margin_measures_best_other_category_not_nearest_key(self):
+        # winner legal/contracts 1.0; same-category legal/corporate 0.9;
+        # other-category financial 0.3. Margin is over financial (0.7), not
+        # the nearer same-category corporate.
+        signals = [
+            FakeSignal("a", 1.0, "cheap", [score_entry("legal", "contracts", 1.0)]),
+            FakeSignal("b", 1.0, "cheap", [score_entry("legal", "corporate", 0.9)]),
+            FakeSignal("c", 1.0, "cheap", [score_entry("financial", "other", 0.3)]),
+        ]
+        decision = Scorer(signals).classify(make_ctx())
+        assert (decision.category, decision.subcategory) == ("legal", "contracts")
+        assert decision.margin == pytest.approx(1.0 - 0.3)
+
+
 class TestEntityMerge:
     def test_company_prefers_winner_contributors_in_registry_order(self):
         signals = [
