@@ -143,3 +143,237 @@ is now a thin CLI wrapper delegating into those packages rather than the former
 4k-LOC monolith.
 
 Open follow-up work is tracked in [`docs/BACKLOG.md`](BACKLOG.md).
+
+---
+
+## Diagrams
+
+### System Overview
+
+```mermaid
+flowchart TB
+    subgraph Input["1 - Input"]
+        U[User]
+        F[Source Files]
+    end
+
+    subgraph Processing["2 - Processing Pipeline"]
+        CLI[organize-files CLI]
+        CO{Organizer<br/>Type}
+        AI[AI Organizer]
+        NM[Name Organizer]
+        TY[Type Organizer]
+
+        subgraph Classifiers["Classifiers"]
+            CLIP[CLIP Vision]
+            OCR[docTR OCR]
+            ED[Entity Detection]
+            GAD[Game Asset]
+            LCD[Legal / Contract]
+            ECD[E-commerce]
+            SUI[Software UI]
+        end
+    end
+
+    subgraph Storage["3 - Storage"]
+        GS[GraphStore]
+        DB[(SQLite)]
+        JSON[Schema.org JSON-LD]
+    end
+
+    subgraph Output["4 - Output"]
+        DASH[Web Dashboard]
+        RPT[Reports]
+    end
+
+    subgraph Monitoring["Cross-Cutting"]
+        SENTRY[Sentry]
+        COST[Cost Tracker]
+    end
+
+    subgraph External["External Services"]
+        HF[open-clip-torch]
+        NOM[Nominatim Geocoder]
+    end
+
+    U --> CLI
+    F --> CLI
+    CLI --> CO
+    CO -->|content| AI
+    CO -->|name| NM
+    CO -->|type| TY
+
+    AI --> CLIP
+    AI --> OCR
+    AI --> ED
+    AI --> GAD
+    AI --> LCD
+    AI --> ECD
+    AI --> SUI
+
+    CLIP --> GS
+    OCR --> GS
+    ED --> GS
+    GAD --> GS
+    LCD --> GS
+    ECD --> GS
+    SUI --> GS
+
+    GS --> DB
+    GS --> JSON
+    DB --> DASH
+    JSON --> DASH
+    DB --> RPT
+
+    AI -.->|errors| SENTRY
+    AI -.->|usage| COST
+    CLIP -.->|model| HF
+    ED -.->|geo lookup| NOM
+```
+
+### Database Schema
+
+```mermaid
+erDiagram
+    File ||--o{ FileCategory : has
+    File ||--o{ FileCompany : has
+    File ||--o{ FilePerson : has
+    File ||--o{ FileLocation : has
+    File ||--o{ FileRelationship : source
+    File ||--o{ FileRelationship : target
+    File }o--|| OrganizationSession : belongs_to
+
+    File {
+        string id PK "SHA-256"
+        string canonical_id "UUID v5"
+        string filename
+        string original_path
+        string current_path
+        enum status
+        string schema_type
+        string content_hash
+    }
+
+    Category {
+        int id PK
+        string canonical_id
+        string name
+        int parent_id FK
+        string full_path
+    }
+
+    Company {
+        int id PK
+        string canonical_id
+        string name
+        string normalized_name
+        string domain
+    }
+
+    Person {
+        int id PK
+        string canonical_id
+        string name
+        string email
+        string role
+    }
+
+    Location {
+        int id PK
+        string canonical_id
+        string city
+        string state
+        float lat
+        float lng
+    }
+
+    OrganizationSession {
+        uuid id PK
+        datetime started_at
+        int total_files
+        float total_cost
+    }
+
+    CostRecord {
+        int id PK
+        uuid session_id FK
+        string file_id FK
+        string feature_name
+        float processing_time
+        float cost
+    }
+```
+
+### Module Dependencies
+
+```mermaid
+graph TB
+    subgraph CLI["CLI Layer"]
+        cli[src/cli.py]
+    end
+
+    subgraph API["API Layer"]
+        soa[schema_org_api.py]
+        som[schema_org_models.py]
+    end
+
+    subgraph Scripts["CLI Wrappers (scripts/)"]
+        foc[file_organizer_content_based.py]
+        icr[rename_images.py]
+        ica[image_content_analyzer.py]
+    end
+
+    subgraph Core["Core Library (src/)"]
+        org[organizers/content_organizer.py]
+        pipe[pipeline/file_processor + batch_processor]
+        clf[classifiers/]
+        ana[analyzers/]
+        gen[generators.py]
+        err[error_tracking.py]
+        cost[cost_roi_calculator.py]
+    end
+
+    subgraph Storage["Storage Layer"]
+        gs[graph_store.py]
+        models[models.py]
+        exp[schema_org_exporter.py]
+        ctx[schema_org_context.py]
+        var[schema_org_variants.py]
+    end
+
+    subgraph External["External Dependencies"]
+        torch[PyTorch / open-clip]
+        doctr[docTR]
+        sentry[Sentry SDK]
+        sa[SQLAlchemy]
+        fa[FastAPI]
+    end
+
+    cli --> foc
+
+    foc --> org
+    foc --> pipe
+    org --> clf
+    org --> ana
+    org --> torch
+    org --> doctr
+    pipe --> gen
+    pipe --> gs
+    pipe --> cost
+    foc --> err
+
+    icr --> torch
+    ica --> torch
+
+    soa --> exp
+    soa --> ctx
+    soa --> models
+    soa --> som
+    soa --> fa
+
+    exp --> models
+    var --> models
+    gs --> models
+    models --> sa
+    err --> sentry
+```

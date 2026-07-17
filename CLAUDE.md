@@ -1,6 +1,7 @@
 # Schema.org File Organization System
 
 AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and entity detection.
+**Python:** 3.12–3.13 (3.14 blocked by macOS 26 libexpat ABI) | **Version:** 2.1.0 | **Files:** 265,000+
 
 ## Quick Start
 
@@ -19,130 +20,91 @@ organize-files health                    # Should report 9/9 features
 
 | Command | Description |
 |---------|-------------|
-| `organize-files content` | AI-powered organization (CLIP, OCR) |
-| `organize-files name` | Filename pattern organization (no AI) |
-| `organize-files type` | Extension-based organization |
+| `organize-files content` | AI-powered organization (CLIP, OCR) — the only DB-writing organizer |
+| `organize-files name` / `type` | Filename-pattern / extension-based organization (DB-free by design) |
 | `organize-files health` | Check system dependencies |
-| `organize-files migrate-ids` | Run database migration |
+| `organize-files migrate-ids` | Canonical-ID database migration |
 | `organize-files migrate-person` | Migrate `Person/` files → `Personal/{subcat}/` (dry-run default; `--apply`, `--rollback`) |
-| `organize-files person-view` | Regenerate `Person/{Name}/` symlink view from graph edges (`--apply`; `--prune-missing` drops dead-path edges first) |
-| `organize-files index-people` | Attach `person→file` graph edges for migrated files, no moves (`--apply`; `--prune-missing` drops dead-path edges after) |
-| `organize-files prune-person` | Delete people + their `file→person` edges from the graph, no file moves (dry-run default; `--apply` backs up the DB first) |
-| `organize-files update-site` | Update dashboard data |
-| `organize-files timeline` | Generate timeline visualization data |
+| `organize-files person-view` | Regenerate `Person/{Name}/` symlink view from graph edges (`--apply`; `--prune-missing`) |
+| `organize-files index-people` | Attach `person→file` edges for migrated files, no moves (`--apply`; `--prune-missing`) |
+| `organize-files prune-person <name-or-id>...` | Delete people + `file→person` edges, no moves (dry-run default; `--apply` backs up DB) |
+| `organize-files update-site` / `timeline` | Regenerate dashboard / timeline data |
 | `organize-files preprocess` | ML data preprocessing (`--input`, `--output`) |
-| `organize-files evaluate` | Run evaluation metrics (`--test-data`, `--output`, `--classifier {baseline,content,unified}`, `--min-support`) |
+| `organize-files evaluate` | Evaluation metrics (`--test-data`, `--output`, `--classifier {baseline,content,unified}`, `--min-support`) |
 
 ## Development Commands
 
 ```bash
-# Start REST API (FastAPI)
-uvicorn src.api.schema_org_api:app --reload
-
-# Lint, format, typecheck
-black src/ scripts/           # format
-flake8 src/ scripts/          # lint
-mypy src/ scripts/            # type check
-
-# Regenerate pdoc3 API docs (writes into the docs/api submodule)
-npm run docs:api             # = bash scripts/gen_api_docs.sh
+uvicorn src.api.schema_org_api:app --reload   # Start REST API (FastAPI)
+black src/ scripts/                            # format
+flake8 src/ scripts/                           # lint
+mypy src/ scripts/                             # type check
+npm run docs:api                               # regenerate pdoc3 API docs (docs/api submodule)
 ```
 
-**API docs:** `docs/api` is a git submodule (`integritystudio/schema-org-file-system-apidocs`) holding the generated pdoc3 HTML under `docs/api/src/`. Regenerate with `npm run docs:api` (sets `PYTHONPATH=src` — inner modules use bare intra-`src` imports), then commit+push inside `docs/api` and commit the bumped gitlink in the parent. Fresh clones need `--recurse-submodules` (or `git submodule update --init`) to populate it.
+**API docs:** `docs/api` is a git submodule (`integritystudio/schema-org-file-system-apidocs`) holding generated pdoc3 HTML under `docs/api/src/`. Regenerate with `npm run docs:api` (sets `PYTHONPATH=src`), then commit+push inside `docs/api` and commit the bumped gitlink in the parent. Fresh clones need `--recurse-submodules`.
 
 ## Project Structure
+
+Full module map, data flow, and diagrams: [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md). Pipeline internals + renamer modes: [`docs/FILE_ORGANIZATION.md`](docs/FILE_ORGANIZATION.md). Schema.org type mappings: [`docs/SCHEMA_ORG_ARCHITECTURE.md`](docs/SCHEMA_ORG_ARCHITECTURE.md).
 
 ```
 ├── src/                    # Core library
 │   ├── cli.py              # Unified CLI entry point
 │   ├── generators.py       # Schema.org metadata generation
-│   ├── error_tracking.py   # Sentry integration
 │   ├── classifiers/        # content_classifier + entity_detector (company/person extraction)
-│   ├── organizers/         # File organizers (base, content, name) + category_config/mime_classifier
-│   ├── pipeline/           # Batch processing pipeline (batch_processor, file_processor)
-│   ├── analyzers/          # Image/content analyzers
-│   ├── ml/                 # ML preprocessing (feature_extractor, data_preprocessor — backs organize-files preprocess)
-│   ├── feedback/           # Correction feedback (correction_tracker + feedback_loop; scripts/correction_feedback.py is the CLI)
-│   ├── utils/              # Shared utilities
-│   ├── api/
-│   │   ├── schema_org_api.py    # FastAPI JSON-LD REST endpoints
-│   │   ├── schema_org_models.py # Pydantic request/response models
-│   │   └── timeline_api.py      # Timeline data endpoints
-│   └── storage/
-│       ├── graph_store.py       # SQLAlchemy graph with canonical IDs
-│       ├── models.py            # ORM models with to_schema_org()
-│       ├── kv_store.py          # Key-value storage layer
-│       ├── migration.py         # Canonical-ID migration (backs organize-files migrate-ids)
-│       ├── person_migration.py  # Person/ → Personal/{subcat} migration (+ rollback)
-│       ├── person_view_generator.py # Derived Person/{Name}/ symlink view
-│       ├── schema_org_exporter.py   # Bulk export (JSON, NDJSON, @graph)
-│       ├── schema_org_context.py    # JSON-LD @context document generation
-│       ├── schema_org_variants.py   # Typed representation variants
-│       └── schema_org_base.py       # Shared base types
+│   ├── organizers/         # base/content/name organizers + category_config/mime_classifier
+│   ├── pipeline/           # batch_processor, file_processor
+│   ├── analyzers/          # image/content analyzers, EXIF/GPS extraction
+│   ├── scoring/            # signal-based scorer (signals/, scorer, registry, weights)
+│   ├── ml/                 # feature_extractor, data_preprocessor
+│   ├── feedback/           # correction_tracker + feedback_loop
+│   ├── api/                # schema_org_api (FastAPI), schema_org_models, timeline_api
+│   └── storage/            # graph_store, models (to_schema_org), migrations, exporters
 ├── scripts/
-│   ├── shared/                          # Shared utilities
-│   │   ├── clip_classification.py       # Unified CLIP+OCR pipeline (classify_with_ocr_fallback, CLIPResult)
-│   │   ├── ocr_classifier.py            # OCR fallback logic (classify_by_ocr, apply_ocr_fallback)
-│   │   ├── clip_utils.py                # CLIPClassifier singleton (ViT-B-32)
-│   │   ├── clip_cache.py                # Embedding cache (.cache/clip_embeddings_v2/)
-│   │   ├── file_organizer.py            # FileOrganizer (mode=in-place|folder, drives both renamers)
-│   │   └── ...                          # file_ops, filename_utils, constants, status, confidence_gate
-│   ├── file_organizer_content_based.py  # Main AI organizer (thin CLI wrapper over src/{classifiers,analyzers,organizers,pipeline})
-│   ├── rename_images.py                 # Unified CLIP renamer; --profile {photo,screenshot} selects vocab/mode
-│   ├── image_content_analyzer.py        # Image content analysis
-│   ├── redact_pii.py                    # Rasterize + OCR-redact PII from docs before adding to VCS
-│   └── relabel_test_set.py              # Re-label evaluation test set against current classifier
-├── tests/
-│   ├── unit/               # Unit tests (pytest)
-│   ├── integration/        # Integration tests (schema.org export pipeline)
-│   ├── performance/        # Benchmark suite (pytest-benchmark)
-│   └── e2e/                # E2E tests (Playwright + OpenTelemetry)
+│   ├── shared/             # clip_classification, ocr_classifier, clip_utils/cache, file_organizer, filename_classifier
+│   ├── file_organizer_content_based.py  # thin CLI wrapper over src/{classifiers,analyzers,organizers,pipeline}
+│   ├── rename_images.py    # Unified CLIP renamer; --profile {photo,screenshot}
+│   └── redact_pii.py       # Rasterize + OCR-redact PII before adding to VCS
+├── tests/                  # unit/ (~1,070), integration/, performance/, e2e/ (Playwright+OTEL)
 ├── _site/                  # Dashboard UI
 └── results/                # Reports & database
 ```
 
-**Note on `scripts/shared/`:** Scripts must be run from the project root (or with `scripts/` on `sys.path`) so that `from shared.x import y` resolves correctly. The `organize-files` CLI entry point handles this automatically.
+**`scripts/shared/` import path:** run scripts from project root (or with `scripts/` on `sys.path`) so `from shared.x import y` resolves. The `organize-files` CLI handles this automatically.
 
 ## Classification Priority
 
-1. **Organization Detection** - client, vendor, invoice, company names
-2. **Personal Documents** - resume/CV/vCard (`contacts`), employment, identification, certificates (OCR-enhanced). Person attribution is a graph relationship (`GraphStore.add_file_to_person`), not a filing category — see `docs/changelog/2.1.0/PERSON_TAXONOMY_OPTION_C_PLAN.md`.
-3. **Legal/Contract** - contracts, agreements, terms
-4. **Financial Documents** - invoice/billing/statement/receipt filenames → `Financial/{Invoices,Statements,Other}`; checked before the event-date heuristic so "May 2026 Billing Statement.pdf" files as financial, not an event (month+day adjacency required for events; a bare year does not qualify)
-5. **Research Paper** - arXiv/SSRN/DOI prefixes route to `Research/{Publisher}/` with `schema_type=ScholarlyArticle`
-6. **E-commerce/Shopping** - product listings, carts
-7. **Software UI** - app interfaces, dashboards
-8. **Game Assets** - 200+ patterns, sprites, textures, audio
-9. **Filepath Matching** - directory structure patterns (includes `parent_folder=Games` fallback)
-10. **Content Analysis** - OCR text and CLIP vision
-11. **MIME Type Fallback** - file extension
+Layered pipeline (see [`docs/FILE_ORGANIZATION.md`](docs/FILE_ORGANIZATION.md#4b-classification-priority-contentorganizerdetect_file_category-srcorganizerscontent_organizerpy)):
+
+1. **Organization** — client/vendor/invoice/company names
+2. **Personal Documents** — resume/CV/vCard (`contacts`), employment, identification, certificates (OCR). Person attribution is a graph relationship (`GraphStore.add_file_to_person`), not a filing category — see `docs/changelog/2.1.0/PERSON_TAXONOMY_OPTION_C_PLAN.md`
+3. **Legal/Contract** — contracts, agreements, terms
+4. **Financial** — invoice/billing/statement/receipt filenames → `Financial/{Invoices,Statements,Other}`; checked before the event-date heuristic (events need month+day adjacency; a bare year does not qualify)
+5. **Research Paper** — arXiv/SSRN/DOI → `Research/{Publisher}/` (`schema_type=ScholarlyArticle`)
+6. **E-commerce** → 7. **Software UI** → 8. **Game Assets** (200+ patterns) → 9. **Filepath** (incl. `parent_folder=Games`) → 10. **Content Analysis** (OCR+CLIP) → 11. **MIME Type** fallback
 
 ## Output Folders
 
 ```
 ~/Documents/
 ├── Organization/{CompanyName}/    # Vendor/partner files
-├── Personal/{Contacts,Employment,Identification,Certificates,Journal,Events,Legal,Records,Other}/  # Doc-class filing
-├── Person/{PersonName}/           # Derived symlink view (regenerated from graph edges,
-│                                  # not a filing target) — organize-files person-view
-├── GameAssets/                    # Sprites, textures, models
-├── Financial/                     # Invoices, receipts
-├── Technical/                     # Code, configs
-└── Media/                         # Photos, videos, audio
+├── Personal/{Contacts,Employment,Identification,Certificates,Journal,Events,Legal,Records,Other}/
+├── Person/{PersonName}/           # Derived symlink view (organize-files person-view), not a filing target
+├── GameAssets/  Financial/  Technical/  Media/
 ```
 
 ## Environment
 
 | Variable | Description |
 |----------|-------------|
-| `FILE_SYSTEM_SENTRY_DSN` | Sentry error tracking (Doppler) |
-| `FILE_ORGANIZE_MODE` | `in-place` (default for image renamer) or `folder` (default for screenshot renamer) |
-| `OCR_EASYOCR_LANGS` | Comma-separated ISO language codes for easyocr (e.g. `en,fr,es`); defaults to `en`. Resolved at Reader-construction time — set it before first OCR use. |
-| `--sentry-dsn` | CLI override |
+| `FILE_SYSTEM_SENTRY_DSN` / `--sentry-dsn` | Sentry error tracking (Doppler) / CLI override |
+| `FILE_ORGANIZE_MODE` | `in-place` (image renamer default) or `folder` (screenshot renamer default) |
+| `OCR_EASYOCR_LANGS` | Comma-separated ISO codes for easyocr (default `en`); resolved at Reader-construction time — set before first OCR use |
 
 ## Dependencies
 
-Requires Python 3.12 or 3.13 (3.14 broken on macOS 26 — see Troubleshooting; `pyproject.toml` declares `>=3.8` but 3.12/3.13 are what's tested).
+Requires Python 3.12 or 3.13 (3.14 broken on macOS 26; `pyproject.toml` declares `>=3.8` but 3.12/3.13 are tested).
 
 ```bash
 python3.13 -m venv venv && source venv/bin/activate
@@ -156,58 +118,45 @@ pip install -e ".[all]" && brew install tesseract poppler
 | HEIC fails | `pip install pillow-heif` |
 | No OCR | `pip install 'python-doctr[torch]'` |
 | No AI | `pip install torch open-clip-torch` (or `pip install -e ".[ai]"`) |
-| `pyexpat` / `_XML_SetAllocTrackerActivationThreshold` on macOS 26 | brew's `python@3.13`/`@3.14` bottles link against newer `libexpat` than macOS ships. Fix: `brew install expat`, then `install_name_tool -change /usr/lib/libexpat.1.dylib /opt/homebrew/opt/expat/lib/libexpat.1.dylib $(python3.13 -c 'import pyexpat;print(pyexpat.__file__)')` and `codesign --force --sign - $(python3.13 -c 'import pyexpat;print(pyexpat.__file__)')` |
-
-## Schema.org Reference
-
-See [`docs/SCHEMA_ORG_ARCHITECTURE.md`](docs/SCHEMA_ORG_ARCHITECTURE.md) for type mappings, IRI generation, JSON-LD context, the `build_*_jsonld` builder pattern (each `to_schema_org()` delegates), and relationship rules.
+| `pyexpat` / `_XML_SetAllocTrackerActivationThreshold` on macOS 26 | brew's `python@3.13/3.14` link a newer `libexpat` than macOS ships. `brew install expat`, then `install_name_tool -change /usr/lib/libexpat.1.dylib /opt/homebrew/opt/expat/lib/libexpat.1.dylib $(python3.13 -c 'import pyexpat;print(pyexpat.__file__)')` and `codesign --force --sign - $(python3.13 -c 'import pyexpat;print(pyexpat.__file__)')` |
 
 ## REST API
 
-FastAPI app at `src/api/schema_org_api.py`. Key endpoints:
+FastAPI app at `src/api/schema_org_api.py`. Entity types: `files`, `categories`, `companies`, `people`, `locations`.
 
 | Endpoint | Description |
 |----------|-------------|
 | `GET /api/{entity}/{id}/schema-org` | Single entity as JSON-LD |
 | `GET /api/{entity}/schema-org/bulk` | Filtered list as `{"@context":…,"@graph":[…]}` |
 | `GET /api/{companies\|people\|locations}/schema-org/by-name/{name}` | Lookup by name |
-| `GET /api/schema-org/export` | Full `@graph` document, filterable by entity type |
-| `GET /api/schema-org/graph` | Full graph, all entity types |
-| `GET /schema/context` | Standalone JSON-LD `@context` document |
+| `GET /api/schema-org/export` / `/graph` | Full `@graph` document / full graph |
+| `GET /schema/context` | Standalone JSON-LD `@context` |
 | `GET /health` | Service health check |
-
-Entity types: `files`, `categories`, `companies`, `people`, `locations`.
-
-## Gotchas
-
-| Issue | Detail |
-|-------|--------|
-| Oversized images | Pillow's >178M-pixel decompression-bomb guard raises `DecompressionBombError`; `CLIPClassifier` encode paths catch it and thumbnail to `_CLIP_INPUT_SIZE`, so large maps/renders classify instead of being skipped. |
-| CLIP embedding cache | Lives at `.cache/clip_embeddings_v2/` (fp32 `.npy` per image); safe to `rm -rf` to reset |
-| `scripts/shared/` import path | Scripts must run from project root so `from shared.x import y` resolves; `organize-files` CLI handles this automatically |
-| FileOrganizer modes | `rename_images.py` takes `--profile {photo,screenshot}`; mode default comes from the profile (`photo`=in-place, `screenshot`=folder) but can be overridden with `--mode` or `FILE_ORGANIZE_MODE` |
-| Unified CLIP+OCR API | `classify_with_ocr_fallback()` in `scripts/shared/clip_classification.py` is the shared entry point; returns `CLIPResult(category, confidence, all_scores)`; both renamer tools call it |
-| Screenshot OCR keyword threshold | `_SCREENSHOT_OCR_KEYWORD_THRESHOLD = 0.10` in `src/organizers/content_organizer.py` (re-exported by `scripts/file_organizer_content_based.py`) — do not raise without verifying eval impact (higher values silently reject valid scores). |
-| Generator API | `generators.py` has no fluent builders — build schemas via `set_property(name, value, PropertyType)` or the `add_person`/`add_organization`/`set_dates` helpers. |
-| Golden snapshot tests | `tests/unit/golden/generate_schema/*.json` are recorded baselines for `generate_schema()` output — do not hand-edit; re-record with `UPDATE_GOLDEN=1 pytest tests/unit/test_generate_schema_golden.py` |
-| Storage timestamps | Use `from ._time import utcnow` (naive UTC) instead of deprecated `datetime.utcnow()`; DateTime columns are timezone-naive, so do not introduce tz-aware datetimes without a column migration |
-| Pruning person edges | `organize-files prune-person <name-or-id>...` deletes a person and its `file→person` edges (dry-run default; `--apply` backs up the DB first); `GraphStore.remove_person_edge` drops a single edge. `--prune-missing` on `person-view`/`index-people` (or `GraphStore.prune_missing_person_edges`) drops edges whose file path no longer exists. The `get_all_people_with_files` denylist is still leaky (false-positive "people" like event/org names create spurious `Person/{Name}/` folders on `person-view --apply` — prune them first). See [`docs/BACKLOG.md` → Person-graph edge hygiene](docs/BACKLOG.md#person-graph-edge-hygiene). |
-| Core-query export | `SchemaOrgExporter` defaults to `use_core=True`, serializing via the shared `build_*_jsonld` pure functions in `models.py` — each `to_schema_org()` is a thin delegator, so **edit the builders, not the methods**. Exports **stream** (`_stream_array` + lazy `_iter_records`; File path column-selects + `yield_per`) — don't reintroduce a full `records` list or `json.dumps` of the whole document. Relationship-order parity relies on natural association-row order — don't add `ORDER BY` to `_load_file_refs`. Parity + streaming locked by `tests/integration/test_core_export_parity.py`. |
-| Parallel agents — worktree rule | **Never run background/parallel Claude agents in the primary checkout.** Each agent must operate in its own git worktree (`EnterWorktree` / `worktree-agent-*` branches). Concurrent agents in the shared checkout silently clobber each other's changes (branch switch, conflicting commits). A `pre-commit` hook warns when multiple Claude sessions share the same directory. |
-| easyocr MPS (Apple Silicon) | easyocr has no usable MPS backend; the Reader always loads on CPU on macOS arm64. CUDA-only guard in `ocr_easyocr._use_gpu()` is intentional. Call `prewarm_reader()` before a batch loop to amortize model-load latency; call `clear_reader()` to reclaim Reader memory between batches or in tests. |
-| Screenshot renamer OCR backend | `rename_images.py --profile screenshot` routes `_detect_number` through `extract_screenshot_text` (prefers easyocr when installed, falls back to docTR). The `--profile photo` path uses docTR directly. Screenshot naming prefers a title-like OCR line (`title_snippet_from_lines` in `scripts/shared/filename_utils.py`: first 3 lines, 10–50 chars, 40-char cap) → `Screenshot_<title>.<ext>`, falling back to the CLIP label when no line qualifies. |
-| EXIF/GPS extraction | `extract_exif_data`/`extract_gps_coordinates` (`src/analyzers/image_metadata.py`) fall back to piexif when PIL `_getexif()` yields nothing or surfaces `GPSInfo` as a bare offset int; `_convert_to_degrees` handles both piexif `(num, den)` pairs and modern-Pillow floats/IFDRationals. EXIF locations create `file→location` graph edges via the `get_metadata_summary()` shape (`location_name`/`gps_coordinates`); reverse geocoding falls back to county when Nominatim has no city/town/village. |
-| PII redaction (`scripts/redact_pii.py`) | Rasterizes PDFs/images to flat PNGs (kills hidden text layer + metadata), then OCR-blacks tokens matching digit/email/date/name patterns. Only digit-bearing + configured-name PII is caught — **alphabetic PII (street names, third-party names) is NOT**, so rasterized outputs are flagged `review_recommended` in `manifest.json` and require human review before `git add`. Run: `python scripts/redact_pii.py <path>... --output DIR [--name TERM]`. |
-| Graph persistence is content-only | Only `organize-files content` (BatchProcessor → FileProcessor → `GraphStore`) writes files to the graph store and records `organization_sessions` / `files.session_id` (what the timeline groups by). `organize-files type` and `organize-files name` are DB-free **by design** — they move files + write a JSON report but never touch the graph store, so their runs never appear on the timeline. The only `GraphStore.add_file` callers are the content `FileProcessor` and `person_migration`. See [`docs/FILE_ORGANIZATION.md`](docs/FILE_ORGANIZATION.md) §5 (Persistence). |
 
 ## Testing
 
 ```bash
 pytest tests/unit/           # ~1,070 unit tests
 pytest tests/integration/    # schema.org export pipeline
-pytest tests/performance/ --benchmark-only -m "not slow"   # benchmarks (skip 10k)
+pytest tests/performance/ --benchmark-only -m "not slow"
 pytest tests/e2e/            # Playwright E2E
 ```
 
----
-**Python:** 3.12–3.13 (3.14 blocked by macOS 26 libexpat ABI) | **Version:** 2.1.0 | **Files:** 265,000+ processed
+## Gotchas
+
+- **Oversized images** — Pillow's >178M-pixel bomb guard raises `DecompressionBombError`; `CLIPClassifier` catches it and thumbnails to `_CLIP_INPUT_SIZE`, so large renders classify instead of skipping.
+- **CLIP embedding cache** — `.cache/clip_embeddings_v2/` (fp32 `.npy` per image); `rm -rf` to reset.
+- **FileOrganizer modes** — `rename_images.py --profile {photo,screenshot}`; mode default comes from the profile (`photo`=in-place, `screenshot`=folder), overridable via `--mode` / `FILE_ORGANIZE_MODE`.
+- **Unified CLIP+OCR API** — `classify_with_ocr_fallback()` in `scripts/shared/clip_classification.py` is the shared entry point; returns `CLIPResult(category, confidence, all_scores)`. Both renamers call it.
+- **Screenshot OCR keyword threshold** — `_SCREENSHOT_OCR_KEYWORD_THRESHOLD = 0.10` in `src/organizers/content_organizer.py` (re-exported by `scripts/file_organizer_content_based.py`) — do not raise without verifying eval impact.
+- **Generator API** — no fluent builders; build schemas via `set_property(name, value, PropertyType)` or `add_person`/`add_organization`/`set_dates`.
+- **Golden snapshot tests** — `tests/unit/golden/generate_schema/*.json` are recorded baselines; re-record with `UPDATE_GOLDEN=1 pytest tests/unit/test_generate_schema_golden.py`, do not hand-edit.
+- **Storage timestamps** — use `from ._time import utcnow` (naive UTC), not `datetime.utcnow()`; DateTime columns are tz-naive — no tz-aware datetimes without a column migration.
+- **Core-query export** — `SchemaOrgExporter` defaults to `use_core=True`, serializing via the shared `build_*_jsonld` pure functions in `models.py` (each `to_schema_org()` delegates) — **edit the builders, not the methods**. Exports **stream** (`_stream_array` + lazy `_iter_records`; File path column-selects + `yield_per`) — don't reintroduce a full `records` list. Relationship-order parity relies on natural association-row order — no `ORDER BY` in `_load_file_refs`. Locked by `tests/integration/test_core_export_parity.py`.
+- **Parallel agents — worktree rule** — never run background/parallel Claude agents in the primary checkout; each must use its own git worktree (`EnterWorktree`). Concurrent agents in the shared checkout silently clobber each other. A `pre-commit` hook warns on shared directories.
+- **easyocr on Apple Silicon** — no usable MPS backend; Reader always loads on CPU on macOS arm64 (CUDA-only guard in `ocr_easyocr._use_gpu()` is intentional). Call `prewarm_reader()` before a batch loop; `clear_reader()` to reclaim memory.
+- **Screenshot renamer OCR** — `--profile screenshot` routes `_detect_number` through `extract_screenshot_text` (easyocr preferred, docTR fallback); `--profile photo` uses docTR directly. Naming prefers a title-like OCR line (`title_snippet_from_lines`: first 3 lines, 10–50 chars, 40-char cap) → `Screenshot_<title>`, else the CLIP label.
+- **EXIF/GPS extraction** — `extract_exif_data`/`extract_gps_coordinates` (`src/analyzers/image_metadata.py`) fall back to piexif when PIL yields nothing or surfaces `GPSInfo` as a bare offset; `_convert_to_degrees` handles piexif pairs and modern-Pillow floats. EXIF locations create `file→location` edges via `get_metadata_summary()`; reverse geocoding falls back to county when Nominatim lacks city/town/village.
+- **PII redaction (`scripts/redact_pii.py`)** — rasterizes PDFs/images to flat PNGs (kills text layer + metadata), then OCR-blacks digit/email/date/name tokens. Alphabetic PII (street/third-party names) is NOT caught — outputs are flagged `review_recommended` in `manifest.json` and need human review before `git add`. Run: `python scripts/redact_pii.py <path>... --output DIR [--name TERM]`.
+- **Person-graph edge hygiene** — `GraphStore.remove_person_edge` drops a single edge; `--prune-missing` (`prune_missing_person_edges`) drops edges whose file path is gone. `get_all_people_with_files` denylist is leaky (event/org names create spurious `Person/{Name}/` folders on `person-view --apply` — prune first). See [`docs/BACKLOG.md`](docs/BACKLOG.md#person-graph-edge-hygiene).
+- **Graph persistence is content-only** — only `organize-files content` (BatchProcessor → FileProcessor → `GraphStore`) writes to the graph store and records `organization_sessions`/`files.session_id` (what the timeline groups by). `type`/`name` are DB-free by design. Sole `GraphStore.add_file` callers: content `FileProcessor` and `person_migration`. See [`docs/FILE_ORGANIZATION.md`](docs/FILE_ORGANIZATION.md) §5.

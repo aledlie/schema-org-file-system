@@ -50,5 +50,10 @@
   },
   "security": {
     "enableSecurityCheck": true
+  },
+  "diffSummary": {
+    "ignore": [
+      "docs/**"
+    ]
   }
 }

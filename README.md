@@ -8,10 +8,10 @@ AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and en
 
 Scans directories, classifies files by content, organizes them into a semantic folder hierarchy, and builds a Schema.org-typed knowledge graph that is queryable over REST.
 
-- **Content classification** — layered priority pipeline: organization → personal (doc-class) → legal → financial (filename) → research paper → e-commerce → software UI → game assets → filepath → CLIP/OCR content analysis → MIME fallback (see [Classification Priority](#classification-priority)).
+- **Content classification** — layered priority pipeline: organization → personal (doc-class) → legal → financial (filename) → research paper → e-commerce → software UI → game assets → filepath → CLIP/OCR content analysis → MIME fallback (see [FILE_ORGANIZATION.md](docs/FILE_ORGANIZATION.md#4b-classification-priority-contentorganizerdetect_file_category-srcorganizerscontent_organizerpy)).
 - **CLIP + OCR vision** — unified `classify_with_ocr_fallback()` (CLIP ViT-B-32 + cached embeddings) with OCR fallback for low-confidence predictions.
 - **Image/screenshot renaming** — `rename_images.py --profile {photo,screenshot}` selects vocabulary and in-place vs. folder mode; the screenshot profile prefers a title-like OCR line (`Screenshot_<title>`) over the generic CLIP label when one qualifies.
-- **Schema.org graph store** — SQLAlchemy ORM with canonical IDs; every entity exposes `to_schema_org()`, plus bulk JSON/NDJSON/`@graph` export and JSON-LD `@context` generation.
+- **Schema.org graph store** — SQLAlchemy ORM with canonical IDs (UUID v5 + SHA-256); every entity exposes `to_schema_org()`, plus bulk JSON/NDJSON/`@graph` export and JSON-LD `@context` generation.
 - **ML support** — training-data preprocessing and model evaluation.
 - **Dashboard + timeline** — static UI in `_site/`, fed by `update-site` and `timeline` data generators.
 
@@ -21,61 +21,27 @@ All entry points share one backing SQLite graph (`results/file_organization.db`)
 
 | Surface | How to launch |
 |---------|---------------|
-| **CLI** | `organize-files <command>` (console script → `src.cli:main`) — see [CLI Commands](#cli-commands) |
-| **REST API** | `uvicorn src.api.schema_org_api:app --reload` — JSON-LD endpoints for `files`, `categories`, `companies`, `people`, `locations` (see [REST API](#rest-api)) |
+| **CLI** | `organize-files <command>` (console script → `src.cli:main`) — command reference in [QUICK_START.md](QUICK_START.md) |
+| **REST API** | `uvicorn src.api.schema_org_api:app --reload` — JSON-LD endpoints (see [SCHEMA_ORG_ARCHITECTURE.md](docs/SCHEMA_ORG_ARCHITECTURE.md) and [ARCHITECTURE.md#rest-api-srcapischema_org_apipy](docs/ARCHITECTURE.md#rest-api-srcapischema_org_apipy)) |
 | **Library** | Import organizers/classifiers from `src.organizers` / `src.classifiers` and the graph store from `src.storage`; `scripts/` entry points are thin CLI wrappers (run from project root so `from shared.x import y` resolves) |
 | **Dashboard** | Static UI in `_site/`, consuming data from `update-site` / `timeline` |
 
 ## Quick Start
 
 ```bash
-# Setup
 git clone https://github.com/aledlie/schema-org-file-system.git
 cd schema-org-file-system
 python3.13 -m venv venv && source venv/bin/activate
 pip install -e ".[all]"
 brew install tesseract poppler
 
-# Run
 organize-files content --source ~/Downloads --dry-run --limit 100
 organize-files health  # Should report 9/9 features operational
 ```
 
-> **macOS 26 note:** Homebrew's `python@3.13` and `python@3.14` bottles link `pyexpat` against a newer `libexpat` than macOS 26 ships, which breaks `pip` on fresh installs. If you see `Symbol not found: _XML_SetAllocTrackerActivationThreshold`, see [Troubleshooting](#troubleshooting).
+Full setup, daily-use commands, output-folder layout, ML workflow, and dev checks are in **[QUICK_START.md](QUICK_START.md)**.
 
-## CLI Commands
-
-| Command | Description |
-|---------|-------------|
-| `organize-files content` | AI-powered organization (CLIP, OCR) |
-| `organize-files name` | Filename pattern organization |
-| `organize-files type` | Extension-based organization |
-| `organize-files health` | Check system dependencies |
-| `organize-files migrate-ids` | Run database migration |
-| `organize-files update-site` | Update dashboard data |
-| `organize-files timeline` | Generate timeline visualization data |
-| `organize-files preprocess` | Data preprocessing pipeline for ML model training (`--input`, `--output`) |
-| `organize-files evaluate` | Run evaluation metrics on test dataset (`--test-data`, `--output`, `--classifier {baseline,content,unified}`, `--min-support`) |
-| `organize-files migrate-person` | Migrate on-disk `Person/` files into `Personal/{subcat}/` (dry-run default; `--apply`, `--rollback`) |
-| `organize-files person-view` | Regenerate `Person/{Name}/` as a derived symlink view from graph edges (`--apply`; `--prune-missing` drops dead-path edges first) |
-| `organize-files index-people` | Attach `person→file` graph edges for migrated files, no moves (`--apply`; `--prune-missing` drops dead-path edges after) |
-| `organize-files prune-person` | Delete people + their `file→person` edges from the graph, no file moves (dry-run default; `--apply` backs up the DB first) |
-
-## REST API
-
-FastAPI app at `src/api/schema_org_api.py`. Start with `uvicorn src.api.schema_org_api:app --reload`.
-
-| Endpoint | Description |
-|----------|-------------|
-| `GET /api/{entity}/{id}/schema-org` | Single entity as JSON-LD |
-| `GET /api/{entity}/schema-org/bulk` | Filtered list as `{"@context":…,"@graph":[…]}` |
-| `GET /api/{companies\|people\|locations}/schema-org/by-name/{name}` | Lookup by name |
-| `GET /api/schema-org/export` | Full `@graph` document, filterable by entity type |
-| `GET /api/schema-org/graph` | Full graph, all entity types |
-| `GET /schema/context` | Standalone JSON-LD `@context` document |
-| `GET /health` | Service health check |
-
-Entity types: `files`, `categories`, `companies`, `people`, `locations`.
+> **macOS 26 note:** Homebrew's `python@3.13`/`@3.14` bottles link `pyexpat` against a newer `libexpat` than macOS 26 ships, breaking `pip` on fresh installs. If you see `Symbol not found: _XML_SetAllocTrackerActivationThreshold`, see the Troubleshooting table in [CLAUDE.md](CLAUDE.md#troubleshooting).
 
 ## Architecture
 
@@ -100,77 +66,10 @@ flowchart LR
     J --> K
 ```
 
-## Classification Priority
-
-1. **Organization** - client, vendor, invoice, company names
-2. **Personal Documents** - resume/CV/vCard (`contacts`), employment, identification, certificates (OCR-enhanced). Person attribution is a graph relationship (`add_file_to_person`), not a filing category.
-3. **Legal/Contract** - contracts, agreements, terms
-4. **Financial Documents** - invoice/billing/statement/receipt filenames → `Financial/`; checked before the event-date heuristic so "May 2026 Billing Statement" files as financial, not an event
-5. **Research Paper** - arXiv/SSRN/DOI prefixes route to `Research/{Publisher}/` (`schema_type=ScholarlyArticle`)
-6. **E-commerce** - product listings, shopping carts
-7. **Software UI** - app interfaces, dashboards
-8. **Game Assets** - 200+ patterns, sprites, textures, audio
-9. **Filepath** - directory structure patterns
-10. **Content Analysis** - OCR text + CLIP vision
-11. **MIME Type** - file extension fallback
-
-## Project Structure
-
-```
-├── src/
-│   ├── cli.py                       # CLI entry point
-│   ├── generators.py                # Schema.org generators
-│   ├── classifiers/                 # content_classifier + entity_detector
-│   ├── organizers/                  # base/content/name organizers + category_config
-│   ├── pipeline/                    # batch_processor, file_processor
-│   ├── analyzers/                   # image/content analyzers, text extraction
-│   ├── api/
-│   │   ├── schema_org_api.py        # FastAPI JSON-LD REST endpoints
-│   │   ├── schema_org_models.py     # Pydantic models
-│   │   └── timeline_api.py          # Timeline data endpoints
-│   └── storage/
-│       ├── graph_store.py           # GraphStore + canonical IDs
-│       ├── models.py                # ORM models with to_schema_org()
-│       ├── migration.py             # ID generation migration
-│       ├── person_migration.py      # Migrate Person/ files → Personal/{subcat}/
-│       ├── person_view_generator.py # Derived Person/{Name}/ symlink view
-│       ├── kv_store.py              # Key-value storage layer
-│       ├── schema_org_exporter.py   # Bulk export (JSON / NDJSON / @graph)
-│       ├── schema_org_context.py    # JSON-LD @context generation
-│       ├── schema_org_variants.py   # Typed representation variants
-│       └── schema_org_base.py       # Shared base types
-├── scripts/                         # Thin CLI wrappers + shared/ utilities
-├── tests/
-│   ├── unit/                        # ~1,070 unit tests
-│   ├── integration/                 # Export pipeline integration tests
-│   ├── performance/                 # pytest-benchmark suite
-│   └── e2e/                         # Playwright + OpenTelemetry
-├── _site/                           # Web dashboard
-└── results/                         # Database & reports
-```
-
-## Output Folders
-
-```
-~/Documents/
-├── Organization/{Company}/    # Vendor/partner files
-├── Personal/{Contacts,Employment,Identification,Certificates,Journal,Events,Legal,Records,Other}/  # Doc-class filing
-├── Person/{Name}/             # Derived symlink view, regenerated from graph edges (organize-files person-view)
-├── GameAssets/                # Sprites, textures, models
-├── Financial/                 # Invoices, receipts
-├── Technical/                 # Code, configs
-└── Media/                     # Photos, videos, audio
-```
-
-## Key Features
-
-- **Entity Detection** - Prioritizes Organization and Person identification
-- **Canonical IDs** - UUID v5 + SHA256 for persistent identification
-- **Schema.org JSON-LD** - Full JSON-LD generation with validated spec URLs on every emitted property
-- **REST API** - FastAPI endpoints returning `{"@context":…,"@graph":[…]}` for all entity types
-- **Bulk Export** - JSON, NDJSON, and `@graph` formats via `SchemaOrgExporter`
-- **Cost Tracking** - ROI calculation with manual time savings
-- **E2E Testing** - Playwright with OpenTelemetry instrumentation
+- **Module map, data flow, IRI strategy, MIME→type mapping, REST layer** — [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **Detailed diagrams** (system overview, database schema, module dependencies) — [docs/ARCHITECTURE.md#diagrams](docs/ARCHITECTURE.md#diagrams)
+- **Pipeline internals, classification priority, renamer profiles/modes, persistence** — [docs/FILE_ORGANIZATION.md](docs/FILE_ORGANIZATION.md)
+- **Schema.org type mappings, entity details, relationships, JSON-LD `@context`** — [docs/SCHEMA_ORG_ARCHITECTURE.md](docs/SCHEMA_ORG_ARCHITECTURE.md)
 
 ## Tech Stack
 
@@ -185,299 +84,14 @@ flowchart LR
 
 ## Documentation
 
-- [QUICK_START](QUICK_START.md) - Setup and daily-use commands, copy-paste ready
-- [CHANGELOG (v2.1.0)](docs/changelog/2.1.0/CHANGELOG.md) - Current version history
-- [CHANGELOG (v2.0.0)](docs/changelog/2.0.0/CHANGELOG.md) - Prior version history
-- [ARCHITECTURE_REFACTOR](docs/archive/ARCHITECTURE_REFACTOR.md) - Historical refactor plan (design decisions)
-- [SCHEMA_ORG_ARCHITECTURE](docs/SCHEMA_ORG_ARCHITECTURE.md) - Schema.org type mappings, IRI patterns, JSON-LD context, and implementation reference
+- [QUICK_START.md](QUICK_START.md) — setup, daily-use commands, output folders, ML workflow, dev checks
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — module map, data flow, serialization layer, REST API, diagrams
+- [docs/FILE_ORGANIZATION.md](docs/FILE_ORGANIZATION.md) — content pipeline, classification priority, renamer profiles, persistence
+- [docs/SCHEMA_ORG_ARCHITECTURE.md](docs/SCHEMA_ORG_ARCHITECTURE.md) — Schema.org type mappings, IRI patterns, JSON-LD context, builder pattern
+- [CLAUDE.md](CLAUDE.md) — CLI reference, environment variables, troubleshooting, gotchas
+- [docs/BACKLOG.md](docs/BACKLOG.md) — open follow-up work
+- Changelogs: [v2.1.0](docs/changelog/2.1.0/CHANGELOG.md) · [v2.0.0](docs/changelog/2.0.0/CHANGELOG.md) · [v1](docs/changelog/v1/CHANGELOG.md)
 
 ## Changelog
 
-### v2.1.0 (2026-06-29) + unreleased
-
-**Person taxonomy Option C (unreleased):** `person` demoted from filing category to graph relationship — files go to `Personal/{subcat}/`, `Person/{Name}/` becomes a derived symlink view; new `migrate-person`, `person-view`, `index-people`, `prune-person` commands.
-
-**Refactor (unreleased):** `file_organizer_content_based.py` reduced to a thin CLI wrapper over `src/{classifiers,analyzers,organizers,pipeline}`; streaming core-query Schema.org export; typed `run(args)` entry points with single-sourced subcommand options in `src/cli.py`; orphaned rename-analysis scripts (`add_content_descriptions.py`, `analyze_renamed_files.py`, `image_renamer_metadata.py`) deleted.
-
-**Analyzers & renaming (unreleased):** OCR title-snippet naming for the screenshot renamer (`Screenshot_<title>` when a title-like OCR line qualifies); piexif EXIF fallback and modern-Pillow GPS parsing (fixes silently-empty GPS extraction); EXIF locations now create `file→location` graph edges; county fallback for reverse geocoding when Nominatim returns no city/town/village.
-
-**Released 2.1.0:** easyocr screenshot OCR backend + benchmark harness (`scripts/bench_ocr_backends.py`), photo-evidence gating for low-confidence image routing, multi-agent collision-detection pre-commit hook.
-
-See [docs/changelog/2.1.0/CHANGELOG.md](docs/changelog/2.1.0/CHANGELOG.md) for detail.
-
-### v2.0.0 (2026-03-28)
-
-**Schema.org Integration**
-- `SchemaOrgExporter` — bulk export in JSON, NDJSON, and `@graph` formats
-- `schema_org_context.py` — standalone JSON-LD `@context` document with `schema:` and `ml:` prefixes
-- `schema_org_variants.py` — `CategoryVariants`, `PersonVariants`, `FileVariants`
-- All five `to_schema_org()` methods annotated with validated `# https://schema.org/` spec URLs
-
-**REST API**
-- FastAPI app at `src/api/schema_org_api.py`
-- Bulk endpoints return proper `{"@context":…,"@graph":[…]}` JSON-LD documents
-- `/api/schema-org/export`, `/api/schema-org/graph`, `/schema/context` endpoints
-
-**Testing**
-- 26 integration tests, performance benchmarks (100 / 1k / 10k entities)
-- Per-entity `to_schema_org()` benchmarks and relationship-overhead baseline
-
-### v1.4.0 (2026-03-19)
-
-**Features**
-- Typed subdirectories for screenshot categories
-- Enhanced weak image classification with full CLIP + OCR fallback
-- Shared utilities module consolidating 576 lines of duplication
-
-**See full history:** `git log --oneline`
-
-## Environment Variables
-
-| Variable | Description |
-|----------|-------------|
-| `FILE_SYSTEM_SENTRY_DSN` | Sentry error tracking (Doppler) |
-| `FILE_ORGANIZE_MODE` | `in-place` (default for image renamer) or `folder` (default for screenshot renamer) |
-| `OCR_EASYOCR_LANGS` | Comma-separated ISO language codes for easyocr (e.g. `en,fr,es`); defaults to `en`. Resolved at Reader-construction time — set before first OCR use. |
-| `--sentry-dsn` | CLI override |
-
-## Troubleshooting
-
-| Issue | Solution |
-|-------|----------|
-| HEIC fails | `pip install pillow-heif` |
-| No OCR | `pip install 'python-doctr[torch]'` |
-| No AI | `pip install torch open-clip-torch` (or `pip install -e ".[ai]"`) |
-| Check deps | `organize-files health` |
-| `pyexpat` / `_XML_SetAllocTrackerActivationThreshold` on macOS 26 | `brew install expat`, then repoint and re-sign the broken module: `install_name_tool -change /usr/lib/libexpat.1.dylib /opt/homebrew/opt/expat/lib/libexpat.1.dylib $(python3.13 -c 'import pyexpat,os;print(pyexpat.__file__)')` and `codesign --force --sign - $(python3.13 -c 'import pyexpat;print(pyexpat.__file__)')` |
-
-## Visual Architecture
-
-### System Overview
-
-```mermaid
-flowchart TB
-    subgraph Input["1 - Input"]
-        U[User]
-        F[Source Files]
-    end
-
-    subgraph Processing["2 - Processing Pipeline"]
-        CLI[organize-files CLI]
-        CO{Organizer<br/>Type}
-        AI[AI Organizer]
-        NM[Name Organizer]
-        TY[Type Organizer]
-
-        subgraph Classifiers["Classifiers"]
-            CLIP[CLIP Vision]
-            OCR[docTR OCR]
-            ED[Entity Detection]
-            GAD[Game Asset]
-            LCD[Legal / Contract]
-            ECD[E-commerce]
-            SUI[Software UI]
-        end
-    end
-
-    subgraph Storage["3 - Storage"]
-        GS[GraphStore]
-        DB[(SQLite)]
-        JSON[Schema.org JSON-LD]
-    end
-
-    subgraph Output["4 - Output"]
-        DASH[Web Dashboard]
-        RPT[Reports]
-    end
-
-    subgraph Monitoring["Cross-Cutting"]
-        SENTRY[Sentry]
-        COST[Cost Tracker]
-    end
-
-    subgraph External["External Services"]
-        HF[open-clip-torch]
-        NOM[Nominatim Geocoder]
-    end
-
-    U --> CLI
-    F --> CLI
-    CLI --> CO
-    CO -->|content| AI
-    CO -->|name| NM
-    CO -->|type| TY
-
-    AI --> CLIP
-    AI --> OCR
-    AI --> ED
-    AI --> GAD
-    AI --> LCD
-    AI --> ECD
-    AI --> SUI
-
-    CLIP --> GS
-    OCR --> GS
-    ED --> GS
-    GAD --> GS
-    LCD --> GS
-    ECD --> GS
-    SUI --> GS
-
-    GS --> DB
-    GS --> JSON
-    DB --> DASH
-    JSON --> DASH
-    DB --> RPT
-
-    AI -.->|errors| SENTRY
-    AI -.->|usage| COST
-    CLIP -.->|model| HF
-    ED -.->|geo lookup| NOM
-```
-
-### Database Schema
-
-```mermaid
-erDiagram
-    File ||--o{ FileCategory : has
-    File ||--o{ FileCompany : has
-    File ||--o{ FilePerson : has
-    File ||--o{ FileLocation : has
-    File ||--o{ FileRelationship : source
-    File ||--o{ FileRelationship : target
-    File }o--|| OrganizationSession : belongs_to
-
-    File {
-        string id PK "SHA-256"
-        string canonical_id "UUID v5"
-        string filename
-        string original_path
-        string current_path
-        enum status
-        string schema_type
-        string content_hash
-    }
-
-    Category {
-        int id PK
-        string canonical_id
-        string name
-        int parent_id FK
-        string full_path
-    }
-
-    Company {
-        int id PK
-        string canonical_id
-        string name
-        string normalized_name
-        string domain
-    }
-
-    Person {
-        int id PK
-        string canonical_id
-        string name
-        string email
-        string role
-    }
-
-    Location {
-        int id PK
-        string canonical_id
-        string city
-        string state
-        float lat
-        float lng
-    }
-
-    OrganizationSession {
-        uuid id PK
-        datetime started_at
-        int total_files
-        float total_cost
-    }
-
-    CostRecord {
-        int id PK
-        uuid session_id FK
-        string file_id FK
-        string feature_name
-        float processing_time
-        float cost
-    }
-```
-
-### Module Dependencies
-
-```mermaid
-graph TB
-    subgraph CLI["CLI Layer"]
-        cli[src/cli.py]
-    end
-
-    subgraph API["API Layer"]
-        soa[schema_org_api.py]
-        som[schema_org_models.py]
-    end
-
-    subgraph Scripts["CLI Wrappers (scripts/)"]
-        foc[file_organizer_content_based.py]
-        icr[rename_images.py]
-        ica[image_content_analyzer.py]
-    end
-
-    subgraph Core["Core Library (src/)"]
-        org[organizers/content_organizer.py]
-        pipe[pipeline/file_processor + batch_processor]
-        clf[classifiers/]
-        ana[analyzers/]
-        gen[generators.py]
-        err[error_tracking.py]
-        cost[cost_roi_calculator.py]
-    end
-
-    subgraph Storage["Storage Layer"]
-        gs[graph_store.py]
-        models[models.py]
-        exp[schema_org_exporter.py]
-        ctx[schema_org_context.py]
-        var[schema_org_variants.py]
-    end
-
-    subgraph External["External Dependencies"]
-        torch[PyTorch / open-clip]
-        doctr[docTR]
-        sentry[Sentry SDK]
-        sa[SQLAlchemy]
-        fa[FastAPI]
-    end
-
-    cli --> foc
-
-    foc --> org
-    foc --> pipe
-    org --> clf
-    org --> ana
-    org --> torch
-    org --> doctr
-    pipe --> gen
-    pipe --> gs
-    pipe --> cost
-    foc --> err
-
-    icr --> torch
-    ica --> torch
-
-    soa --> exp
-    soa --> ctx
-    soa --> models
-    soa --> som
-    soa --> fa
-
-    exp --> models
-    var --> models
-    gs --> models
-    models --> sa
-    err --> sentry
-```
+Current release is **v2.1.0** (2026-06-29) plus unreleased Person-taxonomy Option C, thin-wrapper refactor, streaming Schema.org export, and analyzer/renaming improvements. See [docs/changelog/2.1.0/CHANGELOG.md](docs/changelog/2.1.0/CHANGELOG.md) for detail and older changelogs above.
