@@ -20,8 +20,8 @@ Validate exported JSON-LD against the schema.org spec on write (e.g., via `pyld`
 ### Output size optimization
 Compress or compact JSON-LD output — deduplicate `@context` blocks, use prefix shortening, or offer a `compact` flag on `SchemaOrgExporter`.
 
-### JSON-LD context file generation
-Generate a custom `@context` file that declares non-standard namespaces (e.g., `ml:hasFaces` added in the 2.0.0 refactor). Required for strict JSON-LD validators to accept custom properties without rejecting the graph. Pairs with the validation item above.
+### JSON-LD context file generation — ✅ COMPLETE
+Shipped in 2.0.0: `src/storage/schema_org_context.py` generates a standalone `@context` document declaring the `schema:` and `ml:` namespaces (e.g., `ml:hasFaces`), served at `GET /schema/context`. The still-open export-validation item above can resolve custom properties against it.
 
 ### Additional serialization formats
 Support RDF/XML, N-Triples, and Turtle output formats via `rdflib`. Useful for linked-data consumers that don't accept JSON-LD.

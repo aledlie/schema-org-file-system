@@ -2,6 +2,8 @@
 
 Visual overview of the current architecture vs. proposed refactored architecture.
 
+> **Retired historical plan (last updated 2025-12-10; retired 2026-07-14).** The "Before/After" trees below are a pre-refactor plan, not current state. Notably, the top-level `scripts/file_organizer.py` (the 958-LOC name organizer) was **deleted** in 2.1.0 — not reduced to a thin wrapper as the "After" tree shows — and name-based organization now lives in `src/organizers/name_organizer.py`. See `docs/changelog/2.1.0/CHANGELOG.md` for what actually shipped.
+
 ## Current Architecture (Before Refactoring)
 
 ```

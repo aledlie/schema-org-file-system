@@ -1,9 +1,9 @@
 # Unified Scoring Plan — File Classification Refactor
 
 > Status: Draft v2 · Owner: TBD · Last updated: 2026-07-16
-> Mode: Coexist behind `--scorer={legacy,unified}` flag · Default flips after shadow window proves parity
+> Mode: Coexist behind `--scorer={legacy,unified,shadow}` flag · Default flips after shadow window proves parity
 > Code references are as of 2026-07-16 (`main` @ `feeccdc`), post thin-wrapper refactor.
-> Status: unimplemented — `src/scoring/` does not exist yet; all line refs below are current-state anchors for the extraction, not existing scorer code.
+> Status: **implemented & coexisting** — `src/scoring/` ships the weighted scorer, registry, weights, context, and all signal modules, wired into the CLI behind `--scorer={legacy,unified,shadow}` (default flip to `unified` still pending calibration). The line refs below are the original pre-extraction anchors and may have drifted from current code.
 
 ### Changes from v1 (2026-05-16)
 

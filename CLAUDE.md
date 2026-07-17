@@ -31,7 +31,7 @@ organize-files health                    # Should report 9/9 features
 | `organize-files update-site` | Update dashboard data |
 | `organize-files timeline` | Generate timeline visualization data |
 | `organize-files preprocess` | ML data preprocessing (`--input`, `--output`) |
-| `organize-files evaluate` | Run evaluation metrics (`--test-data`, `--output`, `--classifier {baseline,content}`, `--min-support`) |
+| `organize-files evaluate` | Run evaluation metrics (`--test-data`, `--output`, `--classifier {baseline,content,unified}`, `--min-support`) |
 
 ## Development Commands
 
@@ -155,7 +155,7 @@ pip install -e ".[all]" && brew install tesseract poppler
 |-------|----------|
 | HEIC fails | `pip install pillow-heif` |
 | No OCR | `pip install 'python-doctr[torch]'` |
-| No AI | `pip install torch transformers` |
+| No AI | `pip install torch open-clip-torch` (or `pip install -e ".[ai]"`) |
 | `pyexpat` / `_XML_SetAllocTrackerActivationThreshold` on macOS 26 | brew's `python@3.13`/`@3.14` bottles link against newer `libexpat` than macOS ships. Fix: `brew install expat`, then `install_name_tool -change /usr/lib/libexpat.1.dylib /opt/homebrew/opt/expat/lib/libexpat.1.dylib $(python3.13 -c 'import pyexpat;print(pyexpat.__file__)')` and `codesign --force --sign - $(python3.13 -c 'import pyexpat;print(pyexpat.__file__)')` |
 
 ## Schema.org Reference

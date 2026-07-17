@@ -55,7 +55,7 @@ organize-files health  # Should report 9/9 features operational
 | `organize-files update-site` | Update dashboard data |
 | `organize-files timeline` | Generate timeline visualization data |
 | `organize-files preprocess` | Data preprocessing pipeline for ML model training (`--input`, `--output`) |
-| `organize-files evaluate` | Run evaluation metrics on test dataset (`--test-data`, `--output`, `--classifier {baseline,content}`, `--min-support`) |
+| `organize-files evaluate` | Run evaluation metrics on test dataset (`--test-data`, `--output`, `--classifier {baseline,content,unified}`, `--min-support`) |
 | `organize-files migrate-person` | Migrate on-disk `Person/` files into `Personal/{subcat}/` (dry-run default; `--apply`, `--rollback`) |
 | `organize-files person-view` | Regenerate `Person/{Name}/` as a derived symlink view from graph edges (`--apply`; `--prune-missing` drops dead-path edges first) |
 | `organize-files index-people` | Attach `person→file` graph edges for migrated files, no moves (`--apply`; `--prune-missing` drops dead-path edges after) |
@@ -246,7 +246,7 @@ See [docs/changelog/2.1.0/CHANGELOG.md](docs/changelog/2.1.0/CHANGELOG.md) for d
 |-------|----------|
 | HEIC fails | `pip install pillow-heif` |
 | No OCR | `pip install 'python-doctr[torch]'` |
-| No AI | `pip install torch transformers` |
+| No AI | `pip install torch open-clip-torch` (or `pip install -e ".[ai]"`) |
 | Check deps | `organize-files health` |
 | `pyexpat` / `_XML_SetAllocTrackerActivationThreshold` on macOS 26 | `brew install expat`, then repoint and re-sign the broken module: `install_name_tool -change /usr/lib/libexpat.1.dylib /opt/homebrew/opt/expat/lib/libexpat.1.dylib $(python3.13 -c 'import pyexpat,os;print(pyexpat.__file__)')` and `codesign --force --sign - $(python3.13 -c 'import pyexpat;print(pyexpat.__file__)')` |
 

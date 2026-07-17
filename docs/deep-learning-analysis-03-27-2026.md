@@ -4,6 +4,8 @@
 **Version:** 2.0.0 (was 1.3.0 at audit time)
 **Scope:** 191 files | ~305K LOC
 
+> **Historical snapshot (2026-03).** The stack table below is as of the audit date. Since then, CLIP inference moved to `open-clip-torch` (not `sentence-transformers`) and the CLIP embedding cache is raw `.npy` files under `.cache/clip_embeddings_v2/` (`joblib` removed). Read the Status columns as historical, not current.
+
 ---
 
 ## ML/AI Stack
