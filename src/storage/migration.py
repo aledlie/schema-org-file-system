@@ -873,7 +873,7 @@ def main() -> None:
     migrator = JSONMigrator(args.db_path, args.results_dir)
 
     # Run migration
-    stats = migrator.migrate_all(verbose=not args.quiet)
+    migrator.migrate_all(verbose=not args.quiet)
 
     # Verify if requested
     if args.verify:

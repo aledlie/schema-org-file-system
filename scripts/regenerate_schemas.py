@@ -139,7 +139,7 @@ def regenerate_schema(
             # Add file path
             generator.set_property('filePath', str(file_path.absolute()), PropertyType.TEXT)
 
-        except Exception as e:
+        except Exception:
             # If we can't access the file, use existing schema data
             pass
 

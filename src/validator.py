@@ -170,8 +170,6 @@ class ValidationReport:
 
     def print_summary(self) -> None:
         """Print validation summary."""
-        stats = self.get_statistics()
-
         if self.messages:
             for msg in self.messages:
                 print(f"  {msg}")

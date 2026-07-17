@@ -404,8 +404,8 @@ class GraphStore:
 
             # Get or create category
             if subcategory_name:
-                # Create parent first
-                parent = self.get_or_create_category(category_name, session=session)
+                # Create parent first (ensures the parent category exists before the subcategory)
+                self.get_or_create_category(category_name, session=session)
                 category = self.get_or_create_category(subcategory_name, category_name, session=session)
             else:
                 category = self.get_or_create_category(category_name, session=session)
