@@ -116,6 +116,18 @@ organize-files update-site     # refresh _site dashboard data
 organize-files timeline        # generate timeline_data.json
 ```
 
+The timeline groups by `organization_sessions`, which only a **live (non-dry-run)
+content pass** records. Populate it before regenerating:
+
+```bash
+# Records an organization_sessions row + files.session_id; then rebuild the timeline
+organize-files content --source ~/Downloads          # NOT --dry-run
+organize-files timeline
+```
+
+`organize-files type` and `organize-files name` are DB-free by design and never
+record sessions, so their runs do not appear on the timeline.
+
 ## 6. ML workflow
 
 ```bash
