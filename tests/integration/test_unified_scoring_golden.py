@@ -292,6 +292,40 @@ HEALTH_INSURANCE_EOB_TEXT = (
     "Health plan coverage, premium, and deductible details follow."
 )
 
+# SCRUBBED synthetic property/casualty policy from a NAMED insurer — invented
+# insurer/policy numbers, NO real data. Mirror of the named-insurer case above
+# and a real-world regression guard (the USAA-Casualty ~/Downloads shadow flip
+# organization/financial -> financial/insurance): here the extractable insurer
+# does NOT carry bank/wire/loan org-financial indicators, so the dominant
+# property/auto policy vocabulary makes text_content's financial/insurance vote
+# outscore OrganizationKeywordSignal's organization/financial. A named insurer
+# on a POLICY document stays financial/insurance; a named insurer on an ACCOUNT
+# STATEMENT (bank/wire/loan terms) routes organization/financial — both pinned.
+NAMED_CASUALTY_POLICY_TEXT = (
+    "Lone Star Casualty Insurance Company auto policy declarations page. "
+    "This policy provides coverage for the insured vehicle and the named policyholder. "
+    "Policy number CA-77410 is shown above. The annual premium is 1,180 dollars per term. "
+    "A collision deductible of 500 dollars applies to each covered loss. Liability coverage "
+    "limits and comprehensive coverage appear in the policy. Refer to the policy number and "
+    "claim number when reporting a covered loss to Lone Star Casualty Insurance Company. "
+    "This insurance summary lists coverage, premium, deductible, and policyholder details."
+)
+
+# SCRUBBED synthetic business plan — invented company/figures, NO real data.
+# Real-world regression guard (the shortcut_stickers_business_plan.md shadow
+# flip filepath/Technical/Documentation -> business/planning): the .md
+# extension fires the FilepathSignal's Technical/Documentation catch-all (the
+# legacy chain's answer), but the business-planning vocabulary makes
+# text_content's business/planning vote outscore it. Content beats the
+# extension-only filepath prior.
+BUSINESS_PLAN_TEXT = (
+    "Business Plan: KeyMap Stickers. Executive summary. This consumer products "
+    "company produces vinyl sticker sheets. Market analysis, target market, and "
+    "go-to-market strategy follow. We project revenue in year one and net margin "
+    "at scale. Financial projections, product line, competitive landscape, "
+    "milestones, and funding requirements are described in this business plan."
+)
+
 GOLDEN_CASES = [
     # ---- Group 1: org-named PDFs (person/org confusion) ------------------- #
     GoldenCase(
@@ -550,6 +584,31 @@ GOLDEN_CASES = [
         mime_type="application/pdf",
         text=HEALTH_INSURANCE_EOB_TEXT,
         expected=("medical", "insurance"),
+    ),
+    GoldenCase(
+        # Named property/casualty insurer WITHOUT org-financial indicators →
+        # financial/insurance (text_content outscores organization_keyword).
+        # Mirror of named_insurer_routes_organization_financial; guards the real
+        # USAA-Casualty shadow flip. Neutral filename (no policy/insurance stem).
+        name="named_casualty_insurer_routes_financial_insurance",
+        filename="cas-77410.pdf",
+        schema_type="DigitalDocument",
+        mime_type="application/pdf",
+        text=NAMED_CASUALTY_POLICY_TEXT,
+        expected=("financial", "insurance"),
+        company_contains="Lone Star Casualty",
+    ),
+    # ---- Group 13: business plan (content beats extension-only filepath) ---- #
+    GoldenCase(
+        # A .md business plan: the extension fires the FilepathSignal
+        # Technical/Documentation catch-all (legacy answer), but the
+        # business-planning vocabulary outscores it → business/planning.
+        name="business_plan_markdown_routes_business_planning",
+        filename="product-plan.md",
+        schema_type="DigitalDocument",
+        mime_type="text/markdown",
+        text=BUSINESS_PLAN_TEXT,
+        expected=("business", "planning"),
     ),
     # ---- Group 11: generic media ------------------------------------------- #
     GoldenCase(
