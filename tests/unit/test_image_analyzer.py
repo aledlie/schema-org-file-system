@@ -245,3 +245,92 @@ class TestHasPeopleInPhoto:
              patch.object(analyzer, "detect_people", return_value=True):
             result, _ = analyzer.has_people_in_photo(dummy_path)
         assert result is False
+
+
+# ---------------------------------------------------------------------------
+# analyze_for_organization
+# ---------------------------------------------------------------------------
+
+class TestAnalyzeForOrganization:
+    """Covers the dual-flag logic in analyze_for_organization.
+
+    Key regression: interior images with a weak people signal (between
+    _PEOPLE_SCORE_LOW_THRESHOLD and _PEOPLE_SCORE_THRESHOLD, no faces) were
+    returning has_people=True *and* is_home_interior_no_people=True because
+    the two flags used different thresholds.  They must be mutually exclusive.
+    """
+
+    def _make_scores(
+        self,
+        people: float = 0.0,
+        interior: float = 0.0,
+        screenshot: float = 0.0,
+    ) -> dict:
+        mod = _analyzer_module
+        base = {cat: 0.0 for cat in mod._ALL_CATEGORIES}
+        base["a photo of people"] = people
+        base["a photo of a home interior room"] = interior
+        base[mod._SCREENSHOT_LABEL] = screenshot
+        return base
+
+    def test_returns_triple_false_when_vision_unavailable(
+        self, dummy_path: Path, analyzer: ImageContentAnalyzer
+    ) -> None:
+        analyzer.vision_available = False
+        assert analyzer.analyze_for_organization(dummy_path) == (False, False, {})
+
+    def test_returns_triple_false_when_classify_empty(
+        self, dummy_path: Path, analyzer: ImageContentAnalyzer
+    ) -> None:
+        with patch.object(analyzer, "classify_image_content", return_value={}):
+            assert analyzer.analyze_for_organization(dummy_path) == (False, False, {})
+
+    def test_clear_people_signal_routes_social(
+        self, dummy_path: Path, analyzer: ImageContentAnalyzer
+    ) -> None:
+        scores = self._make_scores(people=0.5)
+        with patch.object(analyzer, "classify_image_content", return_value=scores), \
+             patch.object(analyzer, "detect_people", return_value=False):
+            has_people, is_interior, _ = analyzer.analyze_for_organization(dummy_path)
+        assert has_people is True
+        assert is_interior is False
+
+    def test_clear_interior_no_people_routes_property(
+        self, dummy_path: Path, analyzer: ImageContentAnalyzer
+    ) -> None:
+        scores = self._make_scores(interior=0.4)
+        with patch.object(analyzer, "classify_image_content", return_value=scores), \
+             patch.object(analyzer, "detect_people", return_value=False):
+            has_people, is_interior, _ = analyzer.analyze_for_organization(dummy_path)
+        assert has_people is False
+        assert is_interior is True
+
+    def test_flags_mutually_exclusive_in_gray_zone(
+        self, dummy_path: Path, analyzer: ImageContentAnalyzer
+    ) -> None:
+        """Regression: people_score in (LOW_THRESHOLD, THRESHOLD) + interior must not
+        produce has_people=True AND is_home_interior_no_people=True simultaneously."""
+        mod = _analyzer_module
+        # people_score sits between the two thresholds; interior is clearly present
+        gray_people_score = (
+            mod._PEOPLE_SCORE_LOW_THRESHOLD + mod._PEOPLE_SCORE_THRESHOLD
+        ) / 2  # e.g. 0.175
+        scores = self._make_scores(people=gray_people_score, interior=0.4)
+        with patch.object(analyzer, "classify_image_content", return_value=scores), \
+             patch.object(analyzer, "detect_people", return_value=False):
+            has_people, is_interior_flag, _ = analyzer.analyze_for_organization(dummy_path)
+        # has_people fires (low threshold crossed) — the interior flag must be suppressed
+        assert has_people is True
+        assert is_interior_flag is False, (
+            "Interior flag must be False when has_people is True (gray-zone misfire)"
+        )
+
+    def test_face_detection_suppresses_interior_flag(
+        self, dummy_path: Path, analyzer: ImageContentAnalyzer
+    ) -> None:
+        scores = self._make_scores(interior=0.4)
+        with patch.object(analyzer, "classify_image_content", return_value=scores), \
+             patch.object(analyzer, "detect_people", return_value=True):
+            has_people, is_interior_flag, _ = analyzer.analyze_for_organization(dummy_path)
+        assert has_people is True
+        assert is_interior_flag is False

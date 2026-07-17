@@ -194,11 +194,10 @@ class ImageContentAnalyzer:
         screenshot_score = scores.get(_SCREENSHOT_LABEL, 0)
 
         is_interior = interior_score > _INTERIOR_SCORE_THRESHOLD
-        clip_has_people = people_score > _PEOPLE_SCORE_THRESHOLD
         has_people = (people_score > _PEOPLE_SCORE_LOW_THRESHOLD or has_faces) and not (
             screenshot_score > _SCREENSHOT_SCORE_THRESHOLD
         )
-        is_home_interior_no_people = is_interior and not (clip_has_people or has_faces)
+        is_home_interior_no_people = is_interior and not has_people
 
         return (has_people, is_home_interior_no_people, scores)
 

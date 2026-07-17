@@ -13,8 +13,10 @@ from src.scoring.context import FileContext
 from src.scoring.signals.photo_composition import (
     PHOTO_PEOPLE_CONFIDENCE,
     PHOTO_PROPERTY_CONFIDENCE,
+    ROOM_SCHEMA_TYPE,
     PhotoCompositionSignal,
 )
+from src.scoring.types import EVIDENCE_SCHEMA_TYPE
 
 
 class FakeImageAnalyzer:
@@ -60,12 +62,13 @@ class TestRun:
         assert score.confidence == pytest.approx(PHOTO_PEOPLE_CONFIDENCE)
         assert score.signal_name == "photo_composition"
 
-    def test_interior_routes_to_property_management(self) -> None:
+    def test_interior_routes_to_media_interiors_as_room(self) -> None:
         signal = PhotoCompositionSignal(FakeImageAnalyzer(is_property=True))
         emissions = signal.run(make_ctx())
         score = emissions[0]
-        assert (score.category, score.subcategory) == ("property_management", "other")
+        assert (score.category, score.subcategory) == ("media", "interiors_other")
         assert score.confidence == pytest.approx(PHOTO_PROPERTY_CONFIDENCE)
+        assert score.evidence[EVIDENCE_SCHEMA_TYPE] == ROOM_SCHEMA_TYPE
 
     def test_people_take_precedence_over_property(self) -> None:
         signal = PhotoCompositionSignal(FakeImageAnalyzer(has_people=True, is_property=True))
@@ -102,3 +105,36 @@ class TestEvidence:
     def test_empty_scores_leave_evidence_empty(self) -> None:
         signal = PhotoCompositionSignal(FakeImageAnalyzer(has_people=True, scores={}))
         assert signal.run(make_ctx())[0].evidence == {}
+
+
+class TestInteriorTaxonomyParity:
+    """Lock the folder↔schema map against drift: every ROOM_SUBTYPE_SCHEMA key
+    must have a Media/Interiors folder path, the router's target must resolve,
+    and the generic bucket must be the ``Room`` type."""
+
+    def test_schema_keys_match_folder_keys(self) -> None:
+        from src.organizers.category_config import CONTENT_CATEGORY_PATHS
+        from src.scoring.signals.photo_composition import ROOM_SUBTYPE_SCHEMA
+
+        folder = CONTENT_CATEGORY_PATHS["media"]["interiors"]
+        assert set(folder) == set(ROOM_SUBTYPE_SCHEMA)
+
+    def test_every_subtype_resolves_under_media_interiors(self) -> None:
+        from src.organizers.category_config import CONTENT_CATEGORY_PATHS
+        from src.scoring.signals.photo_composition import ROOM_SUBTYPE_SCHEMA
+
+        folder = CONTENT_CATEGORY_PATHS["media"]["interiors"]
+        for key in ROOM_SUBTYPE_SCHEMA:
+            assert folder[key].startswith("Media/Interiors")
+
+    def test_router_target_is_generic_room(self) -> None:
+        from src.scoring.signals.photo_composition import (
+            PROPERTY_PHOTO_CATEGORY,
+            ROOM_SCHEMA_TYPE,
+        )
+
+        # Router emits interiors_<key>; the key must exist in the schema map and
+        # be the generic Room bucket.
+        _, subcategory = PROPERTY_PHOTO_CATEGORY
+        assert subcategory == "interiors_other"
+        assert ROOM_SCHEMA_TYPE == "Room"

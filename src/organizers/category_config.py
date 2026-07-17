@@ -247,6 +247,19 @@ CONTENT_CATEGORY_PATHS: Dict[str, Any] = {
             "icons": "Media/Graphics/Icons",
             "other": "Media/Graphics/Other",
         },
+        # Interior/room photos. The user-facing folder is ``Media/Interiors``
+        # but the schema.org @type stays ``Room`` (schema.org has no "Interior"
+        # type) plus its two direct subtypes (``HotelRoom``, ``MeetingRoom``).
+        # Reached via the underscored ``interiors_<subtype>`` subcategory form
+        # that get_destination_path resolves through the media_type_subcat
+        # split; ``interiors_other`` is the generic ``Room`` and lands directly
+        # in ``Media/Interiors``. See ROOM_SUBTYPE_SCHEMA in
+        # src/scoring/signals/photo_composition.py for the folder→schema map.
+        "interiors": {
+            "hotel": "Media/Interiors/HotelRoom",
+            "meeting": "Media/Interiors/MeetingRoom",
+            "other": "Media/Interiors",
+        },
         "other": "Media/Other",
     },
     "uncategorized": "Uncategorized",

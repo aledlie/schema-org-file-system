@@ -275,6 +275,11 @@ class ContentOrganizer(BaseOrganizer):
         if scorer not in SCORER_MODES:
             raise ValueError(f"scorer must be one of {SCORER_MODES}, got {scorer!r}")
         self.scorer_mode = scorer
+        # Shadow log is append-only per file; truncate once per run so a fresh
+        # run's disagreement report never inherits stale records from prior runs
+        # (e.g. leftover scratchpad paths from an earlier session).
+        if scorer == SCORER_SHADOW and _SCORING_SHADOW_LOG.exists():
+            _SCORING_SHADOW_LOG.unlink()
         # Built lazily on first unified/shadow classification (registry deps
         # need the fully constructed organizer).
         self._unified_scorer: Optional[Scorer] = None

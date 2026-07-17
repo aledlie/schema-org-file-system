@@ -168,6 +168,18 @@ class TestGraduatedConfidence:
             == FILENAME_MATCH_CONFIDENCE
         )
 
+    def test_source_provenance_results_downgrade(self):
+        # ChatGPT / Facebook stems record source, not content — content signals
+        # must be able to outscore them (content-agnostic-filename fix).
+        for cat, sub, stem in (
+            ("media", "photos_chatgpt", "chatgptimagenov1,2025,01_49_23am"),
+            ("media", "photos_facebook", "481566579_10162021550590804_5823185318886800843_n"),
+        ):
+            assert (
+                graduated_filename_confidence(stem, cat, sub, ".png")
+                == FILENAME_WEAK_CONFIDENCE
+            ), sub
+
 
 class TestCameraScanSpriteDowngradeThroughSignal:
     def test_scan_prefixed_sprite_emits_weak_confidence(self):

@@ -63,6 +63,19 @@ FILENAME_WEAK_RESULTS = frozenset({("media", "photos_other")})
 GAME_SPRITES_RESULT = ("game_assets", "sprites")
 MEDIA_AUDIO_OTHER_RESULT = ("media", "audio_other")
 
+# Source/host provenance, not content: a ``ChatGPTImage*`` or Facebook-export
+# stem records where the file came from (which tool generated it, which site
+# hosted it), never what it depicts. At full strength the source filename
+# preempts content classification — an interior render named ``ChatGPTImage*``
+# commits to photos_chatgpt before CLIP / interior signals are weighed. Graduate
+# these down so content signals decide the bucket; the source category still
+# wins as a fallback when no content signal fires. (Content-agnostic-filename
+# fix; pairs with a content interior signal — see docs/reviews/
+# INTERIOR_DETECTION_DURABLE_FIX_ANALYSIS.md.)
+SOURCE_PROVENANCE_RESULTS = frozenset(
+    {("media", "photos_chatgpt"), ("media", "photos_facebook")}
+)
+
 # Camera-roll / scanner stems are photos and scans, never game sprites. The
 # shared module already guards its numbered-sprite paths against the camera
 # vendor prefixes, but not against scanner output (``scan_0023``), and offers
@@ -92,6 +105,10 @@ def graduated_filename_confidence(stem: str, category: str, subcategory: str, ex
     """
     result = (category, subcategory)
     if result in FILENAME_WEAK_RESULTS:
+        return FILENAME_WEAK_CONFIDENCE
+    # Source/host provenance (ChatGPT / Facebook): filename says where the file
+    # came from, not what it depicts — content signals should decide the bucket.
+    if result in SOURCE_PROVENANCE_RESULTS:
         return FILENAME_WEAK_CONFIDENCE
     # Sprite verdict on a camera-roll / scanner stem: it is a photo or a scan.
     if result == GAME_SPRITES_RESULT and _is_camera_or_scan_stem(stem):
