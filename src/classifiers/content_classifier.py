@@ -203,6 +203,21 @@ class ContentClassifier:
                     "underwriting",
                     "claim number",
                     "policy number",
+                    # Property/casualty context — the generic terms above are
+                    # SHARED with health insurance (also on the medical list), so
+                    # these domain-specific terms are what steer an auto/property
+                    # policy to financial rather than medical. Without a domain
+                    # cue the two categories tie on the shared terms and the
+                    # category-margin gate routes the (genuinely ambiguous) file
+                    # to the fallback bucket.
+                    "auto insurance",
+                    "homeowner",
+                    "vehicle",
+                    "collision",
+                    "liability coverage",
+                    "comprehensive coverage",
+                    "property damage",
+                    "dwelling",
                 ],
                 "subcategories": {
                     "tax": ["tax", "irs", "1098", "1099", "w-2", "w2", "federal", "state return"],
@@ -325,10 +340,47 @@ class ContentClassifier:
                     "immunization",
                     "lab results",
                     "pharmacy",
+                    # Insurance vocabulary — SHARED with financial (item #4). The
+                    # generic terms let a health-insurance document (EOB, health
+                    # plan) score the insurance category at all; the health-
+                    # specific terms below give medical the edge over financial
+                    # when clinical/plan context is present. A property/auto
+                    # policy carries none of the health-specific terms (and hits
+                    # financial's property/casualty context instead), so it stays
+                    # financial. See the financial category note.
+                    "insurance",
+                    "policy",
+                    "premium",
+                    "deductible",
+                    "coverage",
+                    "insured",
+                    "policyholder",
+                    "copay",
+                    "coinsurance",
+                    "explanation of benefits",
+                    "health plan",
+                    "health insurance",
+                    "member id",
+                    "in-network",
+                    "out-of-pocket",
                 ],
                 "subcategories": {
                     "records": ["medical record", "patient", "diagnosis", "treatment"],
-                    "insurance": ["insurance", "claim", "coverage"],
+                    "insurance": [
+                        "insurance",
+                        "claim",
+                        "coverage",
+                        "copay",
+                        "coinsurance",
+                        "explanation of benefits",
+                        "health plan",
+                        "health insurance",
+                        "member id",
+                        "in-network",
+                        "out-of-pocket",
+                        "premium",
+                        "deductible",
+                    ],
                     "prescriptions": ["prescription", "pharmacy", "medication"],
                     "other": [],
                 },

@@ -275,6 +275,23 @@ NAMED_INSURER_STATEMENT_TEXT = (
     "Contact Acme Mutual Insurance Company for questions about your loan or mortgage."
 )
 
+# SCRUBBED synthetic health-insurance EOB — invented member/claim numbers, NO
+# real data. Regression guard for item #4: adding the generic insurance
+# vocabulary to the financial CATEGORY list would have stolen HEALTH-insurance
+# documents from medical (financial scored the shared terms; medical was blind
+# to them). The fix gives medical the same generic terms plus health-specific
+# ones (copay, coinsurance, explanation of benefits, health plan, member id),
+# so a plan/clinical-context document commits to medical/insurance while a
+# property/auto policy (property-context, no health terms) stays
+# financial/insurance. Both directions are pinned (this case + the auto case).
+HEALTH_INSURANCE_EOB_TEXT = (
+    "Explanation of benefits from your health plan. This is not a bill. Your copay and "
+    "coinsurance for the visit are shown. You saw an in-network provider. The health "
+    "insurance deductible and out-of-pocket maximum apply to your medical coverage. "
+    "Member id and claim number are listed. Patient responsibility is summarized. "
+    "Health plan coverage, premium, and deductible details follow."
+)
+
 GOLDEN_CASES = [
     # ---- Group 1: org-named PDFs (person/org confusion) ------------------- #
     GoldenCase(
@@ -520,6 +537,19 @@ GOLDEN_CASES = [
         text=NAMED_INSURER_STATEMENT_TEXT,
         expected=("organization", "financial"),
         company_contains="Acme Mutual Insurance",
+    ),
+    GoldenCase(
+        # Regression guard: a HEALTH-insurance EOB must route to
+        # medical/insurance, not financial/insurance — the shared generic
+        # insurance vocabulary would otherwise have stolen it once item #4
+        # put those terms on the financial category list. Neutral filename
+        # ("statement"/"policy" would pre-empt via filename rules).
+        name="health_insurance_eob_routes_medical_insurance",
+        filename="eob-2026-0142.pdf",
+        schema_type="DigitalDocument",
+        mime_type="application/pdf",
+        text=HEALTH_INSURANCE_EOB_TEXT,
+        expected=("medical", "insurance"),
     ),
     # ---- Group 11: generic media ------------------------------------------- #
     GoldenCase(
