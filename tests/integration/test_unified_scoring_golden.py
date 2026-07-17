@@ -156,26 +156,25 @@ HEALTHCARE_LETTER_TEXT = (
 )
 
 # SCRUBBED genetics-report prose (Promethease-style) — invented findings, NO
-# real genotypes or personal data. Deliberately dense in the substring-
-# collision triggers a real report carries: "release"/"please" (→ the
-# `lease` keyword), "parent"/"different"/"current" (→ `rent`), "DNA repair"
-# (→ the `repair` property keyword). ContentClassifier keyword matching is
-# substring-based (`kw in combined`), so these inflate the `property` score to
-# the top and the file misroutes to property/leases. See
-# docs/BACKLOG.md → Phase-3 calibration item #2.
+# real genotypes or personal data. Dense in the substring-collision triggers a
+# real report carries: "release"/"please" (fragment "lease"), "parent"/
+# "current"/"different" (fragment "rent"). Under the OLD substring matcher
+# these inflated `property` (rent+lease) so the report misrouted to
+# property/leases; under word-boundary matching they no longer match and the
+# genuine (if sparse) medical vocabulary wins → medical/records. Regression
+# guard for BACKLOG Phase-3 item #2 (the substring-collision fix). Pre-fix this
+# text scores property=14 → property/leases; post-fix property=0 → medical.
 GENETICS_REPORT_TEXT = (
-    "Genetic report summary. Each genotype is compared against reference data "
-    "with a magnitude and repute. This variant affects neurotransmitter release "
-    "and hormone release in different tissues. A parent may carry the same "
-    "allele; maternal and paternal inheritance differ. Current evidence links "
-    "several SNPs to DNA repair efficiency. Genes involved in DNA repair and "
-    "mismatch repair show different activity. The current allele is different "
-    "from the reference. Please review each finding with a clinician. Please "
-    "note magnitude reflects interest, not risk. Different studies report "
-    "different effect sizes. A parent study and a current meta-analysis release "
-    "updated estimates. Repair pathways and base-excision repair are frequently "
-    "referenced. Please consider that the current parent population differs. "
-    "Release of the report follows review."
+    "Genetic report. Each genotype is compared with reference data and given a "
+    "magnitude and repute. This variant changes hormone release and enzyme "
+    "release in different tissues. A parent may pass the allele; maternal and "
+    "paternal inheritance are different. Current evidence differs from earlier "
+    "current estimates, and different cohorts release different numbers. Please "
+    "note the magnitude is interest, not risk. Please review each finding. A "
+    "parent study and the current release differ from a different parent "
+    "release. The current parent population is different. Please release the "
+    "report after review. One diagnosis-related variant affects treatment "
+    "response in some patients."
 )
 
 GOVERNMENT_NOTICE_TEXT = (
@@ -335,21 +334,21 @@ GOLDEN_CASES = [
         min_margin=0.01,
     ),
     GoldenCase(
-        # KNOWN GAP (Phase-3 calibration item #2): substring keyword matching
-        # in ContentClassifier inflates `property` on a large genetics report
-        # ("re-lease", "pa-rent"/"diffe-rent"/"cur-rent", "DNA repair") so it
-        # misroutes to property/leases. The legacy chain dodged this only
-        # because the real file short-circuited at the filepath tier before
-        # content classification ran; the unified scorer runs all signals, so
-        # the collision surfaces. Pinned to CURRENT behavior so the fix
-        # (word-boundary matching / per-category thresholds) trips this test.
-        # Scrubbed synthetic text — no real genome data. See docs/BACKLOG.md.
-        name="genetics_report_substring_collision_misroutes",
+        # Phase-3 calibration item #2 — FIXED. Substring keyword matching in
+        # ContentClassifier used to inflate `property` on a genetics report
+        # ("re-lease"/"p-lease" → `lease`, "pa-rent"/"cur-rent"/"diffe-rent" →
+        # `rent`), misrouting it to property/leases (reproduced the real
+        # ~/Downloads/promethease.html shadow flip; the legacy chain dodged it
+        # only via a filepath short-circuit, but the unified scorer runs all
+        # signals so it surfaced). Word-boundary matching drops those fragment
+        # hits; the sparse genuine medical vocabulary now wins. Scrubbed
+        # synthetic text — no real genome data.
+        name="genetics_report_no_longer_substring_misroutes",
         filename="genetic-report.html",
         schema_type="DigitalDocument",
         mime_type="text/html",
         text=GENETICS_REPORT_TEXT,
-        expected=("property", "leases"),
+        expected=("medical", "records"),
     ),
     # ---- Group 3: academic PDFs (content-only + prefixed control) --------- #
     GoldenCase(
@@ -412,20 +411,18 @@ GOLDEN_CASES = [
         people_contains="Jane Smith",
     ),
     GoldenCase(
-        # KNOWN GAP (Phase-3 calibration target): without a filename-rule
-        # match, personal/contacts (personal_doc 0.81) and
-        # personal/employment (text_content 0.71) compete within the same
-        # category and the margin lands just under MIN_DECISION_MARGIN —
-        # the file routes to the fallback bucket. Same-category subcat
-        # competition should likely aggregate, not split (§11 OQ).
-        name="cv_without_filename_rule_is_low_margin",
+        # Was a KNOWN GAP (low-margin → fallback): personal/contacts and a
+        # spurious personal/employment split the vote under MIN_DECISION_MARGIN.
+        # The item-#2 word-boundary fix removed the spurious employment hit
+        # (`reference` no longer matches "refe-rences"), so text_content now
+        # agrees with personal_doc on contacts and the two STACK into a clear
+        # commit — a side-benefit toward calibration item #3.
+        name="cv_without_filename_rule_commits_contacts",
         filename="john-doe-cv.pdf",
         schema_type="DigitalDocument",
         mime_type="application/pdf",
         text=CV_TEXT,
-        expected=("uncategorized", "other"),
-        expected_state="low_margin",
-        min_margin=0.0,
+        expected=("personal", "contacts"),
     ),
     # ---- Group 10: invoices (KIE) ------------------------------------------ #
     GoldenCase(

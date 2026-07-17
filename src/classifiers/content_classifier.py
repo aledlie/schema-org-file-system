@@ -1,6 +1,8 @@
 """ContentClassifier: classifies document content into categories using keyword patterns."""
+
 from __future__ import annotations
 
+import re
 from collections import defaultdict
 from typing import TYPE_CHECKING
 
@@ -8,6 +10,54 @@ from src.classifiers.entity_detector import EntityDetector
 
 if TYPE_CHECKING:
     from shared.kie_utils import KIEResult
+
+
+def _keyword_alt(keyword: str) -> str:
+    """Word-boundary-aware sub-pattern (uncompiled) for one lowercased keyword.
+
+    Keyword matching used to be raw substring containment (``kw in text``),
+    which fired on fragments: ``rent`` inside "pa**rent**"/"cu**rrent**",
+    ``lease`` inside "re**lease**"/"p**lease**", ``id`` inside "v**id**eo".
+    On large documents these collisions inflated the wrong category — e.g. a
+    genetics report misrouting to ``property/leases`` (BACKLOG Phase-3 item #2).
+
+    This asserts an alphanumeric boundary only on the edges where the keyword
+    itself ends in an alphanumeric character, so word-like keywords match whole
+    tokens while punctuation-bearing keywords ("@", "phone:", "501(c)", "w-2")
+    keep matching literally (a leading/trailing ``@`` or ``:`` needs no
+    boundary — and forcing one would break e-mail "@" and "phone:" detection).
+    Text is lower-cased before matching, so the boundary class is ``[a-z0-9]``.
+    """
+    pattern = re.escape(keyword)
+    if keyword[:1].isalnum():
+        pattern = r"(?<![a-z0-9])" + pattern
+    if keyword[-1:].isalnum():
+        pattern = pattern + r"(?![a-z0-9])"
+    return pattern
+
+
+def _compile_keyword_pattern(keyword: str) -> re.Pattern[str]:
+    """Compile one keyword's word-boundary matcher (see :func:`_keyword_alt`)."""
+    return re.compile(_keyword_alt(keyword))
+
+
+def _compile_keyword_group(keywords: list[str]) -> re.Pattern[str] | None:
+    """Compile a whole keyword list into ONE alternation matcher, or ``None``.
+
+    ``findall`` over the alternation counts total keyword occurrences in a
+    single left-to-right scan — the performance form of the counting core.
+    Per-keyword regexes were correct but scanned the text once *per keyword*
+    (~180 passes), which stalls on pathologically large extractions (a 20 MB
+    decompressed genetics report). One scan per category/subcategory keeps the
+    fix viable there. Matches are non-overlapping, so total-occurrence parity
+    with the old ``sum(text.count(kw))`` holds except when two keywords in the
+    same list overlap in the text (rare; never flips an argmax in practice —
+    locked by the classifier + golden suites).
+    """
+    if not keywords:
+        return None
+    return re.compile("|".join(_keyword_alt(kw) for kw in keywords))
+
 
 # Single-source the KIE confidence threshold and field-class groups from the
 # canonical kie_schema_mapping module (scripts/shared/).  The previous private
@@ -45,164 +95,347 @@ class ContentClassifier:
         self.entities = EntityDetector()
 
         self.patterns: dict[str, dict] = {
-            'legal': {
-                'keywords': [
-                    'contract', 'agreement', 'terms', 'conditions', 'legal', 'attorney',
-                    'law', 'litigation', 'plaintiff', 'defendant', 'court', 'settlement',
-                    'lease', 'deed', 'will', 'testament', 'power of attorney', 'notary',
-                    'amendment', 'exhibit', 'whereas', 'party', 'parties', 'executed',
-                    'operating agreement', 'llc', 'corporation', 'bylaws', 'articles'
+            "legal": {
+                "keywords": [
+                    "contract",
+                    "agreement",
+                    "terms",
+                    "conditions",
+                    "legal",
+                    "attorney",
+                    "law",
+                    "litigation",
+                    "plaintiff",
+                    "defendant",
+                    "court",
+                    "settlement",
+                    "lease",
+                    "deed",
+                    "will",
+                    "testament",
+                    "power of attorney",
+                    "notary",
+                    "amendment",
+                    "exhibit",
+                    "whereas",
+                    "party",
+                    "parties",
+                    "executed",
+                    "operating agreement",
+                    "llc",
+                    "corporation",
+                    "bylaws",
+                    "articles",
                 ],
-                'subcategories': {
-                    'contracts': ['contract', 'agreement', 'terms', 'subscription', 'saas'],
-                    'real_estate': ['lease', 'deed', 'property', 'real estate', 'mortgage'],
-                    'litigation': [
-                        'court', 'hearing', 'docket', 'plaintiff', 'defendant',
-                        'petitioner', 'respondent', 'cause no', 'judgment',
-                        'motion to', 'motion for',
+                "subcategories": {
+                    "contracts": ["contract", "agreement", "terms", "subscription", "saas"],
+                    "real_estate": ["lease", "deed", "property", "real estate", "mortgage"],
+                    "litigation": [
+                        "court",
+                        "hearing",
+                        "docket",
+                        "plaintiff",
+                        "defendant",
+                        "petitioner",
+                        "respondent",
+                        "cause no",
+                        "judgment",
+                        "motion to",
+                        "motion for",
                     ],
-                    'corporate': ['llc', 'corporation', 'operating agreement', 'bylaws', 'articles', 'formation'],
-                    'other': []
-                }
+                    "corporate": [
+                        "llc",
+                        "corporation",
+                        "operating agreement",
+                        "bylaws",
+                        "articles",
+                        "formation",
+                    ],
+                    "other": [],
+                },
             },
-            'financial': {
-                'keywords': [
-                    'invoice', 'receipt', 'tax', 'irs', 'payment', 'bill', 'billing',
-                    'statement', 'account', 'balance', 'transaction', 'credit', 'debit',
-                    'bank', 'finance', 'loan', 'interest', '1098', '1099', 'w-2', 'w2',
-                    'federal', 'state return', 'refund', 'revenue', 'expense', 'budget',
-                    'investment', 'portfolio', 'ein', 'employer identification'
+            "financial": {
+                "keywords": [
+                    "invoice",
+                    "receipt",
+                    "tax",
+                    "irs",
+                    "payment",
+                    "bill",
+                    "billing",
+                    "statement",
+                    "account",
+                    "balance",
+                    "transaction",
+                    "credit",
+                    "debit",
+                    "bank",
+                    "finance",
+                    "loan",
+                    "interest",
+                    "1098",
+                    "1099",
+                    "w-2",
+                    "w2",
+                    "federal",
+                    "state return",
+                    "refund",
+                    "revenue",
+                    "expense",
+                    "budget",
+                    "investment",
+                    "portfolio",
+                    "ein",
+                    "employer identification",
                 ],
-                'subcategories': {
-                    'tax': ['tax', 'irs', '1098', '1099', 'w-2', 'w2', 'federal', 'state return'],
-                    'invoices': ['invoice', 'bill', 'billing', 'payment'],
-                    'statements': ['statement', 'account', 'balance', 'transaction'],
-                    'other': []
-                }
+                "subcategories": {
+                    "tax": ["tax", "irs", "1098", "1099", "w-2", "w2", "federal", "state return"],
+                    "invoices": ["invoice", "bill", "billing", "payment"],
+                    "statements": ["statement", "account", "balance", "transaction"],
+                    "other": [],
+                },
             },
-            'business': {
-                'keywords': [
-                    'proposal', 'pitch', 'business plan', 'strategy', 'marketing',
-                    'presentation', 'deck', 'startup', 'company', 'venture', 'investor',
-                    'growth', 'revenue model', 'unit economics', 'expansion', 'rfp',
-                    'guidelines', 'program', 'service package', 'pricing', 'client',
-                    'customer', 'vendor', 'supplier', 'partner', 'contacts', 'crm',
-                    'hiring', 'job posting', 'meeting', 'standup', 'minutes'
+            "business": {
+                "keywords": [
+                    "proposal",
+                    "pitch",
+                    "business plan",
+                    "strategy",
+                    "marketing",
+                    "presentation",
+                    "deck",
+                    "startup",
+                    "company",
+                    "venture",
+                    "investor",
+                    "growth",
+                    "revenue model",
+                    "unit economics",
+                    "expansion",
+                    "rfp",
+                    "guidelines",
+                    "program",
+                    "service package",
+                    "pricing",
+                    "client",
+                    "customer",
+                    "vendor",
+                    "supplier",
+                    "partner",
+                    "contacts",
+                    "crm",
+                    "hiring",
+                    "job posting",
+                    "meeting",
+                    "standup",
+                    "minutes",
                 ],
-                'subcategories': {
-                    'planning': ['business plan', 'strategy', 'expansion', 'growth', 'project'],
-                    'marketing': ['marketing', 'pricing', 'service package', 'pitch', 'deck'],
-                    'proposals': ['proposal', 'rfp', 'guidelines'],
-                    'crm': ['crm', 'contacts', 'microlender', 'customer'],
-                    'hr': ['hiring', 'job posting', 'team roster', 'application', 'linkedin'],
-                    'meeting_notes': ['meeting', 'standup', 'minutes', 'agenda', 'retrospective'],
-                    'clients': ['client', 'llc', 'inc', 'corp', 'company'],  # Legacy
-                    'other': []
-                }
+                "subcategories": {
+                    "planning": ["business plan", "strategy", "expansion", "growth", "project"],
+                    "marketing": ["marketing", "pricing", "service package", "pitch", "deck"],
+                    "proposals": ["proposal", "rfp", "guidelines"],
+                    "crm": ["crm", "contacts", "microlender", "customer"],
+                    "hr": ["hiring", "job posting", "team roster", "application", "linkedin"],
+                    "meeting_notes": ["meeting", "standup", "minutes", "agenda", "retrospective"],
+                    "clients": ["client", "llc", "inc", "corp", "company"],  # Legacy
+                    "other": [],
+                },
             },
-            'personal': {
-                'keywords': [
-                    'resume', 'cv', 'cover letter', 'curriculum vitae', 'employment',
-                    'personal', 'identification', 'passport', 'driver license', 'ssn',
-                    'birth certificate', 'marriage', 'divorce', 'diploma', 'transcript',
-                    'reference', 'recommendation', 'vcard', 'contact',
-                    'journal', 'diary', 'event', 'wedding', 'citation'
+            "personal": {
+                "keywords": [
+                    "resume",
+                    "cv",
+                    "cover letter",
+                    "curriculum vitae",
+                    "employment",
+                    "personal",
+                    "identification",
+                    "passport",
+                    "driver license",
+                    "ssn",
+                    "birth certificate",
+                    "marriage",
+                    "divorce",
+                    "diploma",
+                    "transcript",
+                    "reference",
+                    "recommendation",
+                    "vcard",
+                    "contact",
+                    "journal",
+                    "diary",
+                    "event",
+                    "wedding",
+                    "citation",
                 ],
-                'subcategories': {
-                    'employment': ['resume', 'cv', 'cover letter', 'employment', 'reference'],
-                    'identification': ['passport', 'driver license', 'ssn', 'id'],
-                    'certificates': ['birth certificate', 'marriage', 'divorce', 'diploma'],
-                    'contacts': ['resume', 'cv', 'vcard', 'contact', 'curriculum vitae'],
-                    'journal': ['journal', 'diary', 'dream', 'reflection', 'memoir'],
-                    'events': ['event', 'party', 'wedding', 'invitation', 'rsvp'],
-                    'legal': ['dui', 'court', 'citation', 'traffic ticket', 'hearing', 'dmv'],
-                    'records': ['personal record', 'records'],
-                    'other': []
-                }
+                "subcategories": {
+                    "employment": ["resume", "cv", "cover letter", "employment", "reference"],
+                    "identification": ["passport", "driver license", "ssn", "id"],
+                    "certificates": ["birth certificate", "marriage", "divorce", "diploma"],
+                    "contacts": ["resume", "cv", "vcard", "contact", "curriculum vitae"],
+                    "journal": ["journal", "diary", "dream", "reflection", "memoir"],
+                    "events": ["event", "party", "wedding", "invitation", "rsvp"],
+                    "legal": ["dui", "court", "citation", "traffic ticket", "hearing", "dmv"],
+                    "records": ["personal record", "records"],
+                    "other": [],
+                },
             },
-            'medical': {
-                'keywords': [
-                    'medical', 'health', 'doctor', 'patient', 'prescription', 'diagnosis',
-                    'treatment', 'hospital', 'clinic', 'insurance claim', 'hipaa',
-                    'vaccination', 'immunization', 'lab results', 'pharmacy'
+            "medical": {
+                "keywords": [
+                    "medical",
+                    "health",
+                    "doctor",
+                    "patient",
+                    "prescription",
+                    "diagnosis",
+                    "treatment",
+                    "hospital",
+                    "clinic",
+                    "insurance claim",
+                    "hipaa",
+                    "vaccination",
+                    "immunization",
+                    "lab results",
+                    "pharmacy",
                 ],
-                'subcategories': {
-                    'records': ['medical record', 'patient', 'diagnosis', 'treatment'],
-                    'insurance': ['insurance', 'claim', 'coverage'],
-                    'prescriptions': ['prescription', 'pharmacy', 'medication'],
-                    'other': []
-                }
+                "subcategories": {
+                    "records": ["medical record", "patient", "diagnosis", "treatment"],
+                    "insurance": ["insurance", "claim", "coverage"],
+                    "prescriptions": ["prescription", "pharmacy", "medication"],
+                    "other": [],
+                },
             },
-            'property': {
-                'keywords': [
-                    'property management', 'tenant', 'landlord', 'rent', 'rental',
-                    'maintenance', 'repair', 'inspection', 'utilities', 'hoa'
+            "property": {
+                "keywords": [
+                    "property management",
+                    "tenant",
+                    "landlord",
+                    "rent",
+                    "rental",
+                    "maintenance",
+                    "repair",
+                    "inspection",
+                    "utilities",
+                    "hoa",
                 ],
-                'subcategories': {
-                    'leases': ['lease', 'tenant', 'landlord', 'rent', 'rental'],
-                    'maintenance': ['maintenance', 'repair', 'inspection'],
-                    'other': []
-                }
+                "subcategories": {
+                    "leases": ["lease", "tenant", "landlord", "rent", "rental"],
+                    "maintenance": ["maintenance", "repair", "inspection"],
+                    "other": [],
+                },
             },
-            'education': {
-                'keywords': [
-                    'course', 'syllabus', 'lecture', 'assignment', 'homework', 'exam',
-                    'grade', 'transcript', 'diploma', 'degree', 'certificate', 'university',
-                    'college', 'school', 'research paper', 'thesis', 'dissertation'
+            "education": {
+                "keywords": [
+                    "course",
+                    "syllabus",
+                    "lecture",
+                    "assignment",
+                    "homework",
+                    "exam",
+                    "grade",
+                    "transcript",
+                    "diploma",
+                    "degree",
+                    "certificate",
+                    "university",
+                    "college",
+                    "school",
+                    "research paper",
+                    "thesis",
+                    "dissertation",
                 ],
-                'subcategories': {
-                    'coursework': ['course', 'syllabus', 'lecture', 'assignment'],
-                    'research': ['research', 'paper', 'thesis', 'dissertation'],
-                    'records': ['transcript', 'diploma', 'degree', 'certificate'],
-                    'other': []
-                }
+                "subcategories": {
+                    "coursework": ["course", "syllabus", "lecture", "assignment"],
+                    "research": ["research", "paper", "thesis", "dissertation"],
+                    "records": ["transcript", "diploma", "degree", "certificate"],
+                    "other": [],
+                },
             },
-            'technical': {
-                'keywords': [
-                    'code', 'software', 'development', 'programming', 'api', 'database',
-                    'documentation', 'technical', 'specification', 'architecture', 'design',
-                    'system', 'infrastructure', 'deployment', 'configuration'
+            "technical": {
+                "keywords": [
+                    "code",
+                    "software",
+                    "development",
+                    "programming",
+                    "api",
+                    "database",
+                    "documentation",
+                    "technical",
+                    "specification",
+                    "architecture",
+                    "design",
+                    "system",
+                    "infrastructure",
+                    "deployment",
+                    "configuration",
                 ],
-                'subcategories': {
-                    'documentation': ['documentation', 'spec', 'specification', 'readme'],
-                    'architecture': ['architecture', 'design', 'system', 'infrastructure'],
-                    'other': []
-                }
+                "subcategories": {
+                    "documentation": ["documentation", "spec", "specification", "readme"],
+                    "architecture": ["architecture", "design", "system", "infrastructure"],
+                    "other": [],
+                },
             },
-            'creative': {
-                'keywords': [
-                    'design', 'graphic', 'illustration', 'artwork', 'photo', 'image',
-                    'screenshot', 'mockup', 'prototype', 'wireframe', 'brand', 'logo'
+            "creative": {
+                "keywords": [
+                    "design",
+                    "graphic",
+                    "illustration",
+                    "artwork",
+                    "photo",
+                    "image",
+                    "screenshot",
+                    "mockup",
+                    "prototype",
+                    "wireframe",
+                    "brand",
+                    "logo",
                 ],
-                'subcategories': {
-                    'design': ['design', 'mockup', 'wireframe', 'prototype'],
-                    'branding': ['brand', 'logo', 'identity'],
-                    'photos': ['photo', 'photography', 'image'],
-                    'other': []
-                }
+                "subcategories": {
+                    "design": ["design", "mockup", "wireframe", "prototype"],
+                    "branding": ["brand", "logo", "identity"],
+                    "photos": ["photo", "photography", "image"],
+                    "other": [],
+                },
             },
             # Game mod/workshop descriptors (e.g. Steam Workshop `.mod` manifests).
             # Keyed on strings unique to those descriptors so it only fires on real
             # game-mod content, never on generic documents that mention "game".
-            'game_assets': {
-                'keywords': [
-                    'steamapps/workshop', 'remote_file_id', 'steam workshop',
-                    'workshop/content',
+            "game_assets": {
+                "keywords": [
+                    "steamapps/workshop",
+                    "remote_file_id",
+                    "steam workshop",
+                    "workshop/content",
                 ],
-                'subcategories': {
-                    'other': []
-                }
-            }
+                "subcategories": {"other": []},
+            },
         }
 
         # Pre-lowercase keywords and subcategory keyword lists
         self._keywords_lower: dict[str, list[str]] = {
-            cat: [kw.lower() for kw in data['keywords']]
-            for cat, data in self.patterns.items()
+            cat: [kw.lower() for kw in data["keywords"]] for cat, data in self.patterns.items()
         }
         self._subcats_lower: dict[str, dict[str, list[str]]] = {
-            cat: {sc: [kw.lower() for kw in kws] for sc, kws in data['subcategories'].items()}
+            cat: {sc: [kw.lower() for kw in kws] for sc, kws in data["subcategories"].items()}
             for cat, data in self.patterns.items()
+        }
+        # Precompile word-boundary-aware matchers once (parallel to the *_lower
+        # lists); scoring uses these instead of substring containment so
+        # keyword fragments don't inflate the wrong category (see
+        # _keyword_alt / BACKLOG Phase-3 item #2). Per-keyword patterns serve
+        # score_all_categories (distinct-keyword fraction, screenshot-sized
+        # text); one-alternation-per-list group matchers serve the
+        # occurrence-counting core (single scan, viable on huge extractions).
+        self._keyword_res: dict[str, list[re.Pattern[str]]] = {
+            cat: [_compile_keyword_pattern(kw) for kw in kws]
+            for cat, kws in self._keywords_lower.items()
+        }
+        self._category_group_re: dict[str, re.Pattern[str] | None] = {
+            cat: _compile_keyword_group(kws) for cat, kws in self._keywords_lower.items()
+        }
+        self._subcat_group_re: dict[str, dict[str, re.Pattern[str] | None]] = {
+            cat: {sc: _compile_keyword_group(kws) for sc, kws in scs.items()}
+            for cat, scs in self._subcats_lower.items()
         }
 
     # ------------------------------------------------------------------
@@ -278,7 +511,9 @@ class ContentClassifier:
         best = None
         for name in class_names:
             for f in kie_result.fields.get(name, ()):
-                if f.confidence >= min_confidence and (best is None or f.confidence > best.confidence):
+                if f.confidence >= min_confidence and (
+                    best is None or f.confidence > best.confidence
+                ):
                     best = f
         return best
 
@@ -292,10 +527,10 @@ class ContentClassifier:
         combined = f"{text.lower()} {filename.lower()}"
         scores: dict[str, float] = {}
 
-        for category, keywords in self._keywords_lower.items():
-            hits = sum(1 for kw in keywords if kw in combined)
+        for category, patterns in self._keyword_res.items():
+            hits = sum(1 for rx in patterns if rx.search(combined))
             if hits:
-                scores[category] = hits / len(keywords)
+                scores[category] = hits / len(patterns)
 
         return scores
 
@@ -314,20 +549,21 @@ class ContentClassifier:
         scores: dict[str, int] = defaultdict(int)
         category_subcats: dict[str, dict[str, int]] = {}
 
-        for category, keywords in self._keywords_lower.items():
-            # Short-circuit: skip count() pass entirely if no keyword is present.
-            # `in` stops at first hit; count() always scans the full string.
-            if not any(kw in combined for kw in keywords):
+        for category, group_re in self._category_group_re.items():
+            # Short-circuit: search() stops at the first hit; findall() scans
+            # fully — skip the count pass for categories with no keyword present.
+            if group_re is None or not group_re.search(combined):
                 continue
 
-            for keyword in keywords:
-                scores[category] += combined.count(keyword)
+            scores[category] = len(group_re.findall(combined))
 
-            subcat_scores = {
-                sc: sum(combined.count(sk) for sk in sc_kws)
-                for sc, sc_kws in self._subcats_lower[category].items()
-                if any(sk in combined for sk in sc_kws)
-            }
+            subcat_scores: dict[str, int] = {}
+            for sc, sc_re in self._subcat_group_re[category].items():
+                if sc_re is None:
+                    continue
+                matches = len(sc_re.findall(combined))
+                if matches:
+                    subcat_scores[sc] = matches
             if subcat_scores:
                 category_subcats[category] = subcat_scores
 
@@ -406,12 +642,12 @@ class ContentClassifier:
             Tuple of (category, subcategory, company_name, people_names)
         """
         if not text:
-            return ('uncategorized', 'other', None, [])
+            return ("uncategorized", "other", None, [])
 
         # Non-English OCR text — English keyword patterns are unreliable.
         # Skip keyword classification and let the caller handle routing.
-        if detected_language is not None and detected_language != 'en':
-            return ('uncategorized', 'other', None, [])
+        if detected_language is not None and detected_language != "en":
+            return ("uncategorized", "other", None, [])
 
         text_lower = text.lower()
         filename_lower = filename.lower()
@@ -419,12 +655,16 @@ class ContentClassifier:
 
         # Check for known companies in text (canonical name mapping)
         known_text_companies: dict[str, tuple[str, str, str | None]] = {
-            'capital city village': ('organization', 'property_management', 'Capital City Village'),
-            'leora home health': ('organization', 'healthcare', 'Leora Home Health'),
-            'integrity studio': ('organization', 'vendors', 'Integrity Studio'),
-            'inspired movement': ('organization', 'vendors', 'Inspired Movement'),
-            'new beginnings child development': ('organization', 'vendors', 'New Beginnings Child Development Center'),
-            'zouk': ('zouk', 'events', None),
+            "capital city village": ("organization", "property_management", "Capital City Village"),
+            "leora home health": ("organization", "healthcare", "Leora Home Health"),
+            "integrity studio": ("organization", "vendors", "Integrity Studio"),
+            "inspired movement": ("organization", "vendors", "Inspired Movement"),
+            "new beginnings child development": (
+                "organization",
+                "vendors",
+                "New Beginnings Child Development Center",
+            ),
+            "zouk": ("zouk", "events", None),
         }
         for phrase, (cat, subcat, canonical_name) in known_text_companies.items():
             if phrase in text_lower:
@@ -446,15 +686,31 @@ class ContentClassifier:
             relationship_company = next(iter(person_company_relationships.values()))
 
             # Check if relationship company has proper legal suffix
-            has_legal_suffix = any(relationship_company.endswith(suffix)
-                                  for suffix in ['LLC', 'Inc.', 'Inc', 'Corp.', 'Corp',
-                                                'Ltd.', 'Ltd', 'LLP', 'L.L.C.', 'L.L.P.'])
+            has_legal_suffix = any(
+                relationship_company.endswith(suffix)
+                for suffix in [
+                    "LLC",
+                    "Inc.",
+                    "Inc",
+                    "Corp.",
+                    "Corp",
+                    "Ltd.",
+                    "Ltd",
+                    "LLP",
+                    "L.L.C.",
+                    "L.L.P.",
+                ]
+            )
 
             # Prefer relationship company if it has legal suffix or we don't have a primary company
             if has_legal_suffix or not primary_company:
                 primary_company = relationship_company
             # Or if the relationship company is much cleaner (shorter and no weird prefixes)
-            elif primary_company and 'CEO' not in relationship_company and 'at' not in relationship_company:
+            elif (
+                primary_company
+                and "CEO" not in relationship_company
+                and "at" not in relationship_company
+            ):
                 if len(relationship_company) < len(primary_company) * 0.8:
                     primary_company = relationship_company
 
@@ -475,7 +731,7 @@ class ContentClassifier:
         scores, category_subcats = self._count_category_scores(combined)
 
         if not scores:
-            return ('uncategorized', 'other', primary_company, people_names)
+            return ("uncategorized", "other", primary_company, people_names)
 
         # Get category with highest score
         best_category = max(scores.items(), key=lambda x: x[1])[0]
@@ -485,7 +741,7 @@ class ContentClassifier:
 
         # If we detected a company (either directly or via person relationship)
         # and it's business-related, use clients subcategory
-        if primary_company and best_category == 'business':
-            best_subcategory = 'clients'
+        if primary_company and best_category == "business":
+            best_subcategory = "clients"
 
         return (best_category, best_subcategory, primary_company, people_names)
