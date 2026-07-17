@@ -155,6 +155,29 @@ HEALTHCARE_LETTER_TEXT = (
     "pharmacy for medication questions. Insurance claim filed under Medicare."
 )
 
+# SCRUBBED genetics-report prose (Promethease-style) — invented findings, NO
+# real genotypes or personal data. Deliberately dense in the substring-
+# collision triggers a real report carries: "release"/"please" (→ the
+# `lease` keyword), "parent"/"different"/"current" (→ `rent`), "DNA repair"
+# (→ the `repair` property keyword). ContentClassifier keyword matching is
+# substring-based (`kw in combined`), so these inflate the `property` score to
+# the top and the file misroutes to property/leases. See
+# docs/BACKLOG.md → Phase-3 calibration item #2.
+GENETICS_REPORT_TEXT = (
+    "Genetic report summary. Each genotype is compared against reference data "
+    "with a magnitude and repute. This variant affects neurotransmitter release "
+    "and hormone release in different tissues. A parent may carry the same "
+    "allele; maternal and paternal inheritance differ. Current evidence links "
+    "several SNPs to DNA repair efficiency. Genes involved in DNA repair and "
+    "mismatch repair show different activity. The current allele is different "
+    "from the reference. Please review each finding with a clinician. Please "
+    "note magnitude reflects interest, not risk. Different studies report "
+    "different effect sizes. A parent study and a current meta-analysis release "
+    "updated estimates. Repair pathways and base-excision repair are frequently "
+    "referenced. Please consider that the current parent population differs. "
+    "Release of the report follows review."
+)
+
 GOVERNMENT_NOTICE_TEXT = (
     "Department of Public Safety, State of Texas. This government agency "
     "notice concerns your records. The bureau and commission require a "
@@ -310,6 +333,23 @@ GOLDEN_CASES = [
         ocr_text="",  # OCR ran, found nothing
         expected=("game_assets", "sprites"),
         min_margin=0.01,
+    ),
+    GoldenCase(
+        # KNOWN GAP (Phase-3 calibration item #2): substring keyword matching
+        # in ContentClassifier inflates `property` on a large genetics report
+        # ("re-lease", "pa-rent"/"diffe-rent"/"cur-rent", "DNA repair") so it
+        # misroutes to property/leases. The legacy chain dodged this only
+        # because the real file short-circuited at the filepath tier before
+        # content classification ran; the unified scorer runs all signals, so
+        # the collision surfaces. Pinned to CURRENT behavior so the fix
+        # (word-boundary matching / per-category thresholds) trips this test.
+        # Scrubbed synthetic text — no real genome data. See docs/BACKLOG.md.
+        name="genetics_report_substring_collision_misroutes",
+        filename="genetic-report.html",
+        schema_type="DigitalDocument",
+        mime_type="text/html",
+        text=GENETICS_REPORT_TEXT,
+        expected=("property", "leases"),
     ),
     # ---- Group 3: academic PDFs (content-only + prefixed control) --------- #
     GoldenCase(
