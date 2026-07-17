@@ -408,10 +408,12 @@ def add_evaluate_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--classifier",
         "-c",
-        choices=["baseline", "content"],
+        choices=["baseline", "content", "unified"],
         default="baseline",
         help="baseline = filename heuristic; content = production "
-        "CLIP+OCR classifier (requires test files on disk)",
+        "CLIP+OCR classifier (requires test files on disk); "
+        "unified = weighted signal registry (src/scoring) replayed "
+        "from record fields, no OCR/CLIP extraction",
     )
     parser.add_argument(
         "--min-support",
