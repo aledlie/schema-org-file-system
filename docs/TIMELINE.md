@@ -648,6 +648,7 @@ Then point the HTML at the endpoint: `fetch('http://localhost:5000/api/sessions'
 |---------|-----|
 | `Database not found` | Run the organizer once: `organize-files content --source ~/Downloads --dry-run --limit 10` |
 | Empty `sessions: []` | Check `sqlite3 results/file_organization.db "SELECT COUNT(*) FROM organization_sessions;"` |
+| A `type`/`name` run isn't on the timeline | Expected — only `organize-files content` records sessions. `organize-files type` and `organize-files name` are DB-free by design (see [`docs/FILE_ORGANIZATION.md`](FILE_ORGANIZATION.md) §5). Re-run with `organize-files content` to populate the timeline. |
 | CORS error (`origin 'null'`) | Serve over HTTP: `python3 -m http.server 8000 -d _site` — don't open the file directly |
 | Old/deleted sessions still shown | Regenerate (`organize-files timeline`) then hard-refresh (Cmd+Shift+R) |
 

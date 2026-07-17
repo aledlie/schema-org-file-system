@@ -38,6 +38,8 @@ Calibration items, by observed impact:
 
 To move off the pinned snapshot: point at a DB that has real `organization_sessions` rows (run live/dry-run organization passes that record sessions, or restore the source DB that produced the committed JSON), then `organize-files timeline` to regenerate. Until then the committed JSON is the source of truth and must not be overwritten by a run against the empty DB. Schema + CLI reference: [`docs/TIMELINE.md`](TIMELINE.md#data-structure-reference).
 
+**By design — only the content pipeline feeds the timeline.** `organize-files content` (BatchProcessor → FileProcessor → `GraphStore`) is the only command that opens an `organization_sessions` row and sets `files.session_id`. `organize-files type` (`scripts/file_organizer_by_type.py`) and `organize-files name` (`src/organizers/name_organizer.py`) are the deliberately no-AI, DB-free organizers: they move files and write their own JSON report but touch no graph store — no `GraphStore`, no `create_session`/`_persist_to_graph_store`, no `--db-path` option. Consequently their runs never appear on the timeline or in the graph. This is expected behavior, **not a bug** (the only `graph_store.add_file` callers are the content `FileProcessor` and `person_migration`). Surfacing `type`/`name` runs on the timeline would require adding a graph-persistence layer those commands intentionally omit — a feature, not a fix. Confirmed by the session-tracking adversarial review, 2026-07-17.
+
 ### Person-graph edge hygiene
 
 Leaky denylist (prune and dead-path tooling shipped 2026-07-12).

@@ -136,15 +136,51 @@ class BatchProcessor:
                 except Exception as exc:
                     print(f"easyocr pre-warm failed (will load on first use): {exc}\n")
 
+        # Open an organization session so the timeline can group this run's
+        # files. Only for real (non-dry-run) runs with a graph store: dry runs
+        # never persist files, so a session row would stay empty. Failures here
+        # are non-fatal — organization proceeds without session linkage.
+        graph_store = getattr(self.file_processor, "graph_store", None)
+        session_id: Optional[str] = None
+        if graph_store is not None and not dry_run:
+            try:
+                fp_base_path = getattr(self.file_processor, "base_path", None)
+                org_session = graph_store.create_session(
+                    source_directories=source_dirs,
+                    base_path=str(fp_base_path) if fp_base_path else "",
+                    dry_run=dry_run,
+                    file_limit=limit,
+                )
+                session_id = org_session.id
+            except Exception as exc:
+                print(f"  ⚠ Could not create organization session (non-fatal): {exc}")
+
         for i, file_path in enumerate(all_files, 1):
             print(f"[{i}/{len(all_files)}] Processing: {file_path.name}")
-            result = self.file_processor.organize_file(file_path, dry_run=dry_run, force=force)
+            result = self.file_processor.organize_file(
+                file_path, dry_run=dry_run, force=force, session_id=session_id
+            )
             results.append(result)
 
             if result["status"] in ("organized", "would_organize"):
                 print(f"  → {result['destination']}")
             elif result["status"] == "error":
                 print(f"  ✗ Error: {result['reason']}")
+
+        # Finalize the session with run statistics (mirrors ``summary`` below).
+        if session_id is not None and graph_store is not None:
+            try:
+                graph_store.complete_session(
+                    session_id,
+                    {
+                        "total_files": len(all_files),
+                        "organized": stats["organized"],
+                        "skipped": stats["skipped"],
+                        "errors": stats["errors"],
+                    },
+                )
+            except Exception as exc:
+                print(f"  ⚠ Could not complete organization session (non-fatal): {exc}")
 
         summary: Dict[str, Any] = {
             "total_files": len(all_files),
