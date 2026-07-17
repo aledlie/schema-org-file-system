@@ -1,7 +1,7 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-07-16.
+Last updated: 2026-07-17.
 
 ## Open Items
 
@@ -30,13 +30,13 @@ Calibration items, by observed impact:
 
 `_site/timeline_data.json` is a stale committed snapshot; the current DB has no sessions to regenerate it from.
 
-**Status:** Open — workaround in place (restored committed JSON).
+**Status:** Open — session-recording mechanism now ships (`424ce3d`, 2026-07-17); needs a live non-dry-run content pass to populate. Workaround in place (restored committed JSON).
 **Priority:** P4
-**Source:** timeline doc-consolidation session, 2026-07-16
+**Source:** timeline doc-consolidation session, 2026-07-16; session-tracking fix 2026-07-17
 
 `organize-files timeline` reads `organization_sessions` from `results/file_organization.db` and writes `_site/timeline_data.json` (fixed `OUTPUT_PATH`; only `--db-path` is configurable). Running it 2026-07-16 produced an **empty** document (0 sessions / 0 files): the current DB is a fresh/test state with `organization_sessions` = 0 rows (199 `files` rows, all `NULL session_id`). The committed `timeline_data.json` (**15 sessions / 41,614 files**) was restored from git so `timeline.html` still renders real data.
 
-To move off the pinned snapshot: point at a DB that has real `organization_sessions` rows (run live/dry-run organization passes that record sessions, or restore the source DB that produced the committed JSON), then `organize-files timeline` to regenerate. Until then the committed JSON is the source of truth and must not be overwritten by a run against the empty DB. Schema + CLI reference: [`docs/TIMELINE.md`](TIMELINE.md#data-structure-reference).
+**Blocker narrowed (`424ce3d`).** The prior root cause — the production content path *never opened a session*, so `files.session_id` stayed `NULL` even after real runs — is now fixed: `BatchProcessor.organize_directories` opens `create_session` before the file loop and completes it after (non-dry-run + graph store present), threading the id through `organize_file → _persist_to_graph_store → add_file(session_id=...)`. A companion `GraphStore.create_session` detachment fix (refresh + expunge) makes the batch path's `.id` read safe. So a real content pass now records sessions on its own; what remains is simply running one against a real corpus (or restoring the source DB that produced the committed JSON), then `organize-files timeline` to regenerate. Until then the committed JSON is the source of truth and must not be overwritten by a run against the empty DB. Schema + CLI reference: [`docs/TIMELINE.md`](TIMELINE.md#data-structure-reference).
 
 **By design — only the content pipeline feeds the timeline.** `organize-files content` (BatchProcessor → FileProcessor → `GraphStore`) is the only command that opens an `organization_sessions` row and sets `files.session_id`. `organize-files type` (`scripts/file_organizer_by_type.py`) and `organize-files name` (`src/organizers/name_organizer.py`) are the deliberately no-AI, DB-free organizers: they move files and write their own JSON report but touch no graph store — no `GraphStore`, no `create_session`/`_persist_to_graph_store`, no `--db-path` option. Consequently their runs never appear on the timeline or in the graph. This is expected behavior, **not a bug** (the only `graph_store.add_file` callers are the content `FileProcessor` and `person_migration`). Surfacing `type`/`name` runs on the timeline would require adding a graph-persistence layer those commands intentionally omit — a feature, not a fix. Confirmed by the session-tracking adversarial review, 2026-07-17.
 

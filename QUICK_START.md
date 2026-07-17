@@ -48,6 +48,26 @@ organize-files content --source ~/Downloads --dry-run --no-db --no-sentry --no-c
 
 Defaults: sources `~/Desktop ~/Downloads`, target `~/Documents`, database `results/file_organization.db`.
 
+### Shadow test (compare unified scorer vs legacy chain)
+
+`--scorer shadow` runs both engines: the legacy 10-tier chain controls placement while the
+unified weighted scorer's decision is logged to `results/scoring_shadow.jsonl` for
+disagreement analysis. Placement is unaffected, so pair it with `--dry-run`.
+
+```bash
+# Reset the log, run a shadow pass (dry-run — nothing moves), then report disagreements
+: > results/scoring_shadow.jsonl
+organize-files content --source ~/Downloads --dry-run --limit 40 --scorer shadow
+python scripts/analyze_scoring_disagreement.py \
+    --log results/scoring_shadow.jsonl \
+    --json results/scoring_disagreement.json \
+    --top 15
+```
+
+The report prints the legacy↔unified agreement rate, unified decision-state counts
+(committed / low_confidence / low_margin), and the top (legacy → unified) disagreement
+pairs with example paths.
+
 ### Organize files (no AI)
 
 ```bash
