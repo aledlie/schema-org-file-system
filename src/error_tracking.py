@@ -307,7 +307,7 @@ class FileProcessingErrorTracker:
 
     def print_summary(self) -> None:
         """Print processing summary."""
-        print(f"\nFile Processing Summary:")
+        print("\nFile Processing Summary:")
         print(f"  Processed: {self.processed}")
         print(f"  Succeeded: {self.succeeded} ({self.succeeded/max(self.processed,1)*100:.1f}%)")
         print(f"  Failed: {self.failed}")
@@ -319,7 +319,7 @@ class FileProcessingErrorTracker:
                 error_type = error['error_type']
                 error_types[error_type] = error_types.get(error_type, 0) + 1
 
-            print(f"\nError breakdown:")
+            print("\nError breakdown:")
             for error_type, count in sorted(error_types.items(), key=lambda x: -x[1]):
                 print(f"  {error_type}: {count}")
 

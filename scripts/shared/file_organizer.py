@@ -198,7 +198,7 @@ class FileOrganizer:
         print(f"Errors: {self.stats.get('errors', 0)}")
 
         if self.mode == 'folder':
-            print(f"\nBy Category:")
+            print("\nBy Category:")
             for key, count in sorted(self.stats.items()):
                 if key not in ('processed', 'moved', 'errors', 'total') and '/' in key:
                     print(f"  {key}: {count}")

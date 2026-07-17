@@ -545,9 +545,9 @@ class JSONMigrator:
 
             # Check match
             if db_stats['total_files'] >= total_json_records * MIGRATION_VERIFICATION_THRESHOLD:
-                print(f"\n  ✓ Migration appears successful")
+                print("\n  ✓ Migration appears successful")
             else:
-                print(f"\n  ⚠ Some records may not have migrated")
+                print("\n  ⚠ Some records may not have migrated")
 
         return results
 

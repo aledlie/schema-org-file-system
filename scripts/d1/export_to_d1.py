@@ -78,12 +78,12 @@ def export_to_sql(db_path: str, output_path: str) -> None:
   input_size = Path(db_path).stat().st_size / (1024 * 1024)
   output_size = Path(output_path).stat().st_size / (1024 * 1024)
 
-  print(f"✓ Export complete")
+  print("✓ Export complete")
   print(f"  Source DB: {db_path} ({input_size:.2f} MB)")
   print(f"  SQL dump: {output_path} ({output_size:.2f} MB)")
   print(f"  Tables exported: {len(tables)}")
-  print(f"\nNext steps:")
-  print(f"  1. Upload schema: wrangler d1 execute file-organization-db < scripts/d1/schema.sql")
+  print("\nNext steps:")
+  print("  1. Upload schema: wrangler d1 execute file-organization-db < scripts/d1/schema.sql")
   print(f"  2. Load data: wrangler d1 execute file-organization-db < {output_path}")
 
 

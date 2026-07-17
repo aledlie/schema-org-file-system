@@ -116,11 +116,11 @@ def organize_files(
     print(f"Errors: {stats['errors']}")
 
     if dry_run:
-        print(f"\n⚠️  This was a DRY RUN - no files were moved")
+        print("\n⚠️  This was a DRY RUN - no files were moved")
 
     # Show organization breakdown
     if organization_log:
-        print(f"\nOrganization by Schema.org Category:")
+        print("\nOrganization by Schema.org Category:")
         print("-" * 40)
         category_counts = defaultdict(int)
         for item in organization_log:

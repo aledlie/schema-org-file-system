@@ -241,10 +241,10 @@ class SchemaIntegration:
             structured_data = self.to_json_ld_script()
         elif format == OutputFormat.MICRODATA:
             # Microdata is embedded in content
-            structured_data = f"<!-- Microdata embedded in content -->"
+            structured_data = "<!-- Microdata embedded in content -->"
         elif format == OutputFormat.RDFA:
             # RDFa is embedded in content
-            structured_data = f"<!-- RDFa embedded in content -->"
+            structured_data = "<!-- RDFa embedded in content -->"
 
         html = f"""<!DOCTYPE html>
 <html lang="en">

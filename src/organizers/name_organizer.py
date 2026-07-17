@@ -671,7 +671,7 @@ class FileNameOrganizer:
 
                 # Skip if already in correct location
                 if file_path.parent == destination.parent:
-                    print(f"  → Already in correct location")
+                    print("  → Already in correct location")
                     self.stats['skipped_files'] += 1
                     continue
 

@@ -245,7 +245,7 @@ def generate_csv(image_path: Path, output_path: Path, min_confidence: float = 0.
             ])
 
     print(f"✓ CSV saved to: {output_path}")
-    print(f"\nTop 10 detected objects:")
+    print("\nTop 10 detected objects:")
     print("-" * 80)
     print(f"{'Object':<20} {'Category':<25} {'Confidence':>10}")
     print("-" * 80)

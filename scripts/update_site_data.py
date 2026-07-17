@@ -144,7 +144,7 @@ def run(args: "UpdateSiteInputs") -> None:
 
     # Calculate stats
     stats = calculate_stats(metadata)
-    print(f"\nStats:")
+    print("\nStats:")
     print(f"  Total files: {stats['total_files']:,}")
     print(f"  Success rate: {stats['success_rate']}%")
     print(f"  Categories: {stats['category_count']}")
@@ -178,8 +178,8 @@ def run(args: "UpdateSiteInputs") -> None:
     print("SITE DATA UPDATED")
     print("=" * 60)
     print(f"  metadata.json: {len(metadata):,} files")
-    print(f"  index.html: Stats updated")
-    print(f"  timeline_data.json: Regenerated")
+    print("  index.html: Stats updated")
+    print("  timeline_data.json: Regenerated")
 
 
 def main():

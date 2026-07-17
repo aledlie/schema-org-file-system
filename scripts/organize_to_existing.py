@@ -107,11 +107,11 @@ def organize_files(base_path: str = "~/Documents", dry_run: bool = False) -> dic
     print(f"Errors: {stats['errors']}")
 
     if dry_run:
-        print(f"\n⚠️  This was a DRY RUN - no files were moved")
+        print("\n⚠️  This was a DRY RUN - no files were moved")
 
     # Show breakdown by folder
     if organization_log:
-        print(f"\nFiles by Destination Folder:")
+        print("\nFiles by Destination Folder:")
         print("-" * 40)
         folder_counts = defaultdict(int)
         for item in organization_log:

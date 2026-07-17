@@ -862,7 +862,7 @@ def main() -> None:
 
     # Generate and save report
     calculator.generate_report('results/cost_roi_report.json')
-    print(f"\nFull report saved to: results/cost_roi_report.json")
+    print("\nFull report saved to: results/cost_roi_report.json")
 
     # Show projection for larger runs
     print(f"\n{'COST PROJECTIONS':=^70}")

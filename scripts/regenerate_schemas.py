@@ -283,7 +283,7 @@ def verify_schemas(conn: sqlite3.Connection) -> bool:
         return False
 
     pct = (has_id / total) * 100
-    print(f"  Sample of 100 schemas:")
+    print("  Sample of 100 schemas:")
     print(f"    With @id: {has_id} ({pct:.1f}%)")
     print(f"    Missing @id: {missing_id}")
 
@@ -336,8 +336,8 @@ def main():
         print(f"Error: Database not found at {db_path}")
         sys.exit(1)
 
-    print(f"Schema Regeneration Script")
-    print(f"==========================")
+    print("Schema Regeneration Script")
+    print("==========================")
     print(f"Database: {db_path}")
     print(f"Dry run: {args.dry_run}")
     print(f"Limit: {args.limit or 'None'}")
@@ -362,7 +362,7 @@ def main():
             print("Run without --dry-run to apply changes")
             success = True
 
-        print(f"\n=== Summary ===")
+        print("\n=== Summary ===")
         print(f"Files processed: {processed}")
         print(f"Status: {'SUCCESS' if success else 'INCOMPLETE - run again'}")
         print(f"Completed: {datetime.now().isoformat()}")
