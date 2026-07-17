@@ -240,6 +240,41 @@ INVOICE_OCR_TEXT = (
     "2026-06-30. Billing statement and payment details enclosed."
 )
 
+# SCRUBBED synthetic property/auto insurance policy — invented policy/claim
+# numbers, NO real personal data. Phase-3 calibration item #4: property/auto/
+# liability policies had no taxonomy home (they oscillated between
+# organization/financial and legal/real_estate on lease/property/policy
+# keywords). The financial→insurance subcategory gives non-health policies a
+# home; with no extractable insurer and no org indicators, the keyword
+# taxonomy files this under financial/insurance. Neutral filename ("policy"/
+# "insurance"/"declaration" in the stem would fire the legal/financial
+# filename rules first — the content routing is what is under test).
+INSURANCE_POLICY_TEXT = (
+    "Private passenger auto insurance policy declarations page. This policy provides "
+    "coverage for the insured vehicle and the named policyholder. Policy number PA-88213 is "
+    "shown above. The annual premium is 1,320 dollars and is due each term. A collision "
+    "deductible of 500 dollars applies to each covered loss. Liability coverage limits and "
+    "underwriting notes appear in the policy. The insured must keep the premium current to "
+    "maintain coverage. Comprehensive coverage and the deductible are summarized for the "
+    "policyholder. Refer to the policy number and claim number when reporting a covered loss. "
+    "This insurance summary lists coverage, premium, deductible, and policyholder details."
+)
+
+# SCRUBBED synthetic insurer statement — invented company/account, NO real
+# data. Control for item #4: when a NAMED insurer is extractable AND the text
+# clears the org financial indicators, OrganizationKeywordSignal (unchanged)
+# still routes to organization/financial, outscoring the financial/insurance
+# keyword vote. Confirms the new financial vocabulary does not cannibalize the
+# company-driven organization path.
+NAMED_INSURER_STATEMENT_TEXT = (
+    "Acme Mutual Insurance Company. Your combined account summary is enclosed. "
+    "This document from Acme Mutual Insurance Company summarizes your policy premium and your "
+    "bank account activity. Account number ending 4471. Routing number on file. Recent "
+    "transaction history and a wire transfer are listed. Your auto insurance coverage and "
+    "deductible remain unchanged. Investment and securities balances are reported separately. "
+    "Contact Acme Mutual Insurance Company for questions about your loan or mortgage."
+)
+
 GOLDEN_CASES = [
     # ---- Group 1: org-named PDFs (person/org confusion) ------------------- #
     GoldenCase(
@@ -463,6 +498,28 @@ GOLDEN_CASES = [
         ocr_text=INVOICE_OCR_TEXT + " Amount due and account balance summary enclosed below.",
         kie_fields={"vendor_name": [("Acme Corp", 0.9)]},  # no amount/date
         expected=("financial", "invoices"),
+    ),
+    # ---- Group 12: insurance vocabulary (Phase-3 item #4) ------------------ #
+    GoldenCase(
+        # Unnamed property/auto policy → financial/insurance on the new
+        # subcategory vocabulary (no insurer to extract, no org indicators).
+        name="insurance_policy_routes_financial_insurance",
+        filename="prv-88213.pdf",
+        schema_type="DigitalDocument",
+        mime_type="application/pdf",
+        text=INSURANCE_POLICY_TEXT,
+        expected=("financial", "insurance"),
+    ),
+    GoldenCase(
+        # Named insurer + org financial indicators → organization/financial
+        # via OrganizationKeywordSignal (unchanged), NOT financial/insurance.
+        name="named_insurer_routes_organization_financial",
+        filename="acme-4471.pdf",
+        schema_type="DigitalDocument",
+        mime_type="application/pdf",
+        text=NAMED_INSURER_STATEMENT_TEXT,
+        expected=("organization", "financial"),
+        company_contains="Acme Mutual Insurance",
     ),
     # ---- Group 11: generic media ------------------------------------------- #
     GoldenCase(

@@ -187,11 +187,39 @@ class ContentClassifier:
                     "portfolio",
                     "ein",
                     "employer identification",
+                    # Insurance vocabulary (non-health): property/auto/liability
+                    # policies had no taxonomy home and oscillated between
+                    # organization/financial and legal/real_estate. Word-boundary
+                    # matching (_keyword_alt) keeps these from firing on
+                    # fragments; multi-word phrases ("claim number") avoid the
+                    # bare "claim"/"policy" ambiguity that collides elsewhere.
+                    "insurance",
+                    "policy",
+                    "premium",
+                    "deductible",
+                    "coverage",
+                    "insured",
+                    "policyholder",
+                    "underwriting",
+                    "claim number",
+                    "policy number",
                 ],
                 "subcategories": {
                     "tax": ["tax", "irs", "1098", "1099", "w-2", "w2", "federal", "state return"],
                     "invoices": ["invoice", "bill", "billing", "payment"],
                     "statements": ["statement", "account", "balance", "transaction"],
+                    "insurance": [
+                        "insurance",
+                        "policy",
+                        "premium",
+                        "deductible",
+                        "coverage",
+                        "insured",
+                        "policyholder",
+                        "underwriting",
+                        "claim number",
+                        "policy number",
+                    ],
                     "other": [],
                 },
             },
