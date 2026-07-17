@@ -6,7 +6,13 @@
 import { LoggerProvider, SimpleLogRecordProcessor } from '@opentelemetry/sdk-logs';
 import { OTLPLogExporter } from '@opentelemetry/exporter-logs-otlp-proto';
 import { SeverityNumber } from '@opentelemetry/api-logs';
-import { Resource } from '@opentelemetry/resources';
+import { resourceFromAttributes } from '@opentelemetry/resources';
+
+// Claude Code's telemetry env sets OTEL_SERVICE_NAME=claude-code-hooks and
+// OTEL_RESOURCE_ATTRIBUTES; the SDK's env detector would override this script's
+// resource and misattribute test data. Drop them so 'claude-code-test' wins.
+delete process.env.OTEL_SERVICE_NAME;
+delete process.env.OTEL_RESOURCE_ATTRIBUTES;
 
 const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'https://ingest.integritystudio.ai';
 const apiKey = process.env.OBTOOL_API_KEY;
@@ -34,13 +40,12 @@ const exporter = new OTLPLogExporter({
 });
 
 const loggerProvider = new LoggerProvider({
-  resource: new Resource({
+  resource: resourceFromAttributes({
     'service.name': 'claude-code-test',
     'deployment.environment': 'development',
   }),
+  processors: [new SimpleLogRecordProcessor({ exporter })],
 });
-
-loggerProvider.addLogRecordProcessor(new SimpleLogRecordProcessor(exporter));
 
 const logger = loggerProvider.getLogger('test-logger', '1.0.0');
 logger.emit({

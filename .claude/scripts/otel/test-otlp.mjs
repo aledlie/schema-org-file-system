@@ -6,7 +6,13 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-proto';
 import { trace } from '@opentelemetry/api';
-import { Resource } from '@opentelemetry/resources';
+import { resourceFromAttributes } from '@opentelemetry/resources';
+
+// Claude Code's telemetry env sets OTEL_SERVICE_NAME=claude-code-hooks and
+// OTEL_RESOURCE_ATTRIBUTES; the SDK's env detector would override this script's
+// resource and misattribute test data. Drop them so 'claude-code-test' wins.
+delete process.env.OTEL_SERVICE_NAME;
+delete process.env.OTEL_RESOURCE_ATTRIBUTES;
 
 const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'https://ingest.integritystudio.ai';
 const apiKey = process.env.OBTOOL_API_KEY;
@@ -37,7 +43,7 @@ const exporter = new OTLPTraceExporter({
 
 const sdk = new NodeSDK({
   traceExporter: exporter,
-  resource: new Resource({
+  resource: resourceFromAttributes({
     'service.name': 'claude-code-test',
     'deployment.environment': 'development',
   }),
@@ -54,6 +60,11 @@ span.end();
 
 // Give time for export
 await new Promise(resolve => setTimeout(resolve, 2000));
-await sdk.shutdown();
+try {
+  await sdk.shutdown();
+} catch (err) {
+  console.error(`Trace export failed: ${err.message}`);
+  process.exit(1);
+}
 
 console.log('Trace sent successfully!');

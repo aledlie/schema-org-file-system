@@ -5,7 +5,13 @@
  */
 import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-proto';
-import { Resource } from '@opentelemetry/resources';
+import { resourceFromAttributes } from '@opentelemetry/resources';
+
+// Claude Code's telemetry env sets OTEL_SERVICE_NAME=claude-code-hooks and
+// OTEL_RESOURCE_ATTRIBUTES; the SDK's env detector would override this script's
+// resource and misattribute test data. Drop them so 'claude-code-test' wins.
+delete process.env.OTEL_SERVICE_NAME;
+delete process.env.OTEL_RESOURCE_ATTRIBUTES;
 
 const endpoint = process.env.OTEL_EXPORTER_OTLP_ENDPOINT || 'https://ingest.integritystudio.ai';
 const apiKey = process.env.OBTOOL_API_KEY;
@@ -38,7 +44,7 @@ const reader = new PeriodicExportingMetricReader({
 });
 
 const meterProvider = new MeterProvider({
-  resource: new Resource({
+  resource: resourceFromAttributes({
     'service.name': 'claude-code-test',
     'deployment.environment': 'development',
   }),
