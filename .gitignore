@@ -91,3 +91,6 @@ htmlcov/
 # Run artifacts (stay local; untracked 2026-07-13)
 /path.json
 /person-migrate-manifest.json
+
+# Session-local TypeScript hook cache (ephemeral, per-session)
+.claude/tsc-cache/
