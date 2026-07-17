@@ -5,6 +5,30 @@ Last updated: 2026-07-16.
 
 ## Open Items
 
+### Unified scoring — Phase-3 calibration worklist
+
+Weight/threshold calibration targets for the unified scorer, from the golden suite plus the first real shadow run.
+
+**Status:** Open — engine + tooling shipped (`feat/unified-scoring`, PR #9); calibration not started.
+**Priority:** P2 (gates the Phase-4 default flip)
+**Source:** golden-suite findings + `~/Downloads` shadow dogfood (49 files), 2026-07-16
+
+Baseline evidence: shadow run over `~/Downloads` scored **42/49 (85.7%) agreement** with legacy — 41 committed / 8 low-confidence, 7 disagreements, format-drift pair (`PlacementMap_Draft.pdf`/`.png`) converging on `legal/real_estate` under unified as designed. Rerun loop: `organize-files content --scorer shadow --dry-run` → `python scripts/analyze_scoring_disagreement.py`; weight sensitivity via `python scripts/backtest_scoring.py --weights-sensitivity`.
+
+Calibration items, by observed impact:
+
+1. **Mime commit-gap** — `W_MIME (0.3) < MIN_DECISION_CONFIDENCE (0.35)`, so mime/extension-only evidence can never commit; legacy tier-6 fallback *does* rescue these. Dominant cause of the 8 low-confidence states and both `→ uncategorized` flips in the shadow run (`ChatGPT Image *.png` lost `creative/photos`, `placement_map_600dpi.png` lost `media/graphics_other`). Fix candidates: raise `W_MIME` to ~0.4, or lower the floor — verify against the golden that pins mime-cannot-override (`tests/unit/scoring/test_signal_mime_fallback.py`).
+2. **Text-content keyword collisions on large HTML blobs** — `promethease.html` (genetics report) flipped `technical/web → property/leases` via lease-vocabulary hits in a big extraction. Wants a golden fixture + either per-category evidence thresholds or extraction-length damping for oversized text. (The other text-over-extension flips in the run — `keymap_manufacturing_options.md → business/crm`, `index.html → organization/vendors` — look *favorable*; only pin the failure mode.)
+3. **Same-category subcat competition splits margins** — `personal/contacts` (personal_doc 0.81) vs `personal/employment` (text_content 0.71) lands margin ≈0.098 < `MIN_DECISION_MARGIN` (0.10) → fallback bucket, even though the *category* is undisputed. Pinned by golden `cv_without_filename_rule_is_low_margin`. Consider computing margin at category level (or aggregating subcat votes within a category) before the margin gate.
+4. **Insurance-document vocabulary gap** — USAA policy PDF: legacy `organization/financial` (company-driven) vs unified `legal/real_estate` (lease/property keywords in policy text). Neither taxonomy has an insurance home; decide the intended routing and add vocabulary or a golden.
+5. **Legacy naming traps inherited by both engines** (fix in the unified path during calibration; legacy keeps parity until Phase 5):
+   - sprite regex `^[a-z]+_\d+$` catches camera/scanner names (`IMG_2043`, `scan_0023`) → `game_assets/sprites`;
+   - "Hyphenated asset" filename rule catches any 3-token hyphenated `.png` (`invoice-page-march.png`) → `game_assets/sprites` at full confidence;
+   - filename game rule always answers `sprites` where the keyword tier's discriminator says `textures` (golden `texture_without_document_text_stays_game`);
+   - the `.mp3` "Audio file" rule (→ `audio_other`) always outranks `media_heuristic`'s podcast/music refinement (golden `media_audio_filename_rule_wins`).
+   Candidate mechanism for all four: extend the `FILENAME_WEAK_RESULTS` graduation in `src/scoring/signals/filename_pattern.py` (shipped for `media/photos_other`) to other weak catch-all rules, and/or tighten the source regexes in `shared/filename_classifier.py` (OQ #5 decomposition).
+6. **Grid-search calibration proper** (plan §6 Phase 3 / OQ #3) — replay against labeled data (`organize-files evaluate --classifier unified`, `scripts/backtest_scoring.py --labels`), tune `src/scoring/weights.py`, and commit each re-tune with its backtest report as `docs/architecture/scoring-calibration-YYYYMMDD.md`. Gate for the default flip: ≥98% agreement on currently-correct cases, ≥80% fix rate on the §1 residual audit set.
+
 ### Timeline data pinned to committed JSON — needs a populated DB
 
 `_site/timeline_data.json` is a stale committed snapshot; the current DB has no sessions to regenerate it from.
