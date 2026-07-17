@@ -5,7 +5,6 @@ Validates dependencies and reports feature availability at startup.
 """
 
 import sys
-import shutil
 from dataclasses import dataclass
 from typing import Optional
 
@@ -73,7 +72,6 @@ class SystemHealthChecker:
     def _check_pillow(self) -> None:
         """Check PIL/Pillow for image processing."""
         try:
-            from PIL import Image
             import PIL
             self.features['pillow'] = FeatureStatus(
                 name="Pillow (Image Processing)",
@@ -216,21 +214,21 @@ class SystemHealthChecker:
 
         # Check python-docx
         try:
-            import docx
+            import docx  # noqa: F401 — import IS the availability probe
             available_libs.append("docx")
         except ImportError:
             missing_libs.append("python-docx")
 
         # Check pypdf
         try:
-            import pypdf
+            import pypdf  # noqa: F401 — import IS the availability probe
             available_libs.append("pypdf")
         except ImportError:
             missing_libs.append("pypdf")
 
         # Check openpyxl
         try:
-            import openpyxl
+            import openpyxl  # noqa: F401 — import IS the availability probe
             available_libs.append("openpyxl")
         except ImportError:
             missing_libs.append("openpyxl")

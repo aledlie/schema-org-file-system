@@ -17,7 +17,7 @@ Key-Value Storage:
 """
 
 from ._time import utcnow
-from typing import Optional, List, Dict, Any
+from typing import Optional, Dict, Any
 from sqlalchemy import (
     Column, Integer, String, Float, Boolean, DateTime, Text, JSON,
     ForeignKey, Index, UniqueConstraint, Table, Enum as SQLEnum,
@@ -29,7 +29,6 @@ from sqlalchemy.orm import (
 from sqlalchemy.ext.hybrid import hybrid_property
 import enum
 import hashlib
-import json
 import uuid
 
 from .schema_org_base import SchemaOrgSerializable

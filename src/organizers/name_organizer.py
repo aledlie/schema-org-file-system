@@ -5,7 +5,6 @@ Organizes files based purely on filename patterns and filepath information.
 No content analysis, OCR, or AI vision processing.
 """
 
-import os
 import sys
 import re
 import shutil
@@ -19,7 +18,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 from shared.constants import CAMERA_VENDOR_PREFIX_PATTERNS  # noqa: E402
 from shared.file_ops import resolve_collision  # noqa: E402
 import json
-from typing import TYPE_CHECKING, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Optional, Tuple
 
 if TYPE_CHECKING:
     from src.cli_inputs import NameInputs

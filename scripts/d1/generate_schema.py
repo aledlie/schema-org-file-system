@@ -9,7 +9,6 @@ The output file is the authoritative D1 schema — do not hand-edit it.
 Edit src/storage/models.py instead, then re-run this script.
 """
 
-import re
 import sys
 from pathlib import Path
 

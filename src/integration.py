@@ -7,7 +7,6 @@ API endpoints, and bulk export functionality.
 
 from typing import Any, Dict, List, Optional, Union
 from enum import Enum
-from xml.etree.ElementTree import Element, SubElement, tostring
 from html import escape
 import json
 

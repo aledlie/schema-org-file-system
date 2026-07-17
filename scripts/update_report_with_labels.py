@@ -9,7 +9,7 @@ from the labeling sessions stored in the database.
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Dict, Tuple
 
 from shared.db_utils import db_connection
 

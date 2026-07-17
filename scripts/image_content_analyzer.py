@@ -9,7 +9,6 @@ descriptions, and confidence scores.
 import argparse
 import csv
 import uuid
-from datetime import datetime
 from pathlib import Path
 from typing import List, Tuple, Dict
 

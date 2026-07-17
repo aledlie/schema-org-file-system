@@ -13,10 +13,10 @@ from pathlib import Path
 from contextlib import contextmanager
 from cost_roi_calculator import CostROICalculator, CostTracker
 try:
-    from .constants import SEPARATOR_WIDTH_LARGE, SEPARATOR_WIDTH_SMALL
+    from .constants import SEPARATOR_WIDTH_LARGE
     from .enrichment import cached_stat
 except ImportError:
-    from constants import SEPARATOR_WIDTH_LARGE, SEPARATOR_WIDTH_SMALL
+    from constants import SEPARATOR_WIDTH_LARGE
     from enrichment import cached_stat
 
 

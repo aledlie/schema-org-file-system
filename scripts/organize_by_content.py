@@ -4,13 +4,11 @@ Organize renamed files into Schema.org-based folder structure based on content t
 Uses the CLIP classification results to determine proper organization.
 """
 
-import os
-import sys
 import json
 import shutil
 from pathlib import Path
 from collections import defaultdict
-from typing import Dict, Tuple
+from typing import Dict
 
 from shared.constants import CONTENT_TO_SCHEMA
 from shared.file_ops import resolve_collision

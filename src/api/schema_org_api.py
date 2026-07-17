@@ -6,22 +6,17 @@ Provides JSON-LD representations of entities in schema.org format.
 Supports single entity retrieval and bulk export with filtering.
 """
 
-from typing import List, Dict, Any, Optional
-from datetime import datetime
-from fastapi import FastAPI, HTTPException, Query, Depends
-from fastapi.responses import JSONResponse
+from typing import Dict, Any
+from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session, selectinload, joinedload
 
 from storage.models import (
-    File, Category, Company, Person, Location,
-    Base
+    File, Category, Company, Person, Location
 )
-from storage.models import init_db, get_session
+from storage.models import get_session
 from storage.schema_org_exporter import SchemaOrgExporter
 from storage.schema_org_context import get_context_document
 from api.schema_org_models import (
-    FileSchemaOrg, CategorySchemaOrg, CompanySchemaOrg,
-    PersonSchemaOrg, LocationSchemaOrg, BulkExportResponse,
     FileFilterParams, CategoryFilterParams, CompanyFilterParams,
     PersonFilterParams, LocationFilterParams, BulkExportParams,
     ErrorResponse
