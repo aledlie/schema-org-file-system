@@ -88,6 +88,11 @@ class ContentClassifier:
     preserve the historical public API.
     """
 
+    # Opening-position window (chars): a curated known company named within this
+    # prefix is treated as the document's letterhead subject and overrides
+    # topical scoring; named later it is a passing mention (Option C).
+    _KNOWN_COMPANY_LETTERHEAD_CHARS = 60
+
     def __init__(self) -> None:
         """Initialize classifier with keyword patterns."""
         # Entity detection (company/people/relationship extraction) lives in a
@@ -750,11 +755,16 @@ class ContentClassifier:
         # FALLBACK only; they no longer override genuine topical content.
         # Entity attribution is a side-channel, not a filing driver (Option C),
         # so a technical doc that merely mentions a known company still files
-        # by its topic — the company rides along as the extracted entity.
+        # by its topic — the company rides along as the extracted entity. The
+        # exception is a curated org named in the LETTERHEAD position (see
+        # below): there it is the document's subject, not a passing mention.
         known_hit: tuple[str, str, str | None] | None = None
+        known_hit_pos = -1
         for phrase, mapping in known_text_companies.items():
-            if phrase in text_lower:
+            pos = text_lower.find(phrase)
+            if pos != -1:
                 known_hit = mapping
+                known_hit_pos = pos
                 break
 
         # Extract company names and people names
@@ -825,6 +835,14 @@ class ContentClassifier:
             if known_hit:
                 return (known_hit[0], known_hit[1], primary_company, people_names)
             return ("uncategorized", "other", primary_company, people_names)
+
+        # A curated known company named in the LETTERHEAD (document opening) is
+        # the filing subject and overrides topical content — a provider's own
+        # letter files under the provider org even though it is dense in the
+        # provider's topic vocabulary. Named later, it is a passing mention and
+        # topical scoring wins (Option C: attribution is a side-channel).
+        if known_hit and 0 <= known_hit_pos < self._KNOWN_COMPANY_LETTERHEAD_CHARS:
+            return (known_hit[0], known_hit[1], primary_company, people_names)
 
         # Get category with highest score
         best_category = max(scores.items(), key=lambda x: x[1])[0]
