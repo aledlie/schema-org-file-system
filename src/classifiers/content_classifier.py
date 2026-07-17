@@ -746,13 +746,22 @@ class ContentClassifier:
             ),
             "zouk": ("zouk", "events", None),
         }
-        for phrase, (cat, subcat, canonical_name) in known_text_companies.items():
+        # Known companies seed the canonical entity name and a category
+        # FALLBACK only; they no longer override genuine topical content.
+        # Entity attribution is a side-channel, not a filing driver (Option C),
+        # so a technical doc that merely mentions a known company still files
+        # by its topic — the company rides along as the extracted entity.
+        known_hit: tuple[str, str, str | None] | None = None
+        for phrase, mapping in known_text_companies.items():
             if phrase in text_lower:
-                return (cat, subcat, canonical_name, self.extract_people_names(text))
+                known_hit = mapping
+                break
 
         # Extract company names and people names
         company_names = self.extract_company_names(text)
         primary_company: str | None = company_names[0] if company_names else None
+        if known_hit and known_hit[2] and not primary_company:
+            primary_company = known_hit[2]
 
         people_names = self.extract_people_names(text)
 
@@ -811,6 +820,10 @@ class ContentClassifier:
         scores, category_subcats = self._count_category_scores(combined)
 
         if not scores:
+            # No topical keywords — fall back to the known-company category
+            # (e.g. a bare letterhead/invoice that only names the company).
+            if known_hit:
+                return (known_hit[0], known_hit[1], primary_company, people_names)
             return ("uncategorized", "other", primary_company, people_names)
 
         # Get category with highest score
