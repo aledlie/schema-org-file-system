@@ -229,6 +229,63 @@ def cmd_prune_person(args: argparse.Namespace) -> None:
         sys.exit(1)
 
 
+def cmd_reconcile(args: argparse.Namespace) -> None:
+    """Reconcile the graph store after files are moved/deleted on disk.
+
+    Two independent operations (combine freely):
+      --set-category  retarget one file's category edge to match its new folder
+      --prune-missing remove File rows whose paths no longer exist on disk
+    Dry-run by default; --apply backs up the database first, then writes.
+    """
+    import shutil
+    from datetime import datetime
+
+    from storage.graph_store import GraphStore
+
+    if not args.set_category and not args.prune_missing:
+        print("Nothing to do: pass --set-category and/or --prune-missing")
+        sys.exit(2)
+    if args.subcategory and not args.set_category:
+        print("--subcategory requires --set-category")
+        sys.exit(2)
+
+    apply = bool(args.apply)
+    label = "APPLIED" if apply else "DRY RUN"
+
+    if apply:
+        db_file = Path(args.db_path)
+        if db_file.exists():
+            stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            for suffix in ("", "-wal", "-shm"):
+                src = Path(str(db_file) + suffix)
+                if src.exists():
+                    shutil.copy2(src, Path(f"{db_file}.bak-{stamp}{suffix}"))
+            print(f"Backed up database to {db_file}.bak-{stamp}")
+
+    store = GraphStore(args.db_path)
+
+    if args.set_category:
+        file_ref, category = args.set_category
+        summary = store.set_file_category(
+            file_ref, category, args.subcategory, dry_run=not apply
+        )
+        if summary is None:
+            print(f"[{label}] set-category: no file matching {file_ref!r}")
+            sys.exit(1)
+        old = ", ".join(summary["old_categories"]) or "(none)"
+        print(
+            f"[{label}] {summary['file_id'][:12]}… category: "
+            f"[{old}] -> {summary['new_category']}"
+        )
+        print(f"    {summary['path']}")
+
+    if args.prune_missing:
+        result = store.prune_missing_files(dry_run=not apply)
+        print(f"[{label}] prune-missing: {result['removed']} stale file row(s)")
+        for entry in result["files"]:
+            print(f"    {entry['file_id'][:12]}… {entry['path']}")
+
+
 def cmd_health(args: argparse.Namespace) -> None:
     """Run system health check."""
     from health_check import check_system
@@ -637,6 +694,41 @@ For more help on a specific command:
         "--apply", action="store_true", help="Delete (default is dry-run)"
     )
     prune_person_parser.set_defaults(func=cmd_prune_person)
+
+    # Reconcile graph store after on-disk moves/deletes
+    reconcile_parser = subparsers.add_parser(
+        "reconcile",
+        help="Fix category edges and remove stale file rows after disk moves",
+        description="Reconcile the graph store with the filesystem. "
+        "--set-category retargets one file's category edge to match its "
+        "new folder; --prune-missing deletes File rows whose current/original "
+        "paths no longer exist on disk. Files are never touched. Dry-run by "
+        "default; --apply backs up the database first, then writes.",
+    )
+    reconcile_parser.add_argument(
+        "--set-category",
+        nargs=2,
+        metavar=("FILE", "CATEGORY"),
+        help="Set the category edge for FILE (id or stored path) to CATEGORY, "
+        "replacing existing edges",
+    )
+    reconcile_parser.add_argument(
+        "--subcategory",
+        default=None,
+        help="Subcategory under CATEGORY (only with --set-category)",
+    )
+    reconcile_parser.add_argument(
+        "--prune-missing",
+        action="store_true",
+        help="Delete File rows whose paths no longer exist on disk",
+    )
+    reconcile_parser.add_argument(
+        "--db-path", default=DEFAULT_DB_PATH, help="Path to SQLite database"
+    )
+    reconcile_parser.add_argument(
+        "--apply", action="store_true", help="Write changes (default is dry-run)"
+    )
+    reconcile_parser.set_defaults(func=cmd_reconcile)
 
     # Health check
     health_parser = subparsers.add_parser(

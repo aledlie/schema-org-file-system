@@ -326,6 +326,45 @@ BUSINESS_PLAN_TEXT = (
     "milestones, and funding requirements are described in this business plan."
 )
 
+# SCRUBBED synthetic health-insurance CARD BACK (UHC-style) — invented, NO real
+# member/barcode data. Real-world fixture (insurance_card_back.png): the reverse
+# of a health plan ID card is contact-heavy (member services, provider line,
+# medical/pharmacy claims mailing addresses) with sparse but unambiguous
+# health-insurance vocabulary (health plan, PCP referral, in-network care,
+# coverage). Companion to HEALTH_INSURANCE_EOB_TEXT: an OCR'd card back commits
+# to medical/insurance (not financial/insurance) even with no policy/premium
+# terms, because the health-plan/PCP/coverage vocabulary is medical-specific.
+INSURANCE_CARD_BACK_OCR_TEXT = (
+    "Health plan member card. Members: sign in to the member portal to find "
+    "in-network care, pay your bills, and see your claims. You need a referral "
+    "from your PCP to see specialists. Member Services and Care Support line "
+    "listed. Providers and provider services line listed. Medical Claims mailing "
+    "address enclosed. Pharmacists line and Pharmacy Claims mailing address for "
+    "the prescription drug plan. This health insurance coverage card lists "
+    "medical and pharmacy benefits for the covered member."
+)
+
+# SCRUBBED synthetic court/probation informed-consent ("Level of Care Plan") —
+# invented, NO real name/DOB/offense/DocuSign data. Real-world fixture
+# (Complete_with_Docusign_CE24009074LOC.pdf): a counseling-services consent form
+# tied to a court-ordered assessment. The legacy content chain misrouted it to
+# business/clients (the "client acknowledges"/"balance due" vocabulary reads
+# vendor-ish); the unified scorer's LegalContentSignal + text_content both vote
+# legal/litigation (court/docket/probation/personal-bond terms) and outscore the
+# business/clients text vote — the legal-outscores-personal emergent behavior
+# also suppresses the personal/legal split. Guards the real reclassification we
+# corrected in the graph store (business/clients -> legal).
+LEVEL_OF_CARE_PLAN_TEXT = (
+    "Level of Care Plan and informed consent for counseling services. "
+    "Recommendations follow a court-ordered assessment. Completion of the "
+    "recommendations will be reported to the courts or the probation department. "
+    "If you were referred as a condition of your personal bond, non-compliance "
+    "may result in the revocation of your personal bond by Pretrial Services. "
+    "The client acknowledges the offense on the docket and agrees to complete "
+    "the education program ordered by the court. Client signature and staff "
+    "signature with dates. Assessment fee and current balance due are shown."
+)
+
 GOLDEN_CASES = [
     # ---- Group 1: org-named PDFs (person/org confusion) ------------------- #
     GoldenCase(
@@ -396,6 +435,21 @@ GOLDEN_CASES = [
         text=COURT_MOTION_TEXT,
         expected=("legal", "litigation"),
         people_contains="Jane Smith",
+    ),
+    GoldenCase(
+        # Real-world fixture (DocuSigned "Level of Care Plan"): a counseling
+        # consent form tied to a court-ordered assessment. The legacy content
+        # chain misrouted it to business/clients on "client"/"balance due"
+        # vocabulary; LegalContentSignal + text_content both vote legal/litigation
+        # (court/docket/probation/personal-bond terms) and outscore that vote,
+        # while legal-outscores-personal suppresses the personal/legal split.
+        # Guards the graph-store reclassification (business/clients -> legal).
+        name="court_ordered_care_plan_beats_business_clients",
+        filename="Complete_with_Docusign_CE24009074LOC.pdf",
+        schema_type="DigitalDocument",
+        mime_type="application/pdf",
+        text=LEVEL_OF_CARE_PLAN_TEXT,
+        expected=("legal", "litigation"),
     ),
     # ---- Group 5: game-keyword collisions (text outscores game) ----------- #
     GoldenCase(
@@ -597,6 +651,20 @@ GOLDEN_CASES = [
         text=NAMED_CASUALTY_POLICY_TEXT,
         expected=("financial", "insurance"),
         company_contains="Lone Star Casualty",
+    ),
+    GoldenCase(
+        # Real-world fixture: OCR'd back of a health-plan ID card. The
+        # descriptive stem ("insurance_card_back") fires only the weak "Named
+        # image" filename rule (media/photos_other @ 0.4); the health-insurance
+        # OCR vocabulary makes text_content's medical/insurance vote win over
+        # both that prior and the financial/insurance vote — a card back with no
+        # premium/policy terms still commits to medical, not financial.
+        name="health_insurance_card_back_routes_medical_insurance",
+        filename="insurance_card_back.png",
+        schema_type="ImageObject",
+        mime_type="image/png",
+        ocr_text=INSURANCE_CARD_BACK_OCR_TEXT,
+        expected=("medical", "insurance"),
     ),
     # ---- Group 13: business plan (content beats extension-only filepath) ---- #
     GoldenCase(

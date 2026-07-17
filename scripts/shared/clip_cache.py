@@ -58,6 +58,34 @@ def _save_embedding(path: Path, emb) -> None:
     np.save(path, emb)
 
 
+def get_or_compute_embedding(image_path: Path):
+    """Return the cached [D] fp32 image embedding, encoding + caching on miss.
+
+    Single-homed embedding accessor shared by the interior-probe prototype and
+    the runtime ``InteriorSignal``. Returns ``None`` when numpy/CLIP is
+    unavailable or the image cannot be encoded, so callers degrade to a no-op.
+    """
+    if not CLIP_CACHE_AVAILABLE:
+        return None
+    try:
+        # _file_identity stats the file — a missing/unreadable path (e.g. a
+        # synthetic test context) must no-op, not raise.
+        cpath = _cache_path(_file_identity(image_path))
+    except Exception:
+        return None
+    emb = _load_embedding(cpath)
+    if emb is not None:
+        return emb
+    try:
+        from shared.clip_utils import get_clip_classifier
+
+        emb = get_clip_classifier().encode_image_to_numpy(image_path)
+    except Exception:
+        return None
+    _save_embedding(cpath, emb)
+    return emb
+
+
 def store_embedding(image_path: Path, image_emb) -> None:
     """Persist a precomputed [D] embedding to the disk cache if not already present.
 

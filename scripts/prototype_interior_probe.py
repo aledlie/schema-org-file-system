@@ -32,7 +32,6 @@ import argparse
 import csv
 import os
 import sqlite3
-import sys
 from pathlib import Path
 from typing import Iterable, List, Optional, Sequence, Tuple
 
@@ -49,17 +48,13 @@ from sklearn.preprocessing import StandardScaler
 
 # Reuse the exact production cache so embeddings are byte-identical and this
 # script also warms the cache for future runs.
-from shared.clip_cache import (  # noqa: E402
-    _cache_path,
-    _file_identity,
-    _load_embedding,
-    _save_embedding,
-)
-from shared.clip_utils import get_clip_classifier  # noqa: E402
+from shared.clip_cache import get_or_compute_embedding  # noqa: E402
 
 _IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".webp", ".heic", ".avif", ".bmp", ".gif", ".tiff"}
 _DEFAULT_MANIFEST = Path("results/interior_probe_labels.csv")
 _DEFAULT_DB = Path("results/file_organization.db")
+# Persisted probe artifact loaded by the runtime InteriorSignal.
+_DEFAULT_PROBE = Path("results/interior_probe.joblib")
 _REFERENCE_IMAGE = Path(
     os.path.expanduser("~/Downloads/ChatGPT Image Oct 31, 2025, 01_30_52 PM.png")
 )
@@ -76,23 +71,14 @@ _THRESHOLD_SWEEP = (0.3, 0.4, 0.5, 0.6, 0.7)
 
 
 def load_embedding(path: Path) -> Optional[np.ndarray]:
-    """Return the cached [D] fp32 embedding for ``path``; encode + store on miss.
+    """Cached [D] fp32 embedding for ``path`` (encode + store on miss).
 
-    Mirrors ``clip_cache.get_cached_embedding`` but returns the raw vector
-    instead of label scores. Returns None if the file is unreadable.
+    Delegates to the single-homed ``clip_cache.get_or_compute_embedding`` — the
+    same accessor the runtime ``InteriorSignal`` uses — so prototype and
+    production score byte-identical vectors. None if unavailable/unreadable.
     """
-    key = _file_identity(path)
-    cpath = _cache_path(key)
-    emb = _load_embedding(cpath)
-    if emb is not None:
-        return np.asarray(emb, dtype=np.float64)
-    try:
-        emb = get_clip_classifier().encode_image_to_numpy(path)
-    except Exception as exc:  # unreadable / decode failure — skip, don't abort
-        print(f"  ! encode failed for {path}: {exc}", file=sys.stderr)
-        return None
-    _save_embedding(cpath, emb)
-    return np.asarray(emb, dtype=np.float64)
+    emb = get_or_compute_embedding(path)
+    return None if emb is None else np.asarray(emb, dtype=np.float64)
 
 
 def load_matrix(rows: Sequence[Tuple[Path, int]]) -> Tuple[np.ndarray, np.ndarray, List[Path]]:
@@ -358,6 +344,41 @@ def _score_reference(
 
 
 # --------------------------------------------------------------------------- #
+# train — persist the fitted probe for the runtime InteriorSignal              #
+# --------------------------------------------------------------------------- #
+
+
+def cmd_train(args: argparse.Namespace) -> int:
+    import joblib
+
+    rows = _read_manifests(args.manifest)
+    if not rows:
+        print("No manifest rows. Run `gather` first.")
+        return 1
+    X, y, kept = load_matrix(rows)
+    n_pos, n_neg = int((y == 1).sum()), int((y == 0).sum())
+    if n_pos < 2 or n_neg < 2:
+        print(f"Refusing to train: need >= 2 per class (have {n_pos} pos / {n_neg} neg).")
+        return 1
+    probe = make_probe(args.C).fit(X, y)
+    artifact = {
+        "pipeline": probe,
+        "meta": {
+            "n_pos": n_pos,
+            "n_neg": n_neg,
+            "C": args.C,
+            "seed": _SEED,
+            "feature_dim": int(X.shape[1]),
+        },
+    }
+    out = Path(args.out)
+    out.parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(artifact, out)
+    print(f"Trained on {n_pos} pos / {n_neg} neg (dim={X.shape[1]}) -> {out}")
+    return 0
+
+
+# --------------------------------------------------------------------------- #
 # CLI                                                                          #
 # --------------------------------------------------------------------------- #
 
@@ -391,12 +412,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="also score the interior reference render (interior task only)",
     )
     e.set_defaults(func=cmd_eval)
+
+    t = sub.add_parser("train", help="fit the probe on a manifest and persist a joblib artifact")
+    t.add_argument("--manifest", action="append", default=None, help="manifest CSV (repeatable)")
+    t.add_argument("--C", type=float, default=1.0, help="inverse L2 strength (sklearn C)")
+    t.add_argument("--out", default=str(_DEFAULT_PROBE), help="output joblib artifact path")
+    t.set_defaults(func=cmd_train)
     return p
 
 
 def main(argv: Optional[Sequence[str]] = None) -> int:
     args = build_parser().parse_args(argv)
-    if args.cmd == "eval" and not args.manifest:
+    if args.cmd in ("eval", "train") and not args.manifest:
         args.manifest = [str(_DEFAULT_MANIFEST)]
     return args.func(args)
 

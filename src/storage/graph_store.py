@@ -872,6 +872,169 @@ class GraphStore:
             if close_session:
                 session.close()
 
+    def _find_file(self, file_id_or_path: str, session: Session) -> Optional[File]:
+        """Resolve a File by primary-key id, then by current/original path.
+
+        Path lookup matches the stored column value directly (not a
+        hash-of-path), so a file that was moved after organization still
+        resolves by its new ``current_path``.
+        """
+        file = session.query(File).filter(File.id == file_id_or_path).first()
+        if file:
+            return file
+        return (
+            session.query(File)
+            .filter(
+                or_(
+                    File.current_path == file_id_or_path,
+                    File.original_path == file_id_or_path,
+                )
+            )
+            .first()
+        )
+
+    def set_file_category(
+        self,
+        file_id_or_path: str,
+        category_name: str,
+        subcategory_name: Optional[str] = None,
+        dry_run: bool = False,
+        session: Session = None,
+    ) -> Optional[Dict[str, Any]]:
+        """
+        Replace a file's category edge(s) with a single category/subcategory.
+
+        Resolves the file by primary-key id or by current_path/original_path.
+        All existing file->category edges are dropped (decrementing each
+        category's file_count) and one new edge is attached. Files on disk are
+        never touched. Use when a file was moved to a folder that no longer
+        matches its recorded category edge.
+
+        Args:
+            file_id_or_path: File primary key (SHA-256 hex) or a path stored
+                in current_path/original_path
+            category_name: New top-level category (matched/created lowercase)
+            subcategory_name: Optional subcategory under category_name
+            dry_run: When True, report the change without applying it
+            session: Optional existing session
+
+        Returns:
+            Summary dict with file_id/path/old_categories/new_category, or
+            None if the file isn't found
+        """
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            file = self._find_file(file_id_or_path, session)
+            if not file:
+                return None
+
+            new_path = (
+                f"{category_name}/{subcategory_name}"
+                if subcategory_name
+                else category_name
+            )
+            summary = {
+                'file_id': file.id,
+                'path': file.current_path or file.original_path,
+                'old_categories': [c.full_path for c in file.categories],
+                'new_category': new_path,
+            }
+            if dry_run:
+                return summary
+
+            for category in list(file.categories):
+                file.categories.remove(category)
+                category.file_count = max((category.file_count or 0) - 1, 0)
+
+            self.add_file_to_category(
+                file.id, category_name, subcategory_name, session=session
+            )
+
+            if close_session:
+                session.commit()
+            return summary
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
+    def prune_missing_files(
+        self,
+        dry_run: bool = False,
+        session: Session = None,
+    ) -> Dict[str, Any]:
+        """
+        Delete File rows whose current_path and original_path are both gone.
+
+        A row is stale when neither path exists on disk. Removing it drops the
+        file's category/person edges (decrementing the respective file_counts),
+        clears company/location edges, and deletes the file's cost_records,
+        schema_metadata, and any FileRelationship rows referencing it — all
+        required because SQLite foreign-key enforcement is enabled. Files
+        present on disk are never affected.
+
+        Args:
+            dry_run: When True, report what would be removed without changes
+            session: Optional existing session
+
+        Returns:
+            {'removed': N, 'files': [{'file_id': id, 'path': path}, ...]}
+        """
+        close_session = session is None
+        session = session or self.get_session()
+
+        try:
+            removed: List[Dict[str, Any]] = []
+            for file in session.query(File).all():
+                current, original = file.current_path, file.original_path
+                on_disk = (current and Path(current).exists()) or (
+                    original and Path(original).exists()
+                )
+                if on_disk:
+                    continue
+
+                removed.append({'file_id': file.id, 'path': current or original})
+                if dry_run:
+                    continue
+
+                for category in list(file.categories):
+                    file.categories.remove(category)
+                    category.file_count = max((category.file_count or 0) - 1, 0)
+                for person in list(file.people):
+                    file.people.remove(person)
+                    person.file_count = max((person.file_count or 0) - 1, 0)
+                file.companies.clear()
+                file.locations.clear()
+
+                for child in (file.cost_records or []):
+                    session.delete(child)
+                if file.schema_metadata is not None:
+                    session.delete(file.schema_metadata)
+                session.query(FileRelationship).filter(
+                    or_(
+                        FileRelationship.source_file_id == file.id,
+                        FileRelationship.target_file_id == file.id,
+                    )
+                ).delete(synchronize_session=False)
+
+                session.delete(file)
+
+            if not dry_run and close_session:
+                session.commit()
+            return {'removed': len(removed), 'files': removed}
+
+        except Exception as e:
+            session.rollback()
+            raise e
+        finally:
+            if close_session:
+                session.close()
+
     # =========================================================================
     # Location Operations
     # =========================================================================

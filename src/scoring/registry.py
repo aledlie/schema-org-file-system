@@ -16,6 +16,7 @@ from .signals.filename_pattern import FilenamePatternSignal
 from .signals.filepath import FilepathSignal
 from .signals.game_asset import GameAssetSignal
 from .signals.identity_document import IdentityDocumentSignal
+from .signals.interior import InteriorSignal
 from .signals.kie_structured import KieStructuredSignal
 from .signals.legal_content import LegalContentSignal
 from .signals.media_heuristic import MediaHeuristicSignal
@@ -67,6 +68,9 @@ def build_default_signals(
         signals.append(OrganizationKeywordSignal(classifier))  # W_ORG = 1.0
         signals.append(PersonalDocSignal(classifier))  # W_PERSON = 0.9
         signals.append(LegalContentSignal(classifier))  # W_LEGAL = 0.85
+    # Always-on (no classifier dep) — trained CLIP-embedding interior probe (C1).
+    # W_INTERIOR = 0.85; no-ops when its joblib artifact / CLIP is absent.
+    signals.append(InteriorSignal())  # W_INTERIOR = 0.85
     signals.append(
         GameAssetSignal(
             sprite_keywords=game_sprite_keywords,  # None → shared constant
