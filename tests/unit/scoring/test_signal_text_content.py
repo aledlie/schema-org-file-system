@@ -154,6 +154,74 @@ class TestRunnerUpEmissions:
         )
 
 
+class TestWinnerKeywordScaling:
+    """Winner confidence must use its normalized keyword score, not raw length_factor.
+
+    classify_content always returns the max keyword scorer today, so normalized=1.0
+    in every real-classifier test. These tests use a mock classifier to pin the
+    correct formula (length_factor * normalized_score) against regressions where
+    the winner is NOT the top keyword scorer (entity-driven or override paths).
+    """
+
+    def _make_mock_classifier(self, winner_cat: str, winner_sub: str, distribution: dict):
+        class _Mock:
+            def classify_content(self, text, filename):
+                return (winner_cat, winner_sub, None, [])
+
+            def score_categories_detailed(self, text, filename):
+                return distribution
+
+        return _Mock()
+
+    def test_winner_confidence_uses_keyword_strength(self) -> None:
+        # Mock: classify_content returns "legal" but the keyword distribution
+        # says financial scored 3× higher (legal normalized = 1/3).
+        classifier = self._make_mock_classifier(
+            winner_cat="legal",
+            winner_sub="contracts",
+            distribution={
+                "financial": ("invoices", 1.0),
+                "legal": ("contracts", 1 / 3),
+            },
+        )
+        signal = TextContentSignal(classifier)
+        text = "x" * TEXT_LENGTH_FULL_CHARS  # full length → length_factor = 1.0
+        ctx = make_document_ctx(text)
+        emissions = signal.run(ctx)
+        winner = next(e for e in emissions if e.category == "legal")
+        # Must be 1/3, NOT 1.0 (raw length_factor).
+        assert winner.confidence == pytest.approx(1 / 3)
+
+    def test_winner_confidence_scales_with_both_length_and_keyword_strength(self) -> None:
+        half_chars = TEXT_LENGTH_FULL_CHARS // 2
+        classifier = self._make_mock_classifier(
+            winner_cat="legal",
+            winner_sub="contracts",
+            distribution={"legal": ("contracts", 0.5)},
+        )
+        signal = TextContentSignal(classifier)
+        text = "x" * half_chars  # length_factor = 0.5
+        ctx = make_document_ctx(text)
+        emissions = signal.run(ctx)
+        winner = next(e for e in emissions if e.category == "legal")
+        assert winner.confidence == pytest.approx(0.5 * 0.5)  # length × keyword
+
+    def test_winner_absent_from_distribution_defaults_to_full_confidence(self) -> None:
+        # Entity-driven winner (e.g. known-company fallback): not in keyword distribution.
+        classifier = self._make_mock_classifier(
+            winner_cat="organization",
+            winner_sub="vendors",
+            distribution={},  # no keyword hits → normalize_scores = {}
+        )
+        signal = TextContentSignal(classifier)
+        text = "x" * TEXT_LENGTH_FULL_CHARS
+        ctx = make_document_ctx(text)
+        # classify_content returns "organization" (non-uncategorized) so run() proceeds.
+        emissions = signal.run(ctx)
+        winner = next(e for e in emissions if e.category == "organization")
+        assert winner.confidence == pytest.approx(1.0)  # default 1.0, not 0.0
+
+
 class TestUncategorized:
     def test_no_keyword_text_emits_nothing(self, signal: TextContentSignal) -> None:
         assert signal.run(make_document_ctx(NO_KEYWORD_TEXT)) == []

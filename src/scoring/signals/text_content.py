@@ -77,11 +77,12 @@ class TextContentSignal:
             scored_category: normalized for scored_category, (_, normalized) in distribution.items()
         }
 
+        winner_normalized = normalized_scores.get(category, 1.0)
         emissions = [
             CategoryScore(
                 category=category,
                 subcategory=subcategory,
-                confidence=length_factor,
+                confidence=length_factor * winner_normalized,
                 signal_name=self.name,
                 evidence={
                     EVIDENCE_COMPANY: company_name,
