@@ -51,7 +51,11 @@ export const otelTracingTest = base.extend<OtelTracingFixtures>({
           message: testInfo.error?.message || 'Test failed'
         });
         if (testInfo.error) {
-          testSpan.recordException(testInfo.error);
+          testSpan.recordException({
+            name: 'TestError',
+            message: testInfo.error.message,
+            stack: testInfo.error.stack,
+          });
         }
       }
     } finally {

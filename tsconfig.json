@@ -14,9 +14,8 @@
     "noEmit": true,
     "isolatedModules": true,
     "types": ["node"],
-    "baseUrl": ".",
     "paths": {
-      "@fixtures/*": ["tests/e2e/fixtures/*"]
+      "@fixtures/*": ["./tests/e2e/fixtures/*"]
     }
   },
   "include": [

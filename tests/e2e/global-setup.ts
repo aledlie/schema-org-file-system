@@ -1,7 +1,7 @@
 import { FullConfig } from '@playwright/test';
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
-import { Resource } from '@opentelemetry/resources';
+import { resourceFromAttributes } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 import { v4 as uuidv4 } from 'uuid';
 import fs from 'fs';
@@ -56,7 +56,7 @@ async function globalSetup(config: FullConfig): Promise<void> {
       });
 
       sdk = new NodeSDK({
-        resource: new Resource({
+        resource: resourceFromAttributes({
           [ATTR_SERVICE_NAME]: 'playwright-e2e',
           [ATTR_SERVICE_VERSION]: '1.0.0',
           'test.run_id': runId,
