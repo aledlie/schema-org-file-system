@@ -1,7 +1,7 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-07-17.
+Last updated: 2026-07-17 (added `PHOTO_PROPERTY_CONFIDENCE` re-tune item).
 
 ## Open Items
 
@@ -67,5 +67,18 @@ Candidates found so far:
 2. **`Technical/` extension map overlap.** `content_organizer.py`'s extension map (~lines 240-330) overlaps `mime_classifier.py`'s extension routing — two extension→category tables that can drift.
 
 Both candidates are recorded in the review doc's "Out-of-scope observations": [`docs/reviews/SCRIPTS_SRC_DUPLICATION_AUDIT.md`](reviews/SCRIPTS_SRC_DUPLICATION_AUDIT.md).
+
+### `PHOTO_PROPERTY_CONFIDENCE` re-tune for `Media/Interiors` commit margin
+
+`PhotoCompositionSignal`'s home-interior flag routes to `media/interiors_other` (folder `Media/Interiors`, schema.org `Room`) but scores `PHOTO_PROPERTY_CONFIDENCE(0.7) × W_PEOPLE_PHOTO(0.65) = 0.455` — only 0.055 over an image's `mime_fallback` vote (`0.4`). That lead is below `MIN_DECISION_MARGIN(0.10)`, so an interior photo whose only signals are composition + mime routes to `LOW_CONFIDENCE_FALLBACK` instead of committing to `Media/Interiors`. The `Room` schema override is wired but effectively unreachable for the common two-signal case.
+
+**Status:** Open — not committed work; calibration change with eval impact.
+**Priority:** P3
+**Source:** `Media/Interiors` / schema.org `Room` folder addition, 2026-07-17
+
+- **Do not eyeball the bump.** Per the Phase-3 calibration process (`src/scoring/weights.py` header — "treat this module as versioned data and commit each re-tune with its backtest report"), any change to `PHOTO_PROPERTY_CONFIDENCE` (or `W_PEOPLE_PHOTO`) must be backed by a `results/file_organization.db` backtest, committed with the report.
+- **Target invariant:** `PHOTO_PROPERTY_CONFIDENCE × W_PEOPLE_PHOTO − (MIME_MATCH_CONFIDENCE × W_MIME) ≥ MIN_DECISION_MARGIN`, i.e. `conf ≥ (0.4 + 0.10) / 0.65 ≈ 0.77`, so interiors commit over the mime-only floor.
+- **Regression guard:** measure false positives — staged/real-estate listing photos and any non-interior images the analyzer flags `is_property_mgmt` — before raising, since a higher confidence also strengthens every interior vote against genuine content winners.
+- **Legacy parity note:** the legacy `_classify_photo_composition` still routes interiors to `property_management/other`; a unified re-tune widens the shadow legacy-vs-unified disagreement for interior photos until the legacy chain is retired (Phase 5).
 
 
