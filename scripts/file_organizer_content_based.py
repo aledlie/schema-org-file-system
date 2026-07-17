@@ -272,7 +272,13 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         """
         return self._file_processor._maybe_rename_image(file_path, dry_run)
 
-    def organize_file(self, file_path: Path, dry_run: bool = False, force: bool = False) -> Dict:
+    def organize_file(
+        self,
+        file_path: Path,
+        dry_run: bool = False,
+        force: bool = False,
+        session_id: Optional[str] = None,
+    ) -> Dict:
         """
         Organize a single file based on content.
 
@@ -280,11 +286,15 @@ class ContentBasedFileOrganizer(ContentOrganizer):
             file_path: Path to the file
             dry_run: If True, don't actually move files
             force: If True, re-organize even if already in correct location
+            session_id: Optional organization-session id to link the file to
+                (``files.session_id``); None leaves it unlinked.
 
         Returns:
             Dictionary with organization details
         """
-        return self._file_processor.organize_file(file_path, dry_run=dry_run, force=force)
+        return self._file_processor.organize_file(
+            file_path, dry_run=dry_run, force=force, session_id=session_id
+        )
 
     def scan_directory(self, directory: Path) -> List[Path]:
         """Scan directory for files to organize."""

@@ -30,7 +30,7 @@ W_CLIP = 0.7  # ClipVisionSignal — 20-prompt CLIP pass
 W_MEDIA = 0.65  # MediaHeuristicSignal — extension/stem/EXIF media routing
 W_PEOPLE_PHOTO = 0.65  # PhotoCompositionSignal — people / home-interior flags
 W_PATH = 0.6  # FilepathSignal — extension/filename → Technical/* paths
-W_MIME = 0.3  # MimeFallbackSignal — deliberately too weak to override anything
+W_MIME = 0.4  # MimeFallbackSignal — see note below (commits alone, yields to content)
 
 # --------------------------------------------------------------------------- #
 # Signal-internal confidence scaling shared with the legacy image path          #
@@ -62,6 +62,18 @@ MIN_DECISION_CONFIDENCE = 0.35
 
 # Required lead over the runner-up to commit the winner.
 MIN_DECISION_MARGIN = 0.10
+
+# W_MIME (0.4) is calibrated against these two thresholds (BACKLOG Phase-3
+# item #1). It must clear MIN_DECISION_CONFIDENCE so an extension-only file
+# (mime the sole signal: 0.4 × 1.0 = 0.4 ≥ 0.35) commits instead of falling
+# to Uncategorized — the legacy tier-6 MIME rescue the unified path had lost.
+# The MIN_DECISION_MARGIN gate keeps it from overriding genuine content: when
+# mime disagrees with a content winner scoring in [0.35, 0.40) the lead is
+# < 0.10, so BOTH route to fallback rather than mime committing its guess; mime
+# only out-commits content that scored below the floor (i.e. wouldn't have
+# committed anyway). Keep W_MIME < MIN_DECISION_CONFIDENCE + MIN_DECISION_MARGIN
+# (0.45) so it can never commit *over* a content signal that itself clears the
+# floor. tests/unit/scoring/test_mime_commit_gap.py locks these invariants.
 
 # Open Question #1 (low-confidence bucket placement) is unresolved; both
 # low-confidence and low-margin decisions conservatively route to today's

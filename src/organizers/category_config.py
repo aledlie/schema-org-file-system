@@ -118,6 +118,7 @@ CONTENT_CATEGORY_PATHS: Dict[str, Any] = {
         "tax": "Financial/Tax",
         "invoices": "Financial/Invoices",
         "statements": "Financial/Statements",
+        "insurance": "Financial/Insurance",
         "other": "Financial/Other",
     },
     "business": {

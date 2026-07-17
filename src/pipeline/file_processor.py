@@ -262,6 +262,7 @@ class FileProcessor:
         detected_language: Optional[str] = None,
         kie_result: Any = None,
         scoring_decision: Optional[Dict[str, Any]] = None,
+        session_id: Optional[str] = None,
     ) -> None:
         """
         Persist file and its relationships to the graph store with canonical IDs.
@@ -278,6 +279,10 @@ class FileProcessor:
         scorer, UNIFIED_SCORING_PLAN §5.4) is stored verbatim on the file's
         category association as ``file_categories.signal_evidence``; None
         (legacy runs) persists NULL.
+
+        ``session_id`` links the file to its ``organization_sessions`` row so the
+        timeline can group files by run; None (the default, e.g. single-file
+        calls with no active batch session) leaves ``files.session_id`` NULL.
         """
         if not self.graph_store:
             return
@@ -323,6 +328,7 @@ class FileProcessor:
                 kie_fields=kie_fields_json,
                 status=FileStatus.ORGANIZED,
                 organized_at=datetime.now(),
+                session_id=session_id,
             )
 
             file_id = file_record.id
@@ -425,6 +431,7 @@ class FileProcessor:
         file_path: Path,
         dry_run: bool = False,
         force: bool = False,
+        session_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Organize a single file based on content.
@@ -558,6 +565,7 @@ class FileProcessor:
                         # Absent on legacy runs (the unified adapter populates
                         # it) -> None -> file_categories.signal_evidence NULL.
                         scoring_decision=organizer._last_file_state.get("scoring_decision"),
+                        session_id=session_id,
                     )
 
             result["status"] = "organized" if not dry_run else "would_organize"

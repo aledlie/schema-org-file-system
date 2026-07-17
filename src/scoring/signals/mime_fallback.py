@@ -7,12 +7,15 @@ legacy underscore names for its tier-6 fallback and existing test imports).
 Importing ``src.organizers.category_config`` / ``mime_classifier`` here is
 safe: neither imports the scoring package, so there is no cycle.
 
-Deliberate §4 property (Phase-3 calibration revisits): with ``W_MIME`` = 0.3
-below ``MIN_DECISION_CONFIDENCE`` = 0.35, a mime-only match can never commit
-alone — ``0.3 × MIME_MATCH_CONFIDENCE (1.0) = 0.3 < 0.35`` routes to the
-low-confidence fallback. The legacy tier 6 *does* rescue such files (binary
-media with no extractable text); shadow mode will surface that delta before
-the default flips.
+Calibrated §4 property (BACKLOG Phase-3 item #1, resolved): ``W_MIME`` = 0.4
+now clears ``MIN_DECISION_CONFIDENCE`` = 0.35, so a mime-only match
+(``0.4 × MIME_MATCH_CONFIDENCE (1.0) = 0.4``) commits — restoring the legacy
+tier-6 MIME rescue the unified path had lost for binary media (gif/webp/
+video/audio/fonts) with no extractable text. It stays the weakest voice: the
+``MIN_DECISION_MARGIN`` (0.10) gate means a mime guess that disagrees with a
+content winner scoring ≥ 0.35 can't commit (the lead is < 0.10, so both route
+to fallback), and content that clears the floor always out-commits it. See
+``src/scoring/weights.py`` and ``tests/unit/scoring/test_mime_commit_gap.py``.
 """
 
 from __future__ import annotations
@@ -25,7 +28,7 @@ from src.organizers.mime_classifier import classify_by_mime
 from ..types import CategoryScore
 from ..weights import W_MIME
 
-# The format lookup itself is certain — the W_MIME prior (0.3) is what keeps
+# The format lookup itself is certain — the W_MIME prior (0.4) is what keeps
 # this the weakest voice in the aggregate.
 MIME_MATCH_CONFIDENCE = 1.0
 

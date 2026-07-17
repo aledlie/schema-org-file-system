@@ -13,8 +13,10 @@ UNIFIED_SCORING_PLAN §3.3. Generalizes the shipped two-signal
   signals → higher cost-tier among contributors → earliest registry order →
   first emission.
 - Decisions below ``MIN_DECISION_CONFIDENCE`` (aggregate) or
-  ``MIN_DECISION_MARGIN`` (lead over runner-up) route to
-  ``LOW_CONFIDENCE_FALLBACK`` with the state recorded for telemetry.
+  ``MIN_DECISION_MARGIN`` (lead over the best runner-up in a *different*
+  category) route to ``LOW_CONFIDENCE_FALLBACK`` with the state recorded for
+  telemetry. The margin is category-level: same-category subcategory rivals do
+  not gate the commit (BACKLOG Phase-3 item #3).
 """
 
 from __future__ import annotations
@@ -187,7 +189,18 @@ class Scorer:
 
         winner = max(totals, key=sort_key)
         raw_total = totals[winner]
-        runner_up = max((total for key, total in totals.items() if key != winner), default=None)
+        # The margin gate adjudicates the CATEGORY (folder) decision. A
+        # runner-up sharing the winner's category is not category ambiguity —
+        # a file whose top candidates are all e.g. personal/* is unambiguously
+        # personal, so the winning subcategory commits instead of falling back
+        # (BACKLOG Phase-3 item #3). Only a rival in a DIFFERENT category
+        # counts against the margin; same-category subcategory competition is
+        # settled by the argmax winner above.
+        winner_category = winner[0]
+        cross_category_totals = [
+            total for key, total in totals.items() if key[0] != winner_category
+        ]
+        runner_up = max(cross_category_totals, default=None)
         margin = raw_total - runner_up if runner_up is not None else raw_total
 
         winning_names = tuple(sorted(contributors[winner], key=lambda name: self._by_name[name][0]))

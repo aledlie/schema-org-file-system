@@ -11,7 +11,7 @@ from src.scoring.signals.mime_fallback import (
 )
 from src.scoring.context import FileContext
 from src.scoring.scorer import Scorer
-from src.scoring.weights import LOW_CONFIDENCE_FALLBACK, W_MIME
+from src.scoring.weights import W_MIME
 
 
 def make_ctx(path, schema_type="DigitalDocument"):
@@ -93,11 +93,14 @@ class TestSignalRun:
         assert signal.cost_tier == "cheap"
 
 
-class TestTooWeakToCommitAlone:
-    def test_mime_only_match_routes_to_low_confidence_fallback(self):
-        """Deliberate §4 property: W_MIME (0.3) < MIN_DECISION_CONFIDENCE (0.35),
-        so an unopposed mime vote never commits — Phase-3 calibration revisits."""
+class TestCommitsAloneButYieldsToContent:
+    def test_mime_only_match_commits(self):
+        """Phase-3 calibration item #1: W_MIME (0.4) now clears
+        MIN_DECISION_CONFIDENCE (0.35), so an unopposed mime vote commits —
+        restoring the legacy tier-6 MIME rescue for extension-only files.
+        The commit-alone / never-override invariants live in
+        test_mime_commit_gap.py."""
         decision = Scorer([MimeFallbackSignal()]).classify(make_ctx("/tmp/song.mp3"))
-        assert (decision.category, decision.subcategory) == LOW_CONFIDENCE_FALLBACK
-        assert decision.decision_state == "low_confidence"
+        assert (decision.category, decision.subcategory) == ("media", "audio_music")
+        assert decision.decision_state == "committed"
         assert decision.winning_signals == ["mime_fallback"]

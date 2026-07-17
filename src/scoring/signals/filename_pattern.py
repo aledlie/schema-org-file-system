@@ -27,8 +27,10 @@ Behavior divergences from the legacy chain (by design):
 
 from __future__ import annotations
 
+import re
 from typing import Any, Dict, List
 
+from shared.constants import CAMERA_VENDOR_PREFIX_PATTERNS
 from shared.filename_classifier import (
     RESEARCH_CATEGORY,
     SCHOLARLY_ARTICLE_SCHEMA_TYPE,
@@ -42,6 +44,7 @@ from ..types import (
     CategoryScore,
 )
 from ..weights import W_FILENAME
+from .media_heuristic import AUDIO_EXTENSIONS as REFINABLE_AUDIO_EXTENSIONS
 
 # Filename rules are exact-match heuristics; a hit is signal-locally certain
 # (the W_FILENAME prior expresses how much the scorer trusts the rule set).
@@ -52,6 +55,53 @@ FILENAME_MATCH_CONFIDENCE = 1.0
 # confidence low enough for heavy content signals to outscore.
 FILENAME_WEAK_CONFIDENCE = 0.4
 FILENAME_WEAK_RESULTS = frozenset({("media", "photos_other")})
+
+# Legacy filename naming traps (BACKLOG Phase-3 item #5): the shared rule
+# module answers these at full strength, but the stem is not what the verdict
+# claims, so the signal graduates their confidence down to let the
+# content/media signals outscore.
+GAME_SPRITES_RESULT = ("game_assets", "sprites")
+MEDIA_AUDIO_OTHER_RESULT = ("media", "audio_other")
+
+# Camera-roll / scanner stems are photos and scans, never game sprites. The
+# shared module already guards its numbered-sprite paths against the camera
+# vendor prefixes, but not against scanner output (``scan_0023``), and offers
+# no defense if a future rule fires ``sprites`` on a camera stem. Reuse the
+# single-homed vendor prefixes and add the scanner prefix; a ``sprites`` verdict
+# on any of these downgrades so MediaHeuristicSignal / TextContentSignal win.
+SCAN_STEM_PREFIX_PATTERN = r"^scan_?\d+"
+_CAMERA_OR_SCAN_STEM_PATTERNS = tuple(
+    re.compile(pattern) for pattern in (*CAMERA_VENDOR_PREFIX_PATTERNS, SCAN_STEM_PREFIX_PATTERN)
+)
+
+
+def _is_camera_or_scan_stem(stem: str) -> bool:
+    """True when ``stem`` (already case-folded) is a camera-roll or scanner
+    name — the prefixes are lowercase anchored-start regexes."""
+    return any(pattern.match(stem) for pattern in _CAMERA_OR_SCAN_STEM_PATTERNS)
+
+
+def graduated_filename_confidence(stem: str, category: str, subcategory: str, ext: str) -> float:
+    """Confidence for a shared filename-rule verdict, downgraded to
+    ``FILENAME_WEAK_CONFIDENCE`` when the rule is a weak catch-all the content
+    signals should outscore, otherwise ``FILENAME_MATCH_CONFIDENCE``.
+
+    Pure and signal-local: it re-derives the downgrade condition from the
+    (case-folded) ``stem``, the returned ``(category, subcategory)`` and the
+    extension, because the signal cannot see which shared rule fired.
+    """
+    result = (category, subcategory)
+    if result in FILENAME_WEAK_RESULTS:
+        return FILENAME_WEAK_CONFIDENCE
+    # Sprite verdict on a camera-roll / scanner stem: it is a photo or a scan.
+    if result == GAME_SPRITES_RESULT and _is_camera_or_scan_stem(stem):
+        return FILENAME_WEAK_CONFIDENCE
+    # The generic "Audio file" catch-all (no music/podcast awareness) on an
+    # extension MediaHeuristicSignal can refine to audio_podcasts/audio_music.
+    if result == MEDIA_AUDIO_OTHER_RESULT and ext in REFINABLE_AUDIO_EXTENSIONS:
+        return FILENAME_WEAK_CONFIDENCE
+    return FILENAME_MATCH_CONFIDENCE
+
 
 # Signal-local evidence key carrying the research-publisher provenance tuple
 # (publisher_key, identifier, publisher_name, url).
@@ -81,8 +131,9 @@ class FilenamePatternSignal:
         # Local state dict replaces the organizer's per-file side channel;
         # provenance lands in evidence instead (§4 row 2).
         state: Dict[str, Any] = {}
+        path = ctx.pattern_path
         result = classify_by_filename_patterns(
-            ctx.pattern_path,
+            path,
             game_sprite_keywords=self._game_sprite_keywords,
             last_file_state=state,
         )
@@ -99,10 +150,8 @@ class FilenamePatternSignal:
             evidence[EVIDENCE_SCHEMA_TYPE] = SCHOLARLY_ARTICLE_SCHEMA_TYPE
             evidence[EVIDENCE_RESEARCH] = state.get(RESEARCH_STATE_KEY)
 
-        confidence = (
-            FILENAME_WEAK_CONFIDENCE
-            if (category, subcategory) in FILENAME_WEAK_RESULTS
-            else FILENAME_MATCH_CONFIDENCE
+        confidence = graduated_filename_confidence(
+            path.stem.lower(), category, subcategory, path.suffix.lower()
         )
         return [
             CategoryScore(

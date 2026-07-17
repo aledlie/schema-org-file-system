@@ -143,13 +143,29 @@ non-contiguous — this is the runtime sequence):
   - Stores: `current_path`, `original_path`, `file_size`, `mime_type`,
     `schema_data` (JSON-LD), `extracted_text`,
     `extracted_text_length`, `ocr_confidence`, `detected_language`,
-    `kie_fields`; status `FileStatus.ORGANIZED`
+    `kie_fields`, `session_id`; status `FileStatus.ORGANIZED`
 - Relationships added by the pipeline:
   - `add_file_to_category`
   - `add_file_to_company` (if Organization detected)
   - `add_file_to_person` (per person detected)
   - `add_file_to_location` (when geo metadata present)
+- Session grouping: `BatchProcessor.organize_directories` opens an
+  `organization_sessions` row (`create_session`) before the file loop and
+  completes it (`complete_session`) after — on real (non-dry-run) runs with a
+  graph store; each persisted file links back via `files.session_id`. This is
+  what the timeline (`organize-files timeline`) groups by; see
+  [`docs/TIMELINE.md`](TIMELINE.md).
 - Backing store: `results/file_organization.db` (SQLite via SQLAlchemy).
+
+**Graph persistence is `organize-files content` only — by design.** Only the
+content pipeline writes to the graph store. `organize-files type`
+(`scripts/file_organizer_by_type.py`) and `organize-files name`
+(`src/organizers/name_organizer.py`) are the deliberately no-AI, DB-free
+organizers: they move files and write their own JSON report but touch no
+`GraphStore` — no `add_file`, no `create_session`/`_persist_to_graph_store`, no
+`--db-path`. Their runs therefore never appear in the graph or on the timeline;
+this is expected behavior, not a bug. The only `GraphStore.add_file` callers are
+the content `FileProcessor` and `person_migration`.
 
 ### 6. Output & reporting
 

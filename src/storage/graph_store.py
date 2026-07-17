@@ -1202,6 +1202,14 @@ class GraphStore:
             )
             session.add(org_session)
             session.commit()
+            # When we own the session, ``commit`` expires the instance and the
+            # following ``close`` detaches it, so a caller reading ``.id`` (e.g.
+            # the batch path) would hit "not bound to a Session". Refresh to load
+            # the columns while still bound, then expunge so the values survive
+            # detachment.
+            if close_session:
+                session.refresh(org_session)
+                session.expunge(org_session)
             return org_session
 
         except Exception as e:

@@ -240,6 +240,58 @@ INVOICE_OCR_TEXT = (
     "2026-06-30. Billing statement and payment details enclosed."
 )
 
+# SCRUBBED synthetic property/auto insurance policy — invented policy/claim
+# numbers, NO real personal data. Phase-3 calibration item #4: property/auto/
+# liability policies had no taxonomy home (they oscillated between
+# organization/financial and legal/real_estate on lease/property/policy
+# keywords). The financial→insurance subcategory gives non-health policies a
+# home; with no extractable insurer and no org indicators, the keyword
+# taxonomy files this under financial/insurance. Neutral filename ("policy"/
+# "insurance"/"declaration" in the stem would fire the legal/financial
+# filename rules first — the content routing is what is under test).
+INSURANCE_POLICY_TEXT = (
+    "Private passenger auto insurance policy declarations page. This policy provides "
+    "coverage for the insured vehicle and the named policyholder. Policy number PA-88213 is "
+    "shown above. The annual premium is 1,320 dollars and is due each term. A collision "
+    "deductible of 500 dollars applies to each covered loss. Liability coverage limits and "
+    "underwriting notes appear in the policy. The insured must keep the premium current to "
+    "maintain coverage. Comprehensive coverage and the deductible are summarized for the "
+    "policyholder. Refer to the policy number and claim number when reporting a covered loss. "
+    "This insurance summary lists coverage, premium, deductible, and policyholder details."
+)
+
+# SCRUBBED synthetic insurer statement — invented company/account, NO real
+# data. Control for item #4: when a NAMED insurer is extractable AND the text
+# clears the org financial indicators, OrganizationKeywordSignal (unchanged)
+# still routes to organization/financial, outscoring the financial/insurance
+# keyword vote. Confirms the new financial vocabulary does not cannibalize the
+# company-driven organization path.
+NAMED_INSURER_STATEMENT_TEXT = (
+    "Acme Mutual Insurance Company. Your combined account summary is enclosed. "
+    "This document from Acme Mutual Insurance Company summarizes your policy premium and your "
+    "bank account activity. Account number ending 4471. Routing number on file. Recent "
+    "transaction history and a wire transfer are listed. Your auto insurance coverage and "
+    "deductible remain unchanged. Investment and securities balances are reported separately. "
+    "Contact Acme Mutual Insurance Company for questions about your loan or mortgage."
+)
+
+# SCRUBBED synthetic health-insurance EOB — invented member/claim numbers, NO
+# real data. Regression guard for item #4: adding the generic insurance
+# vocabulary to the financial CATEGORY list would have stolen HEALTH-insurance
+# documents from medical (financial scored the shared terms; medical was blind
+# to them). The fix gives medical the same generic terms plus health-specific
+# ones (copay, coinsurance, explanation of benefits, health plan, member id),
+# so a plan/clinical-context document commits to medical/insurance while a
+# property/auto policy (property-context, no health terms) stays
+# financial/insurance. Both directions are pinned (this case + the auto case).
+HEALTH_INSURANCE_EOB_TEXT = (
+    "Explanation of benefits from your health plan. This is not a bill. Your copay and "
+    "coinsurance for the visit are shown. You saw an in-network provider. The health "
+    "insurance deductible and out-of-pocket maximum apply to your medical coverage. "
+    "Member id and claim number are listed. Patient responsibility is summarized. "
+    "Health plan coverage, premium, and deductible details follow."
+)
+
 GOLDEN_CASES = [
     # ---- Group 1: org-named PDFs (person/org confusion) ------------------- #
     GoldenCase(
@@ -464,6 +516,41 @@ GOLDEN_CASES = [
         kie_fields={"vendor_name": [("Acme Corp", 0.9)]},  # no amount/date
         expected=("financial", "invoices"),
     ),
+    # ---- Group 12: insurance vocabulary (Phase-3 item #4) ------------------ #
+    GoldenCase(
+        # Unnamed property/auto policy → financial/insurance on the new
+        # subcategory vocabulary (no insurer to extract, no org indicators).
+        name="insurance_policy_routes_financial_insurance",
+        filename="prv-88213.pdf",
+        schema_type="DigitalDocument",
+        mime_type="application/pdf",
+        text=INSURANCE_POLICY_TEXT,
+        expected=("financial", "insurance"),
+    ),
+    GoldenCase(
+        # Named insurer + org financial indicators → organization/financial
+        # via OrganizationKeywordSignal (unchanged), NOT financial/insurance.
+        name="named_insurer_routes_organization_financial",
+        filename="acme-4471.pdf",
+        schema_type="DigitalDocument",
+        mime_type="application/pdf",
+        text=NAMED_INSURER_STATEMENT_TEXT,
+        expected=("organization", "financial"),
+        company_contains="Acme Mutual Insurance",
+    ),
+    GoldenCase(
+        # Regression guard: a HEALTH-insurance EOB must route to
+        # medical/insurance, not financial/insurance — the shared generic
+        # insurance vocabulary would otherwise have stolen it once item #4
+        # put those terms on the financial category list. Neutral filename
+        # ("statement"/"policy" would pre-empt via filename rules).
+        name="health_insurance_eob_routes_medical_insurance",
+        filename="eob-2026-0142.pdf",
+        schema_type="DigitalDocument",
+        mime_type="application/pdf",
+        text=HEALTH_INSURANCE_EOB_TEXT,
+        expected=("medical", "insurance"),
+    ),
     # ---- Group 11: generic media ------------------------------------------- #
     GoldenCase(
         # "meeting_*" would fire the meeting-notes filename rule (legacy
@@ -475,14 +562,57 @@ GOLDEN_CASES = [
         expected=("media", "videos_screencasts"),
     ),
     GoldenCase(
-        # Every .mp3 hits the filename module's "Audio file" rule first —
-        # in BOTH engines — so generic audio files land in audio_other;
-        # the heuristic's podcast refinement is a Phase-3 calibration item.
-        name="media_audio_filename_rule_wins",
+        # Phase-3 calibration item #5 (d) — FIXED. The filename module's
+        # generic "Audio file" rule answers audio_other for every non-game
+        # .mp3; the unified FilenamePatternSignal now graduates that verdict to
+        # FILENAME_WEAK_CONFIDENCE (it is a keyword-blind catch-all), so
+        # MediaHeuristicSignal's podcast/music stem refinement outscores it.
+        # "podcast_episode" carries the podcast keyword → audio_podcasts.
+        name="media_audio_filename_rule_refines_to_podcast",
         filename="podcast_episode_12.mp3",
         schema_type="AudioObject",
         mime_type="audio/mpeg",
-        expected=("media", "audio_other"),
+        expected=("media", "audio_podcasts"),
+    ),
+    GoldenCase(
+        # Phase-3 calibration item #5 (a) — camera-roll name. GameAssetSignal's
+        # ^[a-z]+_\d+$ sprite regex still tags "img_2043" a sprite (that rule
+        # is parity-locked in the shared game-asset module until Phase 5), but
+        # the .jpg camera-photo verdict from MediaHeuristicSignal and the MIME
+        # fallback accumulate on media/photos_other and outscore it. The
+        # FilenamePatternSignal itself emits nothing here (the shared filename
+        # module already excludes camera prefixes from its sprite paths).
+        name="camera_roll_photo_beats_sprite_regex",
+        filename="IMG_2043.jpg",
+        schema_type="ImageObject",
+        mime_type="image/jpeg",
+        ocr_text="",
+        expected=("media", "photos_other"),
+    ),
+    GoldenCase(
+        # Phase-3 calibration item #5 (a) — scanner name with document text.
+        # "scan_0023" trips GameAssetSignal's ^[a-z]+_\d+$ sprite regex
+        # (parity-locked), but the OCR'd court-notice content accumulates
+        # (legal + text signals) well above the game-asset prior — content
+        # outscores the mis-firing sprite heuristic, the emergent-behavior
+        # replacement for the legacy _ocr_document_override.
+        name="scanner_document_text_beats_sprite_regex",
+        filename="scan_0023.png",
+        schema_type="ImageObject",
+        mime_type="image/png",
+        ocr_text=COURT_NOTICE_TEXT,
+        expected=("legal", "litigation"),
+    ),
+    GoldenCase(
+        # Phase-3 calibration item #5 precision guard: a genuine numbered
+        # sprite (non-camera, non-scanner stem) stays strong — the
+        # FilenamePatternSignal keeps FILENAME_MATCH_CONFIDENCE and
+        # GameAssetSignal agrees, so it commits game_assets/sprites.
+        name="sprite_numbered_frame_single_digit",
+        filename="frame_1.png",
+        schema_type="ImageObject",
+        mime_type="image/png",
+        expected=("game_assets", "sprites"),
     ),
     GoldenCase(
         # Hyphenated name: "IMG_2043" matches the sprite regex ^[a-z]+_\d+$
