@@ -8,6 +8,7 @@ from src.scoring.signals.filename_pattern import (
     FILENAME_MATCH_CONFIDENCE,
     FILENAME_WEAK_CONFIDENCE,
     FilenamePatternSignal,
+    graduated_filename_confidence,
 )
 from src.scoring.context import FileContext
 from src.scoring.weights import W_FILENAME
@@ -111,6 +112,73 @@ class TestGameSpriteKeywordGating:
         assert not any(
             (score.category, score.subcategory) == ("game_assets", "sprites") for score in scores
         )
+
+
+class TestGraduatedConfidence:
+    """Downgrade helper for the legacy filename naming traps (item #5)."""
+
+    def test_photos_other_catch_all_stays_weak(self):
+        assert (
+            graduated_filename_confidence("some_photo", "media", "photos_other", ".png")
+            == FILENAME_WEAK_CONFIDENCE
+        )
+
+    def test_camera_prefix_sprite_downgrades(self):
+        for stem in ("img_2043", "pxl_20250425", "dsc_1234", "dsc1234", "dcim_0001"):
+            assert (
+                graduated_filename_confidence(stem, "game_assets", "sprites", ".jpg")
+                == FILENAME_WEAK_CONFIDENCE
+            ), stem
+
+    def test_scanner_prefix_sprite_downgrades(self):
+        for stem in ("scan_0023", "scan0001"):
+            assert (
+                graduated_filename_confidence(stem, "game_assets", "sprites", ".png")
+                == FILENAME_WEAK_CONFIDENCE
+            ), stem
+
+    def test_genuine_numbered_sprite_stays_strong(self):
+        # frame_1 is a real sprite (non-camera, non-scanner) — precision guard.
+        for stem in ("frame_1", "item_42", "2h_axe_3", "10_grey"):
+            assert (
+                graduated_filename_confidence(stem, "game_assets", "sprites", ".png")
+                == FILENAME_MATCH_CONFIDENCE
+            ), stem
+
+    def test_bare_audio_extension_downgrades(self):
+        # Generic "Audio file" rule → weak so MediaHeuristic can refine.
+        for ext in (".mp3", ".m4a", ".aac", ".flac", ".wma"):
+            assert (
+                graduated_filename_confidence("some_clip", "media", "audio_other", ext)
+                == FILENAME_WEAK_CONFIDENCE
+            ), ext
+
+    def test_non_refinable_audio_extension_stays_strong(self):
+        # .wav/.ogg are not in MediaHeuristic's refinable set (game-asset
+        # detection owns them), so there is no refiner to defer to.
+        for ext in (".wav", ".ogg"):
+            assert (
+                graduated_filename_confidence("some_clip", "media", "audio_other", ext)
+                == FILENAME_MATCH_CONFIDENCE
+            ), ext
+
+    def test_strong_result_stays_strong(self):
+        assert (
+            graduated_filename_confidence("error", "technical", "logs", ".log")
+            == FILENAME_MATCH_CONFIDENCE
+        )
+
+
+class TestCameraScanSpriteDowngradeThroughSignal:
+    def test_scan_prefixed_sprite_emits_weak_confidence(self):
+        # Construct a scanner stem that the shared rule answers as a sprite by
+        # feeding the scanner token as a game-sprite keyword; the signal must
+        # still downgrade it (scanner prefix wins over the raw verdict).
+        signal = FilenamePatternSignal(["scan"])
+        scores = signal.run(make_ctx("/inbox/scan_0023_scan.png"))
+        assert len(scores) == 1
+        assert (scores[0].category, scores[0].subcategory) == ("game_assets", "sprites")
+        assert scores[0].confidence == FILENAME_WEAK_CONFIDENCE
 
 
 class TestSignalMetadata:

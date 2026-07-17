@@ -475,14 +475,57 @@ GOLDEN_CASES = [
         expected=("media", "videos_screencasts"),
     ),
     GoldenCase(
-        # Every .mp3 hits the filename module's "Audio file" rule first —
-        # in BOTH engines — so generic audio files land in audio_other;
-        # the heuristic's podcast refinement is a Phase-3 calibration item.
-        name="media_audio_filename_rule_wins",
+        # Phase-3 calibration item #5 (d) — FIXED. The filename module's
+        # generic "Audio file" rule answers audio_other for every non-game
+        # .mp3; the unified FilenamePatternSignal now graduates that verdict to
+        # FILENAME_WEAK_CONFIDENCE (it is a keyword-blind catch-all), so
+        # MediaHeuristicSignal's podcast/music stem refinement outscores it.
+        # "podcast_episode" carries the podcast keyword → audio_podcasts.
+        name="media_audio_filename_rule_refines_to_podcast",
         filename="podcast_episode_12.mp3",
         schema_type="AudioObject",
         mime_type="audio/mpeg",
-        expected=("media", "audio_other"),
+        expected=("media", "audio_podcasts"),
+    ),
+    GoldenCase(
+        # Phase-3 calibration item #5 (a) — camera-roll name. GameAssetSignal's
+        # ^[a-z]+_\d+$ sprite regex still tags "img_2043" a sprite (that rule
+        # is parity-locked in the shared game-asset module until Phase 5), but
+        # the .jpg camera-photo verdict from MediaHeuristicSignal and the MIME
+        # fallback accumulate on media/photos_other and outscore it. The
+        # FilenamePatternSignal itself emits nothing here (the shared filename
+        # module already excludes camera prefixes from its sprite paths).
+        name="camera_roll_photo_beats_sprite_regex",
+        filename="IMG_2043.jpg",
+        schema_type="ImageObject",
+        mime_type="image/jpeg",
+        ocr_text="",
+        expected=("media", "photos_other"),
+    ),
+    GoldenCase(
+        # Phase-3 calibration item #5 (a) — scanner name with document text.
+        # "scan_0023" trips GameAssetSignal's ^[a-z]+_\d+$ sprite regex
+        # (parity-locked), but the OCR'd court-notice content accumulates
+        # (legal + text signals) well above the game-asset prior — content
+        # outscores the mis-firing sprite heuristic, the emergent-behavior
+        # replacement for the legacy _ocr_document_override.
+        name="scanner_document_text_beats_sprite_regex",
+        filename="scan_0023.png",
+        schema_type="ImageObject",
+        mime_type="image/png",
+        ocr_text=COURT_NOTICE_TEXT,
+        expected=("legal", "litigation"),
+    ),
+    GoldenCase(
+        # Phase-3 calibration item #5 precision guard: a genuine numbered
+        # sprite (non-camera, non-scanner stem) stays strong — the
+        # FilenamePatternSignal keeps FILENAME_MATCH_CONFIDENCE and
+        # GameAssetSignal agrees, so it commits game_assets/sprites.
+        name="sprite_numbered_frame_single_digit",
+        filename="frame_1.png",
+        schema_type="ImageObject",
+        mime_type="image/png",
+        expected=("game_assets", "sprites"),
     ),
     GoldenCase(
         # Hyphenated name: "IMG_2043" matches the sprite regex ^[a-z]+_\d+$
