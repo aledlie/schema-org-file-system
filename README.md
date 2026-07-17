@@ -188,7 +188,7 @@ flowchart LR
 - [QUICK_START](QUICK_START.md) - Setup and daily-use commands, copy-paste ready
 - [CHANGELOG (v2.1.0)](docs/changelog/2.1.0/CHANGELOG.md) - Current version history
 - [CHANGELOG (v2.0.0)](docs/changelog/2.0.0/CHANGELOG.md) - Prior version history
-- [ARCHITECTURE_REFACTOR](docs/ARCHITECTURE_REFACTOR.md) - Design decisions
+- [ARCHITECTURE_REFACTOR](docs/archive/ARCHITECTURE_REFACTOR.md) - Historical refactor plan (design decisions)
 - [SCHEMA_ORG_ARCHITECTURE](docs/SCHEMA_ORG_ARCHITECTURE.md) - Schema.org type mappings, IRI patterns, JSON-LD context, and implementation reference
 
 ## Changelog

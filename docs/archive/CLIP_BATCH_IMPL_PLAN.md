@@ -2,7 +2,7 @@
 
 **Date:** 2026-03-29
 **Scope:** Fix cache layer + route main pipeline through it to unlock batch inference
-**Audit ref:** `docs/deep-learning-analysis-03-27-2026.md` — open item: "Single-image inference"
+**Audit ref:** `docs/archive/deep-learning-analysis-03-27-2026.md` — open item: "Single-image inference"
 
 ---
 

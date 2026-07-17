@@ -136,7 +136,7 @@ CLI (organize-files content)
 
 ## Refactoring status
 
-The `docs/ARCHITECTURE_REFACTOR.md` plan to decompose `scripts/` into modular
+The `docs/archive/ARCHITECTURE_REFACTOR.md` plan to decompose `scripts/` into modular
 `src/` packages (`classifiers/`, `analyzers/`, `organizers/`, `pipeline/`,
 `ml/`, `feedback/`) is **complete**. `scripts/file_organizer_content_based.py`
 is now a thin CLI wrapper delegating into those packages rather than the former
