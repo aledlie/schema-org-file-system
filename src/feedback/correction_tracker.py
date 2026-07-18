@@ -49,13 +49,23 @@ import re
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, TypedDict
+
+
+class CategorySuggestion(TypedDict):
+    """A category suggestion derived from learned filename patterns."""
+
+    suggested_category: str
+    suggested_subcategory: Optional[str]
+    confidence: float
+    matching_patterns: List[str]
+    sample_count: int
 
 
 class CorrectionFeedbackSystem:
     """Manages correction feedback for file categorization improvements."""
 
-    def __init__(self, feedback_file: str = None):
+    def __init__(self, feedback_file: Optional[str] = None):
         """Initialize the feedback system.
 
         Args:
@@ -181,10 +191,10 @@ class CorrectionFeedbackSystem:
         correct_destination: str,
         assigned_category: str,
         correct_category: str,
-        assigned_subcategory: str = None,
-        correct_subcategory: str = None,
-        correction_reason: str = None,
-        content_hints: List[str] = None
+        assigned_subcategory: Optional[str] = None,
+        correct_subcategory: Optional[str] = None,
+        correction_reason: Optional[str] = None,
+        content_hints: Optional[List[str]] = None
     ) -> str:
         """Add a correction for a miscategorized file.
 
@@ -298,7 +308,9 @@ class CorrectionFeedbackSystem:
                     learned["subcategories"][correct_subcategory] = 0
                 learned["subcategories"][correct_subcategory] += 1
 
-    def get_suggestion(self, filename: str, current_category: str = None) -> Optional[Dict]:
+    def get_suggestion(
+        self, filename: str, current_category: Optional[str] = None
+    ) -> Optional[CategorySuggestion]:
         """Get a category suggestion based on learned patterns.
 
         Args:

@@ -8,7 +8,7 @@ Provides three integration points:
 """
 
 import os
-from typing import Dict, List, Tuple
+from typing import Optional, Dict, List, Tuple
 
 from .correction_tracker import CorrectionFeedbackSystem
 
@@ -16,7 +16,7 @@ from .correction_tracker import CorrectionFeedbackSystem
 class FeedbackIntegration:
     """Integrates correction feedback with the file organizer."""
 
-    def __init__(self, feedback_file: str = None):
+    def __init__(self, feedback_file: Optional[str] = None):
         """Initialize the integration.
 
         Args:
@@ -40,7 +40,7 @@ class FeedbackIntegration:
         file_path: str,
         filename: str,
         proposed_category: str,
-        proposed_subcategory: str = None
+        proposed_subcategory: Optional[str] = None
     ) -> Tuple[str, str, float]:
         """Check if corrections suggest a different category.
 

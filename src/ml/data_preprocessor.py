@@ -16,7 +16,7 @@ import logging
 import os
 from collections import Counter
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Dict, List, Tuple
+from typing import Optional, TYPE_CHECKING, Any, Dict, List, Tuple
 
 if TYPE_CHECKING:
     from src.cli_inputs import PreprocessInputs
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 class DataPreprocessor:
     """Main preprocessing pipeline for file organization data."""
 
-    def __init__(self, report_path: str = None):
+    def __init__(self, report_path: Optional[str] = None):
         """Initialize preprocessor.
 
         Args:
@@ -41,7 +41,7 @@ class DataPreprocessor:
         self.features = None
         self.statistics = {}
 
-    def load_data(self, report_path: str = None) -> Dict:
+    def load_data(self, report_path: Optional[str] = None) -> Dict:
         """Load organization report data."""
         path = report_path or self.report_path
         if not path:

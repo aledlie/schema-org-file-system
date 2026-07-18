@@ -8,7 +8,7 @@ import shutil
 import sys
 from pathlib import Path
 from collections import defaultdict
-from typing import TYPE_CHECKING
+from typing import Optional, TYPE_CHECKING
 
 if TYPE_CHECKING:
     from src.cli_inputs import TypeInputs
@@ -32,7 +32,7 @@ _MISC_EXTENSIONS = {'.tpl', '.proto', '.rst', '.noe', '.lark'}
 class FileTypeOrganizer:
     """Organize files based on file type and naming patterns."""
 
-    def __init__(self, base_path: str = None):
+    def __init__(self, base_path: Optional[str] = None):
         """Initialize the organizer."""
         self.base_path = Path(base_path or "~/Documents").expanduser()
         self.stats = defaultdict(int)

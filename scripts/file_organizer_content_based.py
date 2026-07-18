@@ -139,7 +139,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
 
     def __init__(
         self,
-        base_path: str = None,
+        base_path: Optional[str] = None,
         organize_by_date: bool = False,
         organize_by_location: bool = False,
         enable_cost_tracking: bool = True,
@@ -301,7 +301,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         return self._batch_processor.scan_directory(directory)
 
     def organize_directories(
-        self, source_dirs: List[str], dry_run: bool = False, limit: int = None, force: bool = False
+        self, source_dirs: List[str], dry_run: bool = False, limit: Optional[int] = None, force: bool = False
     ) -> Dict:
         """
         Organize files from multiple source directories.
@@ -336,7 +336,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         """
         return self._file_processor.get_cost_report()
 
-    def save_cost_report(self, output_path: str = None):
+    def save_cost_report(self, output_path: Optional[str] = None):
         """
         Save the cost report to a JSON file.
 
@@ -345,7 +345,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         """
         self._file_processor.save_cost_report(output_path)
 
-    def save_report(self, summary: Dict, output_path: str = None):
+    def save_report(self, summary: Dict, output_path: Optional[str] = None):
         """Save detailed organization report to JSON."""
         self._file_processor.save_report(summary, output_path)
 

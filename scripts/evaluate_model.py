@@ -12,7 +12,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Dict, List, Tuple, Any
+from typing import Optional, TYPE_CHECKING, Dict, List, Tuple, Any
 
 if TYPE_CHECKING:
     from src.cli_inputs import EvaluateInputs
@@ -298,7 +298,7 @@ class UnifiedScorerModel:
 
 def evaluate_model(
     test_data_path: str,
-    output_path: str = None,
+    output_path: Optional[str] = None,
     classifier: str = "baseline",
     min_support: int = DEFAULT_MIN_SUPPORT,
 ) -> Dict[str, Any]:

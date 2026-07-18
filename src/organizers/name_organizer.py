@@ -11,6 +11,7 @@ import shutil
 import argparse
 from pathlib import Path
 from datetime import datetime
+from typing import Optional
 
 # shared/ lives in scripts/ — add to path so shared.file_ops resolves.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
@@ -618,7 +619,7 @@ class FileNameOrganizer:
             print(f"  ✗ Error moving file: {e}")
             return False
 
-    def organize_directory(self, source_dir: str, recursive: bool = False, limit: int = None):
+    def organize_directory(self, source_dir: str, recursive: bool = False, limit: Optional[int] = None):
         """Organize files in a directory."""
         source_path = Path(source_dir).expanduser()
 

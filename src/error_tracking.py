@@ -213,7 +213,7 @@ def track_operation(
 
 
 def track_error(
-    operation: str = None,
+    operation: Optional[str] = None,
     level: str = ErrorLevel.ERROR,
     reraise: bool = True
 ) -> Callable:
