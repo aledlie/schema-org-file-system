@@ -1,7 +1,7 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-07-17 (added `review_status` SQLAlchemy `Enum` column-type item).
+Last updated: 2026-07-17 (added content-pipeline OCR performance items from profiling session).
 
 ## Open Items
 
@@ -96,5 +96,17 @@ Both candidates are recorded in the review doc's "Out-of-scope observations": [`
 - **Single source of truth.** Change `ContentOrganizer.__init__(scorer: str = SCORER_LEGACY)` → `= SCORER_DEFAULT` so base construction, the CLI flag, and `ContentBasedFileOrganizer` share one default; then delete the split-brain note in `src/scoring/types.py`.
 - **Re-pin the legacy-behavior tests.** `tests/unit/test_content_organizer.py` fixtures and `tests/unit/scoring/test_dispatch.py::test_default_is_legacy` build `ContentOrganizer()` at the default and expect the 10-tier chain — re-record them against unified, or make them pass `scorer=SCORER_LEGACY` explicitly to keep exercising the chain.
 - **Then retire the legacy chain (full Phase 5).** Once nothing defaults to legacy, remove the legacy `_classify_*` paths and the `legacy`/`shadow` scorer modes per UNIFIED_SCORING_PLAN Phase 5; the interior re-tune's "Legacy parity note" (above) resolves when the chain is gone.
+
+### Content pipeline is OCR-bound (gate OCR on text-likelihood)
+
+Profiling `organize-files content` (unified scorer, dry-run) on 2026-07-17 showed the workflow is **~85% OCR-bound** (`torch.conv2d` in the easyocr CRAFT + docTR detection CNNs ≈ 67% of self-time; CLIP is negligible). This session shipped P2/P3/P5 (docTR-fallback gate, screenshot double-OCR dedup, CLIP text-embedding memoization) — conv2d call count dropped 1189→528 (−56%). Two items remain.
+
+**Status:** Open — P1 not started; P2 gate shipped (recall tradeoff to monitor).
+**Priority:** P3 (P1 is the largest remaining perf win)
+**Source:** content-classification profiling + P2/P3/P5 optimization session, 2026-07-17
+
+1. **Gate OCR on text-likelihood (P1 — biggest remaining win).** easyocr's CRAFT detector still runs on every image because `IdentityDocumentSignal.applies_to` is just `is_image`. Gating OCR on text-likelihood would cut the bulk of the remaining cost, but it changes classification (an ID doc can be a photo) and needs an eval.
+
+2. **P2 docTR-fallback gate — recall tradeoff to monitor.** The shipped gate (`extract_ocr_with_confidence`: skip the docTR fallback when easyocr cleanly finds no text) was eval'd over 7 text images at varying difficulty: **1/7 recall loss — very-low-contrast text** (easyocr's detector found nothing; docTR would have caught it). Clean, dark-mode, and rotated text were all gate-safe. So P2 trades a rare miss on near-invisible text for eliminating the docTR fallback. For a screenshot/photo-dominated 265k-file library this is very likely a net win, but it is a real behavior change — put it behind a config flag or revert if faint-text recall matters.
 
 
