@@ -32,6 +32,7 @@ W_INTERIOR = 0.85
 W_GAME = 0.8  # GameAssetSignal — sprite/texture/audio filename heuristics
 W_TEXT = 0.8  # TextContentSignal — keyword taxonomy (= shipped _TEXT_SIGNAL_PRIOR)
 W_UI = 0.75  # ScreenshotOcrSignal — screenshot OCR keyword routing
+W_GRAPHIC = 0.75  # GraphicDetectionSignal — cheap non-CLIP gate for logos/icons
 W_CLIP = 0.7  # ClipVisionSignal — 20-prompt CLIP pass
 W_MEDIA = 0.65  # MediaHeuristicSignal — extension/stem/EXIF media routing
 W_PEOPLE_PHOTO = 0.65  # PhotoCompositionSignal — people / home-interior flags

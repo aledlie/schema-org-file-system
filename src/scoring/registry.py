@@ -15,6 +15,7 @@ from .signals.clip_vision import ClipVisionSignal
 from .signals.filename_pattern import FilenamePatternSignal
 from .signals.filepath import FilepathSignal
 from .signals.game_asset import GameAssetSignal
+from .signals.graphic_detection import GraphicDetectionSignal
 from .signals.identity_document import IdentityDocumentSignal
 from .signals.interior import InteriorSignal
 from .signals.kie_structured import KieStructuredSignal
@@ -84,6 +85,7 @@ def build_default_signals(
             screenshots_dict=screenshots_dict,
         )  # W_UI = 0.75
     )
+    signals.append(GraphicDetectionSignal())  # W_GRAPHIC = 0.75
     signals.append(ClipVisionSignal())  # W_CLIP = 0.7
     signals.append(MediaHeuristicSignal())  # W_MEDIA = 0.65
     signals.append(PhotoCompositionSignal(image_analyzer))  # W_PEOPLE_PHOTO = 0.65
