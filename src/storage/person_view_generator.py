@@ -11,7 +11,7 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, List, Optional, TYPE_CHECKING, Tuple
 
 # scripts/ isn't a package on sys.path by default outside of pytest and the
 # organize-files CLI (both of which add it); insert it lazily here so this
@@ -22,6 +22,9 @@ if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
 from shared.file_ops import is_os_junk_file, resolve_collision  # noqa: E402
+
+if TYPE_CHECKING:
+    from storage.graph_store import GraphStore
 
 DEFAULT_VIEW_ROOT = Path("~/Documents/Person")
 DEFAULT_MIN_FILES = 1
@@ -72,7 +75,7 @@ class PersonViewGenerator:
     on partial failure (per-file errors are collected, not fatal).
     """
 
-    def __init__(self, graph_store: Any, view_root: Optional[Path] = None):
+    def __init__(self, graph_store: "GraphStore", view_root: Optional[Path] = None):
         self.graph_store = graph_store
         self.view_root = (view_root if view_root is not None else DEFAULT_VIEW_ROOT).expanduser()
 

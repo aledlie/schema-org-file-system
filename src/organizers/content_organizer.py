@@ -18,12 +18,14 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, cast
 
 from src.classifiers.entity_detector import _has_human_name_signal
+from src.enrichment import MetadataEnricher
 from src.organizers.base_organizer import BaseOrganizer
 from src.organizers.category_config import CONTENT_CATEGORY_PATHS
 from src.organizers.mime_classifier import classify_by_mime
 from src.scoring.context import FileContext
 from src.scoring.registry import build_default_signals
 from src.scoring.scorer import Scorer
+from src.scoring.types import ClassificationDecision
 from src.scoring.signals.clip_vision import GEOGRAPHIC_LABELS, map_clip_label
 from src.scoring.signals.identity_document import ID_MIN_TEXT_CHARS, detect_identity_document
 from src.scoring.signals.interior import (
@@ -266,7 +268,7 @@ class ContentOrganizer(BaseOrganizer):
         image_analyzer: Any = None,
         metadata_parser: Any = None,
         text_extractor: Any = None,
-        enricher: Any = None,
+        enricher: Optional[MetadataEnricher] = None,
         screenshot_content_classifier: Any = None,
         ocr_available: Optional[bool] = None,
         scorer: str = SCORER_DEFAULT,
@@ -1206,7 +1208,7 @@ class ContentOrganizer(BaseOrganizer):
             ctx.image_metadata_if_loaded or {},
         )
 
-    def _stash_decision_state(self, decision: Any, *, scorer_label: str) -> None:
+    def _stash_decision_state(self, decision: ClassificationDecision, *, scorer_label: str) -> None:
         """Populate ``_last_file_state`` from decision evidence.
 
         Mirrors the legacy side-channels downstream consumers read:
@@ -1242,7 +1244,7 @@ class ContentOrganizer(BaseOrganizer):
         )
 
     @staticmethod
-    def _decision_snapshot(decision: Any, *, scorer_label: str) -> Dict[str, Any]:
+    def _decision_snapshot(decision: ClassificationDecision, *, scorer_label: str) -> Dict[str, Any]:
         """JSON-safe snapshot of a ClassificationDecision (§7.1 record core)."""
         snapshot = {
             "scorer": scorer_label,

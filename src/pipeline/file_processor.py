@@ -15,7 +15,7 @@ from src.generators import (
     ImageGenerator,
     VideoGenerator,
 )
-from src.base import PropertyType
+from src.base import PropertyType, SchemaOrgBase
 from src.enrichment import MetadataEnricher, cached_stat
 from src.validator import SchemaValidator
 from src.integration import SchemaRegistry
@@ -107,10 +107,10 @@ class FileProcessor:
         dry_run: bool = False,
         db_path: Optional[str] = None,
         cost_calculator: Optional[Any] = None,
-        graph_store: Optional[Any] = None,
-        enricher: Optional[Any] = None,
-        validator: Optional[Any] = None,
-        registry: Optional[Any] = None,
+        graph_store: Optional["GraphStore"] = None,
+        enricher: Optional[MetadataEnricher] = None,
+        validator: Optional[SchemaValidator] = None,
+        registry: Optional[SchemaRegistry] = None,
         rename_analyzer: Optional[Any] = None,
         organizer: Optional[Any] = None,
     ) -> None:
@@ -160,7 +160,7 @@ class FileProcessor:
         # image-shaped: ImageGenerator emits the assigned @type (Room/HotelRoom/
         # MeetingRoom) while keeping contentUrl/width/height.
         if schema_type in _IMAGE_SCHEMA_TYPES:
-            generator: Any = ImageGenerator(schema_type)
+            generator: SchemaOrgBase = ImageGenerator(schema_type)
             generator.set_property("name", file_path.name, PropertyType.TEXT)
             generator.set_property("contentUrl", file_url, PropertyType.URL)
             generator.set_property("encodingFormat", mime_type or "image/png", PropertyType.TEXT)

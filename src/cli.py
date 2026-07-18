@@ -17,7 +17,10 @@ Usage:
 import argparse
 import sys
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Union
+
+if TYPE_CHECKING:
+    from storage.graph_store import GraphStore
 
 # Add src directory to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
@@ -102,7 +105,7 @@ def cmd_migrate_scoring(args: argparse.Namespace) -> None:
     run_scoring_migration_with_banner(db_path, dry_run=args.dry_run)
 
 
-def _prune_missing_edges(graph_store: Any, apply: bool) -> None:
+def _prune_missing_edges(graph_store: "GraphStore", apply: bool) -> None:
     """Drop file->person edges whose file path no longer exists; print each."""
     label = "APPLIED" if apply else "DRY RUN"
     pruned = graph_store.prune_missing_person_edges(dry_run=not apply)
@@ -212,7 +215,7 @@ def cmd_prune_person(args: argparse.Namespace) -> None:
     store = GraphStore(args.db_path)
     missing = 0
     for target in args.people:
-        key: Any = int(target) if target.isdigit() else target
+        key: Union[int, str] = int(target) if target.isdigit() else target
         summary = store.prune_person(key, dry_run=not apply)
         if summary is None:
             print(f"[{label}] {target!r}: no matching person")

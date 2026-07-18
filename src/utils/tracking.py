@@ -7,6 +7,7 @@ everything they need from a single place.
 
 import time
 from contextlib import contextmanager
+from types import TracebackType
 from typing import Any, Callable, Dict, Generator, Literal, Optional
 
 try:
@@ -165,9 +166,9 @@ class CostTracker:
 
     def __exit__(
         self,
-        exc_type: Optional[type],
+        exc_type: Optional[type[BaseException]],
         exc_val: Optional[BaseException],
-        exc_tb: Optional[Any],
+        exc_tb: Optional[TracebackType],
     ) -> Literal[False]:
         assert self._start is not None
         self.elapsed_seconds = time.monotonic() - self._start

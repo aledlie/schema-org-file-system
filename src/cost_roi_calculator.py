@@ -11,6 +11,7 @@ import json
 import time
 from dataclasses import dataclass, field, asdict
 from datetime import datetime
+from types import TracebackType
 from enum import Enum
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Any
@@ -794,7 +795,12 @@ class CostTracker:
         self.start_time = time.time()
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
+    def __exit__(
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_val: Optional[BaseException],
+        exc_tb: Optional[TracebackType],
+    ) -> Literal[False]:
         assert self.start_time is not None  # set in __enter__
         processing_time = time.time() - self.start_time
 

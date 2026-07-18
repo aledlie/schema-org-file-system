@@ -21,7 +21,10 @@ UNIFIED_SCORING_PLAN §3.3. Generalizes the shipped two-signal
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, cast
+from typing import Dict, Iterable, List, Optional, Sequence, TYPE_CHECKING, Tuple, cast
+
+if TYPE_CHECKING:
+    from .context import FileContext
 
 from .types import (
     COST_TIER_ORDER,
@@ -79,7 +82,7 @@ class Scorer:
     # Public API                                                           #
     # ------------------------------------------------------------------ #
 
-    def classify(self, ctx: Any) -> ClassificationDecision:
+    def classify(self, ctx: "FileContext") -> ClassificationDecision:
         collected = self._run_waves(ctx)
         return self._decide(ctx, collected)
 
@@ -87,7 +90,7 @@ class Scorer:
     # Wave execution                                                       #
     # ------------------------------------------------------------------ #
 
-    def _run_waves(self, ctx: Any) -> List[CategoryScore]:
+    def _run_waves(self, ctx: "FileContext") -> List[CategoryScore]:
         collected: List[CategoryScore] = []
         for tier_index, tier in enumerate(COST_TIER_ORDER):
             for signal in self._signals:
@@ -155,7 +158,7 @@ class Scorer:
             first_seen.setdefault(key, position)
         return totals, contributors, first_seen
 
-    def _decide(self, ctx: Any, collected: List[CategoryScore]) -> ClassificationDecision:
+    def _decide(self, ctx: "FileContext", collected: List[CategoryScore]) -> ClassificationDecision:
         totals, contributors, first_seen = self._aggregate(collected)
 
         if not totals:

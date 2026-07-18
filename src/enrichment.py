@@ -5,7 +5,9 @@ Extracts and enriches file metadata from various sources including
 EXIF, document properties, NLP results, and embeddings.
 """
 
-from typing import Any, Dict, Union, cast
+from typing import Any, Callable, Dict, Union, cast
+
+from src.base import SchemaOrgBase
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
@@ -654,8 +656,9 @@ class MetadataEnricher:
                     merged[key] = value
         return merged
 
-    def create_enriched_schema(self, generator_class, base_metadata: Dict[str, Any],
-                              *enrichment_sources: Dict[str, Any]) -> Any:
+    def create_enriched_schema(self, generator_class: Callable[..., SchemaOrgBase],
+                              base_metadata: Dict[str, Any],
+                              *enrichment_sources: Dict[str, Any]) -> SchemaOrgBase:
         """
         Create enriched schema from multiple metadata sources.
 
