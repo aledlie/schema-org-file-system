@@ -1230,18 +1230,21 @@ class ContentOrganizer(BaseOrganizer):
         plus the JSON-safe ``scoring_decision`` snapshot persisted into
         ``file_categories.signal_evidence``.
         """
-        # A probe-detected interior describes itself from its calibrated
-        # P(interior), not the zero-shot CLIP label whose softmax floor (~5%)
+        # A probe-detected scene describes itself from its calibrated
+        # P(class), not the zero-shot CLIP label whose softmax floor (~5%)
         # understated these images. Set first so the first-write-wins clip_label
         # loop below cannot overwrite it.
-        if INTERIOR_SIGNAL_NAME in decision.winning_signals:
+        if SCENE_SIGNAL_NAME in decision.winning_signals:
             for score in decision.all_scores:
-                if score.signal_name == INTERIOR_SIGNAL_NAME:
+                if score.signal_name != SCENE_SIGNAL_NAME:
+                    continue
+                label = SCENE_DESCRIPTION_LABELS.get(score.evidence.get(EVIDENCE_SCENE_CLASS))
+                if label is not None:
                     self._last_file_state["clip_description"] = (
-                        INTERIOR_DESCRIPTION_LABEL,
-                        score.evidence.get(EVIDENCE_INTERIOR_PROB, score.confidence),
+                        label,
+                        score.evidence.get(EVIDENCE_SCENE_PROB, score.confidence),
                     )
-                    break
+                break
         for score in decision.all_scores:
             research = score.evidence.get("research")
             if research and "research" not in self._last_file_state:
