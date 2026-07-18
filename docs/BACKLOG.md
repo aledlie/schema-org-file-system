@@ -41,7 +41,7 @@ Technical notes from the research: `P31` (instance-of) checks against class QIDs
 
 CLIP zero-shot labels cannot reliably identify minimal brand graphics (logos, app icons, flat illustrations); they land in `Uncategorized`.
 
-**Status:** Open — investigation, not committed work.
+**Status:** Done — `GraphicDetectionSignal` shipped 2026-07-18 (commit 7ebffef).
 **Priority:** P3
 **Source:** content-organize dry-run on `~/Documents/Organization/InventoryAI`, 2026-07-14
 
