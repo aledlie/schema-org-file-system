@@ -1,7 +1,7 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-07-18 (added identity-detection license-back item + partial fix — `corrective lenses` keyword added to `ID_KEYWORDS` (`restrictions`/`endorsements` trialed then dropped after backtest showed insurance-doc collision), front/back fixtures, 23 tests pass; added `redact_pii.py` barcode/alphabetic-PII blind-spot item — OCR-token redaction silently no-ops on ID barcodes + health terms; added trained graphic-vs-photograph probe item — opaque AI graphics/logos leak past the cheap `GraphicDetectionSignal` gate (code path since closed by `c327877` — `graphic` scene-probe class wired end-to-end, pending corpus + retrain); corrected `PHOTO_PROPERTY_CONFIDENCE` item post-f6488b9 — two-signal case resolved, residual is probe-absence only; probe now health-checked; fixed person-name false positive — ambiguous Census given names (summer/spring/autumn/winter, month names, virtue words) were auto_accepted when paired with a Census surname; new `_AMBIGUOUS_GIVEN_NAMES` hard rule + 41-test suite).
+Last updated: 2026-07-18 (added identity-detection license-back item + partial fix — `corrective lenses` keyword added to `ID_KEYWORDS` (`restrictions`/`endorsements` trialed then dropped after backtest showed insurance-doc collision), front/back fixtures, 23 tests pass; added `redact_pii.py` barcode/alphabetic-PII blind-spot item — OCR-token redaction silently no-ops on ID barcodes + health terms; added trained graphic-vs-photograph probe item — opaque AI graphics/logos leak past the cheap `GraphicDetectionSignal` gate (code path since closed by `c327877` — `graphic` scene-probe class wired end-to-end, pending corpus + retrain); corrected `PHOTO_PROPERTY_CONFIDENCE` item post-f6488b9 — two-signal case resolved, residual is probe-absence only; probe now health-checked; fixed person-name false positive — ambiguous Census given names (summer/spring/autumn/winter, month names, virtue words) were auto_accepted when paired with a Census surname; new `_AMBIGUOUS_GIVEN_NAMES` hard rule + 41-test suite; closed `redact_pii.py` barcode item — cv2 barcode+QR detection, `--redact-terms` flag, `barcode_unredacted` manifest field, non-zero exit, 27-test suite).
 
 ## Open Items
 
@@ -21,7 +21,7 @@ Last updated: 2026-07-18 (added identity-detection license-back item + partial f
 - **Regression guard:** measure false positives — staged/real-estate listing photos and any non-interior images the analyzer flags `is_property_mgmt` — before raising, since a higher confidence also strengthens every interior vote against genuine content winners.
 - **Legacy parity note:** the legacy `_classify_photo_composition` still routes interiors to `property_management/other`; a unified re-tune widens the shadow legacy-vs-unified disagreement for interior photos until the legacy chain is retired (Phase 5).
 
-### `redact_pii.py` leaks barcodes + alphabetic sensitive terms (OCR-token redaction is insufficient for IDs / health screenshots)
+### [Done] `redact_pii.py` leaks barcodes + alphabetic sensitive terms (OCR-token redaction is insufficient for IDs / health screenshots)
 
 `scripts/redact_pii.py` rasterizes an input to a flat PNG, then `redact_raster` (`scripts/redact_pii.py:93-121`) runs docTR OCR and blacks out only the recognized **word tokens** whose text matches `is_pii_token` (`:58-65`) — i.e. `_TOKEN_PII` (`:47-55`: 3+ digit runs, emails, SSN/phone, `\d{1,2}[/-]\d{1,2}[/-]\d{2,4}` dates) or a `--name` term. Anything that is not an OCR-detected word, or is alphabetic and not a supplied name, is never considered for redaction. The module docstring warns only about alphabetic street/third-party names; the true blind spots are broader and include a class of documents (government IDs) where redaction silently fails while *appearing* to succeed.
 
@@ -35,15 +35,13 @@ Last updated: 2026-07-18 (added identity-detection license-back item + partial f
 
 **Mitigation actually used this session:** manual second pass — `PIL.ImageDraw.rectangle` black boxes over the barcode regions / rotated DOB / disease-name text, each output re-read at full resolution to confirm zero residual PII before use. The VIN-only Edmunds screenshot (`Screenshot 2026-07-15 at 1.34.47 PM.png`, VIN = digit run) redacted cleanly in one pass — the tool is fine when *all* PII is digit/email/date shaped and axis-aligned.
 
-**Status:** Open — real data-loss-of-privacy risk; the tool's "OK redacted" + git-add gate implies more safety than it delivers on IDs/health images.
-**Priority:** P2 (privacy) — a redaction tool that silently no-ops on a driver's-license barcode is worse than no tool, because it manufactures false confidence before `git add`.
+**Status:** Done 2026-07-18 — barcode detection + coverage via `cv2.barcode_BarcodeDetector` + `cv2.QRCodeDetector` added to `detect_and_cover_barcodes`; `--redact-terms` flag added for alphabetic PII (health conditions, org names); manifest records `barcode_detected`/`barcode_covered`/`barcode_unredacted`; non-zero exit when a barcode is detected but not localised; 27-test suite in `tests/unit/test_redact_pii.py`. Rotated-text OCR gap and ID-shape fail-loud heuristic remain open (documented in module docstring as known limitations). **Priority:** P2 (privacy).
 **Source:** manual PII-scrub of 3 files for the scene-probe `neither/` corpus, 2026-07-18. See memory `redact-pii-barcode-blindspot`.
 
-- **Barcode detection + full-cover.** Before/after OCR, run a barcode locator (e.g. `pyzbar`/`zxing`, or OpenCV `BarcodeDetector`) and black out every detected symbol's bounding box. If a barcode is detected but cannot be localized precisely, fail loud (non-zero exit + manifest `barcode_unredacted: true`) rather than emit a "redacted" file.
-- **Fail-loud for high-risk documents.** When the flattened image is ID-shaped (aspect ~1.6, detected "DL"/"USA"/state keywords, or any barcode present), refuse to mark the output clean without a human-confirmed manual pass — don't just append to the `review_recommended` list that callers ignore.
-- **Alphabetic PII pass.** Optional NER (or a `--redact-terms` medical/condition list) so health conditions and org/third-party names can be caught without hand-typing each into `--name`.
-- **OCR recall hardening.** Enable docTR orientation handling / multi-rotation passes so rotated fields (DOB) are detected; document that low-contrast text can still be missed.
-- **Regression guard / self-test.** Add a fixture ID image with a known barcode + rotated DOB and assert the redacted output fails a barcode-decode and an OCR-of-DOB check — locks the fix and prevents silent regressions.
+Residual gaps (not implemented — lower value vs. complexity):
+- **ID-shape fail-loud heuristic.** Aspect-ratio + keyword check for driver-license-shaped images; deferred — barcode presence already triggers the loudest warning path.
+- **Rotated text.** docTR orientation detection not enabled; documented in module docstring as a known limitation.
+- **Multi-word `--redact-terms`.** Each OCR token is checked independently; multi-word terms (e.g. "graves' disease") must be split into per-word entries. Documented in test comments.
 
 ### Identity detection misses driver-license *backs* (front-side keyword list)
 
