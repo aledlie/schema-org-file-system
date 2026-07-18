@@ -88,11 +88,8 @@ Minor cleanups noted in the same review (batch `_write_qid_to_db` into one conne
 
 `build_file_jsonld` guards the `contentLocation` block with `if f.gps_latitude and f.gps_longitude:` (`src/storage/models.py`), so a valid coordinate of exactly `0.0` (equator or prime meridian) silently drops GPS data from JSON-LD output. Should be `is not None` checks on both.
 
-**Status:** Open — pre-existing bug (not introduced by the Wikidata work), surfaced during the 2026-07-18 review.
+**Status:** Done — 2026-07-18. Changed guard in `build_file_jsonld` (`src/storage/models.py:884`) from `if f.gps_latitude and f.gps_longitude:` to `if f.gps_latitude is not None and f.gps_longitude is not None:`. Added `test_gps_zero_latitude_emits_content_location` in `tests/integration/test_core_export_parity.py` covering both ORM and core-query paths; updated stale fixture comment. All 8 parity tests + 75 unit tests pass.
 **Priority:** P3
 **Source:** multi-agent review (line-by-line diff scan angle), 2026-07-18
-
-- One-line fix but touches the core-export path: `build_file_jsonld` is a shared pure builder (see the core-query export gotcha in `CLAUDE.md` — edit the builder, not `to_schema_org()`), and parity is locked by `tests/integration/test_core_export_parity.py`.
-- Add a regression test with `gps_latitude=0.0` asserting `contentLocation` is emitted.
 
 
