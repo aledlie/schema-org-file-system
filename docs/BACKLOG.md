@@ -7,9 +7,7 @@ Last updated: 2026-07-17 (added diverse-source robustness + shadow healthcare-de
 
 ### Wikidata SPARQL for non-person entity typing
 
-Investigate Wikidata as a type validator for entities where notability is expected.
-
-**Status:** Open — investigation, not committed work.
+**Status:** Done — 2026-07-18.
 **Priority:** P3
 **Source:** gap-2 web research session, 2026-07-13
 
