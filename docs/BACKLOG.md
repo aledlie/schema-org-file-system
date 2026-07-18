@@ -1,7 +1,7 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-07-18 (added verified multi-agent review findings from the Wikidata enrichment implementation + pre-existing GPS falsy-zero guard).
+Last updated: 2026-07-18 (corrected `PHOTO_PROPERTY_CONFIDENCE` item post-f6488b9 — two-signal case resolved, residual is probe-absence only; probe now health-checked).
 
 ## Open Items
 
@@ -13,14 +13,17 @@ Last updated: 2026-07-18 (added verified multi-agent review findings from the Wi
 
 ### `PHOTO_PROPERTY_CONFIDENCE` re-tune for `Media/Interiors` commit margin
 
-`PhotoCompositionSignal`'s home-interior flag routes to `media/interiors_other` (folder `Media/Interiors`, schema.org `Room`) but scores `PHOTO_PROPERTY_CONFIDENCE(0.7) × W_PEOPLE_PHOTO(0.65) = 0.455` — only 0.055 over an image's `mime_fallback` vote (`0.4`). That lead is below `MIN_DECISION_MARGIN(0.10)`, so an interior photo whose only signals are composition + mime routes to `LOW_CONFIDENCE_FALLBACK` instead of committing to `Media/Interiors`. The `Room` schema override is wired but effectively unreachable for the common two-signal case.
+`PhotoCompositionSignal`'s home-interior flag routes to `media/interiors_other` (folder `Media/Interiors`, schema.org `Room`) at `PHOTO_PROPERTY_CONFIDENCE(0.7) × W_PEOPLE_PHOTO(0.65) = 0.455`. The failure mode as originally filed — 0.455 vs `mime_fallback` 0.400, a 0.055 lead below `MIN_DECISION_MARGIN(0.10)` → `LOW_CONFIDENCE_FALLBACK` — **no longer exists**: the same-category margin fix (`f6488b9`, 2026-07-17) measures margin only against cross-category rivals, and both votes map to `media/*` (`interiors_other` vs `photos_other`), so the two-signal case commits cleanly (`runner_up=None`, `margin=0.455`; confirmed live 2026-07-18).
 
-**Status:** Open — not committed work; calibration change with eval impact.
+**Actual residual gap** (bug-detective, 2026-07-18): when `results/interior_probe.joblib` is absent, `PhotoCompositionSignal` is the sole interior voter at 0.455 weighted, and any **cross-category** rival scoring ≥ 0.355 (= 0.455 − 0.10) forces `low_margin` → fallback. Concrete tipping points: `ClipVisionSignal` (W 0.70) at confidence ≥ 0.507; `TextContentSignal` (W 0.80) at ≥ 0.444. Confirmed live: three-signal case with CLIP at 0.55 confidence → `low_margin`, margin 0.07.
+
+**Status:** Open (narrowed 2026-07-18) — only reachable when the interior-probe artifact is absent.
 **Priority:** P3
-**Source:** `Media/Interiors` / schema.org `Room` folder addition, 2026-07-17
+**Source:** `Media/Interiors` / schema.org `Room` folder addition, 2026-07-17; re-analyzed by bug-detective 2026-07-18
 
+- **Primary mitigation (implemented 2026-07-18):** keep `results/interior_probe.joblib` trained and present — `InteriorSignal` (W 0.85) contributes ~0.84 at probe P≈0.99, and the two interior votes sum ~1.30 for `media/interiors_other`, far above any tipping point. Probe availability is now reported by `organize-files health` (`interior_probe` feature): missing/unreadable artifacts surface with a retrain hint instead of silently degrading.
+- **Corrected re-tune formula (if a bump is still pursued):** compute against cross-category rivals, not MIME (same-category, irrelevant since `f6488b9`). Beating `TextContentSignal` at 0.65 confidence requires `PHOTO_PROPERTY_CONFIDENCE ≥ (0.52 + 0.10) / 0.65 ≈ 0.95` — not achievable without also raising `W_PEOPLE_PHOTO`; treat any confidence bump as marginal hardening only, not a fix.
 - **Do not eyeball the bump.** Per the Phase-3 calibration process (`src/scoring/weights.py` header — "treat this module as versioned data and commit each re-tune with its backtest report"), any change to `PHOTO_PROPERTY_CONFIDENCE` (or `W_PEOPLE_PHOTO`) must be backed by a `results/file_organization.db` backtest, committed with the report.
-- **Target invariant:** `PHOTO_PROPERTY_CONFIDENCE × W_PEOPLE_PHOTO − (MIME_MATCH_CONFIDENCE × W_MIME) ≥ MIN_DECISION_MARGIN`, i.e. `conf ≥ (0.4 + 0.10) / 0.65 ≈ 0.77`, so interiors commit over the mime-only floor.
 - **Regression guard:** measure false positives — staged/real-estate listing photos and any non-interior images the analyzer flags `is_property_mgmt` — before raising, since a higher confidence also strengthens every interior vote against genuine content winners.
 - **Legacy parity note:** the legacy `_classify_photo_composition` still routes interiors to `property_management/other`; a unified re-tune widens the shadow legacy-vs-unified disagreement for interior photos until the legacy chain is retired (Phase 5).
 

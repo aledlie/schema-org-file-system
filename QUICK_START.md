@@ -160,6 +160,15 @@ PYTHONPATH=src:scripts:. python scripts/profile_pipeline.py --source DIR --ocr-c
 PYTHONPATH=src:scripts:. python scripts/eval_ocr_gate.py
 ```
 
+Train the 4-class scene probe (interior/exterior/place/neither) from the
+hand-labeled corpus in `results/scene_labels/` (see its `README.md`):
+
+```bash
+python scripts/prototype_scene_probe.py gather --label-dirs   # build feature set from label dirs
+python scripts/prototype_scene_probe.py eval                  # CV metrics + confusion matrix
+python scripts/prototype_scene_probe.py train                 # -> results/scene_probe.joblib
+```
+
 ## Tips
 
 - **Sensitive/private sources:** OCR text and extracted metadata are stored verbatim in `results/file_organization.db` (`files.extracted_text`, `files.schema_data`). Pass `--no-db` to skip all DB writes when running on health records, genomics reports (SNPedia, Promethease), documents containing VINs, or any source with personal data. Alternatively, run `scripts/redact_pii.py` on files first to redact PII before organizing.
