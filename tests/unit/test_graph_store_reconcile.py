@@ -94,6 +94,21 @@ class TestSetFileCategory:
         assert summary["new_category"] == "legal"
         assert _categories(store, file_id) == ["business/clients"]
 
+    def test_replaces_multiple_categories(self, store: GraphStore) -> None:
+        file_id = _add_file(store, "/tmp/a.pdf", "game_assets", "sprites")
+        session = store.get_session()
+        store.add_file_to_category(file_id, "media", "interiors_other", session=session)
+        session.commit()
+        session.close()
+        assert sorted(_categories(store, file_id)) == ["game_assets/sprites", "media/interiors_other"]
+
+        store.set_file_category(file_id, "legal")
+
+        assert _categories(store, file_id) == ["legal"]
+        assert _file_count(store, "game_assets/sprites") == 0
+        assert _file_count(store, "media/interiors_other") == 0
+        assert _file_count(store, "legal") == 1
+
     def test_returns_none_for_unknown_file(self, store: GraphStore) -> None:
         assert store.set_file_category("no-such-file", "legal") is None
 
@@ -150,6 +165,26 @@ class TestPruneMissingFiles:
 
         assert result["removed"] == 1
         assert store.get_file(file_id=file_id) is None
+
+    def test_deletes_key_value_store_associations(self, store: GraphStore) -> None:
+        from src.storage.models import KeyValueStore
+
+        file_id = _add_file(store, "/nonexistent/a.pdf", "media", "photos_other")
+        session = store.get_session()
+        session.add(KeyValueStore(
+            namespace="cache", key="ocr_result", value="text", file_id=file_id
+        ))
+        session.commit()
+        session.close()
+
+        result = store.prune_missing_files()
+
+        assert result["removed"] == 1
+        assert store.get_file(file_id=file_id) is None
+        session = store.get_session()
+        kv_rows = session.query(KeyValueStore).filter(KeyValueStore.file_id == file_id).all()
+        session.close()
+        assert kv_rows == []
 
     def test_dry_run_reports_without_deleting(self, store: GraphStore) -> None:
         file_id = _add_file(store, "/nonexistent/a.pdf", "business", "clients")

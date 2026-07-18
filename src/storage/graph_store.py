@@ -30,6 +30,7 @@ from .models import (
     FileRelationship,
     CostRecord,
     FileStatus,
+    KeyValueStore,
     RelationshipType,
     file_categories,
 )
@@ -1162,6 +1163,9 @@ class GraphStore:
                         FileRelationship.source_file_id == file.id,
                         FileRelationship.target_file_id == file.id,
                     )
+                ).delete(synchronize_session=False)
+                session.query(KeyValueStore).filter(
+                    KeyValueStore.file_id == file.id
                 ).delete(synchronize_session=False)
 
                 session.delete(file)
