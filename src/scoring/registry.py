@@ -17,7 +17,6 @@ from .signals.filepath import FilepathSignal
 from .signals.game_asset import GameAssetSignal
 from .signals.graphic_detection import GraphicDetectionSignal
 from .signals.identity_document import IdentityDocumentSignal
-from .signals.interior import InteriorSignal
 from .signals.kie_structured import KieStructuredSignal
 from .signals.legal_content import LegalContentSignal
 from .signals.media_heuristic import MediaHeuristicSignal
@@ -70,19 +69,10 @@ def build_default_signals(
         signals.append(OrganizationKeywordSignal(classifier))  # W_ORG = 1.0
         signals.append(PersonalDocSignal(classifier))  # W_PERSON = 0.9
         signals.append(LegalContentSignal(classifier))  # W_LEGAL = 0.85
-    # Always-on (no classifier dep) — trained CLIP-embedding scene probe slot.
-    # Transition guard (MEDIA_EXTERIORS_PLAN §Sequencing): the multi-class
-    # SceneSignal replaces the binary interior probe only once its trained
-    # artifact (results/scene_probe.joblib) is present — never swap ahead of
-    # a trained probe. Until then the shipped InteriorSignal keeps interior
-    # detection live. Swap completion (artifact committed): delete this
-    # fallback + interior.py, retire photo_composition's is_property_mgmt
-    # vote, and update backtest_scoring.WEIGHT_SIGNALS to ("W_SCENE", "scene").
-    scene = SceneSignal()  # W_SCENE = 0.85
-    if scene.is_loaded:
-        signals.append(scene)
-    else:
-        signals.append(InteriorSignal())  # W_INTERIOR = 0.85
+    # Always-on (no classifier dep) — trained CLIP-embedding scene probe
+    # (MEDIA_EXTERIORS_PLAN; replaced the binary C1 InteriorSignal 2026-07-18).
+    # No-ops when its joblib artifact / sklearn / CLIP is absent.
+    signals.append(SceneSignal())  # W_SCENE = 0.85
     signals.append(
         GameAssetSignal(
             sprite_keywords=game_sprite_keywords,  # None → shared constant

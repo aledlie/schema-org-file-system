@@ -28,10 +28,11 @@ from src.scoring.scorer import Scorer
 from src.scoring.types import ClassificationDecision
 from src.scoring.signals.clip_vision import GEOGRAPHIC_LABELS, map_clip_label
 from src.scoring.signals.identity_document import ID_MIN_TEXT_CHARS, detect_identity_document
-from src.scoring.signals.interior import (
-    EVIDENCE_INTERIOR_PROB,
-    INTERIOR_DESCRIPTION_LABEL,
-    INTERIOR_SIGNAL_NAME,
+from src.scoring.signals.scene import (
+    EVIDENCE_SCENE_CLASS,
+    EVIDENCE_SCENE_PROB,
+    SCENE_DESCRIPTION_LABELS,
+    SCENE_SIGNAL_NAME,
 )
 
 # Logic extracted into the unified-scoring signal modules (Phase 1); the

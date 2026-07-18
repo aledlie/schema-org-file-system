@@ -1,10 +1,13 @@
-"""PhotoCompositionSignal — people / home-interior CLIP composition flags.
+"""PhotoCompositionSignal — people CLIP composition flag.
 
 Signal form of ``ContentOrganizer._classify_photo_composition``
 (UNIFIED_SCORING_PLAN §4 row 13): one
-``ImageContentAnalyzer.analyze_for_organization`` pass yields both flags;
-people photos route to the social bucket, empty home interiors to property
-management. The legacy method is already a thin adapter over the analyzer
+``ImageContentAnalyzer.analyze_for_organization`` pass; people photos route
+to the social bucket. The analyzer's second flag (``is_property_mgmt``, the
+home-interior heuristic) is ignored since 2026-07-18 — interior detection is
+the trained ``SceneSignal``'s job (``scene.py``), whose calibrated probe
+replaced this signal's fixed-confidence interior vote (MEDIA_EXTERIORS_PLAN
+decision #5). The legacy method is already a thin adapter over the analyzer
 (availability gate + tuple assembly + prints), so it is left unmodified
 rather than forced into a delegation — this module holds the equivalent
 logic in Signal shape.
@@ -22,45 +25,24 @@ if TYPE_CHECKING:
 
 from typing import Any, Dict, List
 
-from ..types import EVIDENCE_SCHEMA_TYPE, CategoryScore
+from ..types import CategoryScore
 from ..weights import W_PEOPLE_PHOTO
 
-# Composition confidences: face/people detection is strong but not exact;
-# interior detection is a little weaker (staged rooms vs. real listings).
+# Face/people detection is strong but not exact.
 PHOTO_PEOPLE_CONFIDENCE = 0.8
-PHOTO_PROPERTY_CONFIDENCE = 0.7
 
 # How many top analyzer scores are kept as debugging evidence.
 COMPOSITION_TOP_SCORES = 3
 
-# Destinations for the two composition flags.
+# Destination for the people flag.
 PEOPLE_PHOTO_CATEGORY = ("media", "photos_social")
-# Home-interior photos file under Media/Interiors and serialize as the
-# schema.org Accommodation type ``Room`` (via the schema_type evidence
-# override), not the generic image ImageObject. The composition analyzer only
-# yields a binary interior flag, so it cannot distinguish the room subtypes —
-# it always routes to the generic ``interiors_other`` bucket. The subtype
-# folders (Media/Interiors/HotelRoom, Media/Interiors/MeetingRoom) are taxonomy
-# scaffolding for a future signal that can tell them apart.
-PROPERTY_PHOTO_CATEGORY = ("media", "interiors_other")
-
-# Folder subtype key → schema.org type, mirroring the ``media.interiors``
-# branch in src/organizers/category_config.py. The folder namespace is
-# "interiors"; the schema namespace is the ``Room`` type family. ``other`` is
-# the generic ``Room``.
-ROOM_SUBTYPE_SCHEMA = {
-    "hotel": "HotelRoom",
-    "meeting": "MeetingRoom",
-    "other": "Room",
-}
-ROOM_SCHEMA_TYPE = ROOM_SUBTYPE_SCHEMA["other"]
 
 # Signal-local evidence key.
 EVIDENCE_COMPOSITION_SCORES = "composition_scores"
 
 
 class PhotoCompositionSignal:
-    """Votes social/property-management from one composition analysis pass."""
+    """Votes ``media/photos_social`` from one composition analysis pass."""
 
     name = "photo_composition"
     weight = W_PEOPLE_PHOTO
@@ -77,30 +59,23 @@ class PhotoCompositionSignal:
         )
 
     def run(self, ctx: FileContext) -> List[CategoryScore]:
-        has_people, is_property_mgmt, scores = self._image_analyzer.analyze_for_organization(
+        has_people, _is_property_mgmt, scores = self._image_analyzer.analyze_for_organization(
             ctx.path
         )
+        if not has_people:
+            return []
 
         evidence: Dict[str, Any] = {}
         if scores:
             ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
             evidence[EVIDENCE_COMPOSITION_SCORES] = dict(ranked[:COMPOSITION_TOP_SCORES])
 
-        if has_people:
-            category, subcategory = PEOPLE_PHOTO_CATEGORY
-            confidence = PHOTO_PEOPLE_CONFIDENCE
-        elif is_property_mgmt:
-            category, subcategory = PROPERTY_PHOTO_CATEGORY
-            confidence = PHOTO_PROPERTY_CONFIDENCE
-            evidence[EVIDENCE_SCHEMA_TYPE] = ROOM_SCHEMA_TYPE
-        else:
-            return []
-
+        category, subcategory = PEOPLE_PHOTO_CATEGORY
         return [
             CategoryScore(
                 category=category,
                 subcategory=subcategory,
-                confidence=confidence,
+                confidence=PHOTO_PEOPLE_CONFIDENCE,
                 signal_name=self.name,
                 evidence=evidence,
             )

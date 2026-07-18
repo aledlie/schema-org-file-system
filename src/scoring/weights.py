@@ -23,18 +23,15 @@ W_ID = 1.0  # IdentityDocumentSignal — MRZ/OCR identity documents
 W_ORG = 1.0  # OrganizationKeywordSignal — org indicators + company name
 W_PERSON = 0.9  # PersonalDocSignal — person-document indicators (Option C)
 W_LEGAL = 0.85  # LegalContentSignal — replaces the hard person-tier veto
-# InteriorSignal — trained CLIP-embedding probe (C1). A supervised probe
-# outranks the zero-shot ClipVisionSignal (0.7); set high enough that a
-# confident interior (P>=~0.74) clears the demoted source-provenance filename
-# (0.44) and photo_composition's photos_social (0.52) with MIN_DECISION_MARGIN.
+# SceneSignal — trained multi-class CLIP-embedding scene probe
+# (MEDIA_EXTERIORS_PLAN; one weight, all scene classes share it — the signal
+# emits one argmax vote per file). Inherits the retired binary interior
+# probe's prior (C1): a supervised probe outranks the zero-shot
+# ClipVisionSignal (0.7); set high enough that a confident scene (P>=~0.74)
+# clears the demoted source-provenance filename (0.44) and
+# photo_composition's photos_social (0.52) with MIN_DECISION_MARGIN.
 # Re-tune with a results/file_organization.db backtest (Phase-3, as with W_*).
-W_INTERIOR = 0.85
-# SceneSignal — multi-class successor to the interior probe
-# (MEDIA_EXTERIORS_PLAN §Weights: one weight, all scene classes share it —
-# the signal emits one vote per file). Inherits the interior prior; the alias
-# collapses to a single W_SCENE when the swap completes and W_INTERIOR is
-# retired with interior.py.
-W_SCENE = W_INTERIOR
+W_SCENE = 0.85
 W_GAME = 0.8  # GameAssetSignal — sprite/texture/audio filename heuristics
 W_TEXT = 0.8  # TextContentSignal — keyword taxonomy (= shipped _TEXT_SIGNAL_PRIOR)
 W_UI = 0.75  # ScreenshotOcrSignal — screenshot OCR keyword routing

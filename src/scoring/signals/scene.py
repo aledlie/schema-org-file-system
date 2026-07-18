@@ -18,12 +18,12 @@ Artifact: ``results/scene_probe.joblib`` — a dict ``{"pipeline", "meta"}``
 produced by ``scripts/prototype_scene_probe.py train``; ``meta["classes"]``
 records the LogisticRegression class order so ``predict_proba`` columns map
 back to scene names. The signal no-ops (``applies_to`` False) when the
-artifact, joblib/sklearn, or CLIP is absent.
+artifact, joblib/sklearn, or CLIP is absent. Artifact availability is
+reported by ``organize-files health`` (``scene_probe`` feature).
 
-Transition (MEDIA_EXTERIORS_PLAN sequencing guard): the registry swaps this
-signal in for ``InteriorSignal`` only when the artifact is present — never
-ahead of a trained probe. ``interior.py`` and ``photo_composition``'s
-``is_property_mgmt`` vote are retired when the swap completes.
+This signal replaced the binary C1 ``InteriorSignal`` (swap completed
+2026-07-18): ``interior.py`` is deleted and ``photo_composition`` no longer
+votes interiors (it keeps only ``has_people`` → ``photos_social``).
 """
 
 from __future__ import annotations
@@ -61,14 +61,39 @@ SCENE_CATEGORY: Dict[str, Tuple[str, str]] = {
     "graphic": ("media", "graphics_other"),
 }
 
+# Folder subtype key → schema.org type, mirroring the ``media.interiors``
+# branch in src/organizers/category_config.py (moved here from
+# photo_composition.py when its interior vote retired). The probe only yields
+# a binary interior class, so it always routes to the generic
+# ``interiors_other`` bucket; the subtype folders (Media/Interiors/HotelRoom,
+# Media/Interiors/MeetingRoom) are taxonomy scaffolding for a future signal
+# that can tell the subtypes apart.
+ROOM_SUBTYPE_SCHEMA: Dict[str, str] = {
+    "hotel": "HotelRoom",
+    "meeting": "MeetingRoom",
+    "other": "Room",
+}
+
 # Scene class -> schema.org @type (plan §Design — hierarchy encoded here).
 SCENE_SCHEMA: Dict[str, str] = {
-    "interior": "Room",
+    "interior": ROOM_SUBTYPE_SCHEMA["other"],
     "exterior": "House",
     "place": "Place",
     "graphic": "ImageObject",  # not a Place/Accommodation — generic image @type
 }
 STRUCTURE_PARENT = "Accommodation"  # v2 backoff: common ancestor of Room & House
+
+# Scene class -> human phrase surfaced in schema.org descriptions when this
+# signal wins. Replaces the zero-shot CLIP label whose softmax-floor
+# confidence (~5%) understated these images (the probe's calibrated P is
+# ~0.99); ContentOrganizer._stash_decision_state prefers this when the probe
+# wins the decision.
+SCENE_DESCRIPTION_LABELS: Dict[str, str] = {
+    "interior": "an interior room",
+    "exterior": "a house or building exterior",
+    "place": "an outdoor place or landscape",
+    "graphic": "a graphic or designed image",
+}
 
 # Trainer label ints -> names (mirrors SCENE_CLASSES in
 # scripts/prototype_scene_probe.py); fallback when meta lacks class_names.
@@ -132,7 +157,7 @@ class SceneSignal:
 
     @property
     def is_loaded(self) -> bool:
-        """True when the trained artifact loaded — the registry's swap gate."""
+        """True when the trained artifact loaded (else the signal no-ops)."""
         return self._pipeline is not None
 
     def applies_to(self, ctx: FileContext) -> bool:
