@@ -18,7 +18,7 @@ schema.org hierarchy preserved: Place > Accommodation > {Room, House}.
 Three modes, mirroring the interior prototype:
 
   gather   Build a labeled manifest CSV (path,label,source,reviewed) from
-           directory-per-class roots (--interior/--exterior/--place/--neither),
+           directory-per-class roots (--interior/--exterior/--place/--graphic/--neither),
            the convenience label tree results/scene_labels/<class>/ (--label-dirs),
            and/or the graph DB as ``neither`` negatives (--db-neither). As with
            the interior probe the DB holds no clean scene positives — hand-label
@@ -422,6 +422,7 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--interior", action="append", help="dir of interior images (label=1)")
     g.add_argument("--exterior", action="append", help="dir of house/building exteriors (label=2)")
     g.add_argument("--place", action="append", help="dir of outdoor/place images (label=3)")
+    g.add_argument("--graphic", action="append", help="dir of non-photographic graphics (label=4)")
     g.add_argument("--neither", action="append", help="dir of non-scene images (label=0)")
     g.add_argument(
         "--label-dirs",
