@@ -169,6 +169,13 @@ class DataPreprocessor:
         if not docs:
             return {}
 
+        # With fewer docs than min_freq, no token can meet the threshold —
+        # return empty rather than letting CountVectorizer raise ValueError
+        # (sklearn converts max_df=1.0 to an integer floor, which undercuts
+        # an integer min_df when len(docs) < min_freq).
+        if len(docs) < min_freq:
+            return {}
+
         vectorizer = CountVectorizer(min_df=min_freq, token_pattern=r"(?u)\b\w+\b")
         vectorizer.fit(docs)
         return {token: idx for idx, token in enumerate(vectorizer.get_feature_names_out())}
