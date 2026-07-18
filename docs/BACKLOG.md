@@ -7,18 +7,9 @@ Last updated: 2026-07-17 (added diverse-source robustness + shadow healthcare-de
 
 ### Wikidata SPARQL for non-person entity typing
 
-**Status:** Done — 2026-07-18.
+**Status:** Done — 2026-07-18. Implemented `src/storage/wikidata_enricher.py` (W3C Reconciliation API v0.2 client with SQLite KV cache), `scripts/enrich_wikidata.py` (nightly batch script), `src/storage/wikidata_migration.py` (adds `companies.wikidata_qid` physical column), and `organize-files migrate-wikidata` / `organize-files enrich-wikidata` CLI commands. Company.generate_wikidata_url(qid) fixed (was returning a broken name-derived URL). 22 unit tests added. Core pipeline unchanged — enrichment is opt-in nightly-only. Phase 2 remaining: wire QID into JSON-LD sameAs output (requires surfacing KV cache data through build_company_jsonld or adding an ORM migration path).
 **Priority:** P3
 **Source:** gap-2 web research session, 2026-07-13
-
-Wikidata was rejected for *person* validation because personal documents are dominated by non-notable people it can never confirm. But the notability profile inverts for other entity types the system already detects, where a large share of true positives *are* notable:
-
-- **Organizations** — validate `entity_detector.extract_company_names` output (vendors, employers) against organization classes before creating `Organization/{Name}/` folders.
-- **Research publishers** — confirm publisher identity for `Research/{Publisher}/` routing (`schema_type=ScholarlyArticle`).
-- **Locations** — type-check detected place names before creating Location nodes.
-- **Events** — a positive event-class match is a strong *negative* signal for person/org detection (would have caught `Morning Train` if notable).
-
-Technical notes from the research: `P31` (instance-of) checks against class QIDs (org `Q43229`+subclasses, event `Q1656682`/`Q52943`, human `Q5`); content is CC0 so results cache in SQLite indefinitely; rate limits ~5 parallel queries/IP + 60s query-time/min + mandatory identifiable User-Agent (nightly sequential batch fits easily); the ready-made reconciliation endpoint `wikidata.reconci.link` (W3C Reconciliation API v0.2, `query + type hint → ranked scored candidates`) is the lower-effort integration path vs raw SPARQL. Investigation should size: hit rate on the real `companies` table, wrong-entity collision risk, and whether a "no match" fallback stays cheap. Keep any implementation as an optional nightly enrichment — the core pipeline must remain offline-capable.
 
 ### `PHOTO_PROPERTY_CONFIDENCE` re-tune for `Media/Interiors` commit margin
 
