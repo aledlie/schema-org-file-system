@@ -53,6 +53,17 @@ class TestExtractPeopleNames:
         collapsed = det._collapse_spaced_text("I S A B E L B U D E N Z")
         assert "ISABEL" in collapsed and "BUDENZ" in collapsed
 
+    def test_heading_bigram_rejected_by_denylist(self, det: EntityDetector) -> None:
+        # USAA homeowners policy summary regression: "INSURANCE POLICY" is an
+        # ALL-CAPS 2-token line, so the broad roster pattern captures it; the
+        # L0 denylist must drop it before it reaches the scoring path.
+        text = "HOMEOWNERS\nINSURANCE POLICY\nSUMMARY\nPolicy Number: CIC 000000000 00A\n"
+        assert det.extract_people_names(text) == []
+
+    def test_all_caps_roster_name_survives_denylist(self, det: EntityDetector) -> None:
+        people = det.extract_people_names("TAYLOR NICHOLAS RYAN\n")
+        assert people == ["Taylor Nicholas Ryan"]
+
 
 class TestRelationships:
     def test_person_at_company(self, det: EntityDetector) -> None:

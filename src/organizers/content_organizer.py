@@ -287,11 +287,11 @@ class ContentOrganizer(BaseOrganizer):
         if scorer not in SCORER_MODES:
             raise ValueError(f"scorer must be one of {SCORER_MODES}, got {scorer!r}")
         self.scorer_mode = scorer
-        # CLIP-based OCR gate top-K (0 or None = disabled). Defaults to
-        # OCR_CLIP_GATE_TOPK so OCR is skipped on text-free photos without
-        # any flag: a text-bearing CLIP label must rank in the top-K for OCR
-        # to run. Fails open when CLIP is unavailable (no signal = run OCR).
-        # Pass 0 to disable. (UNIFIED_SCORING_PLAN P1)
+        # CLIP-based OCR gate top-K. Defaults to OCR_CLIP_GATE_TOPK (3) so OCR
+        # is skipped on text-free photos without any flag: a text-bearing CLIP
+        # label must rank in the top-K for OCR to run. Fails open when CLIP is
+        # unavailable (no signal = run OCR). Pass 0 or None to disable.
+        # (UNIFIED_SCORING_PLAN P1)
         self.ocr_clip_topk = ocr_clip_topk
         # Shadow log is append-only per file; truncate once per run so a fresh
         # run's disagreement report never inherits stale records from prior runs

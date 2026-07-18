@@ -12,6 +12,8 @@ from __future__ import annotations
 
 import re
 
+from .person_name_validator import is_denylisted
+
 
 def _titlecase_if_upper(name: str) -> str:
     """Normalize an ALL-CAPS capture (OCR letterheads/headers) to Title Case.
@@ -142,8 +144,10 @@ class EntityDetector:
             r"\b(?:Attendee|Participant|Speaker|Presenter):\s+([A-Z][a-z]+\s+[A-Z][a-z]+)\b",
             # ALL-CAPS 2-3 token name alone on a line (scanned letterhead /
             # roster / form header, e.g. "TAYLOR NICHOLAS RYAN"). Broad by
-            # design: the write-time validation gate routes non-names to
-            # review/reject, so headings never spawn Person/{Name}/ folders.
+            # design: the L0 denylist drops obvious non-names at extraction
+            # (document headings like "INSURANCE POLICY"), and the write-time
+            # validation gate routes the rest to review/reject, so headings
+            # never spawn Person/{Name}/ folders.
             r"(?m)^([A-Z][A-Z'\-]+(?:[ \t]+[A-Z][A-Z'\-]+){1,2})[ \t]*$",
             # Label (incl. payment/form labels) followed by a 2-3 token name in
             # Title-case OR ALL-CAPS, e.g. "Name on Card: ALYSHIA LEDLIE".
@@ -288,8 +292,10 @@ class EntityDetector:
         for person in people:
             # Clean up whitespace; normalize ALL-CAPS resume/form headers.
             clean = _titlecase_if_upper(" ".join(person.split()))
-            # Skip if too short or already seen
-            if len(clean) > 2 and clean.lower() not in seen:
+            # Skip if too short, already seen, or an obvious non-person —
+            # broad heading captures ("Insurance Policy") must not reach the
+            # scoring path, which consumes names before the write-time gate.
+            if len(clean) > 2 and clean.lower() not in seen and not is_denylisted(clean):
                 seen.add(clean.lower())
                 unique_people.append(clean)
 

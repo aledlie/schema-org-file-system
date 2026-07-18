@@ -161,7 +161,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
                 (UNIFIED_SCORING_PLAN §6 Phase 0)
             ocr_clip_topk: Skip OCR on images unless a text-bearing CLIP label
                 ranks in the top-K labels. Defaults to OCR_CLIP_GATE_TOPK (3).
-                Pass 0 to disable. Fails open when CLIP is unavailable.
+                Pass 0 or None to disable. Fails open when CLIP is unavailable.
         """
         base_dir = Path(base_path or "~/Documents").expanduser()
 

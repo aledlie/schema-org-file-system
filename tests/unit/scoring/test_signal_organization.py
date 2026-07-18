@@ -189,9 +189,7 @@ class TestGenomicsLabDetection:
     def test_genomics_lab_keywords_reach_minimum_hits(self):
         # At least 3 of the added keywords appear in a real variant classification doc
         # ("variant classification", "sequencing", "pathogenic") → 3 hits ≥ MIN 2.
-        result = detect_organization(
-            self.GENEDX_TEXT, extract_company_names=lambda _t: ["GeneDx"]
-        )
+        result = detect_organization(self.GENEDX_TEXT, extract_company_names=lambda _t: ["GeneDx"])
         assert result is not None, "detect_organization must not return None for genomics docs"
         org_type, org_name, hits = result
         assert org_type == "healthcare"
@@ -204,3 +202,53 @@ class TestGenomicsLabDetection:
         assert len(scores) == 1
         assert (scores[0].category, scores[0].subcategory) == ("organization", "healthcare")
         assert scores[0].evidence["company_name"] == "GeneDx"
+
+
+class TestInsurancePolicyDetection:
+    """Regression for the USAA homeowners policy summary mis-route.
+
+    Before the fix, ORG_INDICATORS['financial'] had no insurance vocabulary, so
+    a policy summary scored only 2 hits — both from the mortgagee clause
+    ('bank', 'mortgage'), not the insurer — leaving the org signal at base
+    confidence 0.7.  A spurious personal_doc score (person-name false positive
+    'Insurance Policy') then won at 0.81 weighted, and the 0.01 margin routed
+    the file to uncategorized/other instead of Organization/{company}/.
+    """
+
+    # Insurance vocabulary only — no mortgagee clause, so every hit must come
+    # from the added keywords ('insurance', 'policy number', 'insured',
+    # 'deductible', 'premium').
+    POLICY_TEXT_NO_MORTGAGE = (
+        "HOMEOWNERS INSURANCE POLICY SUMMARY\n"
+        "USAA Casualty Insurance Company\n"
+        "Existing USAA Homeowners Insurance Policy Summary\n"
+        "Policy Number: CIC 000000000 00A\n"
+        "Named Insured: JANE Q MEMBER\n"
+        "Deductible(s) All other perils: $2,000\n"
+        "Revised Annual Premium: $2,666.82\n"
+    )
+    # Full shape of the real document, mortgagee clause included (7 hits).
+    POLICY_TEXT = POLICY_TEXT_NO_MORTGAGE + (
+        "Mortgage Clause: EXAMPLE BANK, N.A. ITS SUCCESSORS AND/OR ASSIGNS\n"
+    )
+
+    def test_insurance_keywords_alone_reach_minimum_hits(self):
+        result = detect_organization(
+            self.POLICY_TEXT_NO_MORTGAGE,
+            extract_company_names=lambda _t: ["USAA Casualty Insurance"],
+        )
+        assert result is not None, "insurance vocabulary alone must clear the keyword gate"
+        org_type, org_name, hits = result
+        assert org_type == "financial"
+        assert org_name == "USAA Casualty Insurance"
+        assert hits >= 5
+
+    def test_policy_summary_routes_to_financial_at_full_confidence(self):
+        signal = OrganizationKeywordSignal(FakeClassifier(["USAA Casualty Insurance"]))
+        scores = signal.run(make_ctx(self.POLICY_TEXT))
+        assert len(scores) == 1
+        assert (scores[0].category, scores[0].subcategory) == ("organization", "financial")
+        assert scores[0].evidence["company_name"] == "USAA Casualty Insurance"
+        # 7 hits saturate the hit-scaled confidence; weighted W_ORG * 1.0 must
+        # outscore a gated personal_doc false positive (0.9 * 0.9 = 0.81).
+        assert scores[0].confidence == pytest.approx(1.0)

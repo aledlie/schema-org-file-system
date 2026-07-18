@@ -504,7 +504,7 @@ def add_content_arguments(parser: argparse.ArgumentParser) -> None:
         metavar="K",
         help="Skip OCR on an image unless a text-bearing label ranks in its "
         "top-K CLIP labels. Default %(default)s (eval: 100%%%% text recall, "
-        "35%%%% of photos skip OCR). Unified scorer only; pass 0 to disable. "
+        "~35%%%% of photos skip OCR). Unified scorer only; pass 0 to disable. "
         "Fails open when CLIP is unavailable.",
     )
 

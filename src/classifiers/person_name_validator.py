@@ -75,6 +75,14 @@ PERSON_NAME_DENYLIST: Tuple[str, ...] = (
     "group",
     "partners",
     "camp",
+    # Insurance/policy document-heading vocabulary — ALL-CAPS headings like
+    # "INSURANCE POLICY" match the broad roster pattern and surface as
+    # title-case bigrams ("Insurance Policy").
+    "insurance",
+    "policy",
+    "premium",
+    "deductible",
+    "coverage",
 )
 
 # Word-boundary matched so a denylist term is only a hit as a whole word —
@@ -104,6 +112,16 @@ def _normalize(name: str) -> str:
     if clean.isupper():
         clean = clean.title()
     return clean
+
+
+def is_denylisted(name: str) -> bool:
+    """L0-only check: ``name`` contains a whole-word denylist term.
+
+    Cheap enough for extraction-time filtering (no optional scoring layers),
+    so document-heading bigrams like "Insurance Policy" never enter the
+    people-name stream at all.
+    """
+    return _DENYLIST_RE.search(_normalize(name).lower()) is not None
 
 
 # --------------------------------------------------------------------------- #

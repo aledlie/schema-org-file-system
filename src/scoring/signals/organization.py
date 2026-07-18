@@ -108,6 +108,14 @@ ORG_INDICATORS: Dict[str, List[str]] = {
         "account number",
         "fdic",
         "securities",
+        # Insurance vocabulary (e.g. a homeowners policy summary contains none
+        # of the banking terms above, except incidentally via a mortgagee
+        # clause — 2 hits, leaving the org signal too weak to win).
+        "insurance",
+        "policy number",
+        "premium",
+        "deductible",
+        "insured",
     ],
     "educational": [
         "university",
