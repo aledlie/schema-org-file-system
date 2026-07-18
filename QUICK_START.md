@@ -151,6 +151,13 @@ pytest tests/unit/                                          # ~1,070 unit tests
 pytest tests/integration/                                   # schema.org export pipeline
 pytest tests/performance/ --benchmark-only -m "not slow"    # benchmarks
 black src/ scripts/ && flake8 src/ scripts/ && mypy src/ scripts/
+
+# Profile the classification hot path (OCR-bound): wall, grouped hotspots,
+# OCR-invocation + gate-skip counts. Use for before/after of scoring changes.
+PYTHONPATH=src:scripts:. python scripts/profile_pipeline.py --source ~/Documents/Media/Photos --limit 50
+PYTHONPATH=src:scripts:. python scripts/profile_pipeline.py --source DIR --ocr-clip-topk 3   # gate on
+# Evaluate the CLIP OCR gate on a folder-labeled corpus (recall vs OCR-skip):
+PYTHONPATH=src:scripts:. python scripts/eval_ocr_gate.py
 ```
 
 ## Tips

@@ -36,7 +36,7 @@
 
 ### Performance
 
-- **CLIP-based OCR gate enabled by default** — `OCR_CLIP_GATE_TOPK = 3` added to `src/scoring/weights.py`; `ContentOrganizer` and `ContentBasedFileOrganizer` now default to `ocr_clip_topk=OCR_CLIP_GATE_TOPK` (was `None` = disabled). OCR is skipped on images where no text-bearing CLIP label ranks in the top-3 labels. Eval: K=3 → 100% text recall, ~35% of photos skip the easyocr CRAFT pass — the dominant per-file cost. Gate fails open when CLIP is unavailable (no scores = always run OCR). Disable with `--ocr-clip-topk 0`. `FileContext._skip_ocr_by_clip_gate` updated to treat K=0 as disabled. 15 unit tests added (`TestClipOcrGate` in `tests/unit/scoring/test_context.py`).
+- **CLIP-based OCR gate enabled by default** — `OCR_CLIP_GATE_TOPK = 3` added to `src/scoring/weights.py`; `ContentOrganizer`, `ContentBasedFileOrganizer`, and the CLI default to `ocr_clip_topk=OCR_CLIP_GATE_TOPK` (was `None` = disabled). OCR is skipped on images where no text-bearing CLIP label ranks in the top-3 labels. Eval: K=3 → 100% text recall, ~35% of photos skip the easyocr CRAFT pass — the dominant per-file cost. Gate fails open when CLIP is unavailable (no scores = always run OCR). Disable with `--ocr-clip-topk 0`. `FileContext._skip_ocr_by_clip_gate` treats `K=0`/`None` as disabled. 15 unit tests added (`TestClipOcrGate` in `tests/unit/scoring/test_context.py`). New tooling: `scripts/profile_pipeline.py` (scorer hot-path profiler) and `scripts/eval_ocr_gate.py` (folder-labeled gate eval).
 
 ### Backlog Resolved (from 2026-07-18 session)
 

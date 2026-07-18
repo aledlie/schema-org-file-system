@@ -42,6 +42,13 @@ mypy src/ scripts/                             # type check
 npm run docs:api                               # regenerate pdoc3 API docs (docs/api submodule)
 ```
 
+**Profiling the classification hot path:** `scripts/profile_pipeline.py` cProfiles the unified scorer over a dir/file set and prints wall + per-file, a grouped hotspot summary (OCR-CNN / image-decode / face / CLIP), top-N functions, and OCR-invocation + gate-skip counts. Use it for before/after comparisons of any classification-cost change (OCR gating, signal reordering). Companion `scripts/eval_ocr_gate.py` evaluates the CLIP OCR gate (`--ocr-clip-topk`) on a folder-labeled corpus, sweeping top-k/margin for recall vs OCR-skip.
+
+```bash
+PYTHONPATH=src:scripts:. python scripts/profile_pipeline.py --source ~/Documents/Media/Photos --limit 50
+PYTHONPATH=src:scripts:. python scripts/profile_pipeline.py --source DIR --ocr-clip-topk 3   # gate on
+```
+
 **API docs:** `docs/api` is a git submodule (`integritystudio/schema-org-file-system-apidocs`) holding generated pdoc3 HTML under `docs/api/src/`. Regenerate with `npm run docs:api` (sets `PYTHONPATH=src`), then commit+push inside `docs/api` and commit the bumped gitlink in the parent. Fresh clones need `--recurse-submodules`.
 
 ## Project Structure
