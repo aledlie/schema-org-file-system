@@ -102,8 +102,12 @@ organize-files migrate-person                  # move legacy Person/ files → P
 organize-files migrate-person --apply          # (supports --rollback via manifest)
 organize-files index-people --apply            # attach person→file graph edges, no moves
 organize-files person-view --apply             # regenerate Person/{Name}/ symlink view
+organize-files person-view --apply --prune-missing  # also drop dead-path edges + stale view dirs
 organize-files prune-person "Bad Name" --apply # delete false-positive people (backs up DB)
 ```
+
+Typical hygiene pass: `prune-person` the false positives first, then
+`person-view --apply` to regenerate the symlink view without them.
 
 ## 5. APIs and dashboard
 

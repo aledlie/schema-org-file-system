@@ -1,7 +1,7 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-07-17 (added `PHOTO_PROPERTY_CONFIDENCE` re-tune item).
+Last updated: 2026-07-17 (added `review_status` SQLAlchemy `Enum` column-type item).
 
 ## Open Items
 
@@ -18,6 +18,10 @@ One remaining gap handles false-positive "people" in the symlink view.
 1. **`get_all_people_with_files` denylist is leaky.** False-positive "people" (event/org names) still pass the org/keyword denylist — e.g. `Morning Train` (from `Burning_Flipside_Map.pdf`) — and would create spurious `Person/{Name}/` folders on `person-view --apply` unless pruned first.
 
    *Fix planned (2026-07-13):* layered local-only confidence gate at write time (`nameparser` shape → `probablepeople` CRF → Census gazetteer, weighted composite) with three-way routing (auto-accept / `pending_review` queue via a new `organize-files review-people` CLI / reject), `review_status`+`validation_scores` columns on `people`, and an `additionalProperty` JSON-LD sidecar. External KB validation rejected (notability gap — see the Wikidata item below). Full phased design: [`docs/plans/PERSON_NAME_VALIDATION_PLAN.md`](plans/PERSON_NAME_VALIDATION_PLAN.md).
+
+2. **`review_status` should be a SQLAlchemy `Enum` column type.** The valid values now live in `Person.REVIEW_STATUSES` (a plain tuple) and are enforced only by hand-rolled `if status not in ...: raise ValueError` guards in `GraphStore.list_people_by_status` / `set_person_review_status`. Migrating the `String(20)` column to `sqlalchemy.Enum(*Person.REVIEW_STATUSES)` would give DB- and ORM-level validation and delete those manual checks.
+
+   *Deferred:* it is a column-type schema change requiring a migration, for modest gain over the already-centralized tuple. Do it only when the schema is being touched for another reason.
 
 
 ### Wikidata SPARQL for non-person entity typing

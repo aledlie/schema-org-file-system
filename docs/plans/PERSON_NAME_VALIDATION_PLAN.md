@@ -122,8 +122,19 @@ organize-files review-people --apply               # dry-run by default; --apply
 ```
 
 - `--revalidate` never touches human-set `confirmed`/`rejected`; prints per-name old → new routing with the layer breakdown (the explainability payoff of `validation_scores`).
-- New `GraphStore` methods: `list_people_by_status(status)`, `set_person_review_status(person_id_or_name, status)` (reuse the int/name lookup style of `get_files_by_person`), `revalidate_people(apply=False) -> List[dict]`.
-- Remove the denylist loop from `get_all_people_with_files`; denylist now lives only inside the validator as L0. Drop the graph_store re-export.
+
+**GraphStore methods (implemented 2026-07-17, `src/storage/graph_store.py`):** the CLI's persistence layer is done; the `review-people` command that consumes it is not yet wired.
+
+- `list_people_by_status(status=None, session=None) -> List[Dict]` — read side. Exact `Person.review_status` match, ordered by name; `status=None` returns all. Each dict: `person_id, name, review_status, detection_confidence, validation_scores, file_count, paths`. Raises `ValueError` on an unrecognized status. Legacy NULL/'' rows surface only under `status=None` (re-score them via `revalidate_people`).
+- `set_person_review_status(person_id_or_name, status, session=None) -> Optional[Dict]` — write side for human `--accept`/`--reject`. Int-or-name lookup via `_find_person`; sets the status only (file edges untouched — the read filter hides them; `prune_person` stays the hard-delete tool). Returns `{person_id, name, old_status, new_status}` or `None` if not found. `ValueError` on invalid status. Validated against `PERSON_REVIEW_STATUSES`.
+- `revalidate_people(apply=False, session=None) -> List[Dict]` — legacy sweep. Candidates = `pending_review` (all) + `auto_accepted` with **empty** `validation_scores` (legacy backfill); `confirmed`/`rejected` never touched; rows skipped when the validator is unavailable. Maps `RouteDecision → review_status` via `_DECISION_TO_STATUS`. `apply=False` reports proposed transitions; `apply=True` also persists `review_status`/`detection_confidence`/`validation_scores`/`validated_at`. Each dict: `person_id, name, old_status, new_status, score, layer_scores, changed`.
+
+Module constants added: `PERSON_REVIEW_STATUSES` (the four valid statuses) and `_DECISION_TO_STATUS`.
+
+**Still open in Phase 3:**
+
+- `organize-files review-people` CLI (`src/cli.py`) wiring `--status`/`--accept`/`--reject`/`--revalidate`/`--apply` (dry-run default; `--apply` backs up the DB first, mirroring `prune-person`) onto the three methods above.
+- Remove the denylist loop from `get_all_people_with_files`; denylist now lives only inside the validator as L0. Drop the `graph_store` re-export.
 - `organize-files health`: report `names` extra availability via `available_layers()`.
 
 **Testing:** Namespace-driven CLI tests (pattern: `tests/unit/test_graph_store_prune.py`); dry-run makes no writes; `--apply` backs up then mutates; revalidate flips a seeded legacy `Morning Train` to pending/rejected while `confirmed` rows stay untouched; denylist-removal regression (formerly read-filtered names now excluded by status).
