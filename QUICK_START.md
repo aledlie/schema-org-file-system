@@ -14,7 +14,7 @@ brew install tesseract poppler
 Verify the install:
 
 ```bash
-organize-files health        # should report 9/9 features
+organize-files health        # should report 10/10 features
 ```
 
 ## 2. Daily use

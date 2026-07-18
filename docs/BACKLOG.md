@@ -1,7 +1,7 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-07-17 (added diverse-source robustness + shadow healthcare-detection regression items from the ~/Desktop audit and ~/Downloads shadow pass).
+Last updated: 2026-07-18 (added verified multi-agent review findings from the Wikidata enrichment implementation + pre-existing GPS falsy-zero guard).
 
 ## Open Items
 
@@ -46,5 +46,30 @@ A live `organize-files content --source ~/Desktop --limit 10` (unified scorer) o
 **Source:** `~/Desktop` content-run audit + full rollback, 2026-07-17
 
 1. **The review gate keys on decision-confidence, which `InteriorSignal` inflates.** UI screenshots of real-estate listings committed to `Media/Interiors` (`Room`) because the interior probe votes ~0.99 (decision confidence ~0.85, margin ~0.81) even when the OCR/label confidence is 1–12%. The `low_confidence`/`low_margin` review bucket exists and *does* fire (confirmed in a `--scorer shadow` pass — one opaque PDF routed to `uncategorized/other`), but cannot catch these because the probe supplies genuine high decision-confidence to wrong content. Options: a per-signal reliability cap, or require corroboration for `InteriorSignal` on screenshot-detected inputs. Distinct from the `PHOTO_PROPERTY_CONFIDENCE` item above (that is the `PhotoCompositionSignal` property flag *under*-committing; this is the `InteriorSignal` probe *over*-committing). The scene-model swap in [`docs/plans/MEDIA_EXTERIORS_PLAN.md`](plans/MEDIA_EXTERIORS_PLAN.md) also intersects here.
+
+### Wikidata enrichment — verified review findings (multi-agent review of the 2026-07-18 implementation)
+
+A five-angle multi-agent review of the Wikidata enrichment commits (`ae1ad07`…`901204d`) produced ~30 candidates; these three survived verification against the current tree (stale/refuted findings were discarded — e.g. the ORM-column crash and hit-rate denominator were already fixed pre-merge).
+
+**Status:** Open — small correctness fixes, no design work needed.
+**Priority:** P3
+**Source:** multi-agent review of Wikidata enrichment implementation, 2026-07-18
+
+1. **`--limit` is applied before skipping already-enriched rows** (`scripts/enrich_wikidata.py` — `companies = companies[:limit]` runs before the `existing_qid` skip). On a database whose first N rows are already enriched, `--limit N` makes zero API calls. The limit should cap *queried* companies (filter enriched rows first, or skip them in SQL).
+2. **API-response parsing sits outside the error guard** (`src/storage/wikidata_enricher.py::_query_api`). The `try/except` ends after `json.loads`; a JSON array body raises `AttributeError` on `body.get("q0")`, and a non-numeric `score` raises `ValueError` from `float()`. Both crash a batch run, violating the module's documented "returns None on any error" contract. Extend the guard (or catch `ValueError`/`AttributeError`/`TypeError`) around the post-parse block.
+3. **Dry-run migration reports work it didn't do** (`src/storage/wikidata_migration.py::run_wikidata_migration`). `stats["columns_added"] += 1` also increments under `dry_run=True`, so the summary prints "Columns added: 1" directly above "[DRY RUN] No changes were made", and the return dict claims a change. Count only on the actual `ALTER TABLE` branch (or rename to `columns_pending` in dry-run).
+
+Minor cleanups noted in the same review (batch `_write_qid_to_db` into one connection; dedupe `_column_exists`/`_table_exists` across `scoring_migration.py`/`wikidata_migration.py`; unhardcode `"2.1.0"` in `RECONC_USER_AGENT`) can ride along with these fixes.
+
+### GPS falsy-zero guard drops equator/prime-meridian coordinates in `build_file_jsonld`
+
+`build_file_jsonld` guards the `contentLocation` block with `if f.gps_latitude and f.gps_longitude:` (`src/storage/models.py`), so a valid coordinate of exactly `0.0` (equator or prime meridian) silently drops GPS data from JSON-LD output. Should be `is not None` checks on both.
+
+**Status:** Open — pre-existing bug (not introduced by the Wikidata work), surfaced during the 2026-07-18 review.
+**Priority:** P3
+**Source:** multi-agent review (line-by-line diff scan angle), 2026-07-18
+
+- One-line fix but touches the core-export path: `build_file_jsonld` is a shared pure builder (see the core-query export gotcha in `CLAUDE.md` — edit the builder, not `to_schema_org()`), and parity is locked by `tests/integration/test_core_export_parity.py`.
+- Add a regression test with `gps_latitude=0.0` asserting `contentLocation` is emitted.
 
 

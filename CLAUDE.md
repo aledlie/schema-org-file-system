@@ -13,7 +13,7 @@ pip install -e ".[all]" && brew install tesseract poppler
 # Daily use
 source venv/bin/activate
 organize-files content --source ~/Downloads --dry-run --limit 100
-organize-files health                    # Should report 9/9 features
+organize-files health                    # Should report 10/10 features
 ```
 
 ## CLI Commands
