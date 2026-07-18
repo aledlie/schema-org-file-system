@@ -22,6 +22,7 @@ Usage:
 """
 
 import os
+import sys
 import functools
 from typing import Optional, Dict, Any, Callable, Generator
 from contextlib import contextmanager
@@ -100,7 +101,7 @@ def init_sentry(
 
         # Set default tags
         set_tag('service', 'schema-org-file-system')
-        set_tag('python_version', os.sys.version.split()[0])
+        set_tag('python_version', sys.version.split()[0])
 
         print(f"Sentry initialized for environment: {environment}")
         return True

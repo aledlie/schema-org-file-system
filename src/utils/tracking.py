@@ -7,7 +7,7 @@ everything they need from a single place.
 
 import time
 from contextlib import contextmanager
-from typing import Any, Dict, Generator, Literal, Optional
+from typing import Any, Callable, Dict, Generator, Literal, Optional
 
 try:
     from src.error_tracking import (
@@ -30,12 +30,25 @@ except ImportError:
         INFO = "info"
         DEBUG = "debug"
 
-    def init_sentry(*args: Any, **kwargs: Any) -> bool:
+    def init_sentry(
+        dsn: Optional[str] = None,
+        environment: Optional[str] = None,
+        traces_sample_rate: float = 0.0,
+        profiles_sample_rate: float = 0.0,
+        enable_logs: bool = True,
+    ) -> bool:
         """Stub: Sentry not available."""
         return False
 
-    def capture_error(*args: Any, **kwargs: Any) -> None:
+    def capture_error(
+        error: Exception,
+        level: str = ErrorLevel.ERROR,
+        context: Optional[Dict[str, Any]] = None,
+        tags: Optional[Dict[str, str]] = None,
+        user_id: Optional[str] = None,
+    ) -> Optional[str]:
         """Stub: no-op capture."""
+        return None
 
     @contextmanager
     def track_operation(
@@ -46,9 +59,9 @@ except ImportError:
 
     def track_error(
         operation: Optional[str] = None,
-        level: str = "error",
+        level: str = ErrorLevel.ERROR,
         reraise: bool = True,
-    ) -> Any:
+    ) -> Callable:
         """Stub: identity decorator."""
         def decorator(func: Any) -> Any:
             return func

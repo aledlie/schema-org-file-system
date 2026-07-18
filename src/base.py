@@ -294,7 +294,7 @@ class SchemaOrgBase(ABC):
         if total == 0:
             return 1.0
 
-        present = 0
+        present = 0.0
         for prop in required:
             if prop in self.data:
                 present += 1

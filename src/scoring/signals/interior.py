@@ -74,6 +74,8 @@ class InteriorSignal:
         return ctx.is_image and self._pipeline is not None
 
     def run(self, ctx: Any) -> List[CategoryScore]:
+        if self._pipeline is None:
+            return []
         emb = get_or_compute_embedding(ctx.path)
         if emb is None:
             return []

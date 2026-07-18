@@ -31,6 +31,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from typing import Any
 
 # Ensure scripts/shared is importable.
 sys.path.insert(0, str(Path(__file__).parent))
@@ -38,6 +39,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from shared.constants import IMAGE_EXTENSIONS  # noqa: E402
 from shared.ocr_classifier import OCR_AVAILABLE, _get_predictor  # noqa: E402
 
+DocumentFile: Any
 try:
     from doctr.io import DocumentFile
 except ImportError:

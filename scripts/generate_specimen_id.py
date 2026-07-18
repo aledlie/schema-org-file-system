@@ -43,7 +43,7 @@ _FONT_PATHS = [
 ]
 
 
-def _font(size: int) -> ImageFont.FreeTypeFont:
+def _font(size: int) -> "ImageFont.FreeTypeFont | ImageFont.ImageFont":
     for path in _FONT_PATHS:
         if Path(path).exists():
             return ImageFont.truetype(path, size)

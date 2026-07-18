@@ -1594,6 +1594,9 @@ class ContentOrganizer(BaseOrganizer):
             Destination path for the file
         """
         # Special handling for filepath-based classification
+        # Values are pulled from the untyped self.category_paths config, so the
+        # variable is annotated Any (nested lookups yield Any | None).
+        relative_path: Any
         if category == "filepath":
             # subcategory contains the full path (e.g., "Technical/Python/MyProject")
             relative_path = subcategory
@@ -1698,7 +1701,7 @@ class ContentOrganizer(BaseOrganizer):
             safe_city = re.sub(r'[<>:"/\\|?*]', "", city)
             relative_path = f"Photos/Locations/{safe_city}"
 
-        dest_dir = self.base_path / relative_path
+        dest_dir = self.base_path / str(relative_path)
         dest_dir.mkdir(parents=True, exist_ok=True)
 
         # Handle duplicate filenames — delegate to the shared incrementing counter

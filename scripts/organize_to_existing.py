@@ -21,15 +21,15 @@ _ABBREV_TO_CONTENT = {f"_{abbrev}_": ctype for ctype, abbrev in CONTENT_ABBREVIA
 def organize_files(base_path: str = "~/Documents", dry_run: bool = False) -> dict:
     """Organize files from ~/Documents root into existing subfolders."""
 
-    base_path = Path(base_path).expanduser()
+    root_path = Path(base_path).expanduser()
 
     print(f"\n{'='*60}")
     print(f"Organizing Files to Existing Folders {'(DRY RUN)' if dry_run else ''}")
     print(f"{'='*60}\n")
-    print(f"Base path: {base_path}")
+    print(f"Base path: {root_path}")
 
     # Find all files in ~/Documents root that match our renamed files
-    root_files = [f for f in base_path.iterdir() if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS]
+    root_files = [f for f in root_path.iterdir() if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS]
 
     # Filter to only files we renamed (have content descriptions)
     files_to_organize = []
@@ -64,7 +64,7 @@ def organize_files(base_path: str = "~/Documents", dry_run: bool = False) -> dic
             stats['no_mapping'] += 1
             continue
 
-        dest_dir = base_path / dest_folder
+        dest_dir = root_path / dest_folder
         dest_path = dest_dir / file_path.name
 
         # Create directory if needed

@@ -516,7 +516,7 @@ class ImageRenamer:
                     result["dest_path"] = str(dest_path)
                 return result
 
-            self.analyzer.analyze_image = analyze_with_dest
+            self.analyzer.analyze_image = analyze_with_dest  # type: ignore[method-assign]
 
         return self.organizer.organize(limit=limit, min_confidence=self.min_confidence)
 

@@ -65,6 +65,7 @@ _RENAMED_SCREENSHOT_PREFIX_RE = re.compile(
 # Default OCR classifier — injected per instance for tests. Import degrades
 # gracefully (like the legacy organizer's guarded import): without the OCR
 # stack the signal emits only the weak fallback.
+_default_ocr_classify: Optional[Callable[..., Any]]
 try:
     from shared.ocr_classifier import classify_by_ocr as _default_ocr_classify
 except ImportError:  # pragma: no cover - depends on optional OCR stack

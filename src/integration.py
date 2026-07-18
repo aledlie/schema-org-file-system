@@ -5,10 +5,13 @@ Provides multiple output formats (JSON-LD, microdata, RDFa),
 API endpoints, and bulk export functionality.
 """
 
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
 from enum import Enum
 from html import escape
 import json
+
+if TYPE_CHECKING:
+    from .base import SchemaOrgBase
 
 
 class OutputFormat(Enum):

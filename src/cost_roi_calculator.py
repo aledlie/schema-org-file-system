@@ -77,7 +77,7 @@ class ROIMetrics:
     manual_hours_saved: float
     cost_per_file: float
     value_per_file: float
-    break_even_files: int  # Files needed to break even
+    break_even_files: int | float  # Files needed to break even (inf if never)
 
 
 class CostROICalculator:
@@ -436,6 +436,7 @@ class CostROICalculator:
         cost_per_file = cost_summary.avg_cost_per_file
         value_per_file = (config.manual_time_saved_sec / 3600) * self.MANUAL_HOURLY_RATE * config.files_correctly_classified
 
+        break_even_files: int | float
         if cost_per_file > 0 and value_per_file > cost_per_file:
             break_even_files = 1  # Already profitable per file
         elif cost_per_file > 0:
@@ -555,7 +556,7 @@ class CostROICalculator:
         Returns:
             List of recommendations
         """
-        recommendations = []
+        recommendations: List[Dict[str, Any]] = []
 
         for feature_name in self.cost_configs.keys():
             summary = self.calculate_feature_cost(feature_name)
@@ -785,15 +786,16 @@ class CostTracker:
         self.files_processed = files_processed
         self.input_file_size_bytes = input_file_size_bytes
         self.metadata = metadata or {}
-        self.start_time = None
+        self.start_time: Optional[float] = None
         self.success = True
-        self.error_message = None
+        self.error_message: Optional[str] = None
 
     def __enter__(self) -> 'CostTracker':
         self.start_time = time.time()
         return self
 
     def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
+        assert self.start_time is not None  # set in __enter__
         processing_time = time.time() - self.start_time
 
         if exc_type is not None:

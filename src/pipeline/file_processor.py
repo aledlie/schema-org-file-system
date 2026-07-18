@@ -374,11 +374,12 @@ class FileProcessor:
             # structured "location" dict or the flat get_metadata_summary()
             # shape ("location_name" + "gps_coordinates"), which is what
             # ContentOrganizer actually produces.
-            location_info = (image_metadata or {}).get("location")
-            if not location_info and (image_metadata or {}).get("location_name"):
-                coords = image_metadata.get("gps_coordinates") or (None, None)
+            metadata = image_metadata or {}
+            location_info = metadata.get("location")
+            if not location_info and metadata.get("location_name"):
+                coords = metadata.get("gps_coordinates") or (None, None)
                 location_info = {
-                    "display_name": image_metadata["location_name"],
+                    "display_name": metadata["location_name"],
                     "latitude": coords[0],
                     "longitude": coords[1],
                 }

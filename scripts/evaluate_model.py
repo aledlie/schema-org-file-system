@@ -12,7 +12,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Optional, TYPE_CHECKING, Dict, List, Tuple, Any, TypedDict
+from typing import Optional, TYPE_CHECKING, Dict, List, Tuple, Any, TypedDict, Union
 
 if TYPE_CHECKING:
     from src.cli_inputs import EvaluateInputs
@@ -330,6 +330,7 @@ def evaluate_model(
 
     print(f"Loaded {len(test_data)} test samples")
 
+    model: Union[ContentClassifierModel, UnifiedScorerModel, FileCategorizationModel]
     if classifier == CLASSIFIER_CONTENT:
         model = ContentClassifierModel()
     elif classifier == CLASSIFIER_UNIFIED:

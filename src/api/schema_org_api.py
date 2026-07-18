@@ -6,7 +6,7 @@ Provides JSON-LD representations of entities in schema.org format.
 Supports single entity retrieval and bulk export with filtering.
 """
 
-from typing import Dict, Any, cast
+from typing import Dict, Any, Iterator, cast
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session, selectinload, joinedload
 
@@ -36,7 +36,7 @@ app = FastAPI(
 
 
 # Dependency for database session
-def get_db() -> Session:
+def get_db() -> Iterator[Session]:
     """Get database session."""
     session = get_session()
     try:

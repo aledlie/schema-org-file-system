@@ -194,8 +194,8 @@ def _load_rgb(image_path: Path):
     """Load an image as an EXIF-oriented RGB PIL image, or None on failure."""
     try:
         img = Image.open(image_path)
-        img = ImageOps.exif_transpose(img)
-        return img.convert("RGB")
+        oriented = ImageOps.exif_transpose(img)
+        return oriented.convert("RGB")
     except Exception:
         return None
 
