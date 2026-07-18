@@ -90,5 +90,5 @@ def build_default_signals(
     signals.append(MediaHeuristicSignal())  # W_MEDIA = 0.65
     signals.append(PhotoCompositionSignal(image_analyzer))  # W_PEOPLE_PHOTO = 0.65
     signals.append(FilepathSignal())  # W_PATH = 0.6
-    signals.append(MimeFallbackSignal())  # W_MIME = 0.3
+    signals.append(MimeFallbackSignal())  # W_MIME = 0.4
     return signals
