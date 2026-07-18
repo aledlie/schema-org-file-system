@@ -89,7 +89,8 @@ python scripts/prototype_scene_probe.py train   # -> results/scene_probe.joblib
 - Interiors already scaffold subtypes (`HotelRoom`/`MeetingRoom`); an exterior `House` vs commercial `CivicStructure`/`LandmarksOrHistoricalBuildings` split is a later signal.
 - A `place` GPS/EXIF cross-check (the pipeline already extracts location) could corroborate the probe's `place` votes.
 
-## Status of this landing (2026-07-17)
+## Status of this landing (2026-07-18)
 
 - **Done:** taxonomy (`category_config.py`) + `get_destination_path` tests; `scripts/prototype_scene_probe.py`; `results/scene_labels/` scaffold.
-- **Pending:** hand-labeling → train `scene_probe.joblib`; then step 2 (SceneSignal + retirement + weights/registry) + backtest.
+- **Done (2026-07-18):** `SceneSignal` (`src/scoring/signals/scene.py`) + `W_SCENE` (aliases `W_INTERIOR`) + registry wiring behind an **artifact-gated swap** — `build_default_signals` registers `SceneSignal` only when `results/scene_probe.joblib` loads, else keeps `InteriorSignal` (honours the §Sequencing guard; zero behaviour change until the artifact lands). Tests: `test_signal_scene.py` + `test_registry.py::TestSceneSwap`.
+- **Pending:** hand-labeling (30/~600+ rows as of 2026-07-18: 18 interior, 12 exterior, 0 place, 0 neither) → train + commit `scene_probe.joblib`; then swap completion: delete `interior.py` + the registry fallback, retire `photo_composition`'s `is_property_mgmt` vote, rename `W_INTERIOR`→`W_SCENE`, update `backtest_scoring.WEIGHT_SIGNALS` (`"interior"`→`"scene"`) + registry/golden tests, port the `interior_probe` health check to the scene artifact, backtest.
