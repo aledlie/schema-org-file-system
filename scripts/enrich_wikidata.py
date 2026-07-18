@@ -41,8 +41,10 @@ if str(_PROJECT_ROOT / "src") not in sys.path:
 from constants import DEFAULT_DB_PATH
 from storage.wikidata_enricher import (
     QID_EVENT,
+    QID_ORGANIZATION,
     WikidataEnricher,
     WikidataMatch,
+    _KV_NAMESPACE,
 )
 
 # Seconds to sleep between API calls (sequential batching; Wikidata ToS).
@@ -59,13 +61,16 @@ def _get_all_companies(db_path: str) -> List[Dict]:
             "SELECT id, name, normalized_name, wikidata_qid FROM companies ORDER BY id"
         )
         rows = cursor.fetchall()
-    except sqlite3.OperationalError:
-        # wikidata_qid column missing; run migrate-wikidata first.
-        print(
-            "ERROR: companies.wikidata_qid column missing.\n"
-            "Run: organize-files migrate-wikidata --db-path " + db_path,
-            file=sys.stderr,
-        )
+    except sqlite3.OperationalError as exc:
+        msg = str(exc)
+        if "wikidata_qid" in msg or "no such column" in msg.lower():
+            print(
+                "ERROR: companies.wikidata_qid column missing.\n"
+                "Run: organize-files migrate-wikidata --db-path " + db_path,
+                file=sys.stderr,
+            )
+        else:
+            print(f"ERROR: database error: {exc}", file=sys.stderr)
         sys.exit(1)
     finally:
         conn.close()
@@ -125,8 +130,11 @@ def run(
             print(f"  SKIP  {name!r} — already enriched ({existing_qid})")
             continue
 
+        org_key = enricher._cache_key(name, QID_ORGANIZATION)
+        org_cached = enricher._kv.exists(org_key, namespace=_KV_NAMESPACE)
         match: Optional[WikidataMatch] = enricher.reconcile_organization(name)
-        time.sleep(_BETWEEN_CALL_SLEEP_SEC)
+        if not org_cached:
+            time.sleep(_BETWEEN_CALL_SLEEP_SEC)
 
         if match:
             matched += 1
@@ -141,8 +149,11 @@ def run(
             print(f"  MISS  {name!r}")
 
             if check_events:
+                evt_key = enricher._cache_key(name, QID_EVENT)
+                evt_cached = enricher._kv.exists(evt_key, namespace=_KV_NAMESPACE)
                 event_match = enricher.reconcile_event(name)
-                time.sleep(_BETWEEN_CALL_SLEEP_SEC)
+                if not evt_cached:
+                    time.sleep(_BETWEEN_CALL_SLEEP_SEC)
                 if event_match:
                     event_collisions.append(name)
                     print(
