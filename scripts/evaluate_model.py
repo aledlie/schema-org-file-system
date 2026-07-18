@@ -12,7 +12,7 @@ import re
 from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Optional, TYPE_CHECKING, Dict, List, Tuple, Any
+from typing import Optional, TYPE_CHECKING, Dict, List, Tuple, Any, TypedDict
 
 if TYPE_CHECKING:
     from src.cli_inputs import EvaluateInputs
@@ -59,6 +59,13 @@ PHOTO_PARENT_FOLDERS = {
 # misleading 0% (see backlog: "report per-class metrics only for classes with
 # adequate support").
 DEFAULT_MIN_SUPPORT = 5
+
+
+class LowSupportCategory(TypedDict):
+    """A category excluded from macro metrics for having too few samples."""
+
+    category: str
+    support: int
 
 
 class FileCategorizationModel:
@@ -398,7 +405,7 @@ def evaluate_model(
     # Classes with support < min_support are flagged unreported so their noisy
     # near-zero F1 does not distort the headline macro metric.
     per_category_metrics = {}
-    low_support_categories: list[dict[str, Any]] = []
+    low_support_categories: list[LowSupportCategory] = []
     for category in category_metrics:
         tp = category_metrics[category]["tp"]
         fp = category_metrics[category]["fp"]
