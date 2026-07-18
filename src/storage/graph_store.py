@@ -326,7 +326,7 @@ class GraphStore:
             if parent_name:
                 parent = session.query(Category).filter(Category.name == parent_name).first()
                 if parent:
-                    level = parent.level + 1
+                    level = (parent.level or 0) + 1
 
             # Create new category with canonical ID
             category = Category(
@@ -422,7 +422,7 @@ class GraphStore:
             changed = False
             if category not in file.categories:
                 file.categories.append(category)
-                category.file_count += 1
+                category.file_count = (category.file_count or 0) + 1
                 changed = True
 
             # Persist scoring evidence on the association row (nullable,
@@ -530,7 +530,7 @@ class GraphStore:
 
             if company not in file.companies:
                 file.companies.append(company)
-                company.file_count += 1
+                company.file_count = (company.file_count or 0) + 1
                 company.last_seen = utcnow()
                 # Only commit if we own the session
                 if owned:
@@ -676,7 +676,7 @@ class GraphStore:
 
             if person not in file.people:
                 file.people.append(person)
-                person.file_count += 1
+                person.file_count = (person.file_count or 0) + 1
                 person.last_seen = utcnow()
                 if owned:
                     session.commit()
@@ -1268,7 +1268,7 @@ class GraphStore:
 
             if location not in file.locations:
                 file.locations.append(location)
-                location.file_count += 1
+                location.file_count = (location.file_count or 0) + 1
                 if owned:
                     session.commit()
 
@@ -1361,7 +1361,7 @@ class GraphStore:
 
             for _ in range(depth):
                 next_level = []
-                pending: list[tuple[int, str, float]] = []
+                pending: list[tuple[str, RelationshipType, float]] = []
 
                 for current_id in current_level:
                     # Get outgoing relationships
@@ -1378,7 +1378,7 @@ class GraphStore:
                             visited.add(rel.target_file_id)
                             next_level.append(rel.target_file_id)
                             pending.append(
-                                (rel.target_file_id, rel.relationship_type, rel.confidence)
+                                (rel.target_file_id, rel.relationship_type, rel.confidence or 0.0)
                             )
 
                     # Get incoming relationships
@@ -1395,7 +1395,7 @@ class GraphStore:
                             visited.add(rel.source_file_id)
                             next_level.append(rel.source_file_id)
                             pending.append(
-                                (rel.source_file_id, rel.relationship_type, rel.confidence)
+                                (rel.source_file_id, rel.relationship_type, rel.confidence or 0.0)
                             )
 
                 if pending:
@@ -1633,8 +1633,8 @@ class GraphStore:
             for record in records:
                 stats = feature_stats[cast(str, record.feature_name)]
                 stats["invocations"] += 1
-                stats["total_cost"] += record.cost
-                stats["total_time"] += record.processing_time_sec
+                stats["total_cost"] += record.cost or 0.0
+                stats["total_time"] += record.processing_time_sec or 0.0
                 if record.success:
                     stats["success_count"] += 1
                 else:

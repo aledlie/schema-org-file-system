@@ -19,7 +19,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 from shared.constants import CAMERA_VENDOR_PREFIX_PATTERNS  # noqa: E402
 from shared.file_ops import resolve_collision  # noqa: E402
 import json
-from typing import TYPE_CHECKING, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 if TYPE_CHECKING:
     from src.cli_inputs import NameInputs
@@ -31,7 +31,7 @@ class FileNameOrganizer:
     def __init__(self, base_path: str, dry_run: bool = False):
         self.base_path = Path(base_path).expanduser()
         self.dry_run = dry_run
-        self.stats = {
+        self.stats: Dict[str, Any] = {
             'total_files': 0,
             'moved_files': 0,
             'skipped_files': 0,
@@ -107,7 +107,7 @@ class FileNameOrganizer:
         }
 
         # Filename pattern categories
-        self.filename_patterns = {
+        self.filename_patterns: Dict[str, Any] = {
             # Artifact/build files (to be trashed)
             'artifacts_trash': [
                 r'\.pyc$',

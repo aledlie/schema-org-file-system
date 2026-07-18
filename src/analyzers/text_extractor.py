@@ -220,7 +220,7 @@ class TextExtractor:
             else nullcontext()
         ):
             try:
-                doc = Document(docx_path)
+                doc = Document(str(docx_path))
                 text = []
                 for paragraph in doc.paragraphs:
                     if paragraph.text.strip():

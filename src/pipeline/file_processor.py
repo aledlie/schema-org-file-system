@@ -428,7 +428,7 @@ class FileProcessor:
 
         conf = result.get("confidence")
         conf_str = f" ({conf:.0%})" if conf is not None else ""
-        new_path = resolve_collision(file_path.parent / new_name)
+        new_path: Path = cast(Path, resolve_collision(file_path.parent / new_name))
 
         if dry_run:
             print(f"  → Would rename: {file_path.name} → {new_path.name}{conf_str}")

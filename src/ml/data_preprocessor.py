@@ -37,8 +37,8 @@ class DataPreprocessor:
         """
         self.report_path = report_path
         self.feature_extractor = FileFeatureExtractor()
-        self.data = None
-        self.features = None
+        self.data: Optional[Dict[str, Any]] = None
+        self.features: Optional[List[Dict[str, Any]]] = None
         self.statistics: dict[str, Any] = {}
 
     def load_data(self, report_path: Optional[str] = None) -> Dict:
@@ -48,11 +48,12 @@ class DataPreprocessor:
             raise ValueError("No report path provided")
 
         with open(path, 'r') as f:
-            self.data = json.load(f)
+            data: Dict[str, Any] = json.load(f)
 
-        self.statistics['total_records'] = len(self.data.get('results', []))
+        self.data = data
+        self.statistics['total_records'] = len(data.get('results', []))
         self.statistics['load_time'] = datetime.now().isoformat()
-        return self.data
+        return data
 
     def extract_all_features(self) -> List[Dict]:
         """Extract features from all records."""
@@ -93,7 +94,7 @@ class DataPreprocessor:
 
         # Filename analysis
         avg_filename_length = sum(f['filename_length'] for f in self.features) / len(self.features)
-        token_counts = Counter()
+        token_counts: Counter[str] = Counter()
         for f in self.features:
             token_counts.update(f['filename_tokens'])
 
@@ -184,6 +185,9 @@ class DataPreprocessor:
         """Create label encoder for category classification."""
         from sklearn.preprocessing import LabelEncoder
 
+        if not self.features:
+            return {}, {}
+
         categories = sorted({f.get("category", "uncategorized") for f in self.features})
         if not categories:
             return {}, {}
@@ -199,7 +203,7 @@ class DataPreprocessor:
         if not self.features:
             raise ValueError("No features extracted. Call extract_all_features() first.")
 
-        issues = {
+        issues: Dict[str, List[Any]] = {
             'missing_category': [],
             'empty_filename': [],
             'duplicate_filenames': [],
@@ -248,12 +252,12 @@ class DataPreprocessor:
 
     def _compute_quality_score(self, issues: Dict) -> float:
         """Compute overall data quality score (0-100)."""
-        total = len(self.features)
+        total = len(self.features or [])
         if total == 0:
             return 0.0
 
         # Penalize based on issues
-        penalties = 0
+        penalties = 0.0
         penalties += len(issues['missing_category']) * 0.5
         penalties += len(issues['empty_filename']) * 1.0
         penalties += len(issues['duplicate_filenames']) * 0.1

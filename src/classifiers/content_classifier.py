@@ -7,6 +7,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING
 
 from src.classifiers.entity_detector import EntityDetector
+from src.classifiers.org_extraction import extract_organizations
 
 if TYPE_CHECKING:
     from shared.kie_utils import KIEResult
@@ -529,8 +530,15 @@ class ContentClassifier:
     # ------------------------------------------------------------------
 
     def extract_company_names(self, text: str) -> list[str]:
-        """Extract company names from text (delegates to EntityDetector)."""
-        return self.entities.extract_company_names(text)
+        """Extract organizations, ranked own-org-first and de-garbled.
+
+        Phase-0 layers (reference-span exclusion, email/URL domain-ownership
+        cue, salience ranking, ``cleanco`` canonicalization) wrap the base
+        ``EntityDetector`` regex to fix single-token-brand misses and citation
+        false positives. See ``src/classifiers/org_extraction.py`` and
+        ``docs/plans/ORG_NER_REPLACEMENT_PLAN.md``.
+        """
+        return extract_organizations(text, base_extractor=self.entities)
 
     def extract_people_names(self, text: str) -> list[str]:
         """Extract people names from text (delegates to EntityDetector)."""

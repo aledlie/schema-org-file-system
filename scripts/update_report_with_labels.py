@@ -9,7 +9,7 @@ from the labeling sessions stored in the database.
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Tuple
+from typing import Any, Dict, Tuple
 
 from shared.db_utils import db_connection
 
@@ -81,7 +81,7 @@ def update_report(report_path: str, labeled_data: Tuple[Dict, Dict], output_path
 
     results = report.get('results', [])
 
-    stats = {
+    stats: Dict[str, Any] = {
         'total_files': len(results),
         'updated': 0,
         'unchanged': 0,

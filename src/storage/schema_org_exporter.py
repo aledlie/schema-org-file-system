@@ -9,7 +9,7 @@ Supports three output formats:
 
 import json
 from pathlib import Path
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Type, Union
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Type, Union, cast
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload, joinedload
@@ -316,7 +316,7 @@ class SchemaOrgExporter:
             m.Location: lambda: self._iter_core_simple_records(m.Location, m.build_location_jsonld),
         }
         for cls in entity_classes:
-            it = iterators.get(cls)
+            it = iterators.get(cast(Any, cls))
             if it is not None:
                 yield from it()
             else:  # unknown type: fall back to ORM serialization
@@ -347,7 +347,7 @@ class SchemaOrgExporter:
                 m.Location, m.build_location_jsonld, entity_ids
             )
         else:
-            pk = entity_class.__mapper__.primary_key[0]
+            pk = cast(Any, entity_class).__mapper__.primary_key[0]
             for row in self._session.query(entity_class).filter(pk.in_(entity_ids)).all():
                 yield row.to_schema_org()
 

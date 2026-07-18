@@ -281,11 +281,11 @@ def _resolve_collision_with_seen(dest: Path, seen: Set[Path]) -> Path:
     """Like resolve_collision, but also avoids destinations already claimed
     earlier in this same plan (which won't exist on disk yet, so
     resolve_collision alone can't see them)."""
-    candidate = resolve_collision(dest)
+    candidate: Path = cast(Path, resolve_collision(dest))
     counter = 1
     stem, ext, parent = dest.stem, dest.suffix, dest.parent
     while candidate in seen:
-        candidate = resolve_collision(parent / f"{stem}_{counter}{ext}")
+        candidate = cast(Path, resolve_collision(parent / f"{stem}_{counter}{ext}"))
         counter += 1
     return candidate
 
@@ -634,7 +634,7 @@ def index_person_files(
             "people": per_person,
         }
 
-    edges = apply_person_index(index, db_path)
+    edges = apply_person_index(index, str(db_path))
     if verbose:
         print(f"\n  Wrote {edges} person edges across {len(per_person)} people")
 

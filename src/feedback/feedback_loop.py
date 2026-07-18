@@ -8,7 +8,7 @@ Provides three integration points:
 """
 
 import os
-from typing import Optional, Dict, List, Tuple
+from typing import Any, Optional, Dict, List, Tuple
 
 from .correction_tracker import CorrectionFeedbackSystem
 
@@ -163,7 +163,7 @@ class FeedbackIntegration:
             Tuple of (modified_results, statistics)
         """
         modified = []
-        stats = {
+        stats: Dict[str, Any] = {
             "total": len(results),
             "suggestions_made": 0,
             "auto_applied": 0,
