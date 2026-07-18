@@ -2,6 +2,8 @@
 Image metadata parsing: EXIF, GPS coordinates, timestamps, and reverse geocoding.
 """
 
+import json
+import sqlite3
 from contextlib import nullcontext
 from datetime import datetime
 from pathlib import Path
@@ -13,9 +15,11 @@ try:
     from PIL.ExifTags import GPSTAGS, TAGS
     from geopy.geocoders import Nominatim
     from geopy.exc import GeocoderServiceError, GeocoderTimedOut
+    from geopy.extra.rate_limiter import RateLimiter
 
     try:
         from pillow_heif import register_heif_opener
+
         register_heif_opener()
     except ImportError:
         pass
@@ -24,10 +28,17 @@ try:
 except ImportError:
     METADATA_AVAILABLE = False
 
+# Forward-geocoding rate limit / retries (OSM Nominatim policy: <=1 req/s) and
+# the on-disk result cache shared across runs (keyed by normalized address).
+GEOCODE_MIN_DELAY_SEC = 1.0
+GEOCODE_MAX_RETRIES = 2
+GEOCODE_CACHE_PATH = Path(".cache") / "geocode_cache.sqlite"
+
 # piexif reads EXIF from some JPEG/HEIC/WebP files where PIL's _getexif()
 # comes back empty; used only as a fallback.
 try:
     import piexif
+
     PIEXIF_AVAILABLE = True
 except ImportError:
     PIEXIF_AVAILABLE = False
@@ -52,6 +63,7 @@ _TEXT_METADATA_KEYS: Tuple[str, ...] = (
 try:
     from cost_roi_calculator import CostTracker
 except ImportError:
+
     class CostTracker:  # type: ignore[no-redef]
         """Stub when cost tracking is not installed."""
 
@@ -78,13 +90,26 @@ class ImageMetadataParser:
         self.metadata_available = METADATA_AVAILABLE
         self.geocoder = None
         self.cost_calculator = cost_calculator
+        # Rate-limited forward-geocode callable (Nominatim policy: <=1 req/s).
+        # Set alongside self.geocoder; None when geocoding is unavailable.
+        self._forward_geocode = None
 
         if self.metadata_available:
             try:
                 self.geocoder = Nominatim(user_agent="file_organizer_v1.0", timeout=5)
+                # 1 req/s honors OSM Nominatim usage policy; combined with the
+                # on-disk cache this keeps large batches from hammering the
+                # public endpoint (the reverse path has no such guard).
+                self._forward_geocode = RateLimiter(
+                    self.geocoder.geocode,
+                    min_delay_seconds=GEOCODE_MIN_DELAY_SEC,
+                    max_retries=GEOCODE_MAX_RETRIES,
+                    swallow_exceptions=False,
+                )
             except Exception as e:
                 print(f"Warning: Could not initialize geocoder: {e}")
                 self.geocoder = None
+                self._forward_geocode = None
 
     def extract_exif_data(self, image_path: Path) -> Dict[str, Any]:
         """
@@ -118,9 +143,7 @@ class ImageMetadataParser:
         #    left the GPS IFD undecoded; recover just that from piexif.
         # A missing GPSInfo key means the file carries no GPS, so piexif is
         # skipped entirely for non-GPS images.
-        gps_is_bare_offset = "GPSInfo" in exif_data and not isinstance(
-            exif_data["GPSInfo"], dict
-        )
+        gps_is_bare_offset = "GPSInfo" in exif_data and not isinstance(exif_data["GPSInfo"], dict)
         if not exif_data or gps_is_bare_offset:
             piexif_data = self._extract_exif_via_piexif(image_path)
             if not exif_data:
@@ -286,8 +309,7 @@ class ImageMetadataParser:
                 return None
 
             gps_info: Dict[str, Any] = {
-                GPSTAGS.get(tag_id, tag_id): value
-                for tag_id, value in raw_gps.items()
+                GPSTAGS.get(tag_id, tag_id): value for tag_id, value in raw_gps.items()
             }
 
             if not gps_info:
@@ -350,33 +372,19 @@ class ImageMetadataParser:
         if not self.geocoder:
             return None
 
-        ctx = CostTracker(self.cost_calculator, "nominatim_geocoding") if self.cost_calculator else nullcontext()
+        ctx = (
+            CostTracker(self.cost_calculator, "nominatim_geocoding")
+            if self.cost_calculator
+            else nullcontext()
+        )
         with ctx:
             try:
                 lat, lon = coordinates
                 location = self.geocoder.reverse(f"{lat}, {lon}", exactly_one=True)
 
                 if location and location.raw.get("address"):
-                    address = location.raw["address"]
-                    parts = []
-
-                    city = (
-                        address.get("city")
-                        or address.get("town")
-                        or address.get("village")
-                        or address.get("county")
-                    )
-                    if city:
-                        parts.append(city)
-
-                    state = address.get("state") or address.get("region")
-                    if state:
-                        parts.append(state)
-
-                    country = address.get("country")
-                    if country:
-                        parts.append(country)
-
+                    city, state, country = self._parse_place(location.raw["address"])
+                    parts = [p for p in (city, state, country) if p]
                     if parts:
                         return ", ".join(parts)
 
@@ -386,6 +394,117 @@ class ImageMetadataParser:
                 print(f"  Location lookup error: {e}")
 
             return None
+
+    @staticmethod
+    def _parse_place(
+        raw_address: Dict[str, Any],
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+        """Pull (city, state, country) from a Nominatim ``raw['address']`` dict.
+
+        Shared by reverse (``get_location_name``) and forward
+        (``geocode_address``) geocoding so the field-preference order
+        (city→town→village→county; state→region) lives in one place.
+        """
+        city = (
+            raw_address.get("city")
+            or raw_address.get("town")
+            or raw_address.get("village")
+            or raw_address.get("county")
+        )
+        state = raw_address.get("state") or raw_address.get("region")
+        country = raw_address.get("country")
+        return city, state, country
+
+    def geocode_address(self, address: str) -> Optional[Dict[str, Any]]:
+        """Forward-geocode a text address to a structured location dict.
+
+        Rate-limited (<=1 req/s) and cached on disk (keyed by normalized
+        address, including negative results) so repeated/batch lookups do not
+        re-hit the public Nominatim endpoint. Returns ``None`` when geocoding
+        is unavailable or the address can't be resolved.
+
+        Returns: ``{display_name, latitude, longitude, city, state, country}``.
+        """
+        if not self._forward_geocode or not address:
+            return None
+
+        key = " ".join(address.split()).lower()
+        cached = self._geocode_cache_get(key)
+        if cached is not None:
+            return cached or None  # {} is a cached negative result
+
+        result: Optional[Dict[str, Any]] = None
+        ctx = (
+            CostTracker(self.cost_calculator, "nominatim_geocoding")
+            if self.cost_calculator
+            else nullcontext()
+        )
+        with ctx:
+            try:
+                location = self._forward_geocode(address, exactly_one=True, addressdetails=True)
+                if location:
+                    raw = (location.raw or {}).get("address", {})
+                    city, state, country = self._parse_place(raw)
+                    display = ", ".join(p for p in (city, state, country) if p)
+                    result = {
+                        "display_name": display or location.address,
+                        "latitude": location.latitude,
+                        "longitude": location.longitude,
+                        "city": city,
+                        "state": state,
+                        "country": country,
+                    }
+            except (GeocoderTimedOut, GeocoderServiceError) as e:
+                print(f"  Forward-geocoding error: {e}")
+                return None  # transient — do not cache a miss
+            except Exception as e:
+                print(f"  Address lookup error: {e}")
+                return None
+
+        self._geocode_cache_put(key, result or {})
+        return result
+
+    @staticmethod
+    def _geocode_cache_conn() -> Optional[sqlite3.Connection]:
+        try:
+            GEOCODE_CACHE_PATH.parent.mkdir(parents=True, exist_ok=True)
+            conn = sqlite3.connect(str(GEOCODE_CACHE_PATH))
+            conn.execute(
+                "CREATE TABLE IF NOT EXISTS geocode_cache "
+                "(address TEXT PRIMARY KEY, result TEXT NOT NULL)"
+            )
+            return conn
+        except sqlite3.Error:
+            return None  # cache is best-effort; never block geocoding
+
+    def _geocode_cache_get(self, key: str) -> Optional[Dict[str, Any]]:
+        conn = self._geocode_cache_conn()
+        if conn is None:
+            return None
+        try:
+            row = conn.execute(
+                "SELECT result FROM geocode_cache WHERE address = ?", (key,)
+            ).fetchone()
+            return json.loads(row[0]) if row else None
+        except (sqlite3.Error, ValueError):
+            return None
+        finally:
+            conn.close()
+
+    def _geocode_cache_put(self, key: str, value: Dict[str, Any]) -> None:
+        conn = self._geocode_cache_conn()
+        if conn is None:
+            return
+        try:
+            conn.execute(
+                "INSERT OR REPLACE INTO geocode_cache (address, result) VALUES (?, ?)",
+                (key, json.dumps(value)),
+            )
+            conn.commit()
+        except (sqlite3.Error, ValueError):
+            pass
+        finally:
+            conn.close()
 
     def get_metadata_summary(self, image_path: Path) -> Dict[str, Any]:
         """

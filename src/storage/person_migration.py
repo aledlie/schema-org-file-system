@@ -39,6 +39,7 @@ try:
     from shared.file_ops import is_os_junk_file, resolve_collision
 except ImportError:  # pragma: no cover - fallback when scripts/ isn't already on sys.path
     import sys
+
     sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
     from shared.file_ops import is_os_junk_file, resolve_collision
 
@@ -79,13 +80,41 @@ _RESUME_FILENAME_MARKERS = ("resume", "cv", "curriculum")
 # Resume/CV and template/style/color words that are never part of a person's
 # name -- used to reject filename false positives like "Resume Blue" or
 # "Modern Minimalist Resume" while still extracting real names ("Chyna Strange").
-_FILENAME_NAME_STOPWORDS = frozenset({
-    "resume", "cv", "curriculum", "vitae", "cover", "letter",
-    "modern", "minimalist", "professional", "creative", "simple",
-    "elegant", "classic", "template", "standard", "basic", "clean",
-    "blue", "orange", "red", "green", "black", "white", "gray", "grey",
-    "technical", "final", "draft", "copy", "new", "old",
-})
+_FILENAME_NAME_STOPWORDS = frozenset(
+    {
+        "resume",
+        "cv",
+        "curriculum",
+        "vitae",
+        "cover",
+        "letter",
+        "modern",
+        "minimalist",
+        "professional",
+        "creative",
+        "simple",
+        "elegant",
+        "classic",
+        "template",
+        "standard",
+        "basic",
+        "clean",
+        "blue",
+        "orange",
+        "red",
+        "green",
+        "black",
+        "white",
+        "gray",
+        "grey",
+        "technical",
+        "final",
+        "draft",
+        "copy",
+        "new",
+        "old",
+    }
+)
 
 MIGRATION_REASON = "migrated from legacy Person/ category (Option C phase 5)"
 ROLLBACK_REASON = "rolled back Option C phase 5 person migration"
@@ -558,6 +587,7 @@ def apply_person_index(index: List[Tuple[str, str]], db_path: str) -> int:
                 person_name,
                 role=PERSON_INDEX_ROLE,
                 session=session,
+                validate=False,  # directory names are human-curated (trusted)
             ):
                 edges += 1
         session.commit()

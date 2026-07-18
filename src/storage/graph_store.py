@@ -19,10 +19,20 @@ from sqlalchemy.orm import Session, sessionmaker, joinedload, selectinload
 from sqlalchemy.exc import IntegrityError
 
 from .models import (
-    Base, File, Category, Company, Person, Location,
-    OrganizationSession, FileRelationship, CostRecord,
-    FileStatus, RelationshipType, file_categories
+    Base,
+    File,
+    Category,
+    Company,
+    Person,
+    Location,
+    OrganizationSession,
+    FileRelationship,
+    CostRecord,
+    FileStatus,
+    RelationshipType,
+    file_categories,
 )
+
 try:
     from ..constants import (
         COORDINATE_TOLERANCE_DEG,
@@ -74,7 +84,7 @@ class GraphStore:
             db_path: Path to SQLite database
         """
         self.db_path = db_path
-        self.engine = create_engine(f'sqlite:///{db_path}', echo=False)
+        self.engine = create_engine(f"sqlite:///{db_path}", echo=False)
 
         # Enable SQLite optimizations
         @event.listens_for(self.engine, "connect")
@@ -105,11 +115,7 @@ class GraphStore:
     # =========================================================================
 
     def add_file(
-        self,
-        original_path: str,
-        filename: str,
-        session: Session = None,
-        **kwargs
+        self, original_path: str, filename: str, session: Session = None, **kwargs
     ) -> File:
         """
         Add a new file to the store.
@@ -146,7 +152,7 @@ class GraphStore:
                 original_path=original_path,
                 filename=filename,
                 file_extension=Path(filename).suffix.lower() if filename else None,
-                **kwargs
+                **kwargs,
             )
             session.add(file)
             session.commit()
@@ -159,7 +165,9 @@ class GraphStore:
             if close_session:
                 session.close()
 
-    def get_file(self, file_id: str = None, path: str = None, session: Session = None) -> Optional[File]:
+    def get_file(
+        self, file_id: str = None, path: str = None, session: Session = None
+    ) -> Optional[File]:
         """
         Get a file by ID or path.
 
@@ -193,7 +201,7 @@ class GraphStore:
         extension: str = None,
         limit: int = 100,
         offset: int = 0,
-        session: Session = None
+        session: Session = None,
     ) -> List[File]:
         """
         Query files with filters.
@@ -215,8 +223,7 @@ class GraphStore:
 
         try:
             query = session.query(File).options(
-                joinedload(File.categories),
-                joinedload(File.companies)
+                joinedload(File.categories), joinedload(File.companies)
             )
 
             if status:
@@ -240,7 +247,7 @@ class GraphStore:
         status: FileStatus,
         destination: str = None,
         reason: str = None,
-        session: Session = None
+        session: Session = None,
     ) -> bool:
         """
         Update file organization status.
@@ -284,10 +291,7 @@ class GraphStore:
     # =========================================================================
 
     def get_or_create_category(
-        self,
-        name: str,
-        parent_name: str = None,
-        session: Session = None
+        self, name: str, parent_name: str = None, session: Session = None
     ) -> Optional[Category]:
         """
         Get or create a category.
@@ -329,7 +333,7 @@ class GraphStore:
                 canonical_id=Category.generate_canonical_id(full_path),
                 parent_id=parent.id if parent else None,
                 level=level,
-                full_path=full_path
+                full_path=full_path,
             )
             session.add(category)
             # Only commit if we own the session
@@ -376,7 +380,7 @@ class GraphStore:
         subcategory_name: str = None,
         confidence: float = 1.0,
         session: Session = None,
-        signal_evidence: Optional[Dict[str, Any]] = None
+        signal_evidence: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         Associate a file with a category.
@@ -406,7 +410,9 @@ class GraphStore:
             if subcategory_name:
                 # Create parent first (ensures the parent category exists before the subcategory)
                 self.get_or_create_category(category_name, session=session)
-                category = self.get_or_create_category(subcategory_name, category_name, session=session)
+                category = self.get_or_create_category(
+                    subcategory_name, category_name, session=session
+                )
             else:
                 category = self.get_or_create_category(category_name, session=session)
 
@@ -458,9 +464,12 @@ class GraphStore:
         session = session or self.get_session()
 
         try:
-            categories = session.query(Category).options(
-                selectinload(Category.subcategories).selectinload(Category.subcategories)
-            ).order_by(Category.level, Category.name).all()
+            categories = (
+                session.query(Category)
+                .options(selectinload(Category.subcategories).selectinload(Category.subcategories))
+                .order_by(Category.level, Category.name)
+                .all()
+            )
 
             # Build tree structure
             tree = []
@@ -477,7 +486,7 @@ class GraphStore:
     def _build_category_node(self, category: Category) -> Dict[str, Any]:
         """Build a category tree node recursively."""
         node = category.to_dict()
-        node['subcategories'] = [self._build_category_node(sub) for sub in category.subcategories]
+        node["subcategories"] = [self._build_category_node(sub) for sub in category.subcategories]
         return node
 
     # =========================================================================
@@ -497,7 +506,7 @@ class GraphStore:
                 company = Company(
                     name=name,
                     normalized_name=normalized,
-                    canonical_id=Company.generate_canonical_id(name)
+                    canonical_id=Company.generate_canonical_id(name),
                 )
                 session.add(company)
                 # Only commit if we own the session
@@ -521,7 +530,7 @@ class GraphStore:
         company_name: str,
         confidence: float = 1.0,
         context: str = None,
-        session: Session = None
+        session: Session = None,
     ) -> bool:
         """Associate a file with a company."""
         close_session = session is None
@@ -564,9 +573,26 @@ class GraphStore:
         name: str,
         email: str = None,
         role: str = None,
-        session: Session = None
+        session: Session = None,
+        *,
+        validate: bool = True,
     ) -> Optional[Person]:
-        """Get or create a person by name."""
+        """Get or create a person by name, applying the validation gate.
+
+        The layered person-name gate (PERSON_NAME_VALIDATION_PLAN) runs only
+        when creating a NEW row and ``validate=True``:
+
+        - ``reject`` → returns ``None`` and creates no row (deterministic
+          re-rejection on re-detection). Callers such as ``add_file_to_person``
+          treat ``None`` as "drop the edge".
+        - ``review`` → row created with ``review_status='pending_review'``
+          (hidden from the person-view read filter until confirmed).
+        - ``auto_accept`` → ``review_status='auto_accepted'``.
+
+        ``validate=False`` marks the row ``confirmed`` (trusted source, e.g.
+        directory-name migration). An existing ``rejected`` row is a tombstone:
+        it returns ``None`` rather than resurrecting the name.
+        """
         close_session = session is None
         session = session or self.get_session()
 
@@ -574,19 +600,48 @@ class GraphStore:
             normalized = Person.normalize_name(name)
             person = session.query(Person).filter(Person.normalized_name == normalized).first()
 
-            if not person:
-                person = Person(
-                    name=name,
-                    normalized_name=normalized,
-                    canonical_id=Person.generate_canonical_id(name),
-                    email=email,
-                    role=role
-                )
-                session.add(person)
-                if close_session:
-                    session.commit()
+            if person:
+                if getattr(person, "review_status", None) == "rejected":
+                    return None
+                return person
+
+            # validate=False marks a trusted source (e.g. curated directory
+            # names) as 'confirmed'. When validate=True we must NOT auto-trust:
+            # a working validator routes per its decision, and an *unavailable*
+            # validator routes to 'pending_review' (never 'confirmed' on
+            # nothing — PERSON_NAME_VALIDATION_PLAN).
+            review_status = "confirmed"
+            detection_confidence = None
+            validation_scores: Dict[str, Any] = {}
+            if validate:
+                result = self._validate_person_name(name)
+                if result is None:
+                    review_status = "pending_review"  # validator unavailable
+                elif result.decision == "reject":
+                    return None
                 else:
-                    session.flush()
+                    review_status = (
+                        "pending_review" if result.decision == "review" else "auto_accepted"
+                    )
+                    detection_confidence = result.score
+                    validation_scores = dict(result.layer_scores)
+
+            person = Person(
+                name=name,
+                normalized_name=normalized,
+                canonical_id=Person.generate_canonical_id(name),
+                email=email,
+                role=role,
+                review_status=review_status,
+                detection_confidence=detection_confidence,
+                validation_scores=validation_scores,
+                validated_at=utcnow(),
+            )
+            session.add(person)
+            if close_session:
+                session.commit()
+            else:
+                session.flush()
 
             return person
 
@@ -597,15 +652,41 @@ class GraphStore:
             if close_session:
                 session.close()
 
+    @staticmethod
+    def _validate_person_name(name: str):
+        """Run the person-name validation gate, or None if it's unavailable.
+
+        Imported lazily and guarded so ``src.storage`` works without the
+        ``names`` extra (or the classifiers package) installed.
+        """
+        try:
+            from ..classifiers.person_name_validator import validate_person_name
+        except ImportError:
+            try:
+                from classifiers.person_name_validator import validate_person_name
+            except ImportError:
+                return None
+        try:
+            return validate_person_name(name)
+        except Exception:
+            return None
+
     def add_file_to_person(
         self,
         file_id: str,
         person_name: str,
         role: str = None,
         confidence: float = 1.0,
-        session: Session = None
+        session: Session = None,
+        *,
+        validate: bool = True,
     ) -> bool:
-        """Associate a file with a person."""
+        """Associate a file with a person.
+
+        Passes ``validate`` through to :meth:`get_or_create_person`; when the
+        gate rejects the name, that returns ``None`` and this drops the edge
+        (returns ``False``) without creating a Person row.
+        """
         close_session = session is None
         session = session or self.get_session()
 
@@ -614,7 +695,9 @@ class GraphStore:
             if not file:
                 return False
 
-            person = self.get_or_create_person(person_name, role=role, session=session)
+            person = self.get_or_create_person(
+                person_name, role=role, session=session, validate=validate
+            )
 
             if person is None:
                 return False
@@ -636,9 +719,7 @@ class GraphStore:
                 session.close()
 
     def get_all_people_with_files(
-        self,
-        session: Session = None,
-        min_files: int = 1
+        self, session: Session = None, min_files: int = 1
     ) -> List[Tuple[str, List[str]]]:
         """
         Get all people who have at least `min_files` organized files.
@@ -664,6 +745,14 @@ class GraphStore:
             people = session.query(Person).options(selectinload(Person.files)).all()
 
             for person in people:
+                # Validation-gate status filter: hide rejected tombstones and
+                # names awaiting human review from the person-view. Legacy rows
+                # (NULL/'' status) are treated as visible. The substring
+                # denylist stays as a belt-and-suspenders guard through this
+                # phase (legacy rows were backfilled to 'auto_accepted' and are
+                # only re-scored by the Phase 3 --revalidate sweep).
+                if getattr(person, "review_status", None) in ("rejected", "pending_review"):
+                    continue
                 name_lower = person.name.lower()
                 if any(term in name_lower for term in _PERSON_NAME_DENYLIST):
                     continue
@@ -678,11 +767,7 @@ class GraphStore:
             if close_session:
                 session.close()
 
-    def get_files_by_person(
-        self,
-        person_id_or_name,
-        session: Session = None
-    ) -> List[str]:
+    def get_files_by_person(self, person_id_or_name, session: Session = None) -> List[str]:
         """
         Get the current file paths associated with a single person.
 
@@ -704,9 +789,7 @@ class GraphStore:
                 person = session.query(Person).filter(Person.id == person_id_or_name).first()
             else:
                 normalized = Person.normalize_name(person_id_or_name)
-                person = session.query(Person).filter(
-                    Person.normalized_name == normalized
-                ).first()
+                person = session.query(Person).filter(Person.normalized_name == normalized).first()
 
             if not person:
                 return []
@@ -723,12 +806,7 @@ class GraphStore:
         normalized = Person.normalize_name(person_id_or_name)
         return session.query(Person).filter(Person.normalized_name == normalized).first()
 
-    def remove_person_edge(
-        self,
-        file_id: str,
-        person_id_or_name,
-        session: Session = None
-    ) -> bool:
+    def remove_person_edge(self, file_id: str, person_id_or_name, session: Session = None) -> bool:
         """
         Remove a single file->person edge, keeping both rows.
 
@@ -764,10 +842,7 @@ class GraphStore:
                 session.close()
 
     def prune_person(
-        self,
-        person_id_or_name,
-        dry_run: bool = False,
-        session: Session = None
+        self, person_id_or_name, dry_run: bool = False, session: Session = None
     ) -> Optional[Dict[str, Any]]:
         """
         Delete a person and all of its file->person edges.
@@ -795,18 +870,18 @@ class GraphStore:
                 return None
 
             summary = {
-                'name': person.name,
-                'person_id': person.id,
-                'edges_removed': len(person.files),
-                'paths': [f.current_path or f.original_path for f in person.files],
+                "name": person.name,
+                "person_id": person.id,
+                "edges_removed": len(person.files),
+                "paths": [f.current_path or f.original_path for f in person.files],
             }
             if dry_run:
                 return summary
 
             person.files.clear()
-            session.query(Person).filter(
-                Person.merged_into_id == person.id
-            ).update({Person.merged_into_id: None})
+            session.query(Person).filter(Person.merged_into_id == person.id).update(
+                {Person.merged_into_id: None}
+            )
             session.delete(person)
             if close_session:
                 session.commit()
@@ -820,9 +895,7 @@ class GraphStore:
                 session.close()
 
     def prune_missing_person_edges(
-        self,
-        dry_run: bool = False,
-        session: Session = None
+        self, dry_run: bool = False, session: Session = None
     ) -> Dict[str, Any]:
         """
         Drop file->person edges whose file no longer exists on disk.
@@ -852,18 +925,20 @@ class GraphStore:
                     path = file.current_path or file.original_path
                     if not path or Path(path).exists():
                         continue
-                    removed.append({
-                        'person': person.name,
-                        'file_id': file.id,
-                        'path': path,
-                    })
+                    removed.append(
+                        {
+                            "person": person.name,
+                            "file_id": file.id,
+                            "path": path,
+                        }
+                    )
                     if not dry_run:
                         person.files.remove(file)
                         person.file_count = max((person.file_count or 0) - 1, 0)
 
             if not dry_run and close_session:
                 session.commit()
-            return {'edges_removed': len(removed), 'edges': removed}
+            return {"edges_removed": len(removed), "edges": removed}
 
         except Exception as e:
             session.rollback()
@@ -930,16 +1005,12 @@ class GraphStore:
             if not file:
                 return None
 
-            new_path = (
-                f"{category_name}/{subcategory_name}"
-                if subcategory_name
-                else category_name
-            )
+            new_path = f"{category_name}/{subcategory_name}" if subcategory_name else category_name
             summary = {
-                'file_id': file.id,
-                'path': file.current_path or file.original_path,
-                'old_categories': [c.full_path for c in file.categories],
-                'new_category': new_path,
+                "file_id": file.id,
+                "path": file.current_path or file.original_path,
+                "old_categories": [c.full_path for c in file.categories],
+                "new_category": new_path,
             }
             if dry_run:
                 return summary
@@ -948,9 +1019,7 @@ class GraphStore:
                 file.categories.remove(category)
                 category.file_count = max((category.file_count or 0) - 1, 0)
 
-            self.add_file_to_category(
-                file.id, category_name, subcategory_name, session=session
-            )
+            self.add_file_to_category(file.id, category_name, subcategory_name, session=session)
 
             if close_session:
                 session.commit()
@@ -998,7 +1067,7 @@ class GraphStore:
                 if on_disk:
                     continue
 
-                removed.append({'file_id': file.id, 'path': current or original})
+                removed.append({"file_id": file.id, "path": current or original})
                 if dry_run:
                     continue
 
@@ -1011,7 +1080,7 @@ class GraphStore:
                 file.companies.clear()
                 file.locations.clear()
 
-                for child in (file.cost_records or []):
+                for child in file.cost_records or []:
                     session.delete(child)
                 if file.schema_metadata is not None:
                     session.delete(file.schema_metadata)
@@ -1026,7 +1095,7 @@ class GraphStore:
 
             if not dry_run and close_session:
                 session.commit()
-            return {'removed': len(removed), 'files': removed}
+            return {"removed": len(removed), "files": removed}
 
         except Exception as e:
             session.rollback()
@@ -1047,7 +1116,7 @@ class GraphStore:
         city: str = None,
         state: str = None,
         country: str = None,
-        session: Session = None
+        session: Session = None,
     ) -> Optional[Location]:
         """Get or create a location."""
         close_session = session is None
@@ -1056,12 +1125,16 @@ class GraphStore:
         try:
             # Try to find by coordinates first
             if latitude and longitude:
-                location = session.query(Location).filter(
-                    and_(
-                        func.abs(Location.latitude - latitude) < COORDINATE_TOLERANCE_DEG,
-                        func.abs(Location.longitude - longitude) < COORDINATE_TOLERANCE_DEG
+                location = (
+                    session.query(Location)
+                    .filter(
+                        and_(
+                            func.abs(Location.latitude - latitude) < COORDINATE_TOLERANCE_DEG,
+                            func.abs(Location.longitude - longitude) < COORDINATE_TOLERANCE_DEG,
+                        )
                     )
-                ).first()
+                    .first()
+                )
                 if location:
                     return location
 
@@ -1078,7 +1151,7 @@ class GraphStore:
                 longitude=longitude,
                 city=city,
                 state=state,
-                country=country
+                country=country,
             )
             session.add(location)
             # Only commit if we own the session
@@ -1106,7 +1179,7 @@ class GraphStore:
         state: str = None,
         country: str = None,
         confidence: float = 1.0,
-        session: Session = None
+        session: Session = None,
     ) -> bool:
         """Associate a file with a location."""
         close_session = session is None
@@ -1124,7 +1197,7 @@ class GraphStore:
                 city=city,
                 state=state,
                 country=country,
-                session=session
+                session=session,
             )
 
             if location is None:
@@ -1156,7 +1229,7 @@ class GraphStore:
         relationship_type: RelationshipType,
         confidence: float = 1.0,
         extra_data: Dict = None,
-        session: Session = None
+        session: Session = None,
     ) -> FileRelationship:
         """
         Add a relationship between two files.
@@ -1177,13 +1250,17 @@ class GraphStore:
 
         try:
             # Check if relationship already exists
-            existing = session.query(FileRelationship).filter(
-                and_(
-                    FileRelationship.source_file_id == source_file_id,
-                    FileRelationship.target_file_id == target_file_id,
-                    FileRelationship.relationship_type == relationship_type
+            existing = (
+                session.query(FileRelationship)
+                .filter(
+                    and_(
+                        FileRelationship.source_file_id == source_file_id,
+                        FileRelationship.target_file_id == target_file_id,
+                        FileRelationship.relationship_type == relationship_type,
+                    )
                 )
-            ).first()
+                .first()
+            )
 
             if existing:
                 existing.confidence = confidence
@@ -1197,7 +1274,7 @@ class GraphStore:
                 target_file_id=target_file_id,
                 relationship_type=relationship_type,
                 confidence=confidence,
-                extra_data=extra_data
+                extra_data=extra_data,
             )
             session.add(relationship)
             session.commit()
@@ -1215,7 +1292,7 @@ class GraphStore:
         file_id: str,
         relationship_type: RelationshipType = None,
         depth: int = 1,
-        session: Session = None
+        session: Session = None,
     ) -> List[Tuple[File, RelationshipType, float]]:
         """
         Find files related to a given file (graph traversal).
@@ -1249,32 +1326,39 @@ class GraphStore:
                         FileRelationship.source_file_id == current_id
                     )
                     if relationship_type:
-                        query = query.filter(FileRelationship.relationship_type == relationship_type)
+                        query = query.filter(
+                            FileRelationship.relationship_type == relationship_type
+                        )
 
                     for rel in query.all():
                         if rel.target_file_id not in visited:
                             visited.add(rel.target_file_id)
                             next_level.append(rel.target_file_id)
-                            pending.append((rel.target_file_id, rel.relationship_type, rel.confidence))
+                            pending.append(
+                                (rel.target_file_id, rel.relationship_type, rel.confidence)
+                            )
 
                     # Get incoming relationships
                     query = session.query(FileRelationship).filter(
                         FileRelationship.target_file_id == current_id
                     )
                     if relationship_type:
-                        query = query.filter(FileRelationship.relationship_type == relationship_type)
+                        query = query.filter(
+                            FileRelationship.relationship_type == relationship_type
+                        )
 
                     for rel in query.all():
                         if rel.source_file_id not in visited:
                             visited.add(rel.source_file_id)
                             next_level.append(rel.source_file_id)
-                            pending.append((rel.source_file_id, rel.relationship_type, rel.confidence))
+                            pending.append(
+                                (rel.source_file_id, rel.relationship_type, rel.confidence)
+                            )
 
                 if pending:
                     pending_ids = [fid for fid, _, _ in pending]
                     file_map = {
-                        f.id: f
-                        for f in session.query(File).filter(File.id.in_(pending_ids)).all()
+                        f.id: f for f in session.query(File).filter(File.id.in_(pending_ids)).all()
                     }
                     for fid, rel_type, confidence in pending:
                         file = file_map.get(fid)
@@ -1289,7 +1373,9 @@ class GraphStore:
             if close_session:
                 session.close()
 
-    def find_duplicates(self, content_hash: str = None, session: Session = None) -> List[List[File]]:
+    def find_duplicates(
+        self, content_hash: str = None, session: Session = None
+    ) -> List[List[File]]:
         """
         Find groups of duplicate files by content hash.
 
@@ -1309,11 +1395,13 @@ class GraphStore:
                 return [files] if len(files) > 1 else []
 
             # Find all hashes with more than one file
-            duplicates = session.query(File.content_hash, func.count(File.id).label('count'))\
-                .filter(File.content_hash.isnot(None))\
-                .group_by(File.content_hash)\
-                .having(func.count(File.id) > 1)\
+            duplicates = (
+                session.query(File.content_hash, func.count(File.id).label("count"))
+                .filter(File.content_hash.isnot(None))
+                .group_by(File.content_hash)
+                .having(func.count(File.id) > 1)
                 .all()
+            )
 
             duplicate_hashes = [h for h, _ in duplicates]
             all_files = session.query(File).filter(File.content_hash.in_(duplicate_hashes)).all()
@@ -1337,7 +1425,7 @@ class GraphStore:
         base_path: str,
         dry_run: bool = False,
         file_limit: int = None,
-        session: Session = None
+        session: Session = None,
     ) -> OrganizationSession:
         """
         Create a new organization session.
@@ -1361,7 +1449,7 @@ class GraphStore:
                 source_directories=source_directories,
                 base_path=base_path,
                 dry_run=dry_run,
-                file_limit=file_limit
+                file_limit=file_limit,
             )
             session.add(org_session)
             session.commit()
@@ -1383,10 +1471,7 @@ class GraphStore:
                 session.close()
 
     def complete_session(
-        self,
-        session_id: str,
-        stats: Dict[str, int],
-        db_session: Session = None
+        self, session_id: str, stats: Dict[str, int], db_session: Session = None
     ) -> bool:
         """
         Mark a session as completed with statistics.
@@ -1403,19 +1488,22 @@ class GraphStore:
         db_session = db_session or self.get_session()
 
         try:
-            org_session = db_session.query(OrganizationSession)\
-                .filter(OrganizationSession.id == session_id).first()
+            org_session = (
+                db_session.query(OrganizationSession)
+                .filter(OrganizationSession.id == session_id)
+                .first()
+            )
 
             if not org_session:
                 return False
 
             org_session.completed_at = utcnow()
-            org_session.total_files = stats.get('total_files', 0)
-            org_session.organized_count = stats.get('organized', 0)
-            org_session.skipped_count = stats.get('skipped', 0)
-            org_session.error_count = stats.get('errors', 0)
-            org_session.total_cost = stats.get('total_cost', 0.0)
-            org_session.total_processing_time_sec = stats.get('processing_time', 0.0)
+            org_session.total_files = stats.get("total_files", 0)
+            org_session.organized_count = stats.get("organized", 0)
+            org_session.skipped_count = stats.get("skipped", 0)
+            org_session.error_count = stats.get("errors", 0)
+            org_session.total_cost = stats.get("total_cost", 0.0)
+            org_session.total_processing_time_sec = stats.get("processing_time", 0.0)
 
             db_session.commit()
             return True
@@ -1443,31 +1531,37 @@ class GraphStore:
 
         try:
             stats = {
-                'total_files': session.query(func.count(File.id)).scalar(),
-                'organized_files': session.query(func.count(File.id))\
-                    .filter(File.status == FileStatus.ORGANIZED).scalar(),
-                'total_categories': session.query(func.count(Category.id)).scalar(),
-                'total_companies': session.query(func.count(Company.id)).scalar(),
-                'total_locations': session.query(func.count(Location.id)).scalar(),
-                'total_relationships': session.query(func.count(FileRelationship.id)).scalar(),
-                'total_sessions': session.query(func.count(OrganizationSession.id)).scalar(),
+                "total_files": session.query(func.count(File.id)).scalar(),
+                "organized_files": session.query(func.count(File.id))
+                .filter(File.status == FileStatus.ORGANIZED)
+                .scalar(),
+                "total_categories": session.query(func.count(Category.id)).scalar(),
+                "total_companies": session.query(func.count(Company.id)).scalar(),
+                "total_locations": session.query(func.count(Location.id)).scalar(),
+                "total_relationships": session.query(func.count(FileRelationship.id)).scalar(),
+                "total_sessions": session.query(func.count(OrganizationSession.id)).scalar(),
             }
 
             # Category breakdown
-            category_counts = session.query(
-                Category.name,
-                func.count(file_categories.c.file_id)
-            ).join(file_categories).group_by(Category.name).all()
+            category_counts = (
+                session.query(Category.name, func.count(file_categories.c.file_id))
+                .join(file_categories)
+                .group_by(Category.name)
+                .all()
+            )
 
-            stats['categories'] = {name: count for name, count in category_counts}
+            stats["categories"] = {name: count for name, count in category_counts}
 
             # Extension breakdown
-            extension_counts = session.query(
-                File.file_extension,
-                func.count(File.id)
-            ).group_by(File.file_extension).order_by(func.count(File.id).desc()).limit(TOP_EXTENSIONS_LIMIT).all()
+            extension_counts = (
+                session.query(File.file_extension, func.count(File.id))
+                .group_by(File.file_extension)
+                .order_by(func.count(File.id).desc())
+                .limit(TOP_EXTENSIONS_LIMIT)
+                .all()
+            )
 
-            stats['extensions'] = {ext or 'none': count for ext, count in extension_counts}
+            stats["extensions"] = {ext or "none": count for ext, count in extension_counts}
 
             return stats
 
@@ -1481,7 +1575,7 @@ class GraphStore:
         feature_name: str = None,
         start_date: datetime = None,
         end_date: datetime = None,
-        session: Session = None
+        session: Session = None,
     ) -> Dict[str, Any]:
         """
         Get cost statistics with optional filters.
@@ -1514,29 +1608,31 @@ class GraphStore:
             records = query.all()
 
             # Aggregate by feature
-            feature_stats = defaultdict(lambda: {
-                'invocations': 0,
-                'total_cost': 0.0,
-                'total_time': 0.0,
-                'success_count': 0,
-                'error_count': 0
-            })
+            feature_stats = defaultdict(
+                lambda: {
+                    "invocations": 0,
+                    "total_cost": 0.0,
+                    "total_time": 0.0,
+                    "success_count": 0,
+                    "error_count": 0,
+                }
+            )
 
             for record in records:
                 stats = feature_stats[record.feature_name]
-                stats['invocations'] += 1
-                stats['total_cost'] += record.cost
-                stats['total_time'] += record.processing_time_sec
+                stats["invocations"] += 1
+                stats["total_cost"] += record.cost
+                stats["total_time"] += record.processing_time_sec
                 if record.success:
-                    stats['success_count'] += 1
+                    stats["success_count"] += 1
                 else:
-                    stats['error_count'] += 1
+                    stats["error_count"] += 1
 
             return {
-                'total_records': len(records),
-                'total_cost': sum(r.cost for r in records),
-                'total_time': sum(r.processing_time_sec for r in records),
-                'by_feature': dict(feature_stats)
+                "total_records": len(records),
+                "total_cost": sum(r.cost for r in records),
+                "total_time": sum(r.processing_time_sec for r in records),
+                "by_feature": dict(feature_stats),
             }
 
         finally:
@@ -1553,7 +1649,7 @@ class GraphStore:
         search_content: bool = True,
         search_filename: bool = True,
         limit: int = DEFAULT_SEARCH_LIMIT,
-        session: Session = None
+        session: Session = None,
     ) -> List[File]:
         """
         Search files by text content or filename.
@@ -1575,17 +1671,14 @@ class GraphStore:
             filters = []
 
             if search_filename:
-                filters.append(File.filename.ilike(f'%{query}%'))
+                filters.append(File.filename.ilike(f"%{query}%"))
             if search_content:
-                filters.append(File.extracted_text.ilike(f'%{query}%'))
+                filters.append(File.extracted_text.ilike(f"%{query}%"))
 
             if not filters:
                 return []
 
-            return session.query(File)\
-                .filter(or_(*filters))\
-                .limit(limit)\
-                .all()
+            return session.query(File).filter(or_(*filters)).limit(limit).all()
 
         finally:
             if close_session:
@@ -1597,7 +1690,7 @@ class GraphStore:
         longitude: float,
         radius_km: float = 10,
         limit: int = DEFAULT_SEARCH_LIMIT,
-        session: Session = None
+        session: Session = None,
     ) -> List[File]:
         """
         Find files near a geographic location.
@@ -1625,16 +1718,18 @@ class GraphStore:
             lon_scale = max(math.cos(math.radians(latitude)), 0.01)
             lon_delta = radius_km / (KM_PER_DEGREE_LATITUDE * lon_scale)
 
-            return session.query(File)\
+            return (
+                session.query(File)
                 .filter(
                     and_(
                         File.gps_latitude.isnot(None),
                         File.gps_latitude.between(latitude - lat_delta, latitude + lat_delta),
-                        File.gps_longitude.between(longitude - lon_delta, longitude + lon_delta)
+                        File.gps_longitude.between(longitude - lon_delta, longitude + lon_delta),
                     )
-                )\
-                .limit(limit)\
+                )
+                .limit(limit)
                 .all()
+            )
 
         finally:
             if close_session:

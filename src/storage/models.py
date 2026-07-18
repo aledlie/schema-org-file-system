@@ -19,13 +19,24 @@ Key-Value Storage:
 from ._time import utcnow
 from typing import Optional, Dict, Any
 from sqlalchemy import (
-    Column, Integer, String, Float, Boolean, DateTime, Text, JSON,
-    ForeignKey, Index, UniqueConstraint, Table, Enum as SQLEnum,
-    create_engine, event
+    Column,
+    Integer,
+    String,
+    Float,
+    Boolean,
+    DateTime,
+    Text,
+    JSON,
+    ForeignKey,
+    Index,
+    UniqueConstraint,
+    Table,
+    Enum as SQLEnum,
+    create_engine,
+    event,
+    text,
 )
-from sqlalchemy.orm import (
-    declarative_base, relationship, Session, sessionmaker
-)
+from sqlalchemy.orm import declarative_base, relationship, Session, sessionmaker
 from sqlalchemy.ext.hybrid import hybrid_property
 import enum
 import hashlib
@@ -58,13 +69,13 @@ except ImportError:
 # Namespace UUIDs for deterministic ID generation (UUID v5)
 # These match the namespaces in src/uri_utils.py for consistency
 NAMESPACES = {
-    'file': uuid.UUID('f4e8a9c0-1234-5678-9abc-def012345678'),
-    'category': uuid.UUID('c4e8a9c0-2345-6789-abcd-ef0123456789'),
-    'company': uuid.UUID('c0e1a2b3-4567-89ab-cdef-012345678901'),
-    'person': uuid.UUID('d1e2a3b4-5678-9abc-def0-123456789012'),
-    'location': uuid.UUID('e2e3a4b5-6789-abcd-ef01-234567890123'),
-    'session': uuid.UUID('f3e4a5b6-789a-bcde-f012-345678901234'),
-    'merge_event': uuid.UUID('a1b2c3d4-89ab-cdef-0123-456789abcdef'),
+    "file": uuid.UUID("f4e8a9c0-1234-5678-9abc-def012345678"),
+    "category": uuid.UUID("c4e8a9c0-2345-6789-abcd-ef0123456789"),
+    "company": uuid.UUID("c0e1a2b3-4567-89ab-cdef-012345678901"),
+    "person": uuid.UUID("d1e2a3b4-5678-9abc-def0-123456789012"),
+    "location": uuid.UUID("e2e3a4b5-6789-abcd-ef01-234567890123"),
+    "session": uuid.UUID("f3e4a5b6-789a-bcde-f012-345678901234"),
+    "merge_event": uuid.UUID("a1b2c3d4-89ab-cdef-0123-456789abcdef"),
 }
 
 
@@ -73,6 +84,7 @@ Base = declarative_base()
 
 class FileStatus(enum.Enum):
     """Status of file organization."""
+
     PENDING = "pending"
     ORGANIZED = "organized"
     SKIPPED = "skipped"
@@ -82,62 +94,63 @@ class FileStatus(enum.Enum):
 
 class RelationshipType(enum.Enum):
     """Types of relationships between files."""
-    DUPLICATE = "duplicate"           # Same content hash
-    SIMILAR = "similar"               # Similar content
-    VERSION = "version"               # Different version of same file
-    DERIVED = "derived"               # One file derived from another
-    RELATED = "related"               # Semantically related
-    PARENT_CHILD = "parent_child"     # Directory relationship
-    REFERENCES = "references"         # One file references another
+
+    DUPLICATE = "duplicate"  # Same content hash
+    SIMILAR = "similar"  # Similar content
+    VERSION = "version"  # Different version of same file
+    DERIVED = "derived"  # One file derived from another
+    RELATED = "related"  # Semantically related
+    PARENT_CHILD = "parent_child"  # Directory relationship
+    REFERENCES = "references"  # One file references another
 
 
 # Association tables for many-to-many relationships
 file_categories = Table(
-    'file_categories',
+    "file_categories",
     Base.metadata,
-    Column('file_id', String(SHA256_HEX_LENGTH), ForeignKey('files.id'), primary_key=True),
-    Column('category_id', Integer, ForeignKey('categories.id'), primary_key=True),
-    Column('confidence', Float, default=1.0),
+    Column("file_id", String(SHA256_HEX_LENGTH), ForeignKey("files.id"), primary_key=True),
+    Column("category_id", Integer, ForeignKey("categories.id"), primary_key=True),
+    Column("confidence", Float, default=1.0),
     # Per-signal scoring evidence for backtesting (UNIFIED_SCORING_PLAN §5.4).
     # Nullable and additive: legacy runs persist NULL; existing databases gain
     # the column via `organize-files migrate-scoring` (scoring_migration.py).
-    Column('signal_evidence', JSON, nullable=True),
-    Column('created_at', DateTime, default=utcnow)
+    Column("signal_evidence", JSON, nullable=True),
+    Column("created_at", DateTime, default=utcnow),
 )
-Index('ix_file_categories_category_id', file_categories.c.category_id)
+Index("ix_file_categories_category_id", file_categories.c.category_id)
 
 file_companies = Table(
-    'file_companies',
+    "file_companies",
     Base.metadata,
-    Column('file_id', String(SHA256_HEX_LENGTH), ForeignKey('files.id'), primary_key=True),
-    Column('company_id', Integer, ForeignKey('companies.id'), primary_key=True),
-    Column('confidence', Float, default=1.0),
-    Column('context', String(MAX_STRING_LENGTH)),  # How the company was detected
-    Column('created_at', DateTime, default=utcnow)
+    Column("file_id", String(SHA256_HEX_LENGTH), ForeignKey("files.id"), primary_key=True),
+    Column("company_id", Integer, ForeignKey("companies.id"), primary_key=True),
+    Column("confidence", Float, default=1.0),
+    Column("context", String(MAX_STRING_LENGTH)),  # How the company was detected
+    Column("created_at", DateTime, default=utcnow),
 )
-Index('ix_file_companies_company_id', file_companies.c.company_id)
+Index("ix_file_companies_company_id", file_companies.c.company_id)
 
 file_people = Table(
-    'file_people',
+    "file_people",
     Base.metadata,
-    Column('file_id', String(SHA256_HEX_LENGTH), ForeignKey('files.id'), primary_key=True),
-    Column('person_id', Integer, ForeignKey('people.id'), primary_key=True),
-    Column('role', String(SHORT_STRING_LENGTH)),  # author, subject, mentioned, etc.
-    Column('confidence', Float, default=1.0),
-    Column('created_at', DateTime, default=utcnow)
+    Column("file_id", String(SHA256_HEX_LENGTH), ForeignKey("files.id"), primary_key=True),
+    Column("person_id", Integer, ForeignKey("people.id"), primary_key=True),
+    Column("role", String(SHORT_STRING_LENGTH)),  # author, subject, mentioned, etc.
+    Column("confidence", Float, default=1.0),
+    Column("created_at", DateTime, default=utcnow),
 )
-Index('ix_file_people_person_id', file_people.c.person_id)
+Index("ix_file_people_person_id", file_people.c.person_id)
 
 file_locations = Table(
-    'file_locations',
+    "file_locations",
     Base.metadata,
-    Column('file_id', String(SHA256_HEX_LENGTH), ForeignKey('files.id'), primary_key=True),
-    Column('location_id', Integer, ForeignKey('locations.id'), primary_key=True),
-    Column('location_type', String(SHORT_STRING_LENGTH)),  # captured_at, mentioned, subject
-    Column('confidence', Float, default=1.0),
-    Column('created_at', DateTime, default=utcnow)
+    Column("file_id", String(SHA256_HEX_LENGTH), ForeignKey("files.id"), primary_key=True),
+    Column("location_id", Integer, ForeignKey("locations.id"), primary_key=True),
+    Column("location_type", String(SHORT_STRING_LENGTH)),  # captured_at, mentioned, subject
+    Column("confidence", Float, default=1.0),
+    Column("created_at", DateTime, default=utcnow),
 )
-Index('ix_file_locations_location_id', file_locations.c.location_id)
+Index("ix_file_locations_location_id", file_locations.c.location_id)
 
 
 class File(Base, SchemaOrgSerializable):
@@ -151,7 +164,8 @@ class File(Base, SchemaOrgSerializable):
     - `canonical_id`: Public IRI for JSON-LD @id (urn:sha256:{hash})
     - `source_ids`: Historical IDs from imports/renames (for deduplication)
     """
-    __tablename__ = 'files'
+
+    __tablename__ = "files"
 
     # Primary key is hash of original path
     id = Column(String(SHA256_HEX_LENGTH), primary_key=True)
@@ -183,13 +197,13 @@ class File(Base, SchemaOrgSerializable):
     # Extracted content
     extracted_text = Column(Text)
     extracted_text_length = Column(Integer, default=0)
-    ocr_confidence = Column(Float)          # average OCR word confidence (0.0–1.0)
+    ocr_confidence = Column(Float)  # average OCR word confidence (0.0–1.0)
     detected_language = Column(String(10))  # ISO 639-1 language code from OCR
 
     # Schema.org metadata (stored as JSON)
     schema_type = Column(String(SHORT_STRING_LENGTH))  # ImageObject, Document, etc.
     schema_data = Column(JSON)
-    kie_fields = Column(JSON)            # KIE-extracted structured fields (raw)
+    kie_fields = Column(JSON)  # KIE-extracted structured fields (raw)
 
     # Image-specific metadata
     image_width = Column(Integer)
@@ -205,37 +219,37 @@ class File(Base, SchemaOrgSerializable):
 
     # Processing metadata
     processing_time_sec = Column(Float)
-    session_id = Column(String(SHA256_HEX_LENGTH), ForeignKey('organization_sessions.id'), index=True)
+    session_id = Column(
+        String(SHA256_HEX_LENGTH), ForeignKey("organization_sessions.id"), index=True
+    )
 
     # Timestamps
     db_created_at = Column(DateTime, default=utcnow)
     db_updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     # Relationships
-    categories = relationship('Category', secondary=file_categories, back_populates='files')
-    companies = relationship('Company', secondary=file_companies, back_populates='files')
-    people = relationship('Person', secondary=file_people, back_populates='files')
-    locations = relationship('Location', secondary=file_locations, back_populates='files')
-    session = relationship('OrganizationSession', back_populates='files')
-    cost_records = relationship('CostRecord', back_populates='file')
-    schema_metadata = relationship('SchemaMetadata', back_populates='file', uselist=False)
+    categories = relationship("Category", secondary=file_categories, back_populates="files")
+    companies = relationship("Company", secondary=file_companies, back_populates="files")
+    people = relationship("Person", secondary=file_people, back_populates="files")
+    locations = relationship("Location", secondary=file_locations, back_populates="files")
+    session = relationship("OrganizationSession", back_populates="files")
+    cost_records = relationship("CostRecord", back_populates="file")
+    schema_metadata = relationship("SchemaMetadata", back_populates="file", uselist=False)
 
     # Self-referential relationships (graph edges)
     related_to = relationship(
-        'FileRelationship',
-        foreign_keys='FileRelationship.source_file_id',
-        back_populates='source_file'
+        "FileRelationship",
+        foreign_keys="FileRelationship.source_file_id",
+        back_populates="source_file",
     )
     related_from = relationship(
-        'FileRelationship',
-        foreign_keys='FileRelationship.target_file_id',
-        back_populates='target_file'
+        "FileRelationship",
+        foreign_keys="FileRelationship.target_file_id",
+        back_populates="target_file",
     )
 
     # Additional composite indexes (single-column indexes handled by index=True on columns)
-    __table_args__ = (
-        Index('ix_files_organized_at', 'organized_at'),
-    )
+    __table_args__ = (Index("ix_files_organized_at", "organized_at"),)
 
     @staticmethod
     def generate_id(path: str) -> str:
@@ -311,16 +325,14 @@ class File(Base, SchemaOrgSerializable):
 
         # Try prefix match
         for mime_prefix, schema_type in type_mapping.items():
-            if mime_lower.startswith(mime_prefix.split('/')[0] + '/'):
+            if mime_lower.startswith(mime_prefix.split("/")[0] + "/"):
                 return schema_type
 
         return "DigitalDocument"
 
     def to_schema_org(self) -> Dict[str, Any]:
         """Convert File to schema.org JSON-LD (delegates to build_file_jsonld)."""
-        return build_file_jsonld(
-            self, self.categories, self.companies, self.people, self.locations
-        )
+        return build_file_jsonld(self, self.categories, self.companies, self.people, self.locations)
 
     def build_schema_relationships(self) -> Dict[str, Any]:
         """Build relationships to other entities (delegates to build_file_relationships)."""
@@ -335,21 +347,21 @@ class File(Base, SchemaOrgSerializable):
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for JSON serialization."""
         return {
-            'id': self.id,
-            '@id': self.get_iri(),
-            'canonical_id': self.canonical_id,
-            'filename': self.filename,
-            'original_path': self.original_path,
-            'current_path': self.current_path,
-            'file_extension': self.file_extension,
-            'mime_type': self.mime_type,
-            'file_size': self.file_size,
-            'status': self.status.value if self.status else None,
-            'categories': [c.name for c in self.categories],
-            'companies': [c.name for c in self.companies],
-            'people': [p.name for p in self.people],
-            'schema_type': self.schema_type,
-            'organized_at': self.organized_at.isoformat() if self.organized_at else None,
+            "id": self.id,
+            "@id": self.get_iri(),
+            "canonical_id": self.canonical_id,
+            "filename": self.filename,
+            "original_path": self.original_path,
+            "current_path": self.current_path,
+            "file_extension": self.file_extension,
+            "mime_type": self.mime_type,
+            "file_size": self.file_size,
+            "status": self.status.value if self.status else None,
+            "categories": [c.name for c in self.categories],
+            "companies": [c.name for c in self.companies],
+            "people": [p.name for p in self.people],
+            "schema_type": self.schema_type,
+            "organized_at": self.organized_at.isoformat() if self.organized_at else None,
         }
 
 
@@ -364,7 +376,8 @@ class Category(Base, SchemaOrgSerializable):
     - `canonical_id`: Deterministic UUID v5 from name (public, for JSON-LD @id)
     - `source_ids`: Historical IDs from merges/imports (for deduplication)
     """
-    __tablename__ = 'categories'
+
+    __tablename__ = "categories"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
@@ -375,10 +388,10 @@ class Category(Base, SchemaOrgSerializable):
     source_ids = Column(JSON, default=list)
 
     # Merge tracking: if this category was merged into another
-    merged_into_id = Column(Integer, ForeignKey('categories.id'))
+    merged_into_id = Column(Integer, ForeignKey("categories.id"))
 
     name = Column(String(100), nullable=False, unique=True, index=True)
-    parent_id = Column(Integer, ForeignKey('categories.id'), index=True)
+    parent_id = Column(Integer, ForeignKey("categories.id"), index=True)
     description = Column(Text)
     icon = Column(String(SHORT_STRING_LENGTH))  # Emoji or icon name
     color = Column(String(SHORT_FIELD_LENGTH))  # Hex color
@@ -395,11 +408,11 @@ class Category(Base, SchemaOrgSerializable):
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     # Relationships
-    files = relationship('File', secondary=file_categories, back_populates='categories')
-    parent = relationship('Category', remote_side=[id], backref='subcategories',
-                         foreign_keys=[parent_id])
-    merged_into = relationship('Category', remote_side=[id],
-                              foreign_keys=[merged_into_id])
+    files = relationship("File", secondary=file_categories, back_populates="categories")
+    parent = relationship(
+        "Category", remote_side=[id], backref="subcategories", foreign_keys=[parent_id]
+    )
+    merged_into = relationship("Category", remote_side=[id], foreign_keys=[merged_into_id])
 
     @staticmethod
     def generate_canonical_id(name: str) -> str:
@@ -415,7 +428,7 @@ class Category(Base, SchemaOrgSerializable):
         Returns:
             UUID string (without urn:uuid: prefix)
         """
-        return str(uuid.uuid5(NAMESPACES['category'], name.lower().strip()))
+        return str(uuid.uuid5(NAMESPACES["category"], name.lower().strip()))
 
     def get_schema_type(self) -> str:
         """Return the schema.org @type for this category."""
@@ -431,13 +444,13 @@ class Category(Base, SchemaOrgSerializable):
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'id': self.id,
-            '@id': self.get_iri() if self.canonical_id else None,
-            'canonical_id': self.canonical_id,
-            'name': self.name,
-            'full_path': self.full_path,
-            'level': self.level,
-            'file_count': self.file_count,
+            "id": self.id,
+            "@id": self.get_iri() if self.canonical_id else None,
+            "canonical_id": self.canonical_id,
+            "name": self.name,
+            "full_path": self.full_path,
+            "level": self.level,
+            "file_count": self.file_count,
         }
 
 
@@ -452,7 +465,8 @@ class Company(Base, SchemaOrgSerializable):
     - `canonical_id`: Deterministic UUID v5 from normalized name (public, for JSON-LD @id)
     - `source_ids`: Historical IDs from merges/imports (for deduplication)
     """
-    __tablename__ = 'companies'
+
+    __tablename__ = "companies"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
@@ -463,10 +477,12 @@ class Company(Base, SchemaOrgSerializable):
     source_ids = Column(JSON, default=list)
 
     # Merge tracking: if this company was merged into another
-    merged_into_id = Column(Integer, ForeignKey('companies.id'))
+    merged_into_id = Column(Integer, ForeignKey("companies.id"))
 
     name = Column(String(MAX_STRING_LENGTH), nullable=False, index=True)
-    normalized_name = Column(String(MAX_STRING_LENGTH), unique=True, index=True)  # Lowercase, trimmed
+    normalized_name = Column(
+        String(MAX_STRING_LENGTH), unique=True, index=True
+    )  # Lowercase, trimmed
     domain = Column(String(MAX_STRING_LENGTH))  # Company website domain
     industry = Column(String(100))
 
@@ -476,11 +492,10 @@ class Company(Base, SchemaOrgSerializable):
     last_seen = Column(DateTime, default=utcnow)
 
     # Relationships
-    files = relationship('File', secondary=file_companies, back_populates='companies')
-    merged_into = relationship('Company', remote_side=[id])
+    files = relationship("File", secondary=file_companies, back_populates="companies")
+    merged_into = relationship("Company", remote_side=[id])
 
     # ix_companies_normalized_name created by unique=True, index=True on normalized_name column
-
 
     @staticmethod
     def normalize_name(name: str) -> str:
@@ -498,7 +513,7 @@ class Company(Base, SchemaOrgSerializable):
         Returns:
             UUID string (without urn:uuid: prefix)
         """
-        return str(uuid.uuid5(NAMESPACES['company'], name.lower().strip()))
+        return str(uuid.uuid5(NAMESPACES["company"], name.lower().strip()))
 
     def get_schema_type(self) -> str:
         """Return the schema.org @type for this company."""
@@ -513,7 +528,7 @@ class Company(Base, SchemaOrgSerializable):
         """Generate potential Wikidata URL for external reference"""
         # This would typically call an external API
         # For now, return a template
-        normalized = company_name.lower().replace(' ', '_')
+        normalized = company_name.lower().replace(" ", "_")
         return f"https://www.wikidata.org/wiki/Q{normalized}"
 
     def to_schema_org(self) -> Dict[str, Any]:
@@ -522,12 +537,12 @@ class Company(Base, SchemaOrgSerializable):
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'id': self.id,
-            '@id': self.get_iri() if self.canonical_id else None,
-            'canonical_id': self.canonical_id,
-            'name': self.name,
-            'domain': self.domain,
-            'file_count': self.file_count,
+            "id": self.id,
+            "@id": self.get_iri() if self.canonical_id else None,
+            "canonical_id": self.canonical_id,
+            "name": self.name,
+            "domain": self.domain,
+            "file_count": self.file_count,
         }
 
 
@@ -542,7 +557,8 @@ class Person(Base, SchemaOrgSerializable):
     - `canonical_id`: Deterministic UUID v5 from normalized name (public, for JSON-LD @id)
     - `source_ids`: Historical IDs from merges/imports (for deduplication)
     """
-    __tablename__ = 'people'
+
+    __tablename__ = "people"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
@@ -553,12 +569,28 @@ class Person(Base, SchemaOrgSerializable):
     source_ids = Column(JSON, default=list)
 
     # Merge tracking: if this person was merged into another
-    merged_into_id = Column(Integer, ForeignKey('people.id'))
+    merged_into_id = Column(Integer, ForeignKey("people.id"))
 
     name = Column(String(MAX_STRING_LENGTH), nullable=False, index=True)
     normalized_name = Column(String(MAX_STRING_LENGTH), unique=True, index=True)
     email = Column(String(MAX_STRING_LENGTH))
     role = Column(String(100))  # Default role
+
+    # Person-name validation gate (docs/plans/PERSON_NAME_VALIDATION_PLAN.md).
+    # review_status routes detection confidence three ways; validation_scores
+    # is the per-layer breakdown ({} = never validated, e.g. legacy rows).
+    # server_default mirrors the ALTER TABLE default in migration.run_migration
+    # so a fresh create_all() DB and a migrated legacy DB have identical schema
+    # (no NULL-vs-'{}' / NULL-vs-'auto_accepted' divergence on raw inserts).
+    review_status = Column(
+        String(20), default="auto_accepted", server_default="auto_accepted", index=True
+    )
+    # 'auto_accepted' | 'pending_review' | 'confirmed' | 'rejected'
+    detection_confidence = Column(Float)  # nullable; composite score
+    validation_scores = Column(
+        JSON, default=dict, server_default=text("'{}'")
+    )  # per-layer breakdown
+    validated_at = Column(DateTime)  # tz-naive; utcnow()
 
     # Statistics
     file_count = Column(Integer, default=0)
@@ -566,8 +598,8 @@ class Person(Base, SchemaOrgSerializable):
     last_seen = Column(DateTime, default=utcnow)
 
     # Relationships
-    files = relationship('File', secondary=file_people, back_populates='people')
-    merged_into = relationship('Person', remote_side=[id])
+    files = relationship("File", secondary=file_people, back_populates="people")
+    merged_into = relationship("Person", remote_side=[id])
 
     @staticmethod
     def normalize_name(name: str) -> str:
@@ -585,7 +617,7 @@ class Person(Base, SchemaOrgSerializable):
         Returns:
             UUID string (without urn:uuid: prefix)
         """
-        return str(uuid.uuid5(NAMESPACES['person'], name.lower().strip()))
+        return str(uuid.uuid5(NAMESPACES["person"], name.lower().strip()))
 
     def get_schema_type(self) -> str:
         """Return the schema.org @type for this person."""
@@ -599,9 +631,9 @@ class Person(Base, SchemaOrgSerializable):
         """Convert Person to schema.org JSON-LD (delegates to build_person_jsonld)."""
         return build_person_jsonld(self)
 
-    def to_schema_org_with_relationships(self,
-                                       company: Optional['Company'] = None,
-                                       location: Optional['Location'] = None) -> Dict[str, Any]:
+    def to_schema_org_with_relationships(
+        self, company: Optional["Company"] = None, location: Optional["Location"] = None
+    ) -> Dict[str, Any]:
         """Convert Person with optional relationship references"""
 
         result = self.to_schema_org()
@@ -611,26 +643,26 @@ class Person(Base, SchemaOrgSerializable):
             result["worksFor"] = {
                 "@type": "Organization",
                 "@id": company.get_iri(),
-                "name": company.name
+                "name": company.name,
             }
 
         if location:
             result["workLocation"] = {
                 "@type": "Place",
                 "@id": location.get_iri(),
-                "name": location.name
+                "name": location.name,
             }
 
         return result
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'id': self.id,
-            '@id': self.get_iri() if self.canonical_id else None,
-            'canonical_id': self.canonical_id,
-            'name': self.name,
-            'email': self.email,
-            'file_count': self.file_count,
+            "id": self.id,
+            "@id": self.get_iri() if self.canonical_id else None,
+            "canonical_id": self.canonical_id,
+            "name": self.name,
+            "email": self.email,
+            "file_count": self.file_count,
         }
 
 
@@ -645,7 +677,8 @@ class Location(Base, SchemaOrgSerializable):
     - `canonical_id`: Deterministic UUID v5 from name (public, for JSON-LD @id)
     - `source_ids`: Historical IDs from merges/imports (for deduplication)
     """
-    __tablename__ = 'locations'
+
+    __tablename__ = "locations"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
 
@@ -656,7 +689,7 @@ class Location(Base, SchemaOrgSerializable):
     source_ids = Column(JSON, default=list)
 
     # Merge tracking: if this location was merged into another
-    merged_into_id = Column(Integer, ForeignKey('locations.id'))
+    merged_into_id = Column(Integer, ForeignKey("locations.id"))
 
     name = Column(String(MAX_STRING_LENGTH), nullable=False, index=True)
     city = Column(String(100))
@@ -675,12 +708,12 @@ class Location(Base, SchemaOrgSerializable):
     created_at = Column(DateTime, default=utcnow)
 
     # Relationships
-    files = relationship('File', secondary=file_locations, back_populates='locations')
-    merged_into = relationship('Location', remote_side=[id])
+    files = relationship("File", secondary=file_locations, back_populates="locations")
+    merged_into = relationship("Location", remote_side=[id])
 
     __table_args__ = (
-        Index('ix_locations_geo', 'latitude', 'longitude'),
-        Index('ix_locations_city_state', 'city', 'state'),
+        Index("ix_locations_geo", "latitude", "longitude"),
+        Index("ix_locations_city_state", "city", "state"),
     )
 
     @staticmethod
@@ -694,7 +727,7 @@ class Location(Base, SchemaOrgSerializable):
         Returns:
             UUID string (without urn:uuid: prefix)
         """
-        return str(uuid.uuid5(NAMESPACES['location'], name.lower().strip()))
+        return str(uuid.uuid5(NAMESPACES["location"], name.lower().strip()))
 
     def get_iri(self) -> str:
         """Get the JSON-LD @id IRI for this location."""
@@ -710,16 +743,16 @@ class Location(Base, SchemaOrgSerializable):
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'id': self.id,
-            '@id': self.get_iri() if self.canonical_id else None,
-            'canonical_id': self.canonical_id,
-            'name': self.name,
-            'city': self.city,
-            'state': self.state,
-            'country': self.country,
-            'latitude': self.latitude,
-            'longitude': self.longitude,
-            'file_count': self.file_count,
+            "id": self.id,
+            "@id": self.get_iri() if self.canonical_id else None,
+            "canonical_id": self.canonical_id,
+            "name": self.name,
+            "city": self.city,
+            "state": self.state,
+            "country": self.country,
+            "latitude": self.latitude,
+            "longitude": self.longitude,
+            "file_count": self.file_count,
         }
 
 
@@ -776,8 +809,7 @@ def build_file_relationships(categories, companies, people, locations) -> Dict[s
         )
     if people:
         mentions.extend(
-            {"@type": "Person", "@id": person.get_iri(), "name": person.name}
-            for person in people
+            {"@type": "Person", "@id": person.get_iri(), "name": person.name} for person in people
         )
     if mentions:
         relationships["mentions"] = mentions
@@ -792,8 +824,7 @@ def build_file_relationships(categories, companies, people, locations) -> Dict[s
             }
         else:
             relationships["spatialCoverage"] = [
-                {"@type": "Place", "@id": loc.get_iri(), "name": loc.name}
-                for loc in locations
+                {"@type": "Place", "@id": loc.get_iri(), "name": loc.name} for loc in locations
             ]
 
     return relationships
@@ -887,12 +918,12 @@ def build_category_jsonld(f, parent, subcategories) -> Dict[str, Any]:
             for sub in subcategories
         ]
 
-    result["fileCount"] = f.file_count or 0        # custom ml: extension
-    result["hierarchyLevel"] = f.level or 0        # custom ml: extension
+    result["fileCount"] = f.file_count or 0  # custom ml: extension
+    result["hierarchyLevel"] = f.level or 0  # custom ml: extension
     if f.icon:
-        result["icon"] = f.icon                    # custom extension
+        result["icon"] = f.icon  # custom extension
     if f.color:
-        result["color"] = f.color                  # custom extension
+        result["color"] = f.color  # custom extension
 
     return result
 
@@ -925,7 +956,7 @@ def build_company_jsonld(f) -> Dict[str, Any]:
     if same_as:
         result["sameAs"] = [url for url in same_as if url]
 
-    result["mentionCount"] = f.file_count or 0     # custom ml: extension
+    result["mentionCount"] = f.file_count or 0  # custom ml: extension
     return result
 
 
@@ -947,7 +978,7 @@ def build_person_jsonld(f) -> Dict[str, Any]:
     if f.last_seen:
         result["dateModified"] = f.last_seen.isoformat()
 
-    result["mentionCount"] = f.file_count or 0     # custom ml: extension
+    result["mentionCount"] = f.file_count or 0  # custom ml: extension
     return result
 
 
@@ -989,11 +1020,11 @@ def build_location_jsonld(f) -> Dict[str, Any]:
             "longitude": f.longitude,
         }
     if f.geohash:
-        result["geoHash"] = f.geohash              # custom ml: extension
+        result["geoHash"] = f.geohash  # custom ml: extension
     if f.created_at:
         result["dateCreated"] = f.created_at.isoformat()
 
-    result["mentionCount"] = f.file_count or 0     # custom ml: extension
+    result["mentionCount"] = f.file_count or 0  # custom ml: extension
     return result
 
 
@@ -1003,11 +1034,16 @@ class FileRelationship(Base):
 
     Enables graph traversal between related files.
     """
-    __tablename__ = 'file_relationships'
+
+    __tablename__ = "file_relationships"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    source_file_id = Column(String(SHA256_HEX_LENGTH), ForeignKey('files.id'), nullable=False, index=True)
-    target_file_id = Column(String(SHA256_HEX_LENGTH), ForeignKey('files.id'), nullable=False, index=True)
+    source_file_id = Column(
+        String(SHA256_HEX_LENGTH), ForeignKey("files.id"), nullable=False, index=True
+    )
+    target_file_id = Column(
+        String(SHA256_HEX_LENGTH), ForeignKey("files.id"), nullable=False, index=True
+    )
     relationship_type = Column(SQLEnum(RelationshipType), nullable=False, index=True)
 
     # Relationship metadata
@@ -1018,12 +1054,13 @@ class FileRelationship(Base):
     created_at = Column(DateTime, default=utcnow)
 
     # Relationships
-    source_file = relationship('File', foreign_keys=[source_file_id], back_populates='related_to')
-    target_file = relationship('File', foreign_keys=[target_file_id], back_populates='related_from')
+    source_file = relationship("File", foreign_keys=[source_file_id], back_populates="related_to")
+    target_file = relationship("File", foreign_keys=[target_file_id], back_populates="related_from")
 
     __table_args__ = (
-        UniqueConstraint('source_file_id', 'target_file_id', 'relationship_type',
-                        name='uq_file_relationship'),
+        UniqueConstraint(
+            "source_file_id", "target_file_id", "relationship_type", name="uq_file_relationship"
+        ),
         # ix_file_relationships_* indexes created by index=True on source_file_id, target_file_id, relationship_type
     )
 
@@ -1034,7 +1071,8 @@ class OrganizationSession(Base):
 
     Groups files processed together for tracking and rollback.
     """
-    __tablename__ = 'organization_sessions'
+
+    __tablename__ = "organization_sessions"
 
     id = Column(String(SHA256_HEX_LENGTH), primary_key=True)  # UUID
     started_at = Column(DateTime, default=utcnow, index=True)
@@ -1057,18 +1095,18 @@ class OrganizationSession(Base):
     total_processing_time_sec = Column(Float, default=0.0)
 
     # Relationships
-    files = relationship('File', back_populates='session')
-    cost_records = relationship('CostRecord', back_populates='session')
+    files = relationship("File", back_populates="session")
+    cost_records = relationship("CostRecord", back_populates="session")
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'id': self.id,
-            'started_at': self.started_at.isoformat() if self.started_at else None,
-            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
-            'dry_run': self.dry_run,
-            'total_files': self.total_files,
-            'organized_count': self.organized_count,
-            'total_cost': self.total_cost,
+            "id": self.id,
+            "started_at": self.started_at.isoformat() if self.started_at else None,
+            "completed_at": self.completed_at.isoformat() if self.completed_at else None,
+            "dry_run": self.dry_run,
+            "total_files": self.total_files,
+            "organized_count": self.organized_count,
+            "total_cost": self.total_cost,
         }
 
 
@@ -1078,11 +1116,14 @@ class CostRecord(Base):
 
     Links to files and sessions for detailed cost analysis.
     """
-    __tablename__ = 'cost_records'
+
+    __tablename__ = "cost_records"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    session_id = Column(String(SHA256_HEX_LENGTH), ForeignKey('organization_sessions.id'), index=True)
-    file_id = Column(String(SHA256_HEX_LENGTH), ForeignKey('files.id'), index=True)
+    session_id = Column(
+        String(SHA256_HEX_LENGTH), ForeignKey("organization_sessions.id"), index=True
+    )
+    file_id = Column(String(SHA256_HEX_LENGTH), ForeignKey("files.id"), index=True)
 
     feature_name = Column(String(SHORT_STRING_LENGTH), nullable=False, index=True)
     processing_time_sec = Column(Float, nullable=False)
@@ -1094,12 +1135,10 @@ class CostRecord(Base):
     created_at = Column(DateTime, default=utcnow, index=True)
 
     # Relationships
-    session = relationship('OrganizationSession', back_populates='cost_records')
-    file = relationship('File', back_populates='cost_records')
+    session = relationship("OrganizationSession", back_populates="cost_records")
+    file = relationship("File", back_populates="cost_records")
 
-    __table_args__ = (
-        Index('ix_cost_feature_date', 'feature_name', 'created_at'),
-    )
+    __table_args__ = (Index("ix_cost_feature_date", "feature_name", "created_at"),)
 
 
 class SchemaMetadata(Base):
@@ -1108,14 +1147,15 @@ class SchemaMetadata(Base):
 
     Stores the full JSON-LD Schema.org representation.
     """
-    __tablename__ = 'schema_metadata'
+
+    __tablename__ = "schema_metadata"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    file_id = Column(String(SHA256_HEX_LENGTH), ForeignKey('files.id'), unique=True, index=True)
+    file_id = Column(String(SHA256_HEX_LENGTH), ForeignKey("files.id"), unique=True, index=True)
 
     # Schema.org properties
     schema_type = Column(String(SHORT_STRING_LENGTH), index=True)  # @type
-    schema_context = Column(String(MAX_STRING_LENGTH), default='https://schema.org')
+    schema_context = Column(String(MAX_STRING_LENGTH), default="https://schema.org")
     schema_json = Column(JSON, nullable=False)  # Full JSON-LD
 
     # Validation
@@ -1127,7 +1167,7 @@ class SchemaMetadata(Base):
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     # Relationships
-    file = relationship('File', back_populates='schema_metadata')
+    file = relationship("File", back_populates="schema_metadata")
 
 
 class KeyValueStore(Base):
@@ -1137,16 +1177,19 @@ class KeyValueStore(Base):
     Designed for schema-less data that doesn't fit the relational model.
     Supports namespacing, TTL, and JSON values.
     """
-    __tablename__ = 'key_value_store'
+
+    __tablename__ = "key_value_store"
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    namespace = Column(String(SHORT_STRING_LENGTH), nullable=False, index=True)  # e.g., 'config', 'cache', 'temp'
+    namespace = Column(
+        String(SHORT_STRING_LENGTH), nullable=False, index=True
+    )  # e.g., 'config', 'cache', 'temp'
     key = Column(String(MAX_STRING_LENGTH), nullable=False)
     value = Column(JSON)
     value_type = Column(String(SHORT_FIELD_LENGTH))  # 'string', 'int', 'float', 'json', 'binary'
 
     # Optional association with a file
-    file_id = Column(String(SHA256_HEX_LENGTH), ForeignKey('files.id'), index=True)
+    file_id = Column(String(SHA256_HEX_LENGTH), ForeignKey("files.id"), index=True)
 
     # TTL support
     expires_at = Column(DateTime)
@@ -1156,14 +1199,15 @@ class KeyValueStore(Base):
     updated_at = Column(DateTime, default=utcnow, onupdate=utcnow)
 
     __table_args__ = (
-        UniqueConstraint('namespace', 'key', name='uq_namespace_key'),
-        Index('ix_kv_namespace_key', 'namespace', 'key'),
-        Index('ix_kv_expires', 'expires_at'),
+        UniqueConstraint("namespace", "key", name="uq_namespace_key"),
+        Index("ix_kv_namespace_key", "namespace", "key"),
+        Index("ix_kv_expires", "expires_at"),
     )
 
 
 class MergeEventType(enum.Enum):
     """Types of merge events."""
+
     CATEGORY = "category"
     COMPANY = "company"
     PERSON = "person"
@@ -1187,12 +1231,15 @@ class MergeEvent(Base):
     - Linked Data compatibility via owl:sameAs
     - Historical ID preservation
     """
-    __tablename__ = 'merge_events'
+
+    __tablename__ = "merge_events"
 
     id = Column(String(UUID_STRING_LENGTH), primary_key=True, default=lambda: str(uuid.uuid4()))
 
     # Target entity (canonical/surviving)
-    target_entity_type = Column(SQLEnum(MergeEventType), nullable=False)  # indexed via ix_merge_entity_type
+    target_entity_type = Column(
+        SQLEnum(MergeEventType), nullable=False
+    )  # indexed via ix_merge_entity_type
     target_entity_id = Column(Integer, nullable=False)  # Internal DB ID
     target_canonical_id = Column(String(UUID_STRING_LENGTH))  # UUID for JSON-LD @id
 
@@ -1217,8 +1264,8 @@ class MergeEvent(Base):
     rolled_back_by = Column(String(100))
 
     __table_args__ = (
-        Index('ix_merge_entity_type', 'target_entity_type'),
-        Index('ix_merge_performed_at', 'performed_at'),
+        Index("ix_merge_entity_type", "target_entity_type"),
+        Index("ix_merge_performed_at", "performed_at"),
     )
 
     def generate_jsonld(self) -> dict:
@@ -1232,39 +1279,40 @@ class MergeEvent(Base):
         source_iris = [f"urn:uuid:{cid}" for cid in (self.source_canonical_ids or [])]
 
         return {
-            "@context": {
-                "@vocab": "https://schema.org/",
-                "owl": "http://www.w3.org/2002/07/owl#"
-            },
+            "@context": {"@vocab": "https://schema.org/", "owl": "http://www.w3.org/2002/07/owl#"},
             "@type": "MergeAction",
             "@id": f"urn:uuid:{self.id}",
             "targetEntity": {
                 "@id": target_iri,
-                "owl:sameAs": source_iris if len(source_iris) > 1 else source_iris[0] if source_iris else None
+                "owl:sameAs": (
+                    source_iris if len(source_iris) > 1 else source_iris[0] if source_iris else None
+                ),
             },
             "description": self.merge_reason,
             "confidence": self.confidence,
             "agent": self.performed_by,
-            "startTime": self.performed_at.isoformat() if self.performed_at else None
+            "startTime": self.performed_at.isoformat() if self.performed_at else None,
         }
 
     def to_dict(self) -> Dict[str, Any]:
         return {
-            'id': self.id,
-            'target_entity_type': self.target_entity_type.value if self.target_entity_type else None,
-            'target_entity_id': self.target_entity_id,
-            'target_canonical_id': self.target_canonical_id,
-            'source_entity_ids': self.source_entity_ids,
-            'source_canonical_ids': self.source_canonical_ids,
-            'merge_reason': self.merge_reason,
-            'confidence': self.confidence,
-            'performed_by': self.performed_by,
-            'performed_at': self.performed_at.isoformat() if self.performed_at else None,
-            'is_rolled_back': self.is_rolled_back,
+            "id": self.id,
+            "target_entity_type": (
+                self.target_entity_type.value if self.target_entity_type else None
+            ),
+            "target_entity_id": self.target_entity_id,
+            "target_canonical_id": self.target_canonical_id,
+            "source_entity_ids": self.source_entity_ids,
+            "source_canonical_ids": self.source_canonical_ids,
+            "merge_reason": self.merge_reason,
+            "confidence": self.confidence,
+            "performed_by": self.performed_by,
+            "performed_at": self.performed_at.isoformat() if self.performed_at else None,
+            "is_rolled_back": self.is_rolled_back,
         }
 
 
-def init_db(db_path: str = 'file_organization.db') -> Session:
+def init_db(db_path: str = "file_organization.db") -> Session:
     """
     Initialize the database and return a session.
 
@@ -1274,7 +1322,7 @@ def init_db(db_path: str = 'file_organization.db') -> Session:
     Returns:
         SQLAlchemy Session
     """
-    engine = create_engine(f'sqlite:///{db_path}', echo=False)
+    engine = create_engine(f"sqlite:///{db_path}", echo=False)
 
     # Enable foreign keys for SQLite
     @event.listens_for(engine, "connect")
@@ -1293,6 +1341,6 @@ def init_db(db_path: str = 'file_organization.db') -> Session:
     return SessionLocal()
 
 
-def get_session(db_path: str = 'file_organization.db') -> Session:
+def get_session(db_path: str = "file_organization.db") -> Session:
     """Get a database session."""
     return init_db(db_path)

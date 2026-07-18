@@ -790,11 +790,63 @@ class ContentOrganizer(BaseOrganizer):
             company_name, people_names, image_metadata)
         """
         if self.scorer_mode == SCORER_UNIFIED:
-            return self._detect_file_category_unified(file_path, display_path)
-        legacy_result = self._detect_file_category_legacy(file_path, display_path)
-        if self.scorer_mode == SCORER_SHADOW:
-            self._log_shadow_comparison(file_path, display_path, legacy_result)
-        return legacy_result
+            result = self._detect_file_category_unified(file_path, display_path)
+        else:
+            result = self._detect_file_category_legacy(file_path, display_path)
+            if self.scorer_mode == SCORER_SHADOW:
+                self._log_shadow_comparison(file_path, display_path, result)
+        # Category-independent enrichment (runs for both engines): derive a
+        # file→location edge from a postal address in the extracted text when
+        # the file has no image-GPS location. Never changes category/folder.
+        return self._enrich_location_from_text(result)
+
+    def _enrich_location_from_text(
+        self,
+        result: Tuple[str, str, str, str, Optional[str], List[str], Dict[str, Any]],
+    ) -> Tuple[str, str, str, str, Optional[str], List[str], Dict[str, Any]]:
+        """Add a text-derived location to image_metadata['location'].
+
+        A no-op when the file already has a location (image EXIF GPS), has no
+        extracted text, or no address is found. Forward-geocodes the address
+        (rate-limited + cached) for coordinates; falls back to the parsed
+        city/state with null coordinates when geocoding is unavailable, so an
+        edge is still created. Tuple arity is unchanged.
+        """
+        category, subcategory, schema_type, text, company, people, image_metadata = result
+        image_metadata = image_metadata or {}
+        if image_metadata.get("location") or image_metadata.get("location_name") or not text:
+            return result
+
+        try:
+            from ..analyzers.address_extractor import extract_primary_address
+        except ImportError:
+            try:
+                from analyzers.address_extractor import extract_primary_address
+            except ImportError:
+                return result
+
+        address = extract_primary_address(text)
+        if not address:
+            return result
+
+        geo: Dict[str, Any] = {}
+        if self.metadata_parser is not None:
+            try:
+                geo = self.metadata_parser.geocode_address(address["raw"]) or {}
+            except Exception:
+                geo = {}
+
+        location = {
+            "display_name": geo.get("display_name") or address.get("display_name"),
+            "latitude": geo.get("latitude"),
+            "longitude": geo.get("longitude"),
+            "city": geo.get("city") or address.get("city"),
+            "state": geo.get("state") or address.get("state"),
+            "country": geo.get("country"),
+        }
+        image_metadata = dict(image_metadata)
+        image_metadata["location"] = location
+        return (category, subcategory, schema_type, text, company, people, image_metadata)
 
     def _detect_file_category_legacy(
         self,
