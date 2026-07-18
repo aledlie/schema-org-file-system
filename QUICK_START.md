@@ -48,6 +48,8 @@ organize-files content --source ~/Downloads --dry-run --no-db --no-sentry --no-c
 
 Defaults: sources `~/Desktop ~/Downloads`, target `~/Documents`, database `results/file_organization.db`.
 
+The content pipeline uses the **unified** weighted-signal scorer by default. Pass `--scorer legacy` for the original 10-tier priority chain, or `--scorer shadow` to compare them without changing placement (see below).
+
 ### Shadow test (compare unified scorer vs legacy chain)
 
 `--scorer shadow` runs both engines: the legacy 10-tier chain controls placement while the

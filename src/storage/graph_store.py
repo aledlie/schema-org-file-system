@@ -13,6 +13,7 @@ from ._time import utcnow
 from pathlib import Path
 from typing import Dict, List, Optional, Any, Tuple, Union
 from collections import defaultdict
+from contextlib import contextmanager
 
 from sqlalchemy import create_engine, event, func, and_, or_, inspect as sqla_inspect
 from sqlalchemy.orm import Session, sessionmaker, joinedload, selectinload
@@ -64,6 +65,18 @@ _PERSON_NAME_DENYLIST = (
     "company",
 )
 
+# Valid values for `Person.review_status` — single source of truth lives on the
+# model (docs/plans/PERSON_NAME_VALIDATION_PLAN.md); re-exported here for the
+# review-queue validation call sites below.
+PERSON_REVIEW_STATUSES = Person.REVIEW_STATUSES
+
+# Validator RouteDecision → persisted review_status.
+_DECISION_TO_STATUS = {
+    "auto_accept": "auto_accepted",
+    "review": "pending_review",
+    "reject": "rejected",
+}
+
 
 class GraphStore:
     """
@@ -110,6 +123,27 @@ class GraphStore:
         """Get a new database session."""
         return self.SessionLocal()
 
+    @contextmanager
+    def _session_scope(self, session: Session = None):
+        """Own a DB session, or borrow a caller-supplied one.
+
+        Yields ``(session, owned)``. A session created here is rolled back on
+        error and closed on exit; a caller-supplied session is left open (the
+        caller owns its lifecycle). Commit stays in the method body, gated on
+        ``owned`` — this collapses the repeated close_session/try/except/finally
+        scaffolding without changing per-method commit semantics.
+        """
+        owned = session is None
+        session = session or self.get_session()
+        try:
+            yield session, owned
+        except Exception:
+            session.rollback()
+            raise
+        finally:
+            if owned:
+                session.close()
+
     # =========================================================================
     # File Operations
     # =========================================================================
@@ -129,10 +163,7 @@ class GraphStore:
         Returns:
             Created File object
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             file_id = File.generate_id(original_path)
 
             # Check if file already exists
@@ -158,13 +189,6 @@ class GraphStore:
             session.commit()
             return file
 
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            if close_session:
-                session.close()
-
     def get_file(
         self, file_id: str = None, path: str = None, session: Session = None
     ) -> Optional[File]:
@@ -179,19 +203,13 @@ class GraphStore:
         Returns:
             File object or None
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             if file_id:
                 return session.query(File).filter(File.id == file_id).first()
             elif path:
                 file_id = File.generate_id(path)
                 return session.query(File).filter(File.id == file_id).first()
             return None
-        finally:
-            if close_session:
-                session.close()
 
     def get_files(
         self,
@@ -218,10 +236,7 @@ class GraphStore:
         Returns:
             List of File objects
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             query = session.query(File).options(
                 joinedload(File.categories), joinedload(File.companies)
             )
@@ -236,10 +251,6 @@ class GraphStore:
                 query = query.join(File.companies).filter(Company.name == company)
 
             return query.order_by(File.organized_at.desc()).offset(offset).limit(limit).all()
-
-        finally:
-            if close_session:
-                session.close()
 
     def update_file_status(
         self,
@@ -262,10 +273,7 @@ class GraphStore:
         Returns:
             True if updated successfully
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             file = session.query(File).filter(File.id == file_id).first()
             if not file:
                 return False
@@ -278,13 +286,6 @@ class GraphStore:
 
             session.commit()
             return True
-
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            if close_session:
-                session.close()
 
     # =========================================================================
     # Category Operations
@@ -398,10 +399,7 @@ class GraphStore:
         Returns:
             True if successful
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             file = session.query(File).filter(File.id == file_id).first()
             if not file:
                 return False
@@ -441,17 +439,10 @@ class GraphStore:
                 changed = True
 
             # Only commit if we own the session
-            if changed and close_session:
+            if changed and owned:
                 session.commit()
 
             return True
-
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            if close_session:
-                session.close()
 
     def get_category_tree(self, session: Session = None) -> List[Dict[str, Any]]:
         """
@@ -460,10 +451,7 @@ class GraphStore:
         Returns:
             List of root categories with nested subcategories
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             categories = (
                 session.query(Category)
                 .options(selectinload(Category.subcategories).selectinload(Category.subcategories))
@@ -478,10 +466,6 @@ class GraphStore:
                     tree.append(self._build_category_node(category))
 
             return tree
-
-        finally:
-            if close_session:
-                session.close()
 
     def _build_category_node(self, category: Category) -> Dict[str, Any]:
         """Build a category tree node recursively."""
@@ -533,10 +517,7 @@ class GraphStore:
         session: Session = None,
     ) -> bool:
         """Associate a file with a company."""
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             file = session.query(File).filter(File.id == file_id).first()
             if not file:
                 return False
@@ -552,17 +533,10 @@ class GraphStore:
                 company.file_count += 1
                 company.last_seen = utcnow()
                 # Only commit if we own the session
-                if close_session:
+                if owned:
                     session.commit()
 
             return True
-
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            if close_session:
-                session.close()
 
     # =========================================================================
     # Person Operations
@@ -620,9 +594,10 @@ class GraphStore:
                 elif result.decision == "reject":
                     return None
                 else:
-                    review_status = (
-                        "pending_review" if result.decision == "review" else "auto_accepted"
-                    )
+                    # Single decision→status table (shared with revalidate_people);
+                    # 'reject' is handled above (no row), so only 'review'/
+                    # 'auto_accept' reach here — both are keys in the map.
+                    review_status = _DECISION_TO_STATUS[result.decision]
                     detection_confidence = result.score
                     validation_scores = dict(result.layer_scores)
 
@@ -687,10 +662,7 @@ class GraphStore:
         gate rejects the name, that returns ``None`` and this drops the edge
         (returns ``False``) without creating a Person row.
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             file = session.query(File).filter(File.id == file_id).first()
             if not file:
                 return False
@@ -706,17 +678,10 @@ class GraphStore:
                 file.people.append(person)
                 person.file_count += 1
                 person.last_seen = utcnow()
-                if close_session:
+                if owned:
                     session.commit()
 
             return True
-
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            if close_session:
-                session.close()
 
     def get_all_people_with_files(
         self, session: Session = None, min_files: int = 1
@@ -737,10 +702,7 @@ class GraphStore:
         Returns:
             List of (display_name, [file.current_path, ...]) tuples
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             results = []
             people = session.query(Person).options(selectinload(Person.files)).all()
 
@@ -763,9 +725,6 @@ class GraphStore:
                     results.append((person.name, paths))
 
             return results
-        finally:
-            if close_session:
-                session.close()
 
     def get_files_by_person(self, person_id_or_name, session: Session = None) -> List[str]:
         """
@@ -781,10 +740,7 @@ class GraphStore:
             List of file.current_path values (None paths excluded); empty
             list if the person isn't found
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             if isinstance(person_id_or_name, int):
                 person = session.query(Person).filter(Person.id == person_id_or_name).first()
             else:
@@ -795,9 +751,6 @@ class GraphStore:
                 return []
 
             return [f.current_path for f in person.files if f.current_path]
-        finally:
-            if close_session:
-                session.close()
 
     def _find_person(self, person_id_or_name, session: Session) -> Optional[Person]:
         """Look up a person by primary key (int) or name (str, normalized)."""
@@ -805,6 +758,169 @@ class GraphStore:
             return session.query(Person).filter(Person.id == person_id_or_name).first()
         normalized = Person.normalize_name(person_id_or_name)
         return session.query(Person).filter(Person.normalized_name == normalized).first()
+
+    @staticmethod
+    def _person_summary(person: Person) -> Dict[str, Any]:
+        """Compact person record for the review-queue CLI (no lazy loads beyond files)."""
+        return {
+            "person_id": person.id,
+            "name": person.name,
+            "review_status": person.review_status,
+            "detection_confidence": person.detection_confidence,
+            "validation_scores": person.validation_scores or {},
+            "file_count": person.file_count,
+            "paths": [f.current_path for f in person.files if f.current_path],
+        }
+
+    def list_people_by_status(
+        self, status: Optional[str] = None, session: Session = None
+    ) -> List[Dict[str, Any]]:
+        """List people filtered by ``review_status`` (the review-queue read side).
+
+        Args:
+            status: One of :data:`PERSON_REVIEW_STATUSES`. ``None`` returns all
+                people regardless of status. Filtering is an exact column match,
+                so legacy rows with a NULL/empty status only appear under
+                ``status=None`` (use :meth:`revalidate_people` to re-score them).
+            session: Optional existing session.
+
+        Returns:
+            List of per-person summary dicts (see :meth:`_person_summary`),
+            ordered by name.
+
+        Raises:
+            ValueError: if ``status`` is not a recognized review status.
+        """
+        if status is not None and status not in PERSON_REVIEW_STATUSES:
+            raise ValueError(
+                f"unknown review_status {status!r}; expected one of {PERSON_REVIEW_STATUSES}"
+            )
+
+        with self._session_scope(session) as (session, owned):
+            query = session.query(Person).options(selectinload(Person.files))
+            if status is not None:
+                query = query.filter(Person.review_status == status)
+            people = query.order_by(Person.name).all()
+            return [self._person_summary(p) for p in people]
+
+    def set_person_review_status(
+        self, person_id_or_name, status: str, session: Session = None
+    ) -> Optional[Dict[str, Any]]:
+        """Set a human review decision on a person (accept / reject / requeue).
+
+        This is the write side of the review queue: ``--accept`` sets
+        ``confirmed``, ``--reject`` sets ``rejected`` (a tombstone that
+        :meth:`get_or_create_person` refuses to resurrect; ``prune_person``
+        remains the hard-delete tool). File edges are left intact — the status
+        filter in :meth:`get_all_people_with_files` hides them.
+
+        Args:
+            person_id_or_name: Person primary key (int), or name (str,
+                normalized like :meth:`get_or_create_person`).
+            status: One of :data:`PERSON_REVIEW_STATUSES`.
+            session: Optional existing session.
+
+        Returns:
+            ``{"person_id", "name", "old_status", "new_status"}`` on success, or
+            ``None`` if the person isn't found.
+
+        Raises:
+            ValueError: if ``status`` is not a recognized review status.
+        """
+        if status not in PERSON_REVIEW_STATUSES:
+            raise ValueError(
+                f"unknown review_status {status!r}; expected one of {PERSON_REVIEW_STATUSES}"
+            )
+
+        with self._session_scope(session) as (session, owned):
+            person = self._find_person(person_id_or_name, session)
+            if not person:
+                return None
+
+            old_status = person.review_status
+            person.review_status = status
+            if owned:
+                session.commit()
+
+            return {
+                "person_id": person.id,
+                "name": person.name,
+                "old_status": old_status,
+                "new_status": status,
+            }
+
+    def revalidate_people(
+        self, apply: bool = False, session: Session = None
+    ) -> List[Dict[str, Any]]:
+        """Re-run the person-name gate over legacy and pending rows.
+
+        Targets rows the validator has never scored well:
+
+        - ``pending_review`` (re-score, e.g. after installing the ``names``
+          extra a name may now clear the auto-accept bar or fail outright), and
+        - ``auto_accepted`` legacy rows whose ``validation_scores`` is empty
+          (backfilled by the Phase-2 migration, never actually validated).
+
+        Human decisions (``confirmed`` / ``rejected``) are never touched. Rows
+        are skipped when the validator is unavailable (nothing to re-score by).
+
+        Args:
+            apply: When ``False`` (default), report the proposed transitions
+                without writing. When ``True``, persist the new status plus the
+                fresh ``detection_confidence`` / ``validation_scores`` /
+                ``validated_at``.
+            session: Optional existing session.
+
+        Returns:
+            One dict per candidate: ``{person_id, name, old_status, new_status,
+            score, layer_scores, changed}`` — the explainability payoff of
+            storing per-layer scores.
+        """
+        with self._session_scope(session) as (session, owned):
+            candidates = (
+                session.query(Person)
+                .filter(Person.review_status.in_(("auto_accepted", "pending_review")))
+                .order_by(Person.name)
+                .all()
+            )
+
+            results: List[Dict[str, Any]] = []
+            for person in candidates:
+                # Skip already-validated auto_accepted rows; only legacy ones
+                # (empty validation_scores) are re-scored alongside every pending.
+                if person.review_status == "auto_accepted" and person.validation_scores:
+                    continue
+
+                validation = self._validate_person_name(person.name)
+                if validation is None:
+                    continue  # validator unavailable — can't re-score
+
+                new_status = _DECISION_TO_STATUS[validation.decision]
+                old_status = person.review_status
+                layer_scores = dict(validation.layer_scores)
+
+                results.append(
+                    {
+                        "person_id": person.id,
+                        "name": person.name,
+                        "old_status": old_status,
+                        "new_status": new_status,
+                        "score": validation.score,
+                        "layer_scores": layer_scores,
+                        "changed": old_status != new_status,
+                    }
+                )
+
+                if apply:
+                    person.review_status = new_status
+                    person.detection_confidence = validation.score
+                    person.validation_scores = layer_scores
+                    person.validated_at = utcnow()
+
+            if apply and owned:
+                session.commit()
+
+            return results
 
     def remove_person_edge(self, file_id: str, person_id_or_name, session: Session = None) -> bool:
         """
@@ -819,10 +935,7 @@ class GraphStore:
         Returns:
             True if an edge existed and was removed, False otherwise
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             file = session.query(File).filter(File.id == file_id).first()
             person = self._find_person(person_id_or_name, session)
             if not file or not person or person not in file.people:
@@ -830,16 +943,9 @@ class GraphStore:
 
             file.people.remove(person)
             person.file_count = max((person.file_count or 0) - 1, 0)
-            if close_session:
+            if owned:
                 session.commit()
             return True
-
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            if close_session:
-                session.close()
 
     def prune_person(
         self, person_id_or_name, dry_run: bool = False, session: Session = None
@@ -861,10 +967,7 @@ class GraphStore:
             Summary dict with name/person_id/edges_removed/paths, or None if
             the person isn't found
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             person = self._find_person(person_id_or_name, session)
             if not person:
                 return None
@@ -883,16 +986,9 @@ class GraphStore:
                 {Person.merged_into_id: None}
             )
             session.delete(person)
-            if close_session:
+            if owned:
                 session.commit()
             return summary
-
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            if close_session:
-                session.close()
 
     def prune_missing_person_edges(
         self, dry_run: bool = False, session: Session = None
@@ -913,10 +1009,7 @@ class GraphStore:
             {'edges_removed': N,
              'edges': [{'person': name, 'file_id': id, 'path': path}, ...]}
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             removed: List[Dict[str, Any]] = []
             people = session.query(Person).options(selectinload(Person.files)).all()
 
@@ -936,16 +1029,9 @@ class GraphStore:
                         person.files.remove(file)
                         person.file_count = max((person.file_count or 0) - 1, 0)
 
-            if not dry_run and close_session:
+            if not dry_run and owned:
                 session.commit()
             return {"edges_removed": len(removed), "edges": removed}
-
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            if close_session:
-                session.close()
 
     def _find_file(self, file_id_or_path: str, session: Session) -> Optional[File]:
         """Resolve a File by primary-key id, then by current/original path.
@@ -997,10 +1083,7 @@ class GraphStore:
             Summary dict with file_id/path/old_categories/new_category, or
             None if the file isn't found
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             file = self._find_file(file_id_or_path, session)
             if not file:
                 return None
@@ -1021,16 +1104,9 @@ class GraphStore:
 
             self.add_file_to_category(file.id, category_name, subcategory_name, session=session)
 
-            if close_session:
+            if owned:
                 session.commit()
             return summary
-
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            if close_session:
-                session.close()
 
     def prune_missing_files(
         self,
@@ -1054,10 +1130,7 @@ class GraphStore:
         Returns:
             {'removed': N, 'files': [{'file_id': id, 'path': path}, ...]}
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             removed: List[Dict[str, Any]] = []
             for file in session.query(File).all():
                 current, original = file.current_path, file.original_path
@@ -1093,16 +1166,9 @@ class GraphStore:
 
                 session.delete(file)
 
-            if not dry_run and close_session:
+            if not dry_run and owned:
                 session.commit()
             return {"removed": len(removed), "files": removed}
-
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            if close_session:
-                session.close()
 
     # =========================================================================
     # Location Operations
@@ -1182,10 +1248,7 @@ class GraphStore:
         session: Session = None,
     ) -> bool:
         """Associate a file with a location."""
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             file = session.query(File).filter(File.id == file_id).first()
             if not file:
                 return False
@@ -1206,17 +1269,10 @@ class GraphStore:
             if location not in file.locations:
                 file.locations.append(location)
                 location.file_count += 1
-                if close_session:
+                if owned:
                     session.commit()
 
             return True
-
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            if close_session:
-                session.close()
 
     # =========================================================================
     # Relationship Operations (Graph Edges)
@@ -1245,10 +1301,7 @@ class GraphStore:
         Returns:
             Created relationship
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             # Check if relationship already exists
             existing = (
                 session.query(FileRelationship)
@@ -1280,13 +1333,6 @@ class GraphStore:
             session.commit()
             return relationship
 
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            if close_session:
-                session.close()
-
     def find_related_files(
         self,
         file_id: str,
@@ -1306,10 +1352,7 @@ class GraphStore:
         Returns:
             List of (file, relationship_type, confidence) tuples
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             results = []
             visited = {file_id}
 
@@ -1369,10 +1412,6 @@ class GraphStore:
 
             return results
 
-        finally:
-            if close_session:
-                session.close()
-
     def find_duplicates(
         self, content_hash: str = None, session: Session = None
     ) -> List[List[File]]:
@@ -1386,10 +1425,7 @@ class GraphStore:
         Returns:
             List of file groups (files with same content)
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             if content_hash:
                 files = session.query(File).filter(File.content_hash == content_hash).all()
                 return [files] if len(files) > 1 else []
@@ -1410,10 +1446,6 @@ class GraphStore:
                 groups[f.content_hash].append(f)
 
             return list(groups.values())
-
-        finally:
-            if close_session:
-                session.close()
 
     # =========================================================================
     # Session Operations
@@ -1440,10 +1472,7 @@ class GraphStore:
         Returns:
             Created OrganizationSession
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             org_session = OrganizationSession(
                 id=str(uuid.uuid4()),
                 source_directories=source_directories,
@@ -1458,17 +1487,10 @@ class GraphStore:
             # the batch path) would hit "not bound to a Session". Refresh to load
             # the columns while still bound, then expunge so the values survive
             # detachment.
-            if close_session:
+            if owned:
                 session.refresh(org_session)
                 session.expunge(org_session)
             return org_session
-
-        except Exception as e:
-            session.rollback()
-            raise e
-        finally:
-            if close_session:
-                session.close()
 
     def complete_session(
         self, session_id: str, stats: Dict[str, int], db_session: Session = None
@@ -1526,10 +1548,7 @@ class GraphStore:
         Returns:
             Dictionary with counts and aggregations
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             stats = {
                 "total_files": session.query(func.count(File.id)).scalar(),
                 "organized_files": session.query(func.count(File.id))
@@ -1565,10 +1584,6 @@ class GraphStore:
 
             return stats
 
-        finally:
-            if close_session:
-                session.close()
-
     def get_cost_statistics(
         self,
         session_id: str = None,
@@ -1590,10 +1605,7 @@ class GraphStore:
         Returns:
             Cost statistics dictionary
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             query = session.query(CostRecord)
 
             if session_id:
@@ -1635,10 +1647,6 @@ class GraphStore:
                 "by_feature": dict(feature_stats),
             }
 
-        finally:
-            if close_session:
-                session.close()
-
     # =========================================================================
     # Search Operations
     # =========================================================================
@@ -1664,10 +1672,7 @@ class GraphStore:
         Returns:
             List of matching files
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             filters = []
 
             if search_filename:
@@ -1679,10 +1684,6 @@ class GraphStore:
                 return []
 
             return session.query(File).filter(or_(*filters)).limit(limit).all()
-
-        finally:
-            if close_session:
-                session.close()
 
     def search_by_location(
         self,
@@ -1707,10 +1708,7 @@ class GraphStore:
         Returns:
             List of files with GPS data near the location
         """
-        close_session = session is None
-        session = session or self.get_session()
-
-        try:
+        with self._session_scope(session) as (session, owned):
             # Approximate degrees per km. Longitude degrees shrink by
             # cos(latitude); clamp the scale near the poles where cos
             # approaches zero and the bounding box would blow up.
@@ -1730,7 +1728,3 @@ class GraphStore:
                 .limit(limit)
                 .all()
             )
-
-        finally:
-            if close_session:
-                session.close()

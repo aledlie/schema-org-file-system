@@ -577,6 +577,11 @@ class Person(Base, SchemaOrgSerializable):
     role = Column(String(100))  # Default role
 
     # Person-name validation gate (docs/plans/PERSON_NAME_VALIDATION_PLAN.md).
+    # REVIEW_STATUSES is the single source of truth for the valid review_status
+    # values; graph_store validates against it and revalidate maps validator
+    # decisions into it.
+    REVIEW_STATUSES = ("auto_accepted", "pending_review", "confirmed", "rejected")
+
     # review_status routes detection confidence three ways; validation_scores
     # is the per-layer breakdown ({} = never validated, e.g. legacy rows).
     # server_default mirrors the ALTER TABLE default in migration.run_migration
@@ -585,7 +590,6 @@ class Person(Base, SchemaOrgSerializable):
     review_status = Column(
         String(20), default="auto_accepted", server_default="auto_accepted", index=True
     )
-    # 'auto_accepted' | 'pending_review' | 'confirmed' | 'rejected'
     detection_confidence = Column(Float)  # nullable; composite score
     validation_scores = Column(
         JSON, default=dict, server_default=text("'{}'")
