@@ -56,6 +56,15 @@ ID_KEYWORDS = (
     "social security",
     "state id",
     "national id",
+    # License *back* term: the back of a US driver license often lacks the
+    # words "driver license"/"date of birth" (those are front-side), carrying
+    # only class/restriction fields. "corrective lenses" is a near-unique
+    # license restriction that catches a photographed back which would
+    # otherwise fall through to MIME/`neither`; kept last so any front-side
+    # keyword above still wins the reported-keyword slot. ("restrictions" and
+    # "endorsements" were dropped after a backtest showed they collide with
+    # insurance-document language — see docs/BACKLOG.md.)
+    "corrective lenses",
 )
 
 # Method 1 — passport MRZ (Machine Readable Zone):

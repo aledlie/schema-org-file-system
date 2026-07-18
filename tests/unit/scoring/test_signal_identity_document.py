@@ -28,6 +28,24 @@ MRZ_TEXT = "passport united states of america\nP<USALEDLIE<<ALYSHIA<<<<<<<<<<"
 NAME_FIELDS_TEXT = "PASSPORT\nSurname/Nom\nLEDLIE.\nGiven names/Prenoms\nALYSHIA.\nNationality: USA"
 KEYWORD_ONLY_TEXT = "passport united states of america date of birth 1990"
 NON_ID_TEXT = "meeting agenda for the quarterly review session notes"
+# Driver-license *front* OCR text: the "driver license" keyword fires, but the
+# layout has no MRZ and no "Surname/Nom" field labels, so name extraction falls
+# through to the injected general extractor (Method 3). "driver license"
+# precedes "date of birth" in ID_KEYWORDS, so it is the reported keyword.
+DRIVER_LICENSE_TEXT = (
+    "texas driver license\nDL 12345678 CLASS C\n"
+    "LN SAMPLE\nFN JAMIE\ndate of birth 01/09/1990\nSEX F HGT 5-05"
+)
+# Driver-license *back*: none of the front-side keywords ("driver license",
+# "date of birth") appear — only class/restriction fields. Detection now hinges
+# on the license-back keyword "corrective lenses". No names on the back, so
+# keyword evidence alone files it (empty people_names, like the passport
+# keyword-only case).
+LICENSE_BACK_TEXT = (
+    "class c single or comb veh which transports placarded hazmat\n"
+    "rest a with corrective lenses\nend none\n"
+    "texas roadside assistance directive to physician"
+)
 
 
 def no_names(_text):
@@ -80,6 +98,27 @@ class TestDetectIdentityDocument:
         # people_names, method labelled by the last attempted extractor.
         match = detect_identity_document(KEYWORD_ONLY_TEXT, extract_people_names=no_names)
         assert match is not None
+        assert match.method == "extractor"
+        assert match.people_names == []
+
+    def test_driver_license_keyword_detected(self) -> None:
+        # Gap-closing fixture: a driver-license front must be detected via the
+        # "driver license" keyword (previously only passports were covered).
+        match = detect_identity_document(
+            DRIVER_LICENSE_TEXT, extract_people_names=lambda _text: ["Jamie Sample"]
+        )
+        assert match is not None
+        assert match.matched_keyword == "driver license"
+        assert match.method == "extractor"
+        assert match.people_names == ["Jamie Sample"]
+
+    def test_license_back_detected_via_corrective_lenses(self) -> None:
+        # Gap #2: a license *back* has no front-side keyword; the "corrective
+        # lenses" restriction term must still file it (empty names, keyword
+        # evidence alone).
+        match = detect_identity_document(LICENSE_BACK_TEXT, extract_people_names=no_names)
+        assert match is not None
+        assert match.matched_keyword == "corrective lenses"
         assert match.method == "extractor"
         assert match.people_names == []
 
@@ -161,6 +200,13 @@ class TestRunEmission:
         signal = IdentityDocumentSignal(make_classifier(names=["Jane Doe"]))
         score = signal.run(make_ctx(make_ocr(KEYWORD_ONLY_TEXT)))[0]
         assert score.confidence == pytest.approx(ID_KEYWORD_CONFIDENCE)
+
+    def test_driver_license_files_identification(self) -> None:
+        signal = IdentityDocumentSignal(make_classifier(names=["Jamie Sample"]))
+        score = signal.run(make_ctx(make_ocr(DRIVER_LICENSE_TEXT)))[0]
+        assert (score.category, score.subcategory) == ("personal", "identification")
+        assert score.confidence == pytest.approx(ID_KEYWORD_CONFIDENCE)
+        assert score.evidence["matched_keyword"] == "driver license"
 
     def test_name_fields_use_keyword_confidence(self) -> None:
         signal = IdentityDocumentSignal(make_classifier())

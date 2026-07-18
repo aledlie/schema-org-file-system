@@ -1,7 +1,7 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-07-18 (added trained graphic-vs-photograph probe item — opaque AI graphics/logos leak past the cheap `GraphicDetectionSignal` gate; corrected `PHOTO_PROPERTY_CONFIDENCE` item post-f6488b9 — two-signal case resolved, residual is probe-absence only; probe now health-checked).
+Last updated: 2026-07-18 (added identity-detection license-back item + partial fix — `corrective lenses` keyword added to `ID_KEYWORDS` (`restrictions`/`endorsements` trialed then dropped after backtest showed insurance-doc collision), front/back fixtures, 23 tests pass; added `redact_pii.py` barcode/alphabetic-PII blind-spot item — OCR-token redaction silently no-ops on ID barcodes + health terms; added trained graphic-vs-photograph probe item — opaque AI graphics/logos leak past the cheap `GraphicDetectionSignal` gate; corrected `PHOTO_PROPERTY_CONFIDENCE` item post-f6488b9 — two-signal case resolved, residual is probe-absence only; probe now health-checked; fixed person-name false positive — ambiguous Census given names (summer/spring/autumn/winter, month names, virtue words) were auto_accepted when paired with a Census surname; new `_AMBIGUOUS_GIVEN_NAMES` hard rule + 41-test suite).
 
 ## Open Items
 
@@ -26,6 +26,46 @@ Last updated: 2026-07-18 (added trained graphic-vs-photograph probe item — opa
 - **Do not eyeball the bump.** Per the Phase-3 calibration process (`src/scoring/weights.py` header — "treat this module as versioned data and commit each re-tune with its backtest report"), any change to `PHOTO_PROPERTY_CONFIDENCE` (or `W_PEOPLE_PHOTO`) must be backed by a `results/file_organization.db` backtest, committed with the report.
 - **Regression guard:** measure false positives — staged/real-estate listing photos and any non-interior images the analyzer flags `is_property_mgmt` — before raising, since a higher confidence also strengthens every interior vote against genuine content winners.
 - **Legacy parity note:** the legacy `_classify_photo_composition` still routes interiors to `property_management/other`; a unified re-tune widens the shadow legacy-vs-unified disagreement for interior photos until the legacy chain is retired (Phase 5).
+
+### `redact_pii.py` leaks barcodes + alphabetic sensitive terms (OCR-token redaction is insufficient for IDs / health screenshots)
+
+`scripts/redact_pii.py` rasterizes an input to a flat PNG, then `redact_raster` (`scripts/redact_pii.py:93-121`) runs docTR OCR and blacks out only the recognized **word tokens** whose text matches `is_pii_token` (`:58-65`) — i.e. `_TOKEN_PII` (`:47-55`: 3+ digit runs, emails, SSN/phone, `\d{1,2}[/-]\d{1,2}[/-]\d{2,4}` dates) or a `--name` term. Anything that is not an OCR-detected word, or is alphabetic and not a supplied name, is never considered for redaction. The module docstring warns only about alphabetic street/third-party names; the true blind spots are broader and include a class of documents (government IDs) where redaction silently fails while *appearing* to succeed.
+
+**Symptom:** `redact_pii.py <file> --output DIR` reports `OK ... redacted` and writes a manifest flagged `review_recommended`, but the output still contains recoverable PII. The tool gives no indication which sensitive elements it could not see.
+
+**Reproduced 2026-07-18** (seeding `results/scene_labels/neither/` from real personal files; every output visually reviewed at full res):
+
+1. **Barcodes pass through 100% intact — the critical gap.** A Texas driver's-license back (`PXL_20220607_234355242.MP.jpg`) has a PDF417 2D barcode that encodes the *entire* identity (name, address, license #, DOB) plus a 1D Code-128 document number. docTR is a text-recognition model; it does not detect barcodes as words, so the `for word in line.words` loop (`:106`) never visits them and `redact_raster` draws zero boxes over them. The one-pass output looked "redacted" (a few digit tokens boxed) while the barcode — which round-trips to full PII via any scanner app — was completely untouched. **For any ID / passport / boarding pass / insurance card, OCR-token redaction is not a safe control.**
+2. **Alphabetic sensitive terms survive.** A SNPedia variant screenshot (`Screenshot 2026-06-09 at 6.52.15 PM.png`) kept "Increased (2.5x) risk for **Graves' disease**" (×3) and the `Medical Conditions: Graves' disease` tag fully readable after redaction. `_TOKEN_PII` has no alphabetic branch, and a health condition is not a `--name` term, so `is_pii_token` returns False for every one of those words. The rsID and numeric fields *were* boxed — depersonalizing the row — but the health association (the actually-sensitive content) remained.
+3. **Rotated text is missed.** The license `DOB: 01/09/1954` is printed rotated 90°. docTR's default detector did not return it as a word (orientation-sensitive), so the date branch of `_TOKEN_PII` never fired even though the string matches it. OCR-token redaction inherits every OCR recall gap (rotation, low contrast — cf. the P2 docTR-gate 1/7 faint-text miss in the OCR-bound item).
+
+**Mitigation actually used this session:** manual second pass — `PIL.ImageDraw.rectangle` black boxes over the barcode regions / rotated DOB / disease-name text, each output re-read at full resolution to confirm zero residual PII before use. The VIN-only Edmunds screenshot (`Screenshot 2026-07-15 at 1.34.47 PM.png`, VIN = digit run) redacted cleanly in one pass — the tool is fine when *all* PII is digit/email/date shaped and axis-aligned.
+
+**Status:** Open — real data-loss-of-privacy risk; the tool's "OK redacted" + git-add gate implies more safety than it delivers on IDs/health images.
+**Priority:** P2 (privacy) — a redaction tool that silently no-ops on a driver's-license barcode is worse than no tool, because it manufactures false confidence before `git add`.
+**Source:** manual PII-scrub of 3 files for the scene-probe `neither/` corpus, 2026-07-18. See memory `redact-pii-barcode-blindspot`.
+
+- **Barcode detection + full-cover.** Before/after OCR, run a barcode locator (e.g. `pyzbar`/`zxing`, or OpenCV `BarcodeDetector`) and black out every detected symbol's bounding box. If a barcode is detected but cannot be localized precisely, fail loud (non-zero exit + manifest `barcode_unredacted: true`) rather than emit a "redacted" file.
+- **Fail-loud for high-risk documents.** When the flattened image is ID-shaped (aspect ~1.6, detected "DL"/"USA"/state keywords, or any barcode present), refuse to mark the output clean without a human-confirmed manual pass — don't just append to the `review_recommended` list that callers ignore.
+- **Alphabetic PII pass.** Optional NER (or a `--redact-terms` medical/condition list) so health conditions and org/third-party names can be caught without hand-typing each into `--name`.
+- **OCR recall hardening.** Enable docTR orientation handling / multi-rotation passes so rotated fields (DOB) are detected; document that low-contrast text can still be missed.
+- **Regression guard / self-test.** Add a fixture ID image with a known barcode + rotated DOB and assert the redacted output fails a barcode-decode and an OCR-of-DOB check — locks the fix and prevents silent regressions.
+
+### Identity detection misses driver-license *backs* (front-side keyword list)
+
+`IdentityDocumentSignal` / the legacy `_classify_identification_document` both delegate to `detect_identity_document` (`src/scoring/signals/identity_document.py:95`), which fires only when `ocr_text` contains one of the `ID_KEYWORDS` (`:44`). The original 14 keywords were all *front-side* terms ("passport", "driver license", "date of birth", "surname"…). A photographed **license back** carries none of them — its OCR text is class/restriction/endorsement fields plus barcodes — so it was never detected and fell through to MIME/`neither` instead of `personal/identification`.
+
+**Surfaced 2026-07-18** while handling a real Texas license back (`PXL_20220607_234355242.MP.jpg`): OCR text was "CLASS: C-Single… / HAZMAT / REST: A - With corrective lenses / END: NONE / Directive to physician / Emergency Contact / Allergic reaction to drugs / TEXAS ROADSIDE ASSISTANCE" — zero `ID_KEYWORDS` hits. (Same file that exposed the `redact_pii.py` barcode blind spot above.)
+
+**Partially fixed 2026-07-18:** added one license-back keyword to `ID_KEYWORDS` — `"corrective lenses"` (near-unique license restriction) — appended last so any front-side keyword still wins the reported-`matched_keyword` slot. (`"restrictions"` and `"endorsements"` were trialed then **dropped** after the backtest below showed they collide with insurance-document language; only `corrective lenses` was kept.) Two fixtures + tests added (`test_signal_identity_document.py`: `DRIVER_LICENSE_TEXT` front, `LICENSE_BACK_TEXT` back); 23 tests pass. Flows to both engines via the shared core.
+
+**Status:** Open — partial. Residual gaps below.
+**Priority:** P3
+**Source:** manual license handling during scene-probe corpus seeding, 2026-07-18
+
+- **Unrestricted backs still undetectable.** A license back with *no* restriction/endorsement (only barcodes + "NONE") has no keyword hook at all — OCR-keyword detection fundamentally can't see it. Robust license-back detection needs a **barcode/PDF417 presence cue** (cf. the `redact_pii.py` item — a PDF417 is itself a strong ID signal) or a trained ID-image probe, not more keywords.
+- **`"restrictions"` / `"endorsements"` trialed and dropped (backtest 2026-07-18).** Both are generic enough to appear on insurance/contract/benefits documents and would file to `personal/identification` at `ID_KEYWORD_CONFIDENCE(0.85)`. Backtest (`results/file_organization.db`, 237 files / 58 with OCR): `corrective lenses` 0 matches, `restrictions` 0 matches, `endorsements` 2 matches — **both insurance PDFs** (`My Documents _ USAA.pdf`, `Property_Insurance.pdf`, "Declarations Page and endorsements…"), i.e. the exact collision predicted. No live false positive only because both are `DigitalDocument` and the ID signal is image-only gated (`applies_to: is_image`) — incidental protection that fails for a *photographed* insurance card. **Decision: dropped both; kept only `corrective lenses`** (clean, ID-specific, 0 collisions). If broader license-back coverage is later needed, reintroduce behind a corroborating-token requirement rather than as bare keywords. Corpus is small (spot-check, not comprehensive).
+- **`ID_KEYWORDS` is now front+back mixed.** If the reported `matched_keyword` is ever used to sub-classify (front vs back), the flat list won't distinguish them — would need tagging.
 
 ### Trained graphic-vs-photograph probe (opaque full-bleed graphics leak to `photos_*`)
 
