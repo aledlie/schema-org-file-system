@@ -35,7 +35,7 @@ class FileTypeOrganizer:
     def __init__(self, base_path: Optional[str] = None):
         """Initialize the organizer."""
         self.base_path = Path(base_path or "~/Documents").expanduser()
-        self.stats = defaultdict(int)
+        self.stats: defaultdict[str, int] = defaultdict(int)
 
     def get_category_for_file(self, file_path: Path) -> str:
         """Determine the destination folder for a file.
@@ -203,7 +203,7 @@ class FileTypeOrganizer:
         print("Category Breakdown")
         print(f"{'='*60}\n")
 
-        category_stats = defaultdict(int)
+        category_stats: defaultdict[str, int] = defaultdict(int)
         for result in summary['results']:
             if result.get('category'):
                 category_stats[result['category']] += 1

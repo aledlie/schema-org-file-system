@@ -1620,7 +1620,7 @@ class GraphStore:
             records = query.all()
 
             # Aggregate by feature
-            feature_stats = defaultdict(
+            feature_stats: defaultdict[str, dict[str, float]] = defaultdict(
                 lambda: {
                     "invocations": 0,
                     "total_cost": 0.0,
@@ -1631,7 +1631,7 @@ class GraphStore:
             )
 
             for record in records:
-                stats = feature_stats[record.feature_name]
+                stats = feature_stats[record.feature_name]  # type: ignore[index]  # SQLAlchemy column typed str at runtime
                 stats["invocations"] += 1
                 stats["total_cost"] += record.cost
                 stats["total_time"] += record.processing_time_sec

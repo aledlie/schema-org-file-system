@@ -163,7 +163,7 @@ def _is_triage_location(sample: dict) -> bool:
 
 
 def relabel(samples: list[dict]) -> tuple[list[dict], dict[str, Counter]]:
-    counters = {f"pass{i}": Counter() for i in range(1, 7)}
+    counters: dict[str, Counter] = {f"pass{i}": Counter() for i in range(1, 7)}
     out = []
     for s in samples:
         s = dict(s)

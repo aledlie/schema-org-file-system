@@ -45,7 +45,7 @@ def organize_files(
     print(f"Files to organize: {len(data['log'])}")
     print(f"Mode: {'Move' if move_files else 'Copy'}\n")
 
-    stats = defaultdict(int)
+    stats: defaultdict[str, int] = defaultdict(int)
     organization_log = []
 
     for i, item in enumerate(data['log'], 1):
@@ -122,7 +122,7 @@ def organize_files(
     if organization_log:
         print("\nOrganization by Schema.org Category:")
         print("-" * 40)
-        category_counts = defaultdict(int)
+        category_counts: defaultdict[str, int] = defaultdict(int)
         for item in organization_log:
             cat = "/".join(item['schema_category'])
             category_counts[cat] += 1

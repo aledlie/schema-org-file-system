@@ -336,8 +336,8 @@ def evaluate_model(
     correct_subcategory = 0
     skipped_missing = 0
 
-    category_metrics = defaultdict(lambda: {"tp": 0, "fp": 0, "fn": 0})
-    confusion_matrix = defaultdict(lambda: defaultdict(int))
+    category_metrics: defaultdict[str, dict[str, int]] = defaultdict(lambda: {"tp": 0, "fp": 0, "fn": 0})
+    confusion_matrix: defaultdict[str, defaultdict[str, int]] = defaultdict(lambda: defaultdict(int))
     confidence_scores = []
 
     print(f"Running predictions (classifier={classifier})...")
@@ -398,7 +398,7 @@ def evaluate_model(
     # Classes with support < min_support are flagged unreported so their noisy
     # near-zero F1 does not distort the headline macro metric.
     per_category_metrics = {}
-    low_support_categories = []
+    low_support_categories: list[dict[str, Any]] = []
     for category in category_metrics:
         tp = category_metrics[category]["tp"]
         fp = category_metrics[category]["fp"]

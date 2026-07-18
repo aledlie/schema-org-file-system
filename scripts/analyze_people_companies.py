@@ -114,7 +114,7 @@ def analyze_report(report_path: str):
     print("DETECTION BY CATEGORY")
     print("="*60)
 
-    category_stats = defaultdict(lambda: {'people': 0, 'companies': 0})
+    category_stats: defaultdict[str, dict[str, int]] = defaultdict(lambda: {'people': 0, 'companies': 0})
 
     for file_info in files_with_people:
         category_stats[file_info['category']]['people'] += 1

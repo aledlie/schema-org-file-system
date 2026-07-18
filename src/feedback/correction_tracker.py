@@ -49,7 +49,7 @@ import re
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict
 
 
 class CategorySuggestion(TypedDict):
@@ -322,8 +322,8 @@ class CorrectionFeedbackSystem:
         """
         patterns = self.extract_filename_patterns(filename)
 
-        category_votes = defaultdict(float)
-        subcategory_votes = defaultdict(float)
+        category_votes: defaultdict[str, float] = defaultdict(float)
+        subcategory_votes: defaultdict[str, float] = defaultdict(float)
 
         for pattern in patterns:
             if pattern in self.data["learned_patterns"]:
@@ -424,7 +424,7 @@ class CorrectionFeedbackSystem:
         Returns:
             Dictionary of rules that can be applied to improve categorization
         """
-        rules = {
+        rules: dict[str, Any] = {
             "pattern_rules": [],
             "content_rules": [],
             "extension_rules": {}
@@ -454,7 +454,7 @@ class CorrectionFeedbackSystem:
         rules["pattern_rules"].sort(key=lambda x: -x["sample_count"])
 
         # Extract content hint rules
-        content_hints = defaultdict(lambda: defaultdict(int))
+        content_hints: defaultdict[str, defaultdict[str, int]] = defaultdict(lambda: defaultdict(int))
         for correction in self.data["corrections"].values():
             for hint in correction.get("content_hints", []):
                 content_hints[hint][correction["correct_category"]] += 1

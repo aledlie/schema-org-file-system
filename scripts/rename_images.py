@@ -494,7 +494,7 @@ class ImageRenamer:
         )
 
     def _find_images(self) -> List[Path]:
-        files = []
+        files: list[Path] = []
         for ext in self.profile.image_extensions:
             files.extend(self.source_dir.glob(f"*{ext}"))
             files.extend(self.source_dir.glob(f"*{ext.upper()}"))

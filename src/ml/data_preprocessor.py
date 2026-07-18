@@ -39,7 +39,7 @@ class DataPreprocessor:
         self.feature_extractor = FileFeatureExtractor()
         self.data = None
         self.features = None
-        self.statistics = {}
+        self.statistics: dict[str, Any] = {}
 
     def load_data(self, report_path: Optional[str] = None) -> Dict:
         """Load organization report data."""

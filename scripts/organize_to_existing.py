@@ -39,7 +39,7 @@ def organize_files(base_path: str = "~/Documents", dry_run: bool = False) -> dic
 
     print(f"Files to organize: {len(files_to_organize)}\n")
 
-    stats = defaultdict(int)
+    stats: defaultdict[str, int] = defaultdict(int)
     organization_log = []
 
     for i, file_path in enumerate(files_to_organize, 1):
@@ -113,7 +113,7 @@ def organize_files(base_path: str = "~/Documents", dry_run: bool = False) -> dic
     if organization_log:
         print("\nFiles by Destination Folder:")
         print("-" * 40)
-        folder_counts = defaultdict(int)
+        folder_counts: defaultdict[str, int] = defaultdict(int)
         for item in organization_log:
             folder_counts[item['folder']] += 1
 

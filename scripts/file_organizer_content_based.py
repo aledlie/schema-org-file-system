@@ -223,7 +223,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         self._batch_processor = BatchProcessor(file_processor=self._file_processor)
 
         # Pipeline-specific state
-        self.stats = defaultdict(int)
+        self.stats: defaultdict[str, int] = defaultdict(int)
 
     def generate_schema(self, file_path: Path, schema_type: str, extracted_text: str = "") -> Dict:
         """Generate Schema.org metadata for a file with extracted content."""

@@ -87,7 +87,7 @@ class FeedbackIntegration:
             Dictionary mapping categories to their learned keywords
         """
         rules = self.get_cached_rules()
-        keywords = {}
+        keywords: dict[str, dict[str, list[str]]] = {}
 
         for rule in rules.get("pattern_rules", []):
             category = rule["category"]

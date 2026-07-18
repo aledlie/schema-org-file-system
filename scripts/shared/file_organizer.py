@@ -45,8 +45,8 @@ class FileOrganizer:
         self.output_dir = output_dir or self.source_dir
         self.dry_run = dry_run
         self.mode = mode
-        self.results = []
-        self.stats = defaultdict(int)
+        self.results: List[Dict] = []
+        self.stats: Dict[str, int] = defaultdict(int)
 
         if find_images_fn:
             self.find_images = find_images_fn
@@ -56,7 +56,7 @@ class FileOrganizer:
     def _default_find_images(self) -> List[Path]:
         """Find all image files with standard extensions."""
         extensions = {'.png', '.jpg', '.jpeg', '.webp', '.gif'}
-        images = []
+        images: list[Path] = []
         for ext in extensions:
             images.extend(self.source_dir.glob(f'*{ext}'))
             images.extend(self.source_dir.glob(f'*{ext.upper()}'))

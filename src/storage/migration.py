@@ -72,7 +72,7 @@ class JSONMigrator:
         self.kv_store = KeyValueStorage(db_path)
 
         # Statistics
-        self.stats = defaultdict(int)
+        self.stats: defaultdict[str, int] = defaultdict(int)
 
     def migrate_all(self, verbose: bool = True) -> Dict[str, Any]:
         """
@@ -565,7 +565,7 @@ def run_migration(
         print(f"Error: Database not found at {db_path}")
         return {"error": "Database not found"}
 
-    stats = defaultdict(int)
+    stats: defaultdict[str, int] = defaultdict(int)
     conn = sqlite3.connect(str(db_path))
 
     try:
