@@ -106,6 +106,27 @@ def cmd_migrate_scoring(args: argparse.Namespace) -> None:
     run_scoring_migration_with_banner(db_path, dry_run=args.dry_run)
 
 
+def cmd_migrate_wikidata(args: argparse.Namespace) -> None:
+    """Run database migration adding companies.wikidata_qid column."""
+    from storage.wikidata_migration import run_wikidata_migration_with_banner
+
+    db_path = args.db_path or DEFAULT_DB_PATH
+    run_wikidata_migration_with_banner(db_path, dry_run=args.dry_run)
+
+
+def cmd_enrich_wikidata(args: argparse.Namespace) -> None:
+    """Validate company names against Wikidata and persist confirmed QIDs."""
+    sys.path.insert(0, str(SCRIPTS_DIR))
+    from enrich_wikidata import run as enrich_run
+
+    enrich_run(
+        db_path=args.db_path,
+        limit=args.limit,
+        apply=args.apply,
+        check_events=args.events,
+    )
+
+
 def _prune_missing_edges(graph_store: "GraphStore", apply: bool) -> None:
     """Drop file->person edges whose file path no longer exists; print each."""
     label = "APPLIED" if apply else "DRY RUN"
@@ -695,6 +716,55 @@ For more help on a specific command:
         "--dry-run", action="store_true", help="Preview the migration without writing any changes"
     )
     migrate_parser.set_defaults(func=cmd_migrate)
+
+    # Wikidata QID schema migration
+    migrate_wikidata_parser = subparsers.add_parser(
+        "migrate-wikidata",
+        help="Add companies.wikidata_qid column (needed before enrich-wikidata)",
+        description="Add the nullable wikidata_qid column to the companies table. "
+        "Fresh databases already have it; run this once on existing databases.",
+    )
+    migrate_wikidata_parser.add_argument(
+        "--db-path", default=DEFAULT_DB_PATH, help="Path to SQLite database"
+    )
+    migrate_wikidata_parser.add_argument(
+        "--dry-run", action="store_true", help="Preview the migration without writing any changes"
+    )
+    migrate_wikidata_parser.set_defaults(func=cmd_migrate_wikidata)
+
+    # Wikidata entity enrichment
+    enrich_wikidata_parser = subparsers.add_parser(
+        "enrich-wikidata",
+        help="Validate company names against Wikidata and persist confirmed QIDs",
+        description="Nightly enrichment: queries the Wikidata Reconciliation API "
+        "(wikidata.reconci.link) to validate detected company names against the "
+        "organization class (Q43229). Results are cached indefinitely in the local "
+        "SQLite store. Dry-run by default; --apply writes QIDs to company rows "
+        "so JSON-LD sameAs output includes the real Wikidata URL. "
+        "Requires an internet connection; fails open when offline.",
+    )
+    enrich_wikidata_parser.add_argument(
+        "--db-path", default=DEFAULT_DB_PATH, help="Path to SQLite database"
+    )
+    enrich_wikidata_parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        metavar="N",
+        help="Process at most N companies (default: all)",
+    )
+    enrich_wikidata_parser.add_argument(
+        "--apply",
+        action="store_true",
+        help="Write confirmed QIDs to company rows (default is dry-run)",
+    )
+    enrich_wikidata_parser.add_argument(
+        "--events",
+        action="store_true",
+        help="Also query the event class (Q1656682) for each name; "
+        "a positive match is logged as a negative person/org signal",
+    )
+    enrich_wikidata_parser.set_defaults(func=cmd_enrich_wikidata)
 
     # Scoring evidence migration
     migrate_scoring_parser = subparsers.add_parser(
