@@ -1,6 +1,6 @@
 # Plan: Media/Exteriors + Media/Place scene classification
 
-**Status:** Scoped — decisions locked 2026-07-17; step 1 (taxonomy) + trainer scaffolding landed, scene model pending labeling.
+**Status:** Complete — decisions locked 2026-07-17; swap completed 2026-07-18 (see §Status at bottom). v2 refinements (`Accommodation` backoff) remain future work.
 **Priority:** P2
 **Source:** ChatGPT content-run audit, 2026-07-17 — AI real-estate renders routed to `Media/Interiors`/`Room`; no `Media/` bucket for building exteriors or outdoor/place scenes.
 **Extends:** [`docs/architecture/UNIFIED_SCORING_PLAN.md`](../architecture/UNIFIED_SCORING_PLAN.md) (unified scorer), [`docs/reviews/INTERIOR_DETECTION_DURABLE_FIX_ANALYSIS.md`](../reviews/INTERIOR_DETECTION_DURABLE_FIX_ANALYSIS.md) (the C1 interior probe this generalizes).
@@ -89,8 +89,10 @@ python scripts/prototype_scene_probe.py train   # -> results/scene_probe.joblib
 - Interiors already scaffold subtypes (`HotelRoom`/`MeetingRoom`); an exterior `House` vs commercial `CivicStructure`/`LandmarksOrHistoricalBuildings` split is a later signal.
 - A `place` GPS/EXIF cross-check (the pipeline already extracts location) could corroborate the probe's `place` votes.
 
-## Status of this landing (2026-07-18)
+## Status of this landing (complete 2026-07-18)
 
-- **Done:** taxonomy (`category_config.py`) + `get_destination_path` tests; `scripts/prototype_scene_probe.py`; `results/scene_labels/` scaffold.
-- **Done (2026-07-18):** `SceneSignal` (`src/scoring/signals/scene.py`) + `W_SCENE` (aliases `W_INTERIOR`) + registry wiring behind an **artifact-gated swap** — `build_default_signals` registers `SceneSignal` only when `results/scene_probe.joblib` loads, else keeps `InteriorSignal` (honours the §Sequencing guard; zero behaviour change until the artifact lands). Tests: `test_signal_scene.py` + `test_registry.py::TestSceneSwap`.
-- **Pending:** hand-labeling (30/~600+ rows as of 2026-07-18: 18 interior, 12 exterior, 0 place, 0 neither) → train + commit `scene_probe.joblib`; then swap completion: delete `interior.py` + the registry fallback, retire `photo_composition`'s `is_property_mgmt` vote, rename `W_INTERIOR`→`W_SCENE`, update `backtest_scoring.WEIGHT_SIGNALS` (`"interior"`→`"scene"`) + registry/golden tests, port the `interior_probe` health check to the scene artifact, backtest.
+- **Done:** taxonomy (`category_config.py`) + `get_destination_path` tests; `scripts/prototype_scene_probe.py` (+ a 5th `graphic` class, added beyond this plan's original four — see the graphic-probe item in `docs/BACKLOG.md`); `results/scene_labels/` corpus (835 rows at train time: neither 118, interior 178, exterior 158, place 347, graphic 33 — Places365 sampling filled place/exterior/interior).
+- **Done:** `SceneSignal` (`src/scoring/signals/scene.py`) + `W_SCENE` + registry wiring, initially behind an artifact-gated swap per §Sequencing.
+- **Done (swap completion):** `scene_probe.joblib` trained + committed (5-fold eval acc 0.92; interior F1 0.97, place 0.93, exterior 0.86, neither 0.92, graphic 0.70 — conservative graphic recall accepted by explicit decision); `interior.py` + registry fallback deleted; `photo_composition`'s `is_property_mgmt` vote retired (people-only now; `ROOM_SUBTYPE_SCHEMA` moved to `scene.py`); `W_INTERIOR` collapsed into `W_SCENE`; `backtest_scoring.WEIGHT_SIGNALS` row → `("W_SCENE", "scene")`; health check ported (`scene_probe` feature, 11/11); `_IMAGE_SCHEMA_TYPES` in `file_processor.py` extended with `House`/`Place`/`Accommodation` (scene @types would otherwise persist as `DigitalDocument`); `ContentOrganizer._stash_decision_state` ports the probe-wins description override via `SCENE_DESCRIPTION_LABELS`.
+- **Backtest (2026-07-18, 202-row replay of `results/file_organization.db`):** `W_SCENE` ±20% flips 4/0 decisions — prior is stable at 0.85. Caveat: the replay classifies under `original_path` (pre-move, by design), so disk-dependent signals like the scene probe mostly no-op on rows whose files have since been organized away — replay disagreements on `Media/Interiors` rows are a harness limitation, not live misroutes. Reports: `results/backtest_scene_swap_20260718.json`, `results/backtest_scene_swap_sensitivity_20260718.json`.
+- **Remaining (v2 / follow-ups):** `Accommodation` backoff for thin Room-vs-House margins (exterior↔place remains the hard boundary: ~20 swaps each way in eval); graphic-class recall (corpus volume — see BACKLOG); goldens for exterior/place cases if golden coverage is extended.

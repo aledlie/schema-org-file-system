@@ -9,6 +9,11 @@ AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and en
 python3.13 -m venv venv && source venv/bin/activate
 pip install -e ".[all]"
 brew install tesseract poppler
+
+# Download the Census surname gazetteer — surnames.txt is not in git
+# (gitignored for size); person/entity detection needs it at runtime.
+# Regenerates given_names.txt too (that one is committed).
+python scripts/download_census_names.py
 ```
 
 Verify the install:
