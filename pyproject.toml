@@ -186,3 +186,14 @@ python_files = ["test_*.py"]
 python_functions = ["test_*"]
 addopts = "-v --tb=short"
 pythonpath = [".", "src", "scripts"]
+filterwarnings = [
+    # Third-party deprecations we cannot fix at source; each scoped to its
+    # exact message so new deprecations in our own code still surface.
+    # joblib 1.5.3 (latest) not yet updated for the NumPy 2.5 deprecation
+    "ignore:Setting the shape on a NumPy array has been deprecated:DeprecationWarning:joblib.numpy_pickle",
+    # easyocr + torch internals still call torch.ao.quantization
+    "ignore:torch\\.ao\\.quantization is deprecated:DeprecationWarning",
+    "ignore:torch\\.quantize_per_tensor, torch\\.quantize_per_channel:UserWarning",
+    # defusedxml warns on importing its own cElementTree shim
+    "ignore:defusedxml\\.cElementTree is deprecated:DeprecationWarning",
+]

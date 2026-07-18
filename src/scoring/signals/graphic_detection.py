@@ -155,20 +155,16 @@ def _count_distinct_colors(img: object) -> Optional[int]:
     """Return the number of distinct sRGB colours in a small thumbnail.
 
     Resizes to ``_PALETTE_SAMPLE_SIZE`` first so the cost is bounded.
-    ``getdata()`` returns RGB tuples, which is correct for distinct-colour
-    counting.  Returns None when Pillow operations fail.
-
-    Note: ``getdata()`` is deprecated in Pillow ≥ 10 in favour of
-    ``get_flattened_data()`` — however ``get_flattened_data()`` returns raw
-    bytes (R, G, B, R, G, B, …) and cannot be used with ``set()`` to count
-    distinct colours without reshaping.  Use ``getdata()`` until an
-    equivalent tuple-returning API is available in the minimum supported
-    Pillow version.
+    Both ``get_flattened_data()`` (Pillow ≥ 12.3, where ``getdata()`` is
+    deprecated) and ``getdata()`` yield RGB tuples for multiband images,
+    which is correct for distinct-colour counting.  Returns None when
+    Pillow operations fail.
     """
     try:
         thumbnail = img.resize(_PALETTE_SAMPLE_SIZE)  # type: ignore[attr-defined]
         rgb = thumbnail.convert("RGB")
-        return len(set(rgb.getdata()))  # type: ignore[attr-defined]
+        pixels = getattr(rgb, "get_flattened_data", rgb.getdata)  # type: ignore[attr-defined]
+        return len(set(pixels()))
     except Exception:
         return None
 
