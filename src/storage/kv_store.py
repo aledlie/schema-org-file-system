@@ -130,8 +130,8 @@ class KeyValueStorage:
         key: str,
         value: Any,
         namespace: str = NAMESPACE_CACHE,
-        ttl_seconds: int = None,
-        file_id: str = None
+        ttl_seconds: Optional[int] = None,
+        file_id: Optional[str] = None
     ) -> bool:
         """
         Set a value.
@@ -273,7 +273,7 @@ class KeyValueStorage:
         self,
         mapping: Dict[str, Any],
         namespace: str = NAMESPACE_CACHE,
-        ttl_seconds: int = None
+        ttl_seconds: Optional[int] = None
     ) -> bool:
         """
         Set multiple values at once.
@@ -428,7 +428,7 @@ class KeyValueStorage:
     def scan(
         self,
         namespace: str = NAMESPACE_CACHE,
-        match: str = None,
+        match: Optional[str] = None,
         count: int = 100,
         cursor: int = 0
     ) -> tuple:

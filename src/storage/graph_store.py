@@ -124,7 +124,7 @@ class GraphStore:
         return self.SessionLocal()
 
     @contextmanager
-    def _session_scope(self, session: Session = None):
+    def _session_scope(self, session: Optional[Session] = None):
         """Own a DB session, or borrow a caller-supplied one.
 
         Yields ``(session, owned)``. A session created here is rolled back on
@@ -149,7 +149,7 @@ class GraphStore:
     # =========================================================================
 
     def add_file(
-        self, original_path: str, filename: str, session: Session = None, **kwargs
+        self, original_path: str, filename: str, session: Optional[Session] = None, **kwargs
     ) -> File:
         """
         Add a new file to the store.
@@ -190,7 +190,7 @@ class GraphStore:
             return file
 
     def get_file(
-        self, file_id: str = None, path: str = None, session: Session = None
+        self, file_id: Optional[str] = None, path: Optional[str] = None, session: Optional[Session] = None
     ) -> Optional[File]:
         """
         Get a file by ID or path.
@@ -213,13 +213,13 @@ class GraphStore:
 
     def get_files(
         self,
-        status: FileStatus = None,
-        category: str = None,
-        company: str = None,
-        extension: str = None,
+        status: Optional[FileStatus] = None,
+        category: Optional[str] = None,
+        company: Optional[str] = None,
+        extension: Optional[str] = None,
         limit: int = 100,
         offset: int = 0,
-        session: Session = None,
+        session: Optional[Session] = None,
     ) -> List[File]:
         """
         Query files with filters.
@@ -256,9 +256,9 @@ class GraphStore:
         self,
         file_id: str,
         status: FileStatus,
-        destination: str = None,
-        reason: str = None,
-        session: Session = None,
+        destination: Optional[str] = None,
+        reason: Optional[str] = None,
+        session: Optional[Session] = None,
     ) -> bool:
         """
         Update file organization status.
@@ -292,7 +292,7 @@ class GraphStore:
     # =========================================================================
 
     def get_or_create_category(
-        self, name: str, parent_name: str = None, session: Session = None
+        self, name: str, parent_name: Optional[str] = None, session: Optional[Session] = None
     ) -> Optional[Category]:
         """
         Get or create a category.
@@ -378,9 +378,9 @@ class GraphStore:
         self,
         file_id: str,
         category_name: str,
-        subcategory_name: str = None,
+        subcategory_name: Optional[str] = None,
         confidence: float = 1.0,
-        session: Session = None,
+        session: Optional[Session] = None,
         signal_evidence: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
@@ -444,7 +444,7 @@ class GraphStore:
 
             return True
 
-    def get_category_tree(self, session: Session = None) -> List[Dict[str, Any]]:
+    def get_category_tree(self, session: Optional[Session] = None) -> List[Dict[str, Any]]:
         """
         Get the full category hierarchy as a tree.
 
@@ -477,7 +477,7 @@ class GraphStore:
     # Company Operations
     # =========================================================================
 
-    def get_or_create_company(self, name: str, session: Session = None) -> Optional[Company]:
+    def get_or_create_company(self, name: str, session: Optional[Session] = None) -> Optional[Company]:
         """Get or create a company by name."""
         close_session = session is None
         session = session or self.get_session()
@@ -513,8 +513,8 @@ class GraphStore:
         file_id: str,
         company_name: str,
         confidence: float = 1.0,
-        context: str = None,
-        session: Session = None,
+        context: Optional[str] = None,
+        session: Optional[Session] = None,
     ) -> bool:
         """Associate a file with a company."""
         with self._session_scope(session) as (session, owned):
@@ -545,9 +545,9 @@ class GraphStore:
     def get_or_create_person(
         self,
         name: str,
-        email: str = None,
-        role: str = None,
-        session: Session = None,
+        email: Optional[str] = None,
+        role: Optional[str] = None,
+        session: Optional[Session] = None,
         *,
         validate: bool = True,
     ) -> Optional[Person]:
@@ -650,9 +650,9 @@ class GraphStore:
         self,
         file_id: str,
         person_name: str,
-        role: str = None,
+        role: Optional[str] = None,
         confidence: float = 1.0,
-        session: Session = None,
+        session: Optional[Session] = None,
         *,
         validate: bool = True,
     ) -> bool:
@@ -684,7 +684,7 @@ class GraphStore:
             return True
 
     def get_all_people_with_files(
-        self, session: Session = None, min_files: int = 1
+        self, session: Optional[Session] = None, min_files: int = 1
     ) -> List[Tuple[str, List[str]]]:
         """
         Get all people who have at least `min_files` organized files.
@@ -726,7 +726,7 @@ class GraphStore:
 
             return results
 
-    def get_files_by_person(self, person_id_or_name, session: Session = None) -> List[str]:
+    def get_files_by_person(self, person_id_or_name, session: Optional[Session] = None) -> List[str]:
         """
         Get the current file paths associated with a single person.
 
@@ -773,7 +773,7 @@ class GraphStore:
         }
 
     def list_people_by_status(
-        self, status: Optional[str] = None, session: Session = None
+        self, status: Optional[str] = None, session: Optional[Session] = None
     ) -> List[Dict[str, Any]]:
         """List people filtered by ``review_status`` (the review-queue read side).
 
@@ -804,7 +804,7 @@ class GraphStore:
             return [self._person_summary(p) for p in people]
 
     def set_person_review_status(
-        self, person_id_or_name, status: str, session: Session = None
+        self, person_id_or_name, status: str, session: Optional[Session] = None
     ) -> Optional[Dict[str, Any]]:
         """Set a human review decision on a person (accept / reject / requeue).
 
@@ -850,7 +850,7 @@ class GraphStore:
             }
 
     def revalidate_people(
-        self, apply: bool = False, session: Session = None
+        self, apply: bool = False, session: Optional[Session] = None
     ) -> List[Dict[str, Any]]:
         """Re-run the person-name gate over legacy and pending rows.
 
@@ -922,7 +922,7 @@ class GraphStore:
 
             return results
 
-    def remove_person_edge(self, file_id: str, person_id_or_name, session: Session = None) -> bool:
+    def remove_person_edge(self, file_id: str, person_id_or_name, session: Optional[Session] = None) -> bool:
         """
         Remove a single file->person edge, keeping both rows.
 
@@ -948,7 +948,7 @@ class GraphStore:
             return True
 
     def prune_person(
-        self, person_id_or_name, dry_run: bool = False, session: Session = None
+        self, person_id_or_name, dry_run: bool = False, session: Optional[Session] = None
     ) -> Optional[Dict[str, Any]]:
         """
         Delete a person and all of its file->person edges.
@@ -991,7 +991,7 @@ class GraphStore:
             return summary
 
     def prune_missing_person_edges(
-        self, dry_run: bool = False, session: Session = None
+        self, dry_run: bool = False, session: Optional[Session] = None
     ) -> Dict[str, Any]:
         """
         Drop file->person edges whose file no longer exists on disk.
@@ -1060,7 +1060,7 @@ class GraphStore:
         category_name: str,
         subcategory_name: Optional[str] = None,
         dry_run: bool = False,
-        session: Session = None,
+        session: Optional[Session] = None,
     ) -> Optional[Dict[str, Any]]:
         """
         Replace a file's category edge(s) with a single category/subcategory.
@@ -1111,7 +1111,7 @@ class GraphStore:
     def prune_missing_files(
         self,
         dry_run: bool = False,
-        session: Session = None,
+        session: Optional[Session] = None,
     ) -> Dict[str, Any]:
         """
         Delete File rows whose current_path and original_path are both gone.
@@ -1177,12 +1177,12 @@ class GraphStore:
     def get_or_create_location(
         self,
         name: str,
-        latitude: float = None,
-        longitude: float = None,
-        city: str = None,
-        state: str = None,
-        country: str = None,
-        session: Session = None,
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
+        city: Optional[str] = None,
+        state: Optional[str] = None,
+        country: Optional[str] = None,
+        session: Optional[Session] = None,
     ) -> Optional[Location]:
         """Get or create a location."""
         close_session = session is None
@@ -1238,14 +1238,14 @@ class GraphStore:
         self,
         file_id: str,
         location_name: str,
-        location_type: str = None,
-        latitude: float = None,
-        longitude: float = None,
-        city: str = None,
-        state: str = None,
-        country: str = None,
+        location_type: Optional[str] = None,
+        latitude: Optional[float] = None,
+        longitude: Optional[float] = None,
+        city: Optional[str] = None,
+        state: Optional[str] = None,
+        country: Optional[str] = None,
         confidence: float = 1.0,
-        session: Session = None,
+        session: Optional[Session] = None,
     ) -> bool:
         """Associate a file with a location."""
         with self._session_scope(session) as (session, owned):
@@ -1284,8 +1284,8 @@ class GraphStore:
         target_file_id: str,
         relationship_type: RelationshipType,
         confidence: float = 1.0,
-        extra_data: Dict = None,
-        session: Session = None,
+        extra_data: Optional[Dict] = None,
+        session: Optional[Session] = None,
     ) -> FileRelationship:
         """
         Add a relationship between two files.
@@ -1336,9 +1336,9 @@ class GraphStore:
     def find_related_files(
         self,
         file_id: str,
-        relationship_type: RelationshipType = None,
+        relationship_type: Optional[RelationshipType] = None,
         depth: int = 1,
-        session: Session = None,
+        session: Optional[Session] = None,
     ) -> List[Tuple[File, RelationshipType, float]]:
         """
         Find files related to a given file (graph traversal).
@@ -1413,7 +1413,7 @@ class GraphStore:
             return results
 
     def find_duplicates(
-        self, content_hash: str = None, session: Session = None
+        self, content_hash: Optional[str] = None, session: Optional[Session] = None
     ) -> List[List[File]]:
         """
         Find groups of duplicate files by content hash.
@@ -1456,8 +1456,8 @@ class GraphStore:
         source_directories: List[str],
         base_path: str,
         dry_run: bool = False,
-        file_limit: int = None,
-        session: Session = None,
+        file_limit: Optional[int] = None,
+        session: Optional[Session] = None,
     ) -> OrganizationSession:
         """
         Create a new organization session.
@@ -1493,7 +1493,7 @@ class GraphStore:
             return org_session
 
     def complete_session(
-        self, session_id: str, stats: Dict[str, int], db_session: Session = None
+        self, session_id: str, stats: Dict[str, int], db_session: Optional[Session] = None
     ) -> bool:
         """
         Mark a session as completed with statistics.
@@ -1541,7 +1541,7 @@ class GraphStore:
     # Statistics and Aggregations
     # =========================================================================
 
-    def get_statistics(self, session: Session = None) -> Dict[str, Any]:
+    def get_statistics(self, session: Optional[Session] = None) -> Dict[str, Any]:
         """
         Get overall statistics.
 
@@ -1586,11 +1586,11 @@ class GraphStore:
 
     def get_cost_statistics(
         self,
-        session_id: str = None,
-        feature_name: str = None,
-        start_date: datetime = None,
-        end_date: datetime = None,
-        session: Session = None,
+        session_id: Optional[str] = None,
+        feature_name: Optional[str] = None,
+        start_date: Optional[datetime] = None,
+        end_date: Optional[datetime] = None,
+        session: Optional[Session] = None,
     ) -> Dict[str, Any]:
         """
         Get cost statistics with optional filters.
@@ -1657,7 +1657,7 @@ class GraphStore:
         search_content: bool = True,
         search_filename: bool = True,
         limit: int = DEFAULT_SEARCH_LIMIT,
-        session: Session = None,
+        session: Optional[Session] = None,
     ) -> List[File]:
         """
         Search files by text content or filename.
@@ -1691,7 +1691,7 @@ class GraphStore:
         longitude: float,
         radius_km: float = 10,
         limit: int = DEFAULT_SEARCH_LIMIT,
-        session: Session = None,
+        session: Optional[Session] = None,
     ) -> List[File]:
         """
         Find files near a geographic location.

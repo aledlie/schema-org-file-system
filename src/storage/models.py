@@ -17,7 +17,7 @@ Key-Value Storage:
 """
 
 from ._time import utcnow
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, TYPE_CHECKING
 from sqlalchemy import (
     Column,
     Integer,
@@ -36,7 +36,7 @@ from sqlalchemy import (
     event,
     text,
 )
-from sqlalchemy.orm import declarative_base, relationship, Session, sessionmaker
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session, sessionmaker
 from sqlalchemy.ext.hybrid import hybrid_property
 import enum
 import hashlib
@@ -55,7 +55,7 @@ try:
         BASE_PATH_MAX_LENGTH,
     )
 except ImportError:
-    from constants import (
+    from constants import (  # type: ignore[no-redef]
         SHA256_HEX_LENGTH,
         UUID_STRING_LENGTH,
         MAX_STRING_LENGTH,
@@ -79,7 +79,8 @@ NAMESPACES = {
 }
 
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    pass
 
 
 class FileStatus(enum.Enum):
@@ -168,10 +169,10 @@ class File(Base, SchemaOrgSerializable):
     __tablename__ = "files"
 
     # Primary key is hash of original path
-    id = Column(String(SHA256_HEX_LENGTH), primary_key=True)
+    id: Mapped[str] = mapped_column(String(SHA256_HEX_LENGTH), primary_key=True)
 
     # Public canonical ID for JSON-LD @id (urn:sha256:{hash} format)
-    canonical_id = Column(String(100), unique=True, index=True)
+    canonical_id: Mapped[Optional[str]] = mapped_column(String(100), unique=True, index=True)
 
     # Historical IDs for deduplication (previous paths, external IDs)
     source_ids = Column(JSON, default=list)
@@ -181,7 +182,7 @@ class File(Base, SchemaOrgSerializable):
     original_path = Column(Text, nullable=False)
     current_path = Column(Text)  # Where it is now (after organization)
     file_extension = Column(String(SHORT_FIELD_LENGTH), index=True)
-    mime_type = Column(String(100))
+    mime_type: Mapped[Optional[str]] = mapped_column(String(100))
 
     # File properties
     file_size = Column(Integer)
@@ -191,7 +192,9 @@ class File(Base, SchemaOrgSerializable):
     organized_at = Column(DateTime)
 
     # Organization status
-    status = Column(SQLEnum(FileStatus), default=FileStatus.PENDING, index=True)
+    status: Mapped[Optional[FileStatus]] = mapped_column(
+        SQLEnum(FileStatus), default=FileStatus.PENDING, index=True
+    )
     organization_reason = Column(Text)
 
     # Extracted content
@@ -201,7 +204,9 @@ class File(Base, SchemaOrgSerializable):
     detected_language = Column(String(10))  # ISO 639-1 language code from OCR
 
     # Schema.org metadata (stored as JSON)
-    schema_type = Column(String(SHORT_STRING_LENGTH))  # ImageObject, Document, etc.
+    schema_type: Mapped[Optional[str]] = mapped_column(
+        String(SHORT_STRING_LENGTH)
+    )  # ImageObject, Document, etc.
     schema_data = Column(JSON)
     kie_fields = Column(JSON)  # KIE-extracted structured fields (raw)
 
@@ -412,6 +417,8 @@ class Category(Base, SchemaOrgSerializable):
     parent = relationship(
         "Category", remote_side=[id], backref="subcategories", foreign_keys=[parent_id]
     )
+    if TYPE_CHECKING:  # `subcategories` is created at runtime by the `parent` backref above
+        subcategories: Mapped[list["Category"]]
     merged_into = relationship("Category", remote_side=[id], foreign_keys=[merged_into_id])
 
     @staticmethod
@@ -805,7 +812,7 @@ def build_file_relationships(categories, companies, people, locations) -> Dict[s
             ]
 
     # Companies + people -> mentions
-    mentions = []
+    mentions: list[Dict[str, Any]] = []
     if companies:
         mentions.extend(
             {"@type": "Organization", "@id": comp.get_iri(), "name": comp.name}
@@ -953,7 +960,7 @@ def build_company_jsonld(f) -> Dict[str, Any]:
     if f.last_seen:
         result["dateModified"] = f.last_seen.isoformat()
 
-    same_as = []
+    same_as: list[Optional[str]] = []
     if f.domain:
         same_as.append(f"https://{f.domain.replace('https://', '').replace('http://', '')}")
     same_as.append(Company.generate_wikidata_url(f.name))
@@ -1048,7 +1055,9 @@ class FileRelationship(Base):
     target_file_id = Column(
         String(SHA256_HEX_LENGTH), ForeignKey("files.id"), nullable=False, index=True
     )
-    relationship_type = Column(SQLEnum(RelationshipType), nullable=False, index=True)
+    relationship_type: Mapped[RelationshipType] = mapped_column(
+        SQLEnum(RelationshipType), nullable=False, index=True
+    )
 
     # Relationship metadata
     confidence = Column(Float, default=1.0)
@@ -1241,7 +1250,7 @@ class MergeEvent(Base):
     id = Column(String(UUID_STRING_LENGTH), primary_key=True, default=lambda: str(uuid.uuid4()))
 
     # Target entity (canonical/surviving)
-    target_entity_type = Column(
+    target_entity_type: Mapped[MergeEventType] = mapped_column(
         SQLEnum(MergeEventType), nullable=False
     )  # indexed via ix_merge_entity_type
     target_entity_id = Column(Integer, nullable=False)  # Internal DB ID
@@ -1251,7 +1260,7 @@ class MergeEvent(Base):
     source_entity_ids = Column(JSON, nullable=False)
 
     # Source canonical IDs (for JSON-LD owl:sameAs)
-    source_canonical_ids = Column(JSON)
+    source_canonical_ids: Mapped[Optional[list[str]]] = mapped_column(JSON)
 
     # Metadata
     merge_reason = Column(Text)  # Why these were merged
