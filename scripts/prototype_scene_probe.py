@@ -45,6 +45,7 @@ from __future__ import annotations
 import argparse
 import csv
 import os
+import re
 import sqlite3
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
@@ -57,7 +58,11 @@ from sklearn.metrics import (
     confusion_matrix,
     roc_auc_score,
 )
-from sklearn.model_selection import StratifiedKFold, cross_val_predict
+from sklearn.model_selection import (
+    StratifiedGroupKFold,
+    StratifiedKFold,
+    cross_val_predict,
+)
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
@@ -178,12 +183,29 @@ def _db_images(db: Path, category_substr: Optional[str]) -> List[Path]:
     return [Path(r[0]) for r in rows if r[0] and os.path.exists(r[0])]
 
 
+def _group_key(path: Path, pattern: Optional["re.Pattern"]) -> str:
+    """CV group key for ``path``.
+
+    When ``pattern`` matches the filename, its first capture group (or the whole
+    match) is the key — so a listing's photos share a group and never split
+    across train/val folds (leakage-free grouped CV). Unmatched files fall back
+    to their own resolved path, i.e. a singleton group (no grouping applied).
+    """
+    if pattern is not None:
+        m = pattern.search(path.name)
+        if m:
+            return m.group(1) if m.groups() else m.group(0)
+    return str(path.resolve())
+
+
 def cmd_gather(args: argparse.Namespace) -> int:
     seen: dict = {}
+    pattern = re.compile(args.group_regex) if args.group_regex else None
 
     def add(path: Path, label: int, source: str) -> None:
         rp = str(Path(path).resolve())
-        seen.setdefault(rp, (label, source))  # first label wins; positives first
+        # first label wins (positives added before the neither pool)
+        seen.setdefault(rp, (label, source, _group_key(path, pattern)))
 
     # Positives (interior/exterior/place) before the neither pool, so an image
     # that appears in both a scene dir and the DB keeps its scene label.
@@ -202,21 +224,60 @@ def cmd_gather(args: argparse.Namespace) -> int:
             add(p, _NEITHER, f"dir:neither:{d}")
     if args.db_neither:
         for p in _db_images(Path(args.db), None):
+            # The organized library routes genuine scenes into Media/* (e.g.
+            # ChatGPT renders in Media/Interiors, brand assets in
+            # Media/Graphics), so Media rows are NOT safe neither labels —
+            # eval confirmed they train as mislabeled scene content. Only
+            # screenshots (non-scene by definition) are kept from Media.
+            posix = p.as_posix()
+            if "/Media/" in posix and "/Media/Photos/Screenshots/" not in posix:
+                continue
             add(p, _NEITHER, "db:all-images")
+
+    # Content-hash conflict guard. The labeled corpus holds *copies*, so a DB
+    # (or dir-fed) neither image that is byte-identical to a labeled positive
+    # passes path-level dedup and would train contradictory labels — e.g. the
+    # ChatGPT interior renders organized into ~/Documents/Media/Interiors/.
+    # Positives win; the conflicting neither row is dropped.
+    def _sha256(rp: str) -> Optional[str]:
+        try:
+            import hashlib
+
+            return hashlib.sha256(Path(rp).read_bytes()).hexdigest()
+        except OSError:
+            return None
+
+    positive_hashes = {
+        digest
+        for rp, (label, _, _) in seen.items()
+        if label != _NEITHER and (digest := _sha256(rp)) is not None
+    }
+    conflicts = [
+        rp
+        for rp, (label, _, _) in seen.items()
+        if label == _NEITHER and _sha256(rp) in positive_hashes
+    ]
+    for rp in conflicts:
+        del seen[rp]
+    if conflicts:
+        print(f"Dropped {len(conflicts)} neither row(s) byte-identical to a labeled positive.")
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     with out.open("w", newline="", encoding="utf-8") as fh:
         writer = csv.writer(fh)
-        writer.writerow(["path", "label", "source", "reviewed"])
-        for rp, (label, source) in seen.items():
-            writer.writerow([rp, label, source, 0])
+        writer.writerow(["path", "label", "source", "group", "reviewed"])
+        for rp, (label, source, group) in seen.items():
+            writer.writerow([rp, label, source, group, 0])
 
     counts = {
         name: sum(1 for v in seen.values() if v[0] == label)
         for name, label in SCENE_CLASSES.items()
     }
-    print(f"Wrote {out} — {len(seen)} rows.")
+    n_groups = len({v[2] for v in seen.values()})
+    print(f"Wrote {out} — {len(seen)} rows across {n_groups} group(s).")
+    if pattern is not None and n_groups < len(seen):
+        print(f"  grouped by --group-regex {args.group_regex!r} — grouped CV will be leakage-free.")
     for name, label in SCENE_CLASSES.items():
         print(f"  {label} {name:<9} {counts[name]}")
     thin = [n for n in _POSITIVE_NAMES if counts[n] < 2]
@@ -233,8 +294,11 @@ def cmd_gather(args: argparse.Namespace) -> int:
 # --------------------------------------------------------------------------- #
 
 
-def _read_manifests(paths: Sequence[str]) -> List[Tuple[Path, int]]:
-    rows: List[Tuple[Path, int]] = []
+def _read_manifests(paths: Sequence[str]) -> List[Tuple[Path, int, str]]:
+    """Return ``(path, label, group)`` rows. Missing ``group`` column (older
+    manifests) defaults each row to its own resolved path — a singleton group,
+    so grouped CV degrades to plain stratified k-fold with no behavior change."""
+    rows: List[Tuple[Path, int, str]] = []
     seen = set()
     for mp in paths:
         with open(mp, newline="", encoding="utf-8") as fh:
@@ -244,7 +308,7 @@ def _read_manifests(paths: Sequence[str]) -> List[Tuple[Path, int]]:
                 if rp in seen:
                     continue
                 seen.add(rp)
-                rows.append((p, int(r["label"])))
+                rows.append((p, int(r["label"]), r.get("group") or rp))
     return rows
 
 
@@ -252,12 +316,41 @@ def _class_counts(y: np.ndarray) -> Dict[int, int]:
     return {int(c): int((y == c).sum()) for c in np.unique(y)}
 
 
-def _cv_proba(X: np.ndarray, y: np.ndarray, folds: int, C: float) -> Tuple[np.ndarray, np.ndarray]:
-    """Out-of-fold predict_proba via stratified k-fold. Returns (proba, classes),
-    with ``classes`` giving the column order of ``proba``."""
+def _cv_proba(
+    X: np.ndarray, y: np.ndarray, groups: np.ndarray, folds: int, C: float
+) -> Tuple[np.ndarray, np.ndarray, str]:
+    """Out-of-fold ``predict_proba``. Returns ``(proba, classes, mode)``.
+
+    Uses ``StratifiedGroupKFold`` (no group spans a train/val split → honest
+    numbers, no same-property/near-dup leakage) when grouping is both meaningful
+    (some rows share a group) and feasible (>= 2 distinct groups in the smallest
+    class, so folds don't collapse). Otherwise falls back to ``StratifiedKFold``
+    — the prior behavior — with a mode string that flags the possible leakage.
+    """
+    classes = np.unique(y)
+    if len(set(groups.tolist())) < len(y):  # grouping is meaningful
+        groups_per_class = min(len(set(groups[y == c].tolist())) for c in classes)
+        g_folds = min(folds, groups_per_class)
+        if g_folds >= 2:
+            try:
+                sgkf = StratifiedGroupKFold(n_splits=g_folds, shuffle=True, random_state=_SEED)
+                proba = cross_val_predict(
+                    make_probe(C), X, y, groups=groups, cv=sgkf, method="predict_proba"
+                )
+                n_groups = len(set(groups.tolist()))
+                return proba, classes, f"grouped {g_folds}-fold ({n_groups} groups, leakage-free)"
+            except Exception as exc:  # noqa: BLE001 — any split failure -> safe fallback
+                note = f"grouped CV failed ({type(exc).__name__}); "
+            else:
+                note = ""
+        else:
+            note = f"smallest class has only {groups_per_class} group(s); "
+    else:
+        note = ""
     skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=_SEED)
     proba = cross_val_predict(make_probe(C), X, y, cv=skf, method="predict_proba")
-    return proba, np.unique(y)
+    suffix = "stratified k-fold may leak same-group rows" if note else "stratified k-fold"
+    return proba, classes, f"{note}{folds}-fold {suffix}".strip()
 
 
 def _plumbing_self_check(dim: int, folds: int, C: float) -> None:
@@ -330,8 +423,10 @@ def cmd_eval(args: argparse.Namespace) -> int:
         print("No manifest rows. Run `gather` first.")
         return 1
 
+    group_by_path = {str(p.resolve()): g for (p, _label, g) in rows}
     print(f"Loading embeddings for {len(rows)} labeled images (cache/encode)...")
-    X, y, kept = load_matrix(rows)
+    X, y, kept = load_matrix([(p, label) for (p, label, _g) in rows])
+    groups = np.array([group_by_path[str(p.resolve())] for p in kept])
     counts = _class_counts(y)
     summary = "  ".join(f"{CLASS_NAMES.get(c, c)}={n}" for c, n in sorted(counts.items()))
     print(f"  usable: {len(kept)} images  {summary}")
@@ -361,8 +456,8 @@ def cmd_eval(args: argparse.Namespace) -> int:
             "high-variance. Aim for >= 5 (ideally 150-300) per positive class. **"
         )
 
-    proba, classes = _cv_proba(X, y, folds, args.C)
-    print(f"\n=== {folds}-fold CV (out-of-fold) ===")
+    proba, classes, mode = _cv_proba(X, y, groups, folds, args.C)
+    print(f"\n=== {mode} CV (out-of-fold) ===")
     _print_multiclass_metrics(y, proba, classes)
     return 0
 
@@ -432,6 +527,14 @@ def build_parser() -> argparse.ArgumentParser:
     g.add_argument("--db", default=str(_DEFAULT_DB), help="graph DB path")
     g.add_argument(
         "--db-neither", action="store_true", help="all on-disk DB images as `neither` (label=0)"
+    )
+    g.add_argument(
+        "--group-regex",
+        default=None,
+        help="regex matched against each filename; capture group 1 becomes the CV "
+        "group key so a listing's photos never split across folds "
+        r"(e.g. 'Screenshot (\d{4}-\d{2}-\d{2})' groups by date). Unmatched files "
+        "get their own singleton group.",
     )
     g.add_argument("--out", default=str(_DEFAULT_MANIFEST), help="output manifest CSV")
     g.set_defaults(func=cmd_gather)
