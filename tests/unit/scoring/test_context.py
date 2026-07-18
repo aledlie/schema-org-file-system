@@ -399,6 +399,36 @@ class TestClipOcrGate:
         result = ctx.ensure_ocr()
         assert result is None
 
+    def test_gate_disabled_when_topk_negative(self):
+        """Negative K is treated as disabled (like None/0) — negative slices would break ranking."""
+        ocr = self._make_ocr()
+        ctx = FileContext(
+            path=Path("/tmp/photo.png"),
+            schema_type="ImageObject",
+            ocr_provider=ocr,
+            clip_provider=self._make_clip({"a natural landscape": 0.9}),
+            ocr_clip_topk=-1,
+            clip_text_labels=self._TEXT_LABELS,
+        )
+        assert ctx.ensure_ocr() is not None
+        assert ocr.calls == 1
+
+    def test_kie_blocked_when_ocr_clip_gated(self):
+        """KIE is implicitly blocked when OCR is skipped by the CLIP gate."""
+        kie = CountingProvider({"fields": "yes"})
+        ctx = FileContext(
+            path=Path("/tmp/photo.png"),
+            schema_type="ImageObject",
+            ocr_provider=CountingProvider(make_ocr(confidence=0.9)),
+            clip_provider=self._make_clip({"a natural landscape": 0.9}),
+            kie_provider=kie,
+            ocr_clip_topk=3,
+            clip_text_labels=self._TEXT_LABELS,
+        )
+        # CLIP gate fires → ensure_ocr() returns None → ensure_kie() blocked
+        assert ctx.ensure_kie() is None
+        assert kie.calls == 0
+
 
 class TestPatternPath:
     def test_display_path_preferred(self):

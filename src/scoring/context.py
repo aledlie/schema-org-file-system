@@ -139,10 +139,10 @@ class FileContext:
 
         Keeps OCR when any text-bearing label ranks in the top-K CLIP labels;
         skips otherwise. Fails open (keeps OCR) when the gate is disabled (K
-        is None or 0), the file is not an image, or CLIP produced no signal.
-        Pass K=0 to disable programmatically (e.g. --ocr-clip-topk 0 on CLI).
+        is None, 0, or negative), the file is not an image, or CLIP produced
+        no signal. Pass K=0 to disable (e.g. --ocr-clip-topk 0 on CLI).
         """
-        if not self._ocr_clip_topk or not self.is_image:
+        if not self._ocr_clip_topk or self._ocr_clip_topk < 0 or not self.is_image:
             return False
         clip = self.ensure_clip()
         if not clip:  # no CLIP signal → fail open, keep OCR
