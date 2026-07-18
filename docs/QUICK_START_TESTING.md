@@ -353,25 +353,6 @@ open htmlcov/index.html
 # - Green lines (covered)
 # - Yellow lines (partially covered)
 ```
-
-## Step 7: Next Steps
-
-### This Week
-1. ✅ Write storage layer tests (above)
-2. ✅ Test `src/storage/models.py` - ORM models
-3. ✅ Test URI generation - `tests/unit/test_uri_utils.py` (IRI/canonical-ID contract on `src/storage/models.py`; no standalone `src/uri_utils.py` exists)
-4. ✅ Achieve 80%+ coverage on storage
-
-### Next Week
-1. ✅ Test `src/generators.py` - enhance existing tests
-2. ✅ Test `src/enrichment.py` - entity detection
-3. ✅ Test `src/base.py` - base classes
-
-### Week 3-4
-1. ✅ Begin refactoring `file_organizer_content_based.py`
-2. ✅ Extract `ContentClassifier` to `src/classifiers/`
-3. ✅ Write tests for extracted modules
-
 ## Quick Commands Reference
 
 ```bash
@@ -443,6 +424,3 @@ pip install -e ".[ai,docs,monitoring,dev]"
 - **Factory Boy:** https://factoryboy.readthedocs.io/ (for test data)
 
 ---
-
-**Start Time Estimate:** 1-2 hours to setup and run first tests
-**Confidence Level:** High - storage layer is well-defined and testable
