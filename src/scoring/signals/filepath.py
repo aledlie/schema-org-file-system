@@ -24,7 +24,7 @@ Behavior divergences from the legacy chain (by design):
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, NamedTuple, Optional
+from typing import Any, Dict, List, Mapping, NamedTuple, Optional, cast
 
 from ..types import CategoryScore
 from ..weights import W_PATH
@@ -222,7 +222,7 @@ def extract_project_name(path: Any) -> Optional[str]:
             continue
 
         # Found a likely project directory — original case preserved
-        return parts[i]
+        return cast(Optional[str], parts[i])
 
     return None
 

@@ -7,7 +7,7 @@ context management, property validation, and nested schema support.
 
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 from enum import Enum
 import json
 import uuid
@@ -208,7 +208,7 @@ class SchemaOrgBase(ABC):
         Returns:
             The @id IRI string
         """
-        return self.data.get("@id", "")
+        return cast(str, self.data.get("@id", ""))
 
     def set_dates(self, created: Optional[datetime] = None,
                   modified: Optional[datetime] = None,

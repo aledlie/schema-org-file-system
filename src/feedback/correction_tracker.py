@@ -49,7 +49,7 @@ import re
 from collections import defaultdict
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, TypedDict
+from typing import Any, Dict, List, Optional, TypedDict, cast
 
 
 class CategorySuggestion(TypedDict):
@@ -86,7 +86,7 @@ class CorrectionFeedbackSystem:
         if os.path.exists(self.feedback_file):
             try:
                 with open(self.feedback_file, 'r') as f:
-                    return json.load(f)
+                    return cast(Dict, json.load(f))
             except (json.JSONDecodeError, IOError):
                 pass
 
@@ -370,7 +370,7 @@ class CorrectionFeedbackSystem:
         Returns:
             The correction record or None
         """
-        return self.data["corrections"].get(file_hash)
+        return cast(Optional[Dict], self.data["corrections"].get(file_hash))
 
     def check_file(self, file_path: str) -> Optional[Dict]:
         """Check if a file has a correction recorded.

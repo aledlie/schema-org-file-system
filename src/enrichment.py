@@ -5,7 +5,7 @@ Extracts and enriches file metadata from various sources including
 EXIF, document properties, NLP results, and embeddings.
 """
 
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, cast
 from datetime import datetime
 from functools import lru_cache
 from pathlib import Path
@@ -114,7 +114,7 @@ class MetadataEnricher:
             Encoding format string
         """
         mime_type = self.detect_mime_type(file_path)
-        return self.mime_to_format.get(mime_type, mime_type)
+        return cast(str, self.mime_to_format.get(mime_type, mime_type))
 
     def enrich_from_file_stats(self, file_path: str) -> Dict[str, Any]:
         """

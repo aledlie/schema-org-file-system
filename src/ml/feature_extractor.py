@@ -8,7 +8,7 @@ import hashlib
 import re
 import unicodedata
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, cast
 
 from shared.constants import DOCUMENT_PATTERNS, SCREENSHOT_PATTERNS
 
@@ -116,7 +116,7 @@ class FileFeatureExtractor:
     def _get_extension_category(self, filename: str) -> str:
         """Get category based on extension."""
         ext = self._get_extension(filename)
-        return self.extension_map.get(ext, 'other')
+        return cast(str, self.extension_map.get(ext, 'other'))
 
     def _tokenize_filename(self, filename: str) -> List[str]:
         """Tokenize filename into meaningful parts."""

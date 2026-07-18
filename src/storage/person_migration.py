@@ -22,7 +22,7 @@ import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union, cast
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -231,7 +231,7 @@ def _lookup_db_person_subcat(db_file: File) -> Optional[str]:
     """Return the legacy `person/{subcat}` this file was previously filed under, if any."""
     for category in db_file.categories:
         if category.parent is not None and category.parent.name == PERSON_CATEGORY_NAME:
-            return category.name
+            return cast(str, category.name)
     return None
 
 

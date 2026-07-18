@@ -193,7 +193,7 @@ class PersonalDocSignal:
         self._classifier = classifier
 
     def applies_to(self, ctx: Any) -> bool:
-        return ctx.text_length >= PERSON_MIN_TEXT_CHARS
+        return bool(ctx.text_length >= PERSON_MIN_TEXT_CHARS)
 
     def run(self, ctx: Any) -> List[CategoryScore]:
         text = ctx.ensure_text()

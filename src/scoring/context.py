@@ -16,7 +16,7 @@ returns its empty value. The context never imports OCR/CLIP/KIE modules.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Callable, Dict, Optional, cast
 
 from .weights import OCR_CONFIDENCE_GATE
 
@@ -95,7 +95,7 @@ class FileContext:
                 self._text = ""
             else:
                 self._text = self._text_provider(self.path) or ""
-        return self._text
+        return cast(str, self._text)
 
     @property
     def text_length(self) -> int:
@@ -127,7 +127,7 @@ class FileContext:
         if self._clip is _UNSET:
             scores = self._clip_provider(self.path) if self._clip_provider else None
             self._clip = dict(scores) if scores else {}
-        return self._clip
+        return cast(Dict[str, float], self._clip)
 
     def ensure_image_metadata(self) -> Dict[str, Any]:
         """EXIF/GPS metadata summary ({} when unavailable or not an image)."""
@@ -135,7 +135,7 @@ class FileContext:
             provider = self._image_metadata_provider
             metadata = provider(self.path) if (provider and self.is_image) else None
             self._image_metadata = metadata or {}
-        return self._image_metadata
+        return cast(Dict[str, Any], self._image_metadata)
 
     def ensure_kie(self) -> Any:
         """KIE result, gated on reliable OCR (conf ≥ gate), or None.

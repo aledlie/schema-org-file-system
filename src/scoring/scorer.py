@@ -21,7 +21,7 @@ UNIFIED_SCORING_PLAN §3.3. Generalizes the shipped two-signal
 
 from __future__ import annotations
 
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple
+from typing import Any, Dict, Iterable, List, Optional, Sequence, Tuple, cast
 
 from .types import (
     COST_TIER_ORDER,
@@ -256,7 +256,7 @@ class Scorer:
             for score in scores:
                 company = score.evidence.get(EVIDENCE_COMPANY)
                 if company:
-                    return company
+                    return cast(Optional[str], company)
         return None
 
     def _merge_people(self, collected: List[CategoryScore]) -> List[str]:
@@ -283,5 +283,5 @@ class Scorer:
                 continue
             override = score.evidence.get(EVIDENCE_SCHEMA_TYPE)
             if override:
-                return override
+                return cast(Optional[str], override)
         return None

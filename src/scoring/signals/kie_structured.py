@@ -35,7 +35,7 @@ class KieStructuredSignal:
         self._classifier = classifier
 
     def applies_to(self, ctx: Any) -> bool:
-        return ctx.is_image
+        return bool(ctx.is_image)
 
     def run(self, ctx: Any) -> List[CategoryScore]:
         kie_result = ctx.ensure_kie()

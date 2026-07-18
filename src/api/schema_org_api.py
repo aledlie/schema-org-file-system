@@ -6,7 +6,7 @@ Provides JSON-LD representations of entities in schema.org format.
 Supports single entity retrieval and bulk export with filtering.
 """
 
-from typing import Dict, Any
+from typing import Dict, Any, cast
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session, selectinload, joinedload
 
@@ -61,7 +61,7 @@ async def get_file_schema_org(
     if not file:
         raise HTTPException(status_code=404, detail=f"File {file_id} not found")
 
-    return file.to_schema_org()
+    return cast(Dict[str, Any], file.to_schema_org())
 
 
 @app.get("/api/files/schema-org/bulk", response_model=Dict[str, Any])
@@ -111,7 +111,7 @@ async def get_category_schema_org(
     if not category:
         raise HTTPException(status_code=404, detail=f"Category {category_id} not found")
 
-    return category.to_schema_org()
+    return cast(Dict[str, Any], category.to_schema_org())
 
 
 @app.get("/api/categories/schema-org/bulk", response_model=Dict[str, Any])
@@ -160,7 +160,7 @@ async def get_company_schema_org(
     if not company:
         raise HTTPException(status_code=404, detail=f"Company {company_id} not found")
 
-    return company.to_schema_org()
+    return cast(Dict[str, Any], company.to_schema_org())
 
 
 @app.get("/api/companies/schema-org/by-name/{name}", response_model=Dict[str, Any])
@@ -181,7 +181,7 @@ async def get_company_by_name_schema_org(
     if not company:
         raise HTTPException(status_code=404, detail=f"Company '{name}' not found")
 
-    return company.to_schema_org()
+    return cast(Dict[str, Any], company.to_schema_org())
 
 
 @app.get("/api/companies/schema-org/bulk", response_model=Dict[str, Any])
@@ -228,7 +228,7 @@ async def get_person_schema_org(
     if not person:
         raise HTTPException(status_code=404, detail=f"Person {person_id} not found")
 
-    return person.to_schema_org()
+    return cast(Dict[str, Any], person.to_schema_org())
 
 
 @app.get("/api/people/schema-org/by-name/{name}", response_model=Dict[str, Any])
@@ -249,7 +249,7 @@ async def get_person_by_name_schema_org(
     if not person:
         raise HTTPException(status_code=404, detail=f"Person '{name}' not found")
 
-    return person.to_schema_org()
+    return cast(Dict[str, Any], person.to_schema_org())
 
 
 @app.get("/api/people/schema-org/bulk", response_model=Dict[str, Any])
@@ -296,7 +296,7 @@ async def get_location_schema_org(
     if not location:
         raise HTTPException(status_code=404, detail=f"Location {location_id} not found")
 
-    return location.to_schema_org()
+    return cast(Dict[str, Any], location.to_schema_org())
 
 
 @app.get("/api/locations/schema-org/by-name/{name}", response_model=Dict[str, Any])
@@ -317,7 +317,7 @@ async def get_location_by_name_schema_org(
     if not location:
         raise HTTPException(status_code=404, detail=f"Location '{name}' not found")
 
-    return location.to_schema_org()
+    return cast(Dict[str, Any], location.to_schema_org())
 
 
 @app.get("/api/locations/schema-org/bulk", response_model=Dict[str, Any])
@@ -378,7 +378,7 @@ async def export_all_entities_schema_org(
         entity_classes.append(Location)
 
     exporter = SchemaOrgExporter(db)
-    return exporter.get_graph_document(entity_classes=entity_classes or None)
+    return cast(Dict[str, Any], exporter.get_graph_document(entity_classes=entity_classes or None))
 
 
 # Graph Export Endpoint
@@ -393,7 +393,7 @@ async def get_full_graph_document(
         JSON-LD document with @context and @graph containing all entities
     """
     exporter = SchemaOrgExporter(db)
-    return exporter.get_graph_document()
+    return cast(Dict[str, Any], exporter.get_graph_document())
 
 
 # Context Endpoint
@@ -405,7 +405,7 @@ async def get_schema_context() -> Dict[str, Any]:
     Returns:
         Standalone JSON-LD context document mapping all schema.org and custom terms
     """
-    return get_context_document()
+    return cast(Dict[str, Any], get_context_document())
 
 
 # Health Check

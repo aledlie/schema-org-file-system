@@ -15,7 +15,7 @@ import re
 from copy import deepcopy
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from src.classifiers.entity_detector import _has_human_name_signal
 from src.organizers.base_organizer import BaseOrganizer
@@ -528,25 +528,25 @@ class ContentOrganizer(BaseOrganizer):
 
         if self.text_extractor is None:
             return ""
-        return self.text_extractor.extract_text_from_image(image_path)
+        return cast(str, self.text_extractor.extract_text_from_image(image_path))
 
     def extract_text_from_pdf(self, pdf_path: Path) -> str:
         """Extract text from PDF (searchable or scanned)."""
         if not self.ocr_available or self.text_extractor is None:
             return ""
-        return self.text_extractor.extract_text_from_pdf(pdf_path)
+        return cast(str, self.text_extractor.extract_text_from_pdf(pdf_path))
 
     def extract_text_from_docx(self, docx_path: Path) -> str:
         """Extract text from Word document."""
         if self.text_extractor is None:
             return ""
-        return self.text_extractor.extract_text_from_docx(docx_path)
+        return cast(str, self.text_extractor.extract_text_from_docx(docx_path))
 
     def extract_text_from_xlsx(self, xlsx_path: Path) -> str:
         """Extract text from Excel spreadsheet."""
         if self.text_extractor is None:
             return ""
-        return self.text_extractor.extract_text_from_xlsx(xlsx_path)
+        return cast(str, self.text_extractor.extract_text_from_xlsx(xlsx_path))
 
     def extract_text(self, file_path: Path) -> str:
         """Extract text from various file types.
@@ -572,7 +572,7 @@ class ContentOrganizer(BaseOrganizer):
         # Text files and unknown types: pure extraction, no organizer state.
         if self.text_extractor is None:
             return ""
-        return self.text_extractor.extract_text(file_path, mime_type)
+        return cast(str, self.text_extractor.extract_text(file_path, mime_type))
 
     # ------------------------------------------------------------------ #
     # CLIP / unified-scoring signals                                       #
@@ -1092,12 +1092,12 @@ class ContentOrganizer(BaseOrganizer):
         if mime_type == "application/pdf" or file_ext == ".pdf":
             if not self.ocr_available:
                 return ""
-            return self.text_extractor.extract_text_from_pdf(file_path)
+            return cast(str, self.text_extractor.extract_text_from_pdf(file_path))
         if file_ext in [".docx", ".doc"]:
-            return self.text_extractor.extract_text_from_docx(file_path)
+            return cast(str, self.text_extractor.extract_text_from_docx(file_path))
         if file_ext in [".xlsx", ".xls"]:
-            return self.text_extractor.extract_text_from_xlsx(file_path)
-        return self.text_extractor.extract_text(file_path, mime_type)
+            return cast(str, self.text_extractor.extract_text_from_xlsx(file_path))
+        return cast(str, self.text_extractor.extract_text(file_path, mime_type))
 
     def _clip_scores_for_context(self, file_path: Path) -> Optional[Dict[str, float]]:
         """Full CLIP label→score mapping for the unified path (cache-backed).
@@ -1267,7 +1267,7 @@ class ContentOrganizer(BaseOrganizer):
         }
         # Round-trip through json to guarantee persistability (EXIF datetimes
         # and other rich objects inside evidence degrade to strings).
-        return json.loads(json.dumps(snapshot, default=str))
+        return cast(Dict[str, Any], json.loads(json.dumps(snapshot, default=str)))
 
     def _log_shadow_comparison(
         self,

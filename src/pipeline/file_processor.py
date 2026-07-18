@@ -4,7 +4,7 @@ import json
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 from urllib.parse import quote
 
 from src.generators import (
@@ -257,7 +257,7 @@ class FileProcessor:
         except Exception:
             pass
 
-        return generator.to_dict()
+        return cast(Dict[str, Any], generator.to_dict())
 
     def _persist_to_graph_store(
         self,
@@ -652,7 +652,7 @@ class FileProcessor:
         """
         if not self.cost_calculator:
             return None
-        return self.cost_calculator.generate_report()
+        return cast(Optional[Dict[str, Any]], self.cost_calculator.generate_report())
 
     def save_cost_report(self, output_path: Optional[str] = None) -> None:
         """

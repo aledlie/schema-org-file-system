@@ -8,7 +8,7 @@ from __future__ import annotations
 import logging
 import threading
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, cast
 
 from shared.constants import CLIP_BATCH_SIZE
 
@@ -172,7 +172,7 @@ class CLIPClassifier:
                 img.thumbnail(
                     (self._CLIP_INPUT_SIZE, self._CLIP_INPUT_SIZE), Image.Resampling.LANCZOS
                 )
-            return (
+            return (  # type: ignore[no-any-return]
                 self.preprocess(img.convert("RGB")).unsqueeze(0).to(self.device, dtype=self._dtype)
             )
 
@@ -190,7 +190,7 @@ class CLIPClassifier:
         score it against several label sets via score_embedding(), avoiding a
         re-encode per prompt set.
         """
-        return self._encode_image(image_path)
+        return self._encode_image(image_path)  # type: ignore[no-any-return]
 
     @staticmethod
     def embedding_to_numpy(image_emb: "torch.Tensor"):
@@ -279,7 +279,7 @@ class CLIPClassifier:
         txt_norm = self._encode_text(text_prompts)
         # img_emb: [D], txt_norm: [N, D]
         sims = img_emb @ txt_norm.T  # [N]
-        return sims.softmax(dim=0)
+        return sims.softmax(dim=0)  # type: ignore[no-any-return]
 
     # --- Single-image classification ---
 
@@ -343,7 +343,7 @@ class CLIPClassifier:
         Images that fail to load return [(label, 0.0), ...].
         """
         text_prompts = [f"{prompt_prefix}{lbl}" for lbl in labels]
-        return self._run_batch(image_paths, labels, text_prompts, batch_size)
+        return cast(List[List[tuple[str, float]]], self._run_batch(image_paths, labels, text_prompts, batch_size))
 
     def classify_raw_batch(
         self,
@@ -352,7 +352,7 @@ class CLIPClassifier:
         batch_size: int = _DEFAULT_BATCH_SIZE,
     ) -> List[List[tuple[str, float]]]:
         """Classify a list of images using raw text prompts (no prefix added)."""
-        return self._run_batch(image_paths, text_prompts, text_prompts, batch_size)
+        return cast(List[List[tuple[str, float]]], self._run_batch(image_paths, text_prompts, text_prompts, batch_size))
 
     def top_match_batch(
         self,

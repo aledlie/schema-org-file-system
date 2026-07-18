@@ -449,7 +449,7 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = build_parser().parse_args(argv)
     if args.cmd in ("eval", "train") and not args.manifest:
         args.manifest = [str(_DEFAULT_MANIFEST)]
-    return args.func(args)
+    return int(args.func(args))
 
 
 if __name__ == "__main__":

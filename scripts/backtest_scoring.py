@@ -47,7 +47,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, cast
 
 # Bootstrap: allow `python scripts/backtest_scoring.py` from the project root
 # (sys.path[0] is scripts/, so src.* needs the root; shared.* needs scripts/).
@@ -367,7 +367,7 @@ def build_screenshots_taxonomy() -> Dict[str, Any]:
         if key not in screenshots:
             folder = key.replace("_", " ").title().replace(" ", "")
             screenshots[key] = f"Media/Photos/Screenshots/{folder}"
-    return screenshots
+    return cast(Dict[str, Any], screenshots)
 
 
 def screenshot_ocr_from_text(text: str) -> Optional[Tuple[str, float, Dict[str, float], str]]:

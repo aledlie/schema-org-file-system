@@ -45,7 +45,7 @@ import logging
 import sys
 import time
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Dict, cast
 
 # Allow running from project root without installing the package.
 _SCRIPTS_DIR = Path(__file__).parent
@@ -158,7 +158,7 @@ def _load_labels(labels_path: Optional[Path]) -> dict[str, str]:
     if labels_path is None:
         return {}
     with labels_path.open() as fh:
-        return json.load(fh)
+        return cast(Dict[str, str], json.load(fh))
 
 
 def run_benchmark(

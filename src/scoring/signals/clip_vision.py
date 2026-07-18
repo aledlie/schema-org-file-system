@@ -85,7 +85,7 @@ class ClipVisionSignal:
     cost_tier = "heavy"
 
     def applies_to(self, ctx: Any) -> bool:
-        return ctx.is_image
+        return bool(ctx.is_image)
 
     def run(self, ctx: Any) -> List[CategoryScore]:
         scores = ctx.ensure_clip()

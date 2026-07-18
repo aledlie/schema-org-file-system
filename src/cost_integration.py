@@ -8,7 +8,7 @@ file organization system with minimal code changes required.
 
 import time
 from functools import wraps
-from typing import Callable, Optional, Dict, Any, Generator
+from typing import Callable, Optional, Dict, Any, Generator, cast
 from pathlib import Path
 from contextlib import contextmanager
 from cost_roi_calculator import CostROICalculator, CostTracker
@@ -125,7 +125,7 @@ def record_feature_usage(
 
 def get_cost_report() -> Dict[str, Any]:
     """Get the current cost report."""
-    return get_calculator().generate_report()
+    return cast(Dict[str, Any], get_calculator().generate_report())
 
 
 def print_cost_summary() -> None:
@@ -152,7 +152,7 @@ def estimate_processing_cost(
     Returns:
         Cost estimate dictionary
     """
-    return get_calculator().estimate_cost_for_files(file_count, features)
+    return cast(Dict[str, Any], get_calculator().estimate_cost_for_files(file_count, features))
 
 
 class FeatureTracker:

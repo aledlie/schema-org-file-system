@@ -17,7 +17,7 @@ import json
 import sys
 from pathlib import Path
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, cast
 from urllib.parse import quote
 
 # Import through the src package boundary (the canonical public API) rather
@@ -158,7 +158,7 @@ def regenerate_schema(
         if key in existing_schema and key not in schema:
             schema[key] = existing_schema[key]
 
-    return schema
+    return cast(Dict[str, Any], schema)
 
 
 def process_files(
