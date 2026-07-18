@@ -162,13 +162,13 @@ def _is_triage_location(sample: dict) -> bool:
     return any(frag in filepath for frag in _TRIAGE_PATH_FRAGMENTS)
 
 
-def relabel(samples: list[dict]) -> tuple[list[dict], dict[str, Counter]]:
-    counters: dict[str, Counter] = {f"pass{i}": Counter() for i in range(1, 7)}
+def relabel(samples: list[dict]) -> tuple[list[dict], dict[str, Counter[str]]]:
+    counters: dict[str, Counter[str]] = {f"pass{i}": Counter() for i in range(1, 7)}
     out = []
     for s in samples:
         s = dict(s)
         parent = s.get("parent_folder", "")
-        cat = s.get("category")
+        cat: str = s.get("category", "")
         filename = s.get("filename", "")
         ext_cat = s.get("extension_category")
         ext = s.get("extension", "").lower()

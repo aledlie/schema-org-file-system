@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime
 from ._time import utcnow
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple, Union
+from typing import Dict, List, Optional, Any, Tuple, Union, cast
 from collections import defaultdict
 from contextlib import contextmanager
 
@@ -1631,7 +1631,7 @@ class GraphStore:
             )
 
             for record in records:
-                stats = feature_stats[record.feature_name]  # type: ignore[index]  # SQLAlchemy column typed str at runtime
+                stats = feature_stats[cast(str, record.feature_name)]
                 stats["invocations"] += 1
                 stats["total_cost"] += record.cost
                 stats["total_time"] += record.processing_time_sec
