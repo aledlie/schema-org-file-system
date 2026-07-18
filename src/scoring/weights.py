@@ -29,6 +29,12 @@ W_LEGAL = 0.85  # LegalContentSignal — replaces the hard person-tier veto
 # (0.44) and photo_composition's photos_social (0.52) with MIN_DECISION_MARGIN.
 # Re-tune with a results/file_organization.db backtest (Phase-3, as with W_*).
 W_INTERIOR = 0.85
+# SceneSignal — multi-class successor to the interior probe
+# (MEDIA_EXTERIORS_PLAN §Weights: one weight, all scene classes share it —
+# the signal emits one vote per file). Inherits the interior prior; the alias
+# collapses to a single W_SCENE when the swap completes and W_INTERIOR is
+# retired with interior.py.
+W_SCENE = W_INTERIOR
 W_GAME = 0.8  # GameAssetSignal — sprite/texture/audio filename heuristics
 W_TEXT = 0.8  # TextContentSignal — keyword taxonomy (= shipped _TEXT_SIGNAL_PRIOR)
 W_UI = 0.75  # ScreenshotOcrSignal — screenshot OCR keyword routing

@@ -94,6 +94,35 @@ _DENYLIST_RE = re.compile(
 
 _GAZETTEER_DIR = Path(__file__).resolve().parent / "data" / "census_names"
 
+# Ambiguous given names: common English words (seasons, months, virtues, natural
+# phenomena) that appear in Census given-name lists but are equally or more common
+# as non-person words (location names, event names, organizations).  When the
+# first token of a candidate name is one of these, we cannot distinguish "Summer
+# Hill" (the neighborhood / event) from "Summer Hill" (a person) using the
+# gazetteer alone, so auto_accept is capped at review — a human can confirm.
+#
+# Trade-off: real people named May, June, Summer, etc. route to pending_review
+# instead of auto_accept. Per the design principle ("a false Person/{Name}/
+# folder is worse than a missed person") this is the correct side to err on.
+# Derivation: every word in this set (a) appears in Census given_names.txt and
+# (b) is also a common English noun/adjective/month that regularly appears in
+# non-personal document headings, event names, and location references.
+_AMBIGUOUS_GIVEN_NAMES: frozenset = frozenset({
+    # Seasons
+    "summer", "spring", "autumn", "winter",
+    # Months commonly used as given names (March/July/October/November/December
+    # are rarely used as first names and not in the gazetteer).
+    "april", "may", "june", "august",
+    # Time of day / nature phenomena
+    "dawn", "eve",
+    # Virtue / abstract noun names
+    "faith", "hope", "grace", "joy", "amber", "sage",
+    # Role / job words sometimes used as given names
+    "hunter",
+    # Nature / toponym words
+    "brook",
+})
+
 
 @dataclass(frozen=True)
 class PersonNameValidation:
@@ -277,6 +306,19 @@ def validate_person_name(name: str) -> PersonNameValidation:
     # Person/{Name}/ folder. Requiring BOTH names known for auto_accept keeps
     # precision high; unknown/non-Anglo names route to the review queue.
     gazetteer_partial = gaz is not None and gaz < 1.0
+    # Ambiguous given name: first token is a common English word (season, month,
+    # virtue, natural phenomenon) that also appears in Census given-name lists.
+    # When gaz=1.0 with such a first token, the gazetteer cannot distinguish a
+    # person ("Summer Hill") from a location/event ("Summer Hill Festival") —
+    # both score identically. Cap at review so a human can confirm.
+    # Derivation: see _AMBIGUOUS_GIVEN_NAMES constant above.
+    tokens_lower = clean.lower().split()
+    ambiguous_given = (
+        gaz is not None
+        and gaz >= 1.0  # would otherwise satisfy the gazetteer guard
+        and bool(tokens_lower)
+        and tokens_lower[0] in _AMBIGUOUS_GIVEN_NAMES
+    )
 
     if composite >= AUTO_ACCEPT_THRESHOLD:
         decision: RouteDecision = "auto_accept"
@@ -291,5 +333,8 @@ def validate_person_name(name: str) -> PersonNameValidation:
     if decision == "auto_accept" and gazetteer_partial:
         decision = "review"
         reasons.append("gazetteer not fully corroborated → capped at review")
+    if decision == "auto_accept" and ambiguous_given:
+        decision = "review"
+        reasons.append(f"ambiguous given name {tokens_lower[0]!r} → capped at review")
 
     return PersonNameValidation(clean, decision, round(composite, 4), layer_scores, reasons)
