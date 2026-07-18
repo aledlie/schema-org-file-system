@@ -87,15 +87,14 @@ Both candidates are recorded in the review doc's "Out-of-scope observations": [`
 
 ### Phase 5: flip base `ContentOrganizer` default to unified + retire legacy tests
 
-`SCORER_DEFAULT` became `unified` on 2026-07-17 (Phase-4 flip), driving the CLI `--scorer` flag and `ContentBasedFileOrganizer` — the production path, which passes `super().__init__(scorer=…)`. The base `ContentOrganizer.__init__` (`src/organizers/content_organizer.py:271`) still hardcodes `SCORER_LEGACY`. That path is **test-only**: no production code constructs `ContentOrganizer` directly, but `tests/unit/test_content_organizer.py` fixtures build `ContentOrganizer()` at the default and assert legacy 10-tier placements. Making the base track `SCORER_DEFAULT` today would cascade-break dozens of those tests, so the split-brain default was left in place and documented in the `src/scoring/types.py` comment.
-
-**Status:** Open — deferred; larger change than the Phase-4 flag flip.
+**Status:** Done (2026-07-18, commit 0da8c22) — default flip + test re-pin complete.
 **Priority:** P3
 **Source:** Phase-4 default flip, 2026-07-17 (see [`UNIFIED_SCORING_PLAN.md`](architecture/UNIFIED_SCORING_PLAN.md) Phase 5)
 
-- **Single source of truth.** Change `ContentOrganizer.__init__(scorer: str = SCORER_LEGACY)` → `= SCORER_DEFAULT` so base construction, the CLI flag, and `ContentBasedFileOrganizer` share one default; then delete the split-brain note in `src/scoring/types.py`.
-- **Re-pin the legacy-behavior tests.** `tests/unit/test_content_organizer.py` fixtures and `tests/unit/scoring/test_dispatch.py::test_default_is_legacy` build `ContentOrganizer()` at the default and expect the 10-tier chain — re-record them against unified, or make them pass `scorer=SCORER_LEGACY` explicitly to keep exercising the chain.
-- **Then retire the legacy chain (full Phase 5).** Once nothing defaults to legacy, remove the legacy `_classify_*` paths and the `legacy`/`shadow` scorer modes per UNIFIED_SCORING_PLAN Phase 5; the interior re-tune's "Legacy parity note" (above) resolves when the chain is gone.
+`ContentOrganizer.__init__` now defaults to `SCORER_DEFAULT` (= `SCORER_UNIFIED`). All seven `ContentOrganizer(...)` constructions in `tests/unit/test_content_organizer.py` pass `scorer=SCORER_LEGACY` explicitly. `test_dispatch.py::test_default_is_legacy` renamed to `test_default_is_unified`. Split-brain comment removed from `src/scoring/types.py`.
+
+Still remaining from Phase 5 (not part of this item):
+- **Retire the legacy chain** — remove the legacy `_classify_*` paths and the `legacy`/`shadow` scorer modes per UNIFIED_SCORING_PLAN Phase 5 (separate, larger refactor).
 
 ### Content pipeline is OCR-bound (gate OCR on text-likelihood)
 
@@ -114,14 +113,14 @@ Profiling `organize-files content` (unified scorer, dry-run) on 2026-07-17 showe
 
 A live `organize-files content --source ~/Desktop --limit 10` (unified scorer) on mixed real-world desktop content committed most files to wrong folders and surfaced several distinct gaps. Every file was verified by eye; the batch was fully rolled back afterward. The organizer is reliable on homogeneous sources (e.g. ChatGPT property renders) but not on heterogeneous user directories.
 
-**Status:** Open — findings from a stress-test; rollback done.
-**Priority:** P2 (item 1 gates safe use on real user directories)
+**Status:** Open — items 2 and 4 shipped (2026-07-18); items 1, 3, 5 remain open. Item 1 gates safe use on real user directories.
+**Priority:** P2 (item 1)
 **Source:** `~/Desktop` content-run audit + full rollback, 2026-07-17
 
 1. **The review gate keys on decision-confidence, which `InteriorSignal` inflates.** UI screenshots of real-estate listings committed to `Media/Interiors` (`Room`) because the interior probe votes ~0.99 (decision confidence ~0.85, margin ~0.81) even when the OCR/label confidence is 1–12%. The `low_confidence`/`low_margin` review bucket exists and *does* fire (confirmed in a `--scorer shadow` pass — one opaque PDF routed to `uncategorized/other`), but cannot catch these because the probe supplies genuine high decision-confidence to wrong content. Options: a per-signal reliability cap, or require corroboration for `InteriorSignal` on screenshot-detected inputs. Distinct from the `PHOTO_PROPERTY_CONFIDENCE` item above (that is the `PhotoCompositionSignal` property flag *under*-committing; this is the `InteriorSignal` probe *over*-committing). The scene-model swap in [`docs/plans/MEDIA_EXTERIORS_PLAN.md`](plans/MEDIA_EXTERIORS_PLAN.md) also intersects here.
-2. **`DecompressionBombError` bypasses all content signals.** A 1.75-B-pixel PNG made the unified `clip_vision` *and* `interior` signals ERROR (EXIF/OCR/CLIP all failed) → the file fell through to `Media/Photos/Other` with zero analysis. The `CLIPClassifier` >178 M-pixel thumbnail recovery documented in `CLAUDE.md` (Gotchas) is **not wired into the unified signal path** — move it into a shared pre-signal image load (or into the CLIP/interior signals) so oversized images classify instead of erroring out.
+2. ~~**`DecompressionBombError` bypasses all content signals.**~~ **Done (2026-07-18, commit d192033).** `CLIPClassifier._thumbnail_oversized` now bypasses Pillow's bomb guard (`Image.MAX_IMAGE_PIXELS = None` + finally restore) so `thumbnail()` can load then downscale images > 2× the pixel limit. Applied to all three call sites in `scripts/shared/clip_utils.py` (`_preprocess_image`, `encode_images_to_numpy`, `_classify_batch_impl`).
 3. **Write-path inconsistencies on the same run.** 4 files got duplicate `file_categories` rows (`sprites`+`interiors_other`); ≥3 files had recorded category ≠ destination folder (the renamer picked the folder, the scorer wrote a different category); 1 file got no `file_categories` row at all. The renamer's folder decision and the scorer's category association can disagree — reconcile to a single source of truth for destination.
-4. **Sprite-regex `^[a-z]+_\d+$` overreach still live.** Renamed screenshots (`creative_1`) match the sprite pattern and get tagged `game_assets/sprites` (also noted in `UNIFIED_SCORING_PLAN` calibration — `IMG_`/`scan_` overreach).
+4. ~~**Sprite-regex `^[a-z]+_\d+$` overreach still live.**~~ **Done (2026-07-18, commit 67fd81d).** `GameAssetSignal` now skips sprite-pattern matching for camera-roll and scanner stems (`img_\d+`, `pxl_\d+`, `dsc_\d+`, `dcim_\d+`, `scan_?\d+`) via `_is_camera_or_scan_stem`, mirroring `FilenamePatternSignal.graduated_filename_confidence`. Generic renamed-screenshot stems like `creative_1` (no camera/scanner prefix) still match; a deeper fix would require design decisions about screenshot-title detection.
 5. **Sensitive-source PII hazard.** OCR'd health/genetics text (SNPedia/Promethease genomics) and a vehicle VIN landed in `files.extracted_text`/`schema_data`. Recommend `--no-db` for sensitive sources (or a redaction pass), and document the hazard in QUICK_START.
 
 ### `entity_detector` misses brand-name orgs and over-extracts cited bodies from reference sections
