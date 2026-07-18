@@ -33,13 +33,11 @@ Boundary rules (locked 2026-07-17; `graphic/` added 2026-07-18):
 Aim for **150–300 per positive class** for a reliable probe; a few hundred easy
 `neither/` images (any non-scene photo) balance it.
 
-> **`graphic/` is staged ahead of the code.** `SCENE_CLASSES` in
-> `scripts/prototype_scene_probe.py` is still 4 classes, so `gather --label-dirs`
-> currently **skips** `graphic/`. To train on it, add `"graphic": 4` to
-> `SCENE_CLASSES` (+ `_POSITIVE_NAMES`) and map the class in
-> `src/scoring/signals/scene.py` (`SCENE_CATEGORY` → `("media", "graphics_other")`,
-> `SCENE_SCHEMA` → `ImageObject`). See the graphic-probe item in
-> [`docs/BACKLOG.md`](../../docs/BACKLOG.md).
+> **`graphic/` is live in the code (2026-07-18).** `SCENE_CLASSES` includes
+> `"graphic": 4` (`gather --label-dirs` ingests `graphic/`; `--graphic DIR` adds
+> external roots) and `src/scoring/signals/scene.py` maps it to
+> `("media", "graphics_other")` / `ImageObject`. Corpus volume is what remains —
+> see the graphic-probe item in [`docs/BACKLOG.md`](../../docs/BACKLOG.md).
 
 Then:
 
