@@ -15,6 +15,11 @@ emits one very-high-precision vote (``W_RENAMED`` = 1.2 prior ×
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..context import FileContext
+
 from typing import Any, Dict, Iterable, List, Optional
 
 from ..types import CategoryScore
@@ -65,14 +70,16 @@ class RenamedScreenshotSignal:
         # stable longest-first sort matches the legacy dict iteration).
         self._screenshot_keys: List[str] = list(screenshots_dict)
 
-    def applies_to(self, ctx: Any) -> bool:
+    def applies_to(self, ctx: FileContext) -> bool:
         return (
             ctx.display_path is not None
             and ctx.display_path != ctx.path
             and SCREENSHOT_STEM_MARKER in ctx.path.stem.lower()
         )
 
-    def run(self, ctx: Any) -> List[CategoryScore]:
+    def run(self, ctx: FileContext) -> List[CategoryScore]:
+        if ctx.display_path is None:  # guaranteed by applies_to; guard for type-safety
+            return []
         renamed_stem = ctx.display_path.stem.lower()
         key = match_renamed_screenshot(renamed_stem, self._screenshot_keys)
         if key is None:

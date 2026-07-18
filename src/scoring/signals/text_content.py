@@ -26,6 +26,11 @@ Divergences from the legacy chain (by design):
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..context import FileContext
+
 from typing import Any, List
 
 from ..types import EVIDENCE_COMPANY, EVIDENCE_PEOPLE, CategoryScore
@@ -58,10 +63,10 @@ class TextContentSignal:
     def __init__(self, classifier: Any) -> None:
         self._classifier = classifier
 
-    def applies_to(self, ctx: Any) -> bool:
+    def applies_to(self, ctx: FileContext) -> bool:
         return ctx.ocr_language in ALLOWED_OCR_LANGUAGES and ctx.text_length >= TEXT_MIN_CHARS
 
-    def run(self, ctx: Any) -> List[CategoryScore]:
+    def run(self, ctx: FileContext) -> List[CategoryScore]:
         text = ctx.ensure_text()
         filename = ctx.path.name
 

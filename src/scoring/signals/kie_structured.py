@@ -11,6 +11,11 @@ organizer edits were needed for this signal.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..context import FileContext
+
 from typing import Any, List
 
 from ..types import EVIDENCE_COMPANY, EVIDENCE_PEOPLE, CategoryScore
@@ -34,10 +39,10 @@ class KieStructuredSignal:
     def __init__(self, classifier: Any) -> None:
         self._classifier = classifier
 
-    def applies_to(self, ctx: Any) -> bool:
+    def applies_to(self, ctx: FileContext) -> bool:
         return bool(ctx.is_image)
 
-    def run(self, ctx: Any) -> List[CategoryScore]:
+    def run(self, ctx: FileContext) -> List[CategoryScore]:
         kie_result = ctx.ensure_kie()
         if kie_result is None:
             return []

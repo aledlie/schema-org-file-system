@@ -21,6 +21,11 @@ decision adapter later maps the top one onto the legacy
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..context import FileContext
+
 from typing import Any, Dict, FrozenSet, List, Mapping, Optional, Tuple
 
 from ..types import CategoryScore
@@ -84,10 +89,10 @@ class ClipVisionSignal:
     weight = W_CLIP
     cost_tier = "heavy"
 
-    def applies_to(self, ctx: Any) -> bool:
+    def applies_to(self, ctx: FileContext) -> bool:
         return bool(ctx.is_image)
 
-    def run(self, ctx: Any) -> List[CategoryScore]:
+    def run(self, ctx: FileContext) -> List[CategoryScore]:
         scores = ctx.ensure_clip()
         if not scores:
             return []

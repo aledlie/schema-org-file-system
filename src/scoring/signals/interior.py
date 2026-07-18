@@ -21,6 +21,11 @@ lightweight/test organizers and fresh clones degrade gracefully.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..context import FileContext
+
 from pathlib import Path
 from typing import Any, List, Optional
 
@@ -70,10 +75,10 @@ class InteriorSignal:
     def __init__(self, probe_path: Optional[Path] = None) -> None:
         self._pipeline = _load_probe(Path(probe_path) if probe_path else _PROBE_PATH)
 
-    def applies_to(self, ctx: Any) -> bool:
+    def applies_to(self, ctx: FileContext) -> bool:
         return ctx.is_image and self._pipeline is not None
 
-    def run(self, ctx: Any) -> List[CategoryScore]:
+    def run(self, ctx: FileContext) -> List[CategoryScore]:
         if self._pipeline is None:
             return []
         emb = get_or_compute_embedding(ctx.path)

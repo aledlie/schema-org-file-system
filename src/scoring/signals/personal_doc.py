@@ -25,6 +25,11 @@ Designed divergences from the legacy tier:
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..context import FileContext
+
 from typing import Any, Callable, Dict, List, NamedTuple, Optional
 
 from src.classifiers.entity_detector import _has_human_name_signal
@@ -192,10 +197,10 @@ class PersonalDocSignal:
         # ContentClassifier (or anything exposing extract_people_names).
         self._classifier = classifier
 
-    def applies_to(self, ctx: Any) -> bool:
+    def applies_to(self, ctx: FileContext) -> bool:
         return bool(ctx.text_length >= PERSON_MIN_TEXT_CHARS)
 
-    def run(self, ctx: Any) -> List[CategoryScore]:
+    def run(self, ctx: FileContext) -> List[CategoryScore]:
         text = ctx.ensure_text()
         extract_people_names = self._classifier.extract_people_names
 

@@ -9,7 +9,10 @@ function over a :class:`~src.scoring.context.FileContext`; the
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Literal, Optional, Protocol, runtime_checkable
+from typing import Any, Dict, List, Literal, Optional, Protocol, TYPE_CHECKING, runtime_checkable
+
+if TYPE_CHECKING:
+    from .context import FileContext
 
 # Scorer modes accepted by ``organize-files content --scorer`` and
 # ``ContentOrganizer(scorer=...)``. ``legacy`` is the 10-tier priority chain;
@@ -76,9 +79,9 @@ class Signal(Protocol):
     weight: float
     cost_tier: str
 
-    def applies_to(self, ctx: Any) -> bool: ...
+    def applies_to(self, ctx: "FileContext") -> bool: ...
 
-    def run(self, ctx: Any) -> List["CategoryScore"]: ...
+    def run(self, ctx: "FileContext") -> List["CategoryScore"]: ...
 
 
 @dataclass(frozen=True)

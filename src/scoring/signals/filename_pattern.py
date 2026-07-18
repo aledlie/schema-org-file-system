@@ -27,6 +27,11 @@ Behavior divergences from the legacy chain (by design):
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..context import FileContext
+
 import re
 from typing import Any, Dict, List
 
@@ -141,10 +146,10 @@ class FilenamePatternSignal:
         # (named)" rule inside the shared module).
         self._game_sprite_keywords: List[str] = list(game_sprite_keywords)
 
-    def applies_to(self, ctx: Any) -> bool:
+    def applies_to(self, ctx: FileContext) -> bool:
         return True
 
-    def run(self, ctx: Any) -> List[CategoryScore]:
+    def run(self, ctx: FileContext) -> List[CategoryScore]:
         # Local state dict replaces the organizer's per-file side channel;
         # provenance lands in evidence instead (§4 row 2).
         state: Dict[str, Any] = {}

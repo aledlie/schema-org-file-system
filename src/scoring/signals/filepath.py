@@ -23,6 +23,11 @@ Behavior divergences from the legacy chain (by design):
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..context import FileContext
+
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, NamedTuple, Optional, cast
 
@@ -186,7 +191,7 @@ HIDDEN_DIR_PREFIX = "."
 DOUBLE_EXTENSION_PARTS = 2
 
 
-def extract_project_name(path: Any) -> Optional[str]:
+def extract_project_name(path: Path) -> Optional[str]:
     """Extract a likely project-directory name from a file path.
 
     Reproduces ``ContentOrganizer.extract_project_name`` exactly: walks the
@@ -234,7 +239,7 @@ class FilepathMatch(NamedTuple):
     project_name: Optional[str]
 
 
-def classify_filepath_match(path: Any, patterns: Mapping[str, str]) -> Optional[FilepathMatch]:
+def classify_filepath_match(path: Path, patterns: Mapping[str, str]) -> Optional[FilepathMatch]:
     """Classify a file by filepath patterns, reporting the project name.
 
     Reproduces ``ContentOrganizer.classify_by_filepath`` exactly: exact
@@ -262,7 +267,7 @@ def classify_filepath_match(path: Any, patterns: Mapping[str, str]) -> Optional[
     return None
 
 
-def classify_filepath(path: Any, patterns: Mapping[str, str]) -> Optional[str]:
+def classify_filepath(path: Path, patterns: Mapping[str, str]) -> Optional[str]:
     """Legacy-shaped wrapper: the category path string or ``None``."""
     match = classify_filepath_match(path, patterns)
     return match.path if match is not None else None
@@ -278,10 +283,10 @@ class FilepathSignal:
     def __init__(self, patterns: Optional[Mapping[str, str]] = None) -> None:
         self._patterns: Dict[str, str] = dict(FILEPATH_PATTERNS if patterns is None else patterns)
 
-    def applies_to(self, ctx: Any) -> bool:
+    def applies_to(self, ctx: FileContext) -> bool:
         return True
 
-    def run(self, ctx: Any) -> List[CategoryScore]:
+    def run(self, ctx: FileContext) -> List[CategoryScore]:
         match = classify_filepath_match(ctx.path, self._patterns)
         if match is None:
             return []

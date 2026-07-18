@@ -15,6 +15,11 @@ marketing material still read as social photos.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..context import FileContext
+
 from typing import Any, Dict, List
 
 from ..types import EVIDENCE_SCHEMA_TYPE, CategoryScore
@@ -64,14 +69,14 @@ class PhotoCompositionSignal:
     def __init__(self, image_analyzer: Any) -> None:
         self._image_analyzer = image_analyzer
 
-    def applies_to(self, ctx: Any) -> bool:
+    def applies_to(self, ctx: FileContext) -> bool:
         return (
             ctx.is_image
             and self._image_analyzer is not None
             and self._image_analyzer.vision_available
         )
 
-    def run(self, ctx: Any) -> List[CategoryScore]:
+    def run(self, ctx: FileContext) -> List[CategoryScore]:
         has_people, is_property_mgmt, scores = self._image_analyzer.analyze_for_organization(
             ctx.path
         )

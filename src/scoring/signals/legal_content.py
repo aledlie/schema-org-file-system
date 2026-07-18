@@ -20,6 +20,11 @@ person evidence, not by this signal.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..context import FileContext
+
 from typing import Any, Iterable, List, Tuple
 
 from ..types import EVIDENCE_PEOPLE, CategoryScore
@@ -124,10 +129,10 @@ class LegalContentSignal:
         # extract_people_names for Option C graph-edge evidence.
         self._classifier = classifier
 
-    def applies_to(self, ctx: Any) -> bool:
+    def applies_to(self, ctx: FileContext) -> bool:
         return bool(ctx.text_length >= LEGAL_MIN_TEXT_CHARS)
 
-    def run(self, ctx: Any) -> List[CategoryScore]:
+    def run(self, ctx: FileContext) -> List[CategoryScore]:
         text = ctx.ensure_text()
         text_lower = text.lower()
 

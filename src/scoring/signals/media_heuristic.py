@@ -22,6 +22,12 @@ Behavior divergences from the legacy chain (by design):
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..context import FileContext
+
+from pathlib import Path
 from typing import Any, Dict, List, NamedTuple, Optional, Tuple
 
 from ..types import CategoryScore
@@ -87,7 +93,7 @@ class MediaMatch(NamedTuple):
 
 
 def detect_media_match(
-    path: Any, image_metadata: Optional[Dict[str, Any]] = None
+    path: Path, image_metadata: Optional[Dict[str, Any]] = None
 ) -> Optional[MediaMatch]:
     """Classify a media file, reporting the basis of the match.
 
@@ -166,7 +172,7 @@ def detect_media_match(
 
 
 def detect_media_category(
-    path: Any, image_metadata: Optional[Dict[str, Any]] = None
+    path: Path, image_metadata: Optional[Dict[str, Any]] = None
 ) -> Optional[Tuple[str, str, str]]:
     """Legacy-shaped wrapper: ``(category, media_type, subcategory)`` or ``None``."""
     match = detect_media_match(path, image_metadata)
@@ -187,10 +193,10 @@ class MediaHeuristicSignal:
     weight = W_MEDIA
     cost_tier = "cheap"
 
-    def applies_to(self, ctx: Any) -> bool:
+    def applies_to(self, ctx: FileContext) -> bool:
         return True
 
-    def run(self, ctx: Any) -> List[CategoryScore]:
+    def run(self, ctx: FileContext) -> List[CategoryScore]:
         ext = ctx.path.suffix.lower()
         # EXIF only informs the photo branch; videos/audio never need it.
         image_metadata = ctx.ensure_image_metadata() if ext in PHOTO_EXTENSIONS else None

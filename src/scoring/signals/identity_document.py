@@ -17,6 +17,11 @@ extraction backs it — is strong but OCR-fuzzy (``ID_KEYWORD_CONFIDENCE``).
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..context import FileContext
+
 import re
 from typing import Any, Callable, List, NamedTuple, Optional
 
@@ -145,10 +150,10 @@ class IdentityDocumentSignal:
     def __init__(self, classifier: Any) -> None:
         self._classifier = classifier
 
-    def applies_to(self, ctx: Any) -> bool:
+    def applies_to(self, ctx: FileContext) -> bool:
         return bool(ctx.is_image)
 
-    def run(self, ctx: Any) -> List[CategoryScore]:
+    def run(self, ctx: FileContext) -> List[CategoryScore]:
         ocr = ctx.ensure_ocr()
         if ocr is None:
             return []

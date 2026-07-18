@@ -20,7 +20,12 @@ to fallback), and content that clears the floor always out-commits it. See
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..context import FileContext
+
+from typing import Dict, List, Optional, Tuple
 
 from src.organizers.category_config import FONTS_PATHS
 from src.organizers.mime_classifier import classify_by_mime
@@ -86,10 +91,10 @@ class MimeFallbackSignal:
     weight = W_MIME
     cost_tier = "cheap"
 
-    def applies_to(self, ctx: Any) -> bool:
+    def applies_to(self, ctx: FileContext) -> bool:
         return True
 
-    def run(self, ctx: Any) -> List[CategoryScore]:
+    def run(self, ctx: FileContext) -> List[CategoryScore]:
         mime_category, mime_subcategory, _schema_type = classify_by_mime(ctx.path, None)
         translated = mime_result_to_content_category(mime_category, mime_subcategory)
         if translated is None:

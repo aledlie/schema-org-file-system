@@ -22,8 +22,14 @@ Behavior divergences from the legacy chain (by design):
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..context import FileContext
+
 import re
-from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Tuple
+from pathlib import Path
+from typing import Dict, Iterable, List, NamedTuple, Optional, Tuple
 
 from shared.constants import (
     CAMERA_VENDOR_PREFIX_PATTERNS,
@@ -182,7 +188,7 @@ class GameAssetMatch(NamedTuple):
 
 
 def detect_game_asset_match(
-    path: Any,
+    path: Path,
     *,
     music_keywords: Iterable[str],
     audio_keywords: Iterable[str],
@@ -281,7 +287,7 @@ def detect_game_asset_match(
 
 
 def detect_game_asset(
-    path: Any,
+    path: Path,
     *,
     music_keywords: Iterable[str],
     audio_keywords: Iterable[str],
@@ -347,10 +353,10 @@ class GameAssetSignal:
             else sprite_discriminators
         )
 
-    def applies_to(self, ctx: Any) -> bool:
+    def applies_to(self, ctx: FileContext) -> bool:
         return True
 
-    def run(self, ctx: Any) -> List[CategoryScore]:
+    def run(self, ctx: FileContext) -> List[CategoryScore]:
         match = detect_game_asset_match(
             ctx.path,
             music_keywords=self._music_keywords,

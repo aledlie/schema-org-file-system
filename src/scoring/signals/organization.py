@@ -14,6 +14,11 @@ PNG of the same letter accumulate the same organization evidence.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..context import FileContext
+
 from typing import Any, Callable, Dict, List, Optional, Tuple
 
 from ..types import EVIDENCE_COMPANY, CategoryScore
@@ -206,10 +211,10 @@ class OrganizationKeywordSignal:
         # ContentClassifier (or anything exposing extract_company_names).
         self._classifier = classifier
 
-    def applies_to(self, ctx: Any) -> bool:
+    def applies_to(self, ctx: FileContext) -> bool:
         return bool(ctx.text_length >= ORG_MIN_TEXT_CHARS)
 
-    def run(self, ctx: Any) -> List[CategoryScore]:
+    def run(self, ctx: FileContext) -> List[CategoryScore]:
         detected = detect_organization(
             ctx.ensure_text(),
             extract_company_names=self._classifier.extract_company_names,

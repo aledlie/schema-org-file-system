@@ -20,6 +20,11 @@ somewhere, while staying weak enough for CLIP/text signals to outscore.
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from ..context import FileContext
+
 import re
 from typing import Any, Callable, Iterable, List, Optional, Tuple
 
@@ -123,10 +128,10 @@ class ScreenshotOcrSignal:
         self._screenshot_keys = screenshots_dict if screenshots_dict is not None else {}
         self._ocr_classify = ocr_classify if ocr_classify is not None else _default_ocr_classify
 
-    def applies_to(self, ctx: Any) -> bool:
+    def applies_to(self, ctx: FileContext) -> bool:
         return ctx.is_image and is_screenshot_named(ctx.path.stem.lower())
 
-    def run(self, ctx: Any) -> List[CategoryScore]:
+    def run(self, ctx: FileContext) -> List[CategoryScore]:
         scores: List[CategoryScore] = []
         result = None
         if self._ocr_classify is not None:
