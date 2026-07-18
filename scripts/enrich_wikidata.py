@@ -108,27 +108,28 @@ def run(
             a positive event match is logged as a negative org signal.
     """
     enricher = WikidataEnricher(db_path)
-    companies = _get_all_companies(db_path)
+    all_companies = _get_all_companies(db_path)
+
+    # Pre-filter already-enriched rows so --limit caps *queried* companies,
+    # not total fetched.  A database where the first N rows are already enriched
+    # would otherwise make "--limit N" a no-op.
+    to_query = [c for c in all_companies if not c["wikidata_qid"]]
+    already_enriched = len(all_companies) - len(to_query)
 
     if limit is not None:
-        companies = companies[:limit]
+        to_query = to_query[:limit]
 
     label = "APPLIED" if apply else "DRY RUN"
-    print(f"[{label}] Wikidata enrichment — {len(companies)} companies\n")
+    print(f"[{label}] Wikidata enrichment — {len(to_query)} companies\n")
+    if already_enriched:
+        print(f"  INFO  {already_enriched} companies already enriched (skipped)\n")
 
     matched = 0
-    already_enriched = 0
     no_match = 0
     event_collisions: List[str] = []
 
-    for company in companies:
+    for company in to_query:
         name: str = company["name"]
-        existing_qid: Optional[str] = company["wikidata_qid"]
-
-        if existing_qid:
-            already_enriched += 1
-            print(f"  SKIP  {name!r} — already enriched ({existing_qid})")
-            continue
 
         org_key = enricher._cache_key(name, QID_ORGANIZATION)
         org_cached = enricher._kv.exists(org_key, namespace=_KV_NAMESPACE)
@@ -162,11 +163,9 @@ def run(
                         " — not an org; strong negative signal for person detection"
                     )
 
-    total = len(companies)
-    queried = total - already_enriched
+    queried = len(to_query)
     hit_rate = matched / queried * 100 if queried else 0.0
     print(f"\n--- Summary ---")
-    print(f"  Total      : {total}")
     print(f"  Skipped    : {already_enriched} (already enriched)")
     print(f"  Queried    : {queried}")
     print(f"  Matched    : {matched}  ({hit_rate:.1f}% hit rate on queried)")

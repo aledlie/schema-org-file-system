@@ -30,6 +30,8 @@ import urllib.error
 import urllib.parse
 import urllib.request
 from dataclasses import dataclass
+from importlib.metadata import PackageNotFoundError
+from importlib.metadata import version as _pkg_version
 from pathlib import Path
 from typing import Optional, Union
 
@@ -42,12 +44,17 @@ except ImportError:
 
 logger = logging.getLogger(__name__)
 
+try:
+    _VERSION = _pkg_version("schema-org-file-system")
+except PackageNotFoundError:
+    _VERSION = "2.1.0"
+
 # W3C Reconciliation API v0.2 endpoint for Wikidata (English labels).
 RECONC_API_URL = "https://wikidata.reconci.link/en/api"
 
 # Mandatory User-Agent string per the Wikidata bot policy.
 RECONC_USER_AGENT = (
-    "schema-org-file-system/2.1.0 (entity-type enrichment; "
+    f"schema-org-file-system/{_VERSION} (entity-type enrichment; "
     "contact: alyshia@integritystudio.ai)"
 )
 
@@ -207,33 +214,45 @@ class WikidataEnricher:
         try:
             with urllib.request.urlopen(req, timeout=RECONC_TIMEOUT_SEC) as resp:
                 body = json.loads(resp.read().decode())
-        except (urllib.error.URLError, TimeoutError, json.JSONDecodeError, OSError) as exc:
+
+            # Parse inside the guard: body may be a JSON array (AttributeError on
+            # .get), score may be a non-numeric string (ValueError from float()),
+            # and candidate fields may be missing (KeyError/TypeError).
+            candidates = body.get("q0", {}).get("result", [])
+            if not candidates:
+                return None
+
+            top = candidates[0]
+            score = float(top.get("score", 0))
+            if score < RECONC_MIN_SCORE:
+                logger.debug(
+                    "Wikidata: %r → %s (score %.1f < threshold %.1f)",
+                    name,
+                    top.get("id"),
+                    score,
+                    RECONC_MIN_SCORE,
+                )
+                return None
+
+            qid = top.get("id", "")
+            if not qid or not qid.startswith("Q"):
+                return None
+
+            return WikidataMatch(
+                qid=qid,
+                label=top.get("name", name),
+                score=score,
+                entity_class=class_qid,
+            )
+        except (
+            urllib.error.URLError,
+            TimeoutError,
+            json.JSONDecodeError,
+            OSError,
+            AttributeError,
+            ValueError,
+            TypeError,
+            KeyError,
+        ) as exc:
             logger.debug("Wikidata API unavailable for %r: %s", name, exc)
             return None
-
-        candidates = body.get("q0", {}).get("result", [])
-        if not candidates:
-            return None
-
-        top = candidates[0]
-        score = float(top.get("score", 0))
-        if score < RECONC_MIN_SCORE:
-            logger.debug(
-                "Wikidata: %r → %s (score %.1f < threshold %.1f)",
-                name,
-                top.get("id"),
-                score,
-                RECONC_MIN_SCORE,
-            )
-            return None
-
-        qid = top.get("id", "")
-        if not qid or not qid.startswith("Q"):
-            return None
-
-        return WikidataMatch(
-            qid=qid,
-            label=top.get("name", name),
-            score=score,
-            entity_class=class_qid,
-        )

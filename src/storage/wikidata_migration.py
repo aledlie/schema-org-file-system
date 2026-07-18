@@ -88,7 +88,7 @@ def run_wikidata_migration(
                     f"ADD COLUMN {WIKIDATA_QID_COLUMN} {WIKIDATA_QID_COLUMN_TYPE}"
                 )
                 print(f"  Added {WIKIDATA_QID_COLUMN} to {COMPANIES_TABLE}")
-            stats["columns_added"] += 1
+                stats["columns_added"] += 1  # only on actual ALTER TABLE, not dry-run
         else:
             print(
                 f"  {WIKIDATA_QID_COLUMN} already exists in {COMPANIES_TABLE}"

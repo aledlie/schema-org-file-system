@@ -259,6 +259,38 @@ class TestQidFormatGuard:
 
 
 # ---------------------------------------------------------------------------
+# Malformed API response — guard covers post-parse failures (bug fix)
+# ---------------------------------------------------------------------------
+
+
+class TestMalformedApiResponse:
+    """_query_api must return None (not raise) for any unexpected response shape."""
+
+    def test_none_when_body_is_json_array(self, enricher):
+        """API returns a JSON array instead of an object → AttributeError on .get()."""
+        array_body = json.dumps([{"q0": {}}]).encode()
+        with patch("urllib.request.urlopen", return_value=_mock_urlopen(array_body)):
+            result = enricher.reconcile_organization("SomeCo")
+        assert result is None
+
+    def test_none_when_score_is_non_numeric_string(self, enricher):
+        """Non-numeric score field raises ValueError from float() without the guard."""
+        bad_score_body = json.dumps(
+            {"q0": {"result": [{"id": "Q95", "name": "Google", "score": "high"}]}}
+        ).encode()
+        with patch("urllib.request.urlopen", return_value=_mock_urlopen(bad_score_body)):
+            result = enricher.reconcile_organization("Google")
+        assert result is None
+
+    def test_none_when_result_entry_is_not_a_dict(self, enricher):
+        """Candidate list contains a scalar instead of a mapping → TypeError on .get()."""
+        bad_entry_body = json.dumps({"q0": {"result": ["not-a-dict"]}}).encode()
+        with patch("urllib.request.urlopen", return_value=_mock_urlopen(bad_entry_body)):
+            result = enricher.reconcile_organization("SomeCo")
+        assert result is None
+
+
+# ---------------------------------------------------------------------------
 # Threshold boundary
 # ---------------------------------------------------------------------------
 

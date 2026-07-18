@@ -1,7 +1,7 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-07-18 (corrected `PHOTO_PROPERTY_CONFIDENCE` item post-f6488b9 — two-signal case resolved, residual is probe-absence only; probe now health-checked).
+Last updated: 2026-07-18 (added trained graphic-vs-photograph probe item — opaque AI graphics/logos leak past the cheap `GraphicDetectionSignal` gate; corrected `PHOTO_PROPERTY_CONFIDENCE` item post-f6488b9 — two-signal case resolved, residual is probe-absence only; probe now health-checked).
 
 ## Open Items
 
@@ -26,6 +26,26 @@ Last updated: 2026-07-18 (corrected `PHOTO_PROPERTY_CONFIDENCE` item post-f6488b
 - **Do not eyeball the bump.** Per the Phase-3 calibration process (`src/scoring/weights.py` header — "treat this module as versioned data and commit each re-tune with its backtest report"), any change to `PHOTO_PROPERTY_CONFIDENCE` (or `W_PEOPLE_PHOTO`) must be backed by a `results/file_organization.db` backtest, committed with the report.
 - **Regression guard:** measure false positives — staged/real-estate listing photos and any non-interior images the analyzer flags `is_property_mgmt` — before raising, since a higher confidence also strengthens every interior vote against genuine content winners.
 - **Legacy parity note:** the legacy `_classify_photo_composition` still routes interiors to `property_management/other`; a unified re-tune widens the shadow legacy-vs-unified disagreement for interior photos until the legacy chain is retired (Phase 5).
+
+### Trained graphic-vs-photograph probe (opaque full-bleed graphics leak to `photos_*`)
+
+`GraphicDetectionSignal` (`src/scoring/signals/graphic_detection.py`) is a cheap pre-CLIP pixel gate tuned for **transparent, small, square icon assets**: its four additive heuristics are `has_alpha` (+0.40), `is_square_icon` (square & ≤512px, +0.30), `small_palette` (≤64 colors in a 64² thumbnail, +0.25), and `asset_path` (parent dir in the asset-folder set, +0.15), needing ≥ `_MIN_RASTER_CONFIDENCE(0.35)` to vote. It has **no capability for opaque, high-res, flat-design graphics** — logos on a solid background and text marketing posters, exactly what ChatGPT/AI image tools emit. Those score ≈ 0 on all four cues (no alpha, >512px, anti-aliased gradients/text push distinct colors >64, parent folder is `ChatGPT` not an asset dir), fall below 0.35, and leak through to the `photos_chatgpt` filename fallback (or `photos_other`).
+
+**Reproduced (shadow run, 2026-07-18)** on `~/Documents/Media/Photos/ChatGPT`, visually verified:
+- `ChatGPTImageNov10,2025,02_32_53PM.png` — "InventoryAI" brand logo (1024², opaque navy) → misfiled `photos_chatgpt` (both engines agreed; both wrong).
+- `ChatGPTImageAug30,2025,03_41_57PM.png` — "GOT A VISION FOR A HEALTHIER AUSTIN?" text poster (1536×1024, opaque cream) → misfiled `photos_chatgpt`.
+- Contrast: `ChatGPTImageNov10,2025,02_32_56PM.png` (busy 2×2 icon grid) *did* route to `graphics_other` — so detection currently fires only on busy multi-icon layouts, not single logos or text posters. Inconsistent by construction.
+
+The durable fix mirrors the interior-detection precedent (`docs/reviews/INTERIOR_DETECTION_DURABLE_FIX_ANALYSIS.md`): replace/augment the pixel heuristics with a **trained linear probe over the frozen `ViT-B-32` embeddings the pipeline already caches** — a `graphic` (or binary graphic-vs-photograph) class — exactly as `InteriorSignal` (`src/scoring/signals/interior.py`, `results/interior_probe.joblib`) did for the zero-shot interior gate. CLIP embeddings *do* separate graphics from photographs even though CLIP zero-shot labels don't (the whole reason `GraphicDetectionSignal` avoided CLIP). Natural home: fold a `graphic`/`neither` class into the in-progress 4-class scene probe (`scripts/prototype_scene_probe.py`, corpus `results/scene_labels/`), whose `neither/` reject class already lists "logos … product shots"; the logo + poster above are ideal `neither/` (or a dedicated `graphic/`) positives.
+
+**Status:** Open — not a weight-tuning issue; a missing capability. Cheap gate stays as a fast-path for true icon assets.
+**Priority:** P3
+**Source:** ChatGPT shadow-scorer investigation, 2026-07-18 (`results/scoring_shadow.jsonl`; agreement-set manual review)
+
+- **Do not chase it with more pixel heuristics.** Opaque AI-generated graphics are pixel-indistinguishable from photos by palette/size/alpha; only the learned embedding separates them.
+- **Keep the cheap gate.** `GraphicDetectionSignal` correctly and cheaply catches transparent/square icon assets pre-CLIP; the probe is an *additional* heavy-tier voter for the opaque-graphic case it can't see, gated on CLIP availability with graceful no-op (same pattern as `InteriorSignal`).
+- **Corpus dependency.** Needs labeled graphic/neither positives (target 150–300/class per the scene-probe README); `results/scene_labels/{place,neither}/` are currently empty, so the probe is not yet trainable.
+- **Regression guard.** Measure false positives on genuine photos (product still-lifes, staged interiors) before deploying — a graphic probe that over-fires would pull real photos out of `photos_*`.
 
 ### Content pipeline is OCR-bound (gate OCR on text-likelihood)
 
@@ -54,7 +74,7 @@ A live `organize-files content --source ~/Desktop --limit 10` (unified scorer) o
 
 A five-angle multi-agent review of the Wikidata enrichment commits (`ae1ad07`…`901204d`) produced ~30 candidates; these three survived verification against the current tree (stale/refuted findings were discarded — e.g. the ORM-column crash and hit-rate denominator were already fixed pre-merge).
 
-**Status:** Open — small correctness fixes, no design work needed.
+**Status:** Done — 2026-07-18. Fixed all three verified findings: (1) `--limit` now caps queried rows (pre-filters enriched companies before slicing); (2) `_query_api` post-parse block moved inside the try/except guard, `AttributeError`/`ValueError`/`TypeError`/`KeyError` added to catch array-body and non-numeric-score crashes; (3) `stats["columns_added"]` only increments on actual `ALTER TABLE`, not in dry-run branch. `RECONC_USER_AGENT` version unhardcoded via `importlib.metadata`. 3 new regression tests added.
 **Priority:** P3
 **Source:** multi-agent review of Wikidata enrichment implementation, 2026-07-18
 
