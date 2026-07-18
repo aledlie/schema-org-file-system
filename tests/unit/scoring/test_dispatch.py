@@ -10,7 +10,7 @@ import json
 import pytest
 
 from src.organizers.content_organizer import ContentOrganizer, _derive_schema_type
-from src.scoring.types import SCORER_LEGACY, SCORER_MODES
+from src.scoring.types import SCORER_DEFAULT, SCORER_LEGACY, SCORER_MODES
 
 
 def make_organizer(tmp_path, **kwargs):
@@ -18,9 +18,11 @@ def make_organizer(tmp_path, **kwargs):
 
 
 class TestScorerModePlumbing:
-    def test_default_is_legacy(self, tmp_path):
+    def test_default_is_unified(self, tmp_path):
+        # Phase-5 flip: ContentOrganizer now defaults to SCORER_DEFAULT (unified).
+        # Tests that pin legacy chain behaviour pass scorer=SCORER_LEGACY explicitly.
         organizer = make_organizer(tmp_path)
-        assert organizer.scorer_mode == SCORER_LEGACY
+        assert organizer.scorer_mode == SCORER_DEFAULT
 
     @pytest.mark.parametrize("mode", SCORER_MODES)
     def test_valid_modes_accepted(self, tmp_path, mode):

@@ -19,6 +19,7 @@ from src.organizers.content_organizer import (
     _mime_result_to_content_category,
 )
 from src.scoring.signals.interior import INTERIOR_DESCRIPTION_LABEL
+from src.scoring.types import SCORER_LEGACY
 
 MODULE = "src.organizers.content_organizer"
 
@@ -35,7 +36,12 @@ def mock_classifier() -> MagicMock:
 
 @pytest.fixture()
 def organizer(tmp_path: Path, mock_classifier: MagicMock) -> ContentOrganizer:
-    return ContentOrganizer(base_path=tmp_path, content_classifier=mock_classifier)
+    # Pin to legacy so Phase-0 tests keep exercising the 10-tier priority chain;
+    # the base ContentOrganizer now defaults to SCORER_DEFAULT (unified) after the
+    # Phase-5 default flip.
+    return ContentOrganizer(
+        base_path=tmp_path, content_classifier=mock_classifier, scorer=SCORER_LEGACY
+    )
 
 
 # ------------------------------------------------------------------ #
@@ -273,6 +279,7 @@ class TestGetDestinationPath:
             base_path=tmp_path,
             content_classifier=mock_classifier,
             organize_by_date=True,
+            scorer=SCORER_LEGACY,
         )
         result = org.get_destination_path(
             file_path=Path("/photos/img.jpg"),
@@ -441,7 +448,9 @@ class TestOcrConfidenceGating:
     """
 
     def _make_organizer(self, tmp_path: Path, mock_classifier: MagicMock) -> "ContentOrganizer":
-        org = ContentOrganizer(base_path=tmp_path, content_classifier=mock_classifier)
+        org = ContentOrganizer(
+            base_path=tmp_path, content_classifier=mock_classifier, scorer=SCORER_LEGACY
+        )
         # Stub out all heavyweight dependencies used inside detect_file_category
         org.enricher = MagicMock()
         org.enricher.detect_mime_type.return_value = "application/pdf"
@@ -570,7 +579,9 @@ class TestInitTaxonomy:
         self, tmp_path: Path, mock_classifier: MagicMock
     ) -> None:
         mock_classifier.patterns = {"jira": ["board", "sprint"]}
-        org = ContentOrganizer(base_path=tmp_path, content_classifier=mock_classifier)
+        org = ContentOrganizer(
+            base_path=tmp_path, content_classifier=mock_classifier, scorer=SCORER_LEGACY
+        )
         screenshots = org.category_paths["media"]["photos"]["screenshots"]
         assert screenshots["jira"] == "Media/Photos/Screenshots/Jira"
 
@@ -1187,7 +1198,9 @@ class TestDetectFileCategoryPriorities:
     def _stubbed_organizer(
         self, tmp_path: Path, mock_classifier: MagicMock, mime: str | None
     ) -> ContentOrganizer:
-        org = ContentOrganizer(base_path=tmp_path, content_classifier=mock_classifier)
+        org = ContentOrganizer(
+            base_path=tmp_path, content_classifier=mock_classifier, scorer=SCORER_LEGACY
+        )
         org.enricher = MagicMock()
         org.enricher.detect_mime_type.return_value = mime
         org.ocr_available = False
@@ -1328,7 +1341,9 @@ class TestMimeResultToContentCategory:
     ) -> None:
         # Every translated (category, subcategory) must produce a real path (not
         # the Uncategorized default) via get_destination_path.
-        org = ContentOrganizer(base_path=tmp_path, content_classifier=mock_classifier)
+        org = ContentOrganizer(
+            base_path=tmp_path, content_classifier=mock_classifier, scorer=SCORER_LEGACY
+        )
         for mime_result in [
             ("images", "graphics"),
             ("images", "photos"),
@@ -1586,6 +1601,7 @@ class TestGetDestinationPathNesting:
             base_path=tmp_path,
             content_classifier=mock_classifier,
             organize_by_location=True,
+            scorer=SCORER_LEGACY,
         )
         result = org.get_destination_path(
             file_path=Path("/pics/img.jpg"),

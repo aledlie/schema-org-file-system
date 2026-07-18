@@ -51,6 +51,7 @@ from src.scoring.signals.mime_fallback import (
 )
 from src.scoring.signals.renamed_screenshot import match_renamed_screenshot
 from src.scoring.types import (
+    SCORER_DEFAULT,
     SCORER_LEGACY,
     SCORER_MODES,
     SCORER_SHADOW,
@@ -268,7 +269,7 @@ class ContentOrganizer(BaseOrganizer):
         enricher: Any = None,
         screenshot_content_classifier: Any = None,
         ocr_available: Optional[bool] = None,
-        scorer: str = SCORER_LEGACY,
+        scorer: str = SCORER_DEFAULT,
     ) -> None:
         super().__init__(
             base_path=base_path,

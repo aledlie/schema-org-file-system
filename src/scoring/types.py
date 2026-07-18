@@ -15,9 +15,9 @@ from typing import Any, Dict, List, Literal, Optional, Protocol, runtime_checkab
 # ``ContentOrganizer(scorer=...)``. ``legacy`` is the 10-tier priority chain;
 # ``unified`` is the weighted scorer; ``shadow`` runs both (legacy controls
 # placement, the unified decision is logged for disagreement analysis).
-# ``SCORER_DEFAULT`` is the ``organize-files content`` / ``ContentBasedFileOrganizer``
-# default; the base ``ContentOrganizer`` still hardcodes ``legacy`` so the Phase-0
-# unit tests keep pinning the priority chain unchanged.
+# ``SCORER_DEFAULT`` is the default for the CLI, ``ContentBasedFileOrganizer``,
+# and now the base ``ContentOrganizer``; tests that exercise the legacy chain
+# pass ``scorer=SCORER_LEGACY`` explicitly (Phase-5 default flip).
 SCORER_LEGACY = "legacy"
 SCORER_UNIFIED = "unified"
 SCORER_SHADOW = "shadow"
