@@ -1,14 +1,18 @@
 {
-  "generated_at": "2026-07-17T23:23:40.145793",
+  "generated_at": "2026-07-18T01:40:05.982418",
   "cumulative": {
-    "total_sessions": 1,
-    "total_files": 4,
+    "total_sessions": 2,
+    "total_files": 29,
     "total_organized": 0,
     "avg_processing_time": null,
     "top_categories": [
       {
         "name": "sprites",
         "count": 61
+      },
+      {
+        "name": "interiors_other",
+        "count": 25
       },
       {
         "name": "photos_other",
@@ -20,10 +24,6 @@
       },
       {
         "name": "vendors",
-        "count": 7
-      },
-      {
-        "name": "contacts",
         "count": 7
       }
     ]
@@ -102,7 +102,63 @@
         "files_delta": 4,
         "organized_delta": 4
       }
+    },
+    {
+      "id": "16e090da-350a-4710-82ed-df44cd7977ea",
+      "started_at": "2026-07-18 00:09:31.105197",
+      "completed_at": "2026-07-18 00:22:04.633681",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/.claude/jobs/e184540b/tmp/interior_apply_stage"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": null,
+      "total_files": 25,
+      "organized_count": 25,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "16e090da",
+      "success_rate": 100.0,
+      "categories": [
+        {
+          "name": "interiors_other",
+          "color": null,
+          "icon": null,
+          "count": 25,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "Room",
+          "count": 25
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".png",
+          "count": 22
+        },
+        {
+          "extension": ".avif",
+          "count": 2
+        },
+        {
+          "extension": ".webp",
+          "count": 1
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": 21,
+        "organized_delta": 21,
+        "success_rate_delta": 0.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
     }
   ],
-  "session_count": 1
+  "session_count": 2
 }
