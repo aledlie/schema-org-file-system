@@ -158,13 +158,57 @@ class TestDetectAndCoverBarcodesMocked:
         mock_qr = MagicMock()
         mock_qr.detectMulti.return_value = (False, None)
 
-        with patch.dict(sys.modules, {"cv2": mock_bd, "numpy": np}):
-            # Patch the internals directly
-            with (
-                patch.object(redact_pii, "detect_and_cover_barcodes",
-                              wraps=redact_pii.detect_and_cover_barcodes),
-            ):
-                pass  # integration tested via redact() manifest below
+        mock_cv2 = MagicMock()
+        mock_cv2.imread.return_value = MagicMock()
+        mock_cv2.barcode_BarcodeDetector.return_value = mock_bd
+        mock_cv2.QRCodeDetector.return_value = mock_qr
+
+        with patch.dict(sys.modules, {"cv2": mock_cv2, "numpy": np}):
+            detected, covered = redact_pii.detect_and_cover_barcodes(png)
+
+        assert detected == 1
+        assert covered == 0
+
+    def test_qr_native_shape_detected_and_covered(self, tmp_path):
+        import numpy as np
+
+        png = self._make_png(tmp_path)
+        # QRCodeDetector.detectMulti native (N,4,2) shape — ndim==2 per poly,
+        # so the reshape branch is skipped and the polygon is used directly
+        fake_pts = np.array(
+            [[[10, 10], [110, 10], [110, 110], [10, 110]]], dtype=np.float32
+        )
+
+        mock_bd = MagicMock()
+        mock_bd.detectMulti.return_value = (False, None)
+        mock_qr = MagicMock()
+        mock_qr.detectMulti.return_value = (True, fake_pts)
+
+        mock_cv2 = MagicMock()
+        mock_cv2.imread.return_value = MagicMock()
+        mock_cv2.barcode_BarcodeDetector.return_value = mock_bd
+        mock_cv2.QRCodeDetector.return_value = mock_qr
+
+        with patch.dict(sys.modules, {"cv2": mock_cv2, "numpy": np}):
+            detected, covered = redact_pii.detect_and_cover_barcodes(png)
+
+        assert detected == 1
+        assert covered == 1
+
+    def test_imread_none_returns_zero(self, tmp_path):
+        import numpy as np
+
+        png = self._make_png(tmp_path)
+
+        mock_cv2 = MagicMock()
+        mock_cv2.imread.return_value = None  # unreadable image
+
+        with patch.dict(sys.modules, {"cv2": mock_cv2, "numpy": np}):
+            detected, covered = redact_pii.detect_and_cover_barcodes(png)
+
+        assert (detected, covered) == (0, 0)
+        mock_cv2.barcode_BarcodeDetector.assert_not_called()
+        mock_cv2.QRCodeDetector.assert_not_called()
 
     def test_no_barcodes_detected(self, tmp_path):
         import numpy as np

@@ -64,6 +64,7 @@ from src.organizers.category_config import CONTENT_CATEGORY_PATHS  # noqa: E402
 from src.scoring.context import FileContext  # noqa: E402
 from src.scoring.registry import build_default_signals  # noqa: E402
 from src.scoring.scorer import Scorer  # noqa: E402
+from src.scoring.signals.scene import SceneSignal  # noqa: E402
 from src.scoring.signals.screenshot_ocr import ScreenshotOcrSignal  # noqa: E402
 from src.scoring.weights import (  # noqa: E402
     W_CLIP,
@@ -81,6 +82,7 @@ from src.scoring.weights import (  # noqa: E402
     W_PEOPLE_PHOTO,
     W_PERSON,
     W_RENAMED,
+    W_SCENE,
     W_TEXT,
     W_UI,
 )
@@ -137,7 +139,16 @@ WEIGHT_SIGNALS: List[Tuple[str, float, str]] = [
     ("W_ORG", W_ORG, "organization_keyword"),
     ("W_PERSON", W_PERSON, "personal_doc"),
     ("W_LEGAL", W_LEGAL, "legal_content"),
-    ("W_INTERIOR", W_INTERIOR, "interior"),
+    # Interior-probe slot follows the registry's artifact-gated swap
+    # (MEDIA_EXTERIORS_PLAN): SceneSignal when results/scene_probe.joblib
+    # loads, InteriorSignal otherwise — so the sweep matches what replays.
+    # Collapses to a plain ("W_SCENE", W_SCENE, "scene") row when the swap
+    # completes and interior.py is retired.
+    (
+        ("W_SCENE", W_SCENE, "scene")
+        if SceneSignal().is_loaded
+        else ("W_INTERIOR", W_INTERIOR, "interior")
+    ),
     ("W_GAME", W_GAME, "game_asset"),
     ("W_TEXT", W_TEXT, "text_content"),
     ("W_UI", W_UI, "screenshot_ocr"),

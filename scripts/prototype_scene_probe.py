@@ -474,7 +474,7 @@ def cmd_train(args: argparse.Namespace) -> int:
     if not rows:
         print("No manifest rows. Run `gather` first.")
         return 1
-    X, y, kept = load_matrix(rows)
+    X, y, kept = load_matrix([(p, label) for (p, label, _g) in rows])
     counts = _class_counts(y)
     if len(counts) < 2 or min(counts.values()) < 2:
         print(f"Refusing to train: need >= 2 classes and >= 2 per class (have {counts}).")
