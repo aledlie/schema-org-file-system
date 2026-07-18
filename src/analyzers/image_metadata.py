@@ -73,8 +73,8 @@ except ImportError:
         def __enter__(self) -> "CostTracker":
             return self
 
-        def __exit__(self, *args: Any) -> bool:
-            return False
+        def __exit__(self, *args: Any) -> None:
+            return
 
 
 class ImageMetadataParser:

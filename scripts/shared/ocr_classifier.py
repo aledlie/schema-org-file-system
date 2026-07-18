@@ -14,7 +14,7 @@ from shared.ocr_easyocr import (
     EASYOCR_AVAILABLE,
     extract_lines_easyocr,
     extract_text_easyocr,
-    extract_text_easyocr_with_confidence,
+    extract_text_easyocr_with_status,
 )
 
 OCR_AVAILABLE = False
@@ -383,11 +383,17 @@ def extract_ocr_with_confidence(
     Use max_chars=0 for no truncation.
     """
     if prefer_easyocr and EASYOCR_AVAILABLE:
-        easyocr_result = extract_text_easyocr_with_confidence(
+        easyocr_result, easyocr_errored = extract_text_easyocr_with_status(
             image_path, max_chars=max_chars
         )
         if easyocr_result is not None:
             return easyocr_result
+        # easyocr ran cleanly and found no text: the image is (almost certainly)
+        # text-free, and a full docTR pass would repeat the same negative at
+        # ~25x the cost. Skip it. Fall back to docTR only when easyocr actually
+        # errored (its detector never produced a verdict).
+        if not easyocr_errored:
+            return None
 
     result = _run_image_ocr(image_path)
     if result is None:
@@ -594,6 +600,8 @@ def classify_by_ocr(
     image_path: Path,
     content_classifier=None,
     max_chars: int = 1000,
+    *,
+    text: str | None = None,
 ) -> tuple[str, float, dict[str, float], str] | None:
     """Classify image by OCR text extraction with fallback hierarchy.
 
@@ -604,16 +612,21 @@ def classify_by_ocr(
       image_path: Path to the image file
       content_classifier: Optional ContentClassifier for schema.org taxonomy
       max_chars: Max characters to extract via OCR
+      text: Pre-extracted OCR text. When provided (including an empty string,
+        meaning "OCR ran and found nothing"), classification runs on it directly
+        and no extraction happens — lets callers that already OCR'd the image
+        (e.g. the unified ScreenshotOcrSignal via ctx.ensure_ocr) skip a second
+        pass. When None, text is extracted here as before.
 
     Returns:
       Tuple of (category, confidence, all_scores, extracted_text) or None
       if OCR unavailable or no matches found.
       all_scores maps every matched category to its confidence.
     """
-    if not is_ocr_available() and not EASYOCR_AVAILABLE:
-        return None
-
-    text = extract_screenshot_text(image_path, max_chars=max_chars)
+    if text is None:
+        if not is_ocr_available() and not EASYOCR_AVAILABLE:
+            return None
+        text = extract_screenshot_text(image_path, max_chars=max_chars)
     if not text:
         return None
 

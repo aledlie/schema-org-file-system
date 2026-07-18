@@ -28,8 +28,8 @@ class FakeOcrClassify:
         self.result = result
         self.calls = []
 
-    def __call__(self, path, content_classifier=None):
-        self.calls.append((path, content_classifier))
+    def __call__(self, path, content_classifier=None, text=None):
+        self.calls.append((path, content_classifier, text))
         return self.result
 
 
@@ -145,7 +145,9 @@ class TestRun:
         signal, ocr = make_signal(None, screenshot_classifier=sentinel_classifier)
         ctx = make_ctx()
         signal.run(ctx)
-        assert ocr.calls == [(ctx.path, sentinel_classifier)]
+        # Text is sourced from ctx.ensure_ocr() (empty here — no OCR provider)
+        # and passed through so classify_by_ocr does not re-extract (P3 dedup).
+        assert ocr.calls == [(ctx.path, sentinel_classifier, "")]
 
     def test_missing_ocr_backend_emits_only_fallback(self):
         with patch("src.scoring.signals.screenshot_ocr._default_ocr_classify", None):

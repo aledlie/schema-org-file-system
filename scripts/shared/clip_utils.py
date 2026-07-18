@@ -94,6 +94,11 @@ class CLIPClassifier:
         self.model.eval()
         self.preprocess = preprocess_val
         self.tokenizer = open_clip.get_tokenizer(self.MODEL_NAME)
+        # Text embeddings are a pure function of (model, tokenizer, prompts,
+        # device, dtype) — all fixed for the instance lifetime. Memoize by the
+        # prompt tuple so a fixed label set (scored against every image in a
+        # batch) runs the text transformer once, not once per image.
+        self._text_emb_cache: Dict[tuple, "torch.Tensor"] = {}
         # torch.compile on CUDA only — MPS backend is unreliable, CPU compile is net-negative.
         if self.device == "cuda":
             try:
@@ -254,10 +259,16 @@ class CLIPClassifier:
 
     @_inference_mode()
     def _encode_text(self, text_prompts: list[str]) -> "torch.Tensor":
-        """Return normalised [N, D] text embeddings."""
+        """Return normalised [N, D] text embeddings (memoized per prompt set)."""
+        key = tuple(text_prompts)
+        cached = self._text_emb_cache.get(key)
+        if cached is not None:
+            return cached
         tokens = self.tokenizer(text_prompts).to(self.device)
         emb = self.model.encode_text(tokens)  # [N, D]
-        return F.normalize(emb, dim=-1)
+        normed = F.normalize(emb, dim=-1)
+        self._text_emb_cache[key] = normed
+        return normed
 
     def _similarities(
         self,

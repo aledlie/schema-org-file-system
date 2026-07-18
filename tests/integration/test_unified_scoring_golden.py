@@ -125,7 +125,7 @@ def golden_scorer(
                 ScreenshotOcrSignal(
                     screenshot_classifier=classifier,
                     screenshots_dict=screenshots_dict,
-                    ocr_classify=lambda _path, content_classifier=None: screenshot_ocr_result,
+                    ocr_classify=lambda _path, content_classifier=None, text=None: screenshot_ocr_result,  # noqa: E501
                 )
                 if signal.name == "screenshot_ocr"
                 else signal

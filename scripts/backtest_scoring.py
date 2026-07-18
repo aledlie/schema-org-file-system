@@ -396,8 +396,13 @@ def make_screenshot_ocr_stub(
     """OCR-classify replacement scoring stored text instead of reading disk."""
     lookup = text_by_path or {}
 
-    def _stub(path: Path, content_classifier: Any = None):
-        return screenshot_ocr_from_text(lookup.get(str(path), ""))
+    def _stub(path: Path, content_classifier: Any = None, text: str | None = None):
+        # The signal now sources text from ctx.ensure_ocr() and passes it through
+        # (P3 dedup). In replay ctx.ensure_ocr().text is the stored extracted_text
+        # — the same value this lookup holds — so preferring `text` and falling
+        # back to the lookup (when a row had text but no ocr_confidence, so no
+        # ocr_provider was wired) keeps replay results identical.
+        return screenshot_ocr_from_text(text or lookup.get(str(path), ""))
 
     return _stub
 

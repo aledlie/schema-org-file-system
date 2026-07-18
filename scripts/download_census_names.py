@@ -44,7 +44,8 @@ def _fetch(url: str) -> bytes:
         url, headers={"User-Agent": "schema-org-file-system/2.1 (name-gazetteer)"}
     )
     with urllib.request.urlopen(req, timeout=_TIMEOUT) as resp:
-        return resp.read()
+        data: bytes = resp.read()
+        return data
 
 
 def build_surnames() -> list[str]:

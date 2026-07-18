@@ -117,9 +117,9 @@ try:
         pass
 except ImportError:
     OCR_AVAILABLE = False
-    SCREENSHOT_KEYWORDS: Dict[str, List[str]] = {}
-    _shared_classify_by_ocr = None
-    extract_ocr_with_confidence = None
+    SCREENSHOT_KEYWORDS: Dict[str, List[str]] = {}  # type: ignore[no-redef]
+    _shared_classify_by_ocr = None  # type: ignore[assignment]
+    extract_ocr_with_confidence = None  # type: ignore[assignment]
 
 # KIE (Key Information Extraction) imports
 try:
@@ -141,17 +141,17 @@ try:
     ENHANCED_CLIP_AVAILABLE = True
 except ImportError:
     ENHANCED_CLIP_AVAILABLE = False
-    CLIP_CATEGORY_PROMPTS: List[str] = []
-    CLIP_CONTENT_LABELS: List[str] = []
-    CLIP_LABEL_TO_ORGANIZER: Dict[str, Tuple[str, str]] = {}
-    CLIP_ENHANCE_THRESHOLD: float = 0.3
+    CLIP_CATEGORY_PROMPTS: List[str] = []  # type: ignore[no-redef]
+    CLIP_CONTENT_LABELS: List[str] = []  # type: ignore[no-redef]
+    CLIP_LABEL_TO_ORGANIZER: Dict[str, Tuple[str, str]] = {}  # type: ignore[no-redef]
+    CLIP_ENHANCE_THRESHOLD: float = 0.3  # type: ignore[no-redef]
 
 # CLIP classifier — used by the weak-image enhancement signal (_run_clip_signal).
 # Image composition/face detection lives in the injected image_analyzer.
 try:
     from shared.clip_utils import get_clip_classifier
 except ImportError:
-    get_clip_classifier = None
+    get_clip_classifier = None  # type: ignore[assignment]
     print("Warning: Vision libraries not available. Install open-clip-torch, torch, opencv-python")
 
 # CLIP cache support
@@ -821,7 +821,7 @@ class ContentOrganizer(BaseOrganizer):
             from ..analyzers.address_extractor import extract_primary_address
         except ImportError:
             try:
-                from analyzers.address_extractor import extract_primary_address
+                from analyzers.address_extractor import extract_primary_address  # type: ignore[no-redef]
             except ImportError:
                 return result
 

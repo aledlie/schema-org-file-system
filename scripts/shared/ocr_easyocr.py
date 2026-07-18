@@ -25,8 +25,14 @@ import logging
 import os
 import threading
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from shared.constants import EASYOCR_DEFAULT_LANGUAGE
+
+if TYPE_CHECKING:
+    # Runtime import lives inside the functions to avoid a circular import
+    # (ocr_classifier imports this module); this is annotations-only.
+    from shared.ocr_classifier import OCRResult
 
 logger = logging.getLogger(__name__)
 
@@ -99,9 +105,7 @@ def _get_reader():
                             )
                     except Exception:
                         pass
-                _reader = easyocr.Reader(
-                    _resolve_languages(), gpu=gpu, verbose=False
-                )
+                _reader = easyocr.Reader(_resolve_languages(), gpu=gpu, verbose=False)
     return _reader
 
 
@@ -194,28 +198,28 @@ def extract_lines_easyocr(image_path: Path, max_lines: int = 20) -> list[str] | 
         return None
 
 
-def extract_text_easyocr_with_confidence(
+def extract_text_easyocr_with_status(
     image_path: Path,
     max_chars: int = 0,
-) -> "OCRResult | None":
-    """Extract text with per-box confidence from a screenshot via easyocr.
+) -> "tuple[OCRResult | None, bool]":
+    """easyocr detail=1 extraction, reporting whether it errored.
 
-    Uses detail=1 to get (bbox, text, confidence) tuples. Aggregates confidence
-    as the mean of per-word scores. Language and orientation are not reported by
-    easyocr and are returned as None to match the OCRResult shape from docTR.
-
-    Returns None if easyocr is unavailable, the image cannot be read, or no text
-    is found. Use max_chars=0 for no truncation.
+    Returns ``(result, errored)``: ``result`` is an ``OCRResult`` or ``None``
+    (unavailable / no text found), and ``errored`` is True *only* when easyocr
+    raised — distinct from cleanly finding no text (``(None, False)``). Callers
+    use ``errored`` to fall back to docTR only on a genuine easyocr failure, not
+    on a text-free image (where a full docTR pass would just re-confirm the same
+    negative at far higher cost). Use max_chars=0 for no truncation.
     """
     if not EASYOCR_AVAILABLE:
-        return None
+        return None, False
     try:
         from shared.ocr_classifier import OCRResult
 
         reader = _get_reader()
         detections = reader.readtext(_readtext_input(image_path), detail=1, paragraph=False)
         if not detections:
-            return None
+            return None, False
 
         words: list[str] = []
         confidences: list[float] = []
@@ -226,20 +230,36 @@ def extract_text_easyocr_with_confidence(
                 confidences.append(float(conf))
 
         if not words:
-            return None
+            return None, False
 
         text = " ".join(" ".join(words).split())
         if max_chars and len(text) > max_chars:
             text = text[:max_chars] + "..."
 
         avg_confidence = sum(confidences) / len(confidences)
-        return OCRResult(
-            text=text,
-            confidence=avg_confidence,
-            language=None,
-            word_count=len(words),
-            orientation=None,
+        return (
+            OCRResult(
+                text=text,
+                confidence=avg_confidence,
+                language=None,
+                word_count=len(words),
+                orientation=None,
+            ),
+            False,
         )
     except Exception as e:
         logger.warning("easyocr (detail=1) failed on %s: %s", image_path, e)
-        return None
+        return None, True
+
+
+def extract_text_easyocr_with_confidence(
+    image_path: Path,
+    max_chars: int = 0,
+) -> "OCRResult | None":
+    """Extract text with per-box confidence from a screenshot via easyocr.
+
+    Thin wrapper over :func:`extract_text_easyocr_with_status` that drops the
+    error flag. Returns None if easyocr is unavailable, the image cannot be
+    read, or no text is found. Use max_chars=0 for no truncation.
+    """
+    return extract_text_easyocr_with_status(image_path, max_chars=max_chars)[0]

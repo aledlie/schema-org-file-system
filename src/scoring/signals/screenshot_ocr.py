@@ -129,7 +129,17 @@ class ScreenshotOcrSignal:
         scores: List[CategoryScore] = []
         result = None
         if self._ocr_classify is not None:
-            result = self._ocr_classify(ctx.path, content_classifier=self._screenshot_classifier)
+            # Reuse the shared OCR extraction (ctx.ensure_ocr) rather than
+            # running a second easyocr pass: an image the identity/KIE signals
+            # already OCR'd is not re-read here. A None OCR result means "OCR ran
+            # and found nothing" and is passed as "" so classify_by_ocr does not
+            # re-extract; only a wholly OCR-less context (no provider) leaves it
+            # to classify_by_ocr's own extraction path.
+            ocr = ctx.ensure_ocr()
+            ocr_text = ocr.text if ocr is not None else ""
+            result = self._ocr_classify(
+                ctx.path, content_classifier=self._screenshot_classifier, text=ocr_text
+            )
         if result:
             ocr_category, ocr_confidence, _all_scores, _text = result
             routed = route_screenshot_ocr(ocr_category, ocr_confidence, self._screenshot_keys)
