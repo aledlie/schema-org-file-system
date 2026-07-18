@@ -15,17 +15,26 @@ from src.health_check import (
 )
 
 EXPECTED_FEATURES = {
-    'python', 'pillow', 'heic', 'ocr', 'clip_vision',
-    'database', 'geocoding', 'sentry', 'documents', 'name_validator',
+    "python",
+    "pillow",
+    "heic",
+    "ocr",
+    "clip_vision",
+    "interior_probe",
+    "database",
+    "geocoding",
+    "sentry",
+    "documents",
+    "name_validator",
 }
 
-_VersionInfo = namedtuple('_VersionInfo', 'major minor micro releaselevel serial')
+_VersionInfo = namedtuple("_VersionInfo", "major minor micro releaselevel serial")
 
 
 @pytest.fixture(autouse=True)
 def reset_singleton(monkeypatch):
     """Isolate the module-level singleton between tests."""
-    monkeypatch.setattr(health_check, '_checker', None)
+    monkeypatch.setattr(health_check, "_checker", None)
 
 
 def _block_import(monkeypatch, module_name):
@@ -54,7 +63,7 @@ class TestRunAllChecks:
         checker = SystemHealthChecker()
         checker._check_python_version()
 
-        status = checker.features['python']
+        status = checker.features["python"]
         assert status.available is True
         assert status.version == (
             f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
@@ -62,24 +71,27 @@ class TestRunAllChecks:
         assert status.error is None
 
     def test_python_version_too_old_fails(self, monkeypatch):
-        monkeypatch.setattr(sys, 'version_info', _VersionInfo(3, 7, 4, 'final', 0))
+        monkeypatch.setattr(sys, "version_info", _VersionInfo(3, 7, 4, "final", 0))
         checker = SystemHealthChecker()
         checker._check_python_version()
 
-        status = checker.features['python']
+        status = checker.features["python"]
         assert status.available is False
         assert status.version == "3.7.4"
         assert "Requires Python 3.8+" in status.error
 
 
 class TestImportFailureHandling:
-    @pytest.mark.parametrize("module_name,feature_key,install_hint", [
-        ('pillow_heif', 'heic', 'pillow-heif'),
-        ('doctr', 'ocr', 'python-doctr'),
-        ('sqlalchemy', 'database', 'sqlalchemy'),
-        ('geopy', 'geocoding', 'geopy'),
-        ('sentry_sdk', 'sentry', 'sentry-sdk'),
-    ])
+    @pytest.mark.parametrize(
+        "module_name,feature_key,install_hint",
+        [
+            ("pillow_heif", "heic", "pillow-heif"),
+            ("doctr", "ocr", "python-doctr"),
+            ("sqlalchemy", "database", "sqlalchemy"),
+            ("geopy", "geocoding", "geopy"),
+            ("sentry_sdk", "sentry", "sentry-sdk"),
+        ],
+    )
     def test_missing_module_reports_unavailable(
         self, monkeypatch, module_name, feature_key, install_hint
     ):
@@ -96,45 +108,96 @@ class TestImportFailureHandling:
         # Suite-wide stubs (tests/unit/test_image_metadata.py) install a geopy
         # module without __version__; the check must degrade, not crash.
         import types
-        monkeypatch.setitem(sys.modules, 'geopy', types.ModuleType('geopy'))
+
+        monkeypatch.setitem(sys.modules, "geopy", types.ModuleType("geopy"))
         checker = SystemHealthChecker()
         checker._check_geocoding()
 
-        status = checker.features['geocoding']
+        status = checker.features["geocoding"]
         assert status.available is True
-        assert status.version == 'unknown'
+        assert status.version == "unknown"
 
     def test_clip_vision_lists_each_missing_lib(self, monkeypatch):
-        _block_import(monkeypatch, 'torch')
-        _block_import(monkeypatch, 'open_clip')
+        _block_import(monkeypatch, "torch")
+        _block_import(monkeypatch, "open_clip")
         checker = SystemHealthChecker()
         checker._check_clip_vision()
 
-        status = checker.features['clip_vision']
+        status = checker.features["clip_vision"]
         assert status.available is False
         assert "torch" in status.error
         assert "open-clip-torch" in status.error
 
     def test_documents_partial_availability_still_available(self, monkeypatch):
-        _block_import(monkeypatch, 'docx')
+        _block_import(monkeypatch, "docx")
         checker = SystemHealthChecker()
         checker._check_document_processing()
 
-        status = checker.features['documents']
+        status = checker.features["documents"]
         assert status.available is True
         assert "docx" not in status.version.split(", ")
         assert "2/3 libs" in status.impact
 
     def test_documents_all_missing_unavailable(self, monkeypatch):
-        for lib in ('docx', 'pypdf', 'openpyxl'):
+        for lib in ("docx", "pypdf", "openpyxl"):
             _block_import(monkeypatch, lib)
         checker = SystemHealthChecker()
         checker._check_document_processing()
 
-        status = checker.features['documents']
+        status = checker.features["documents"]
         assert status.available is False
-        for hint in ('python-docx', 'pypdf', 'openpyxl'):
+        for hint in ("python-docx", "pypdf", "openpyxl"):
             assert hint in status.error
+
+
+def _interior_module():
+    """Resolve the interior module via the same import order as the checker."""
+    try:
+        from scoring.signals import interior
+    except ImportError:
+        from src.scoring.signals import interior  # type: ignore[no-redef]
+    return interior
+
+
+class TestInteriorProbe:
+    def test_missing_artifact_reports_unavailable_with_train_hint(self, monkeypatch, tmp_path):
+        interior = _interior_module()
+        monkeypatch.setattr(interior, "PROBE_PATH", tmp_path / "absent.joblib")
+
+        checker = SystemHealthChecker()
+        checker._check_interior_probe()
+
+        status = checker.features["interior_probe"]
+        assert status.available is False
+        assert "prototype_interior_probe.py train" in status.error
+        assert "InteriorSignal no-ops" in status.impact
+
+    def test_unreadable_artifact_reports_unavailable(self, monkeypatch, tmp_path):
+        interior = _interior_module()
+        corrupt = tmp_path / "corrupt.joblib"
+        corrupt.write_bytes(b"not a joblib payload")
+        monkeypatch.setattr(interior, "PROBE_PATH", corrupt)
+
+        checker = SystemHealthChecker()
+        checker._check_interior_probe()
+
+        status = checker.features["interior_probe"]
+        assert status.available is False
+        assert "unreadable" in status.error
+
+    def test_loadable_artifact_reports_available(self, monkeypatch, tmp_path):
+        joblib = pytest.importorskip("joblib")
+        interior = _interior_module()
+        artifact = tmp_path / "probe.joblib"
+        joblib.dump({"pipeline": {"stub": True}, "meta": {}}, artifact)
+        monkeypatch.setattr(interior, "PROBE_PATH", artifact)
+
+        checker = SystemHealthChecker()
+        checker._check_interior_probe()
+
+        status = checker.features["interior_probe"]
+        assert status.available is True
+        assert str(artifact) in status.version
 
 
 class TestAccessors:
@@ -142,18 +205,18 @@ class TestAccessors:
         checker = SystemHealthChecker()
         assert checker._checked is False
 
-        assert checker.is_available('python') is True
+        assert checker.is_available("python") is True
         assert checker._checked is True
 
     def test_is_available_unknown_feature_is_false(self):
         checker = SystemHealthChecker().run_all_checks()
-        assert checker.is_available('no_such_feature') is False
+        assert checker.is_available("no_such_feature") is False
 
     def test_get_status_returns_feature_or_none(self):
         checker = SystemHealthChecker()
-        status = checker.get_status('python')
+        status = checker.get_status("python")
         assert isinstance(status, FeatureStatus)
-        assert checker.get_status('no_such_feature') is None
+        assert checker.get_status("no_such_feature") is None
 
     def test_to_dict_shape(self):
         checker = SystemHealthChecker()
@@ -173,10 +236,12 @@ def _synthetic_checker(statuses):
 
 class TestPrintStatus:
     def test_all_available_summary(self, capsys):
-        checker = _synthetic_checker([
-            FeatureStatus(name="Alpha", available=True, version="1.0"),
-            FeatureStatus(name="Beta", available=True, version="2.0"),
-        ])
+        checker = _synthetic_checker(
+            [
+                FeatureStatus(name="Alpha", available=True, version="1.0"),
+                FeatureStatus(name="Beta", available=True, version="2.0"),
+            ]
+        )
         checker.print_status()
 
         out = capsys.readouterr().out
@@ -186,13 +251,17 @@ class TestPrintStatus:
         assert "All features operational!" in out
 
     def test_unavailable_feature_prints_error_and_impact(self, capsys):
-        checker = _synthetic_checker([
-            FeatureStatus(name="Alpha", available=True, version="1.0"),
-            FeatureStatus(
-                name="Beta", available=False,
-                error="beta not installed", impact="No beta - pip install beta",
-            ),
-        ])
+        checker = _synthetic_checker(
+            [
+                FeatureStatus(name="Alpha", available=True, version="1.0"),
+                FeatureStatus(
+                    name="Beta",
+                    available=False,
+                    error="beta not installed",
+                    impact="No beta - pip install beta",
+                ),
+            ]
+        )
         checker.print_status()
 
         out = capsys.readouterr().out
@@ -202,9 +271,11 @@ class TestPrintStatus:
         assert "1 feature(s) unavailable" in out
 
     def test_verbose_prints_error_for_available_features(self, capsys):
-        checker = _synthetic_checker([
-            FeatureStatus(name="Alpha", available=True, error="warned", impact="ok"),
-        ])
+        checker = _synthetic_checker(
+            [
+                FeatureStatus(name="Alpha", available=True, error="warned", impact="ok"),
+            ]
+        )
         checker.print_status(verbose=True)
 
         assert "Error: warned" in capsys.readouterr().out
@@ -223,15 +294,15 @@ class TestModuleHelpers:
         assert "SYSTEM HEALTH CHECK" in capsys.readouterr().out
 
     def test_require_feature_available(self, capsys):
-        assert require_feature('python') is True
+        assert require_feature("python") is True
         assert "Warning" not in capsys.readouterr().out
 
     def test_require_feature_unavailable_warns(self, monkeypatch, capsys):
-        _block_import(monkeypatch, 'pillow_heif')
-        assert require_feature('heic') is False
+        _block_import(monkeypatch, "pillow_heif")
+        assert require_feature("heic") is False
 
         out = capsys.readouterr().out
         assert "Warning: HEIC Support unavailable" in out
 
     def test_require_feature_unknown_is_false(self):
-        assert require_feature('no_such_feature') is False
+        assert require_feature("no_such_feature") is False

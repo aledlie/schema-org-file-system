@@ -16,7 +16,8 @@ supervised probe legitimately outranks the zero-shot ClipVisionSignal (0.7).
 Artifact: ``results/interior_probe.joblib`` — a dict ``{"pipeline", "meta"}``
 produced by ``scripts/prototype_interior_probe.py train``. The signal no-ops
 (``applies_to`` False) when the artifact, joblib/sklearn, or CLIP is absent, so
-lightweight/test organizers and fresh clones degrade gracefully.
+lightweight/test organizers and fresh clones degrade gracefully. Probe
+availability is reported by ``organize-files health`` (``interior_probe``).
 """
 
 from __future__ import annotations
@@ -29,15 +30,14 @@ if TYPE_CHECKING:
 from pathlib import Path
 from typing import Any, List, Optional
 
-from shared.clip_cache import get_or_compute_embedding
-
 from ..types import EVIDENCE_SCHEMA_TYPE, CategoryScore
 from ..weights import W_INTERIOR
 from .photo_composition import PROPERTY_PHOTO_CATEGORY as INTERIOR_CATEGORY
 from .photo_composition import ROOM_SCHEMA_TYPE
 
 # Repo-root-relative so the signal finds the artifact regardless of cwd.
-_PROBE_PATH = Path(__file__).resolve().parents[3] / "results" / "interior_probe.joblib"
+# Public: health_check reports on this artifact (`interior_probe` feature).
+PROBE_PATH = Path(__file__).resolve().parents[3] / "results" / "interior_probe.joblib"
 
 # Only vote when the probe is at least this confident the image is an interior;
 # below it, defer to other signals (and the source-filename fallback).
@@ -54,7 +54,20 @@ INTERIOR_SIGNAL_NAME = "interior"
 INTERIOR_DESCRIPTION_LABEL = "an interior room"
 
 
-def _load_probe(path: Path) -> Optional[Any]:
+def _get_embedding(path: Path) -> Optional[Any]:
+    """Cached CLIP embedding via shared.clip_cache, or None if unavailable.
+
+    Resolved lazily per call: keeps this module importable without scripts/
+    on sys.path (health_check reports on the probe from any entry point).
+    """
+    try:
+        from shared.clip_cache import get_or_compute_embedding
+    except ImportError:
+        return None
+    return get_or_compute_embedding(path)
+
+
+def load_probe(path: Path) -> Optional[Any]:
     """Load the persisted sklearn pipeline, or None if unavailable."""
     try:
         import joblib
@@ -73,7 +86,7 @@ class InteriorSignal:
     cost_tier = "heavy"
 
     def __init__(self, probe_path: Optional[Path] = None) -> None:
-        self._pipeline = _load_probe(Path(probe_path) if probe_path else _PROBE_PATH)
+        self._pipeline = load_probe(Path(probe_path) if probe_path else PROBE_PATH)
 
     def applies_to(self, ctx: FileContext) -> bool:
         return ctx.is_image and self._pipeline is not None
@@ -81,7 +94,7 @@ class InteriorSignal:
     def run(self, ctx: FileContext) -> List[CategoryScore]:
         if self._pipeline is None:
             return []
-        emb = get_or_compute_embedding(ctx.path)
+        emb = _get_embedding(ctx.path)
         if emb is None:
             return []
         prob = float(self._pipeline.predict_proba(emb.reshape(1, -1))[0, 1])

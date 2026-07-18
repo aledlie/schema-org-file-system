@@ -53,7 +53,7 @@ class TestAppliesTo:
 
 class TestRun:
     def test_high_prob_emits_room(self, monkeypatch):
-        monkeypatch.setattr(interior_mod, "get_or_compute_embedding", lambda p: np.zeros(512))
+        monkeypatch.setattr(interior_mod, "_get_embedding", lambda p: np.zeros(512))
         scores = signal_with(prob=0.97).run(make_ctx())
         assert len(scores) == 1
         score = scores[0]
@@ -63,10 +63,10 @@ class TestRun:
         assert score.evidence[EVIDENCE_INTERIOR_PROB] == pytest.approx(0.97, abs=1e-3)
 
     def test_below_threshold_emits_nothing(self, monkeypatch):
-        monkeypatch.setattr(interior_mod, "get_or_compute_embedding", lambda p: np.zeros(512))
+        monkeypatch.setattr(interior_mod, "_get_embedding", lambda p: np.zeros(512))
         assert signal_with(prob=INTERIOR_MIN_PROB - 0.01).run(make_ctx()) == []
 
     def test_no_embedding_emits_nothing(self, monkeypatch):
         # CLIP unavailable / unreadable image -> accessor returns None -> no-op.
-        monkeypatch.setattr(interior_mod, "get_or_compute_embedding", lambda p: None)
+        monkeypatch.setattr(interior_mod, "_get_embedding", lambda p: None)
         assert signal_with(prob=0.99).run(make_ctx()) == []

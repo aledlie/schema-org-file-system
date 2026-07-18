@@ -17,6 +17,7 @@ except ImportError:
 @dataclass
 class FeatureStatus:
     """Status of a single feature."""
+
     name: str
     available: bool
     version: Optional[str] = None
@@ -42,13 +43,14 @@ class SystemHealthChecker:
         self.features: dict[str, FeatureStatus] = {}
         self._checked = False
 
-    def run_all_checks(self) -> 'SystemHealthChecker':
+    def run_all_checks(self) -> "SystemHealthChecker":
         """Run all dependency checks."""
         self._check_python_version()
         self._check_pillow()
         self._check_heic_support()
         self._check_ocr()
         self._check_clip_vision()
+        self._check_interior_probe()
         self._check_database()
         self._check_geocoding()
         self._check_error_tracking()
@@ -62,66 +64,69 @@ class SystemHealthChecker:
         version = f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
         min_version = (3, 8)
         available = sys.version_info >= min_version
-        self.features['python'] = FeatureStatus(
+        self.features["python"] = FeatureStatus(
             name="Python",
             available=available,
             version=version,
             error=None if available else f"Requires Python {min_version[0]}.{min_version[1]}+",
-            impact="Core functionality"
+            impact="Core functionality",
         )
 
     def _check_pillow(self) -> None:
         """Check PIL/Pillow for image processing."""
         try:
             import PIL
-            self.features['pillow'] = FeatureStatus(
+
+            self.features["pillow"] = FeatureStatus(
                 name="Pillow (Image Processing)",
                 available=True,
                 version=PIL.__version__,
-                impact="JPEG/PNG image loading, EXIF extraction"
+                impact="JPEG/PNG image loading, EXIF extraction",
             )
         except ImportError as e:
-            self.features['pillow'] = FeatureStatus(
+            self.features["pillow"] = FeatureStatus(
                 name="Pillow (Image Processing)",
                 available=False,
                 error=str(e),
-                impact="Cannot process images - pip install Pillow"
+                impact="Cannot process images - pip install Pillow",
             )
 
     def _check_heic_support(self) -> None:
         """Check HEIC/HEIF image support."""
         try:
             import pillow_heif
-            self.features['heic'] = FeatureStatus(
+
+            self.features["heic"] = FeatureStatus(
                 name="HEIC Support",
                 available=True,
                 version=pillow_heif.__version__,
-                impact="iPhone HEIC photos supported"
+                impact="iPhone HEIC photos supported",
             )
         except ImportError:
-            self.features['heic'] = FeatureStatus(
+            self.features["heic"] = FeatureStatus(
                 name="HEIC Support",
                 available=False,
                 error="pillow-heif not installed",
-                impact="HEIC files skipped - pip install pillow-heif"
+                impact="HEIC files skipped - pip install pillow-heif",
             )
 
     def _check_ocr(self) -> None:
         """Check docTR OCR availability."""
         try:
             import doctr
-            self.features['ocr'] = FeatureStatus(
+
+            self.features["ocr"] = FeatureStatus(
                 name="OCR (docTR)",
                 available=True,
                 version=doctr.__version__,
-                impact="Text extraction from images/screenshots"
+                impact="Text extraction from images/screenshots",
             )
         except ImportError:
-            self.features['ocr'] = FeatureStatus(
+            self.features["ocr"] = FeatureStatus(
                 name="OCR (docTR)",
                 available=False,
                 error="python-doctr not installed",
-                impact="No OCR - pip install python-doctr[torch]"
+                impact="No OCR - pip install python-doctr[torch]",
             )
 
     def _check_clip_vision(self) -> None:
@@ -129,11 +134,12 @@ class SystemHealthChecker:
         try:
             import torch
             import open_clip
-            self.features['clip_vision'] = FeatureStatus(
+
+            self.features["clip_vision"] = FeatureStatus(
                 name="AI Vision (CLIP)",
                 available=True,
                 version=f"torch {torch.__version__}, open_clip {open_clip.__version__}",
-                impact="AI-powered image content classification"
+                impact="AI-powered image content classification",
             )
         except ImportError:
             missing = []
@@ -146,66 +152,69 @@ class SystemHealthChecker:
             except ImportError:
                 missing.append("open-clip-torch")
 
-            self.features['clip_vision'] = FeatureStatus(
+            self.features["clip_vision"] = FeatureStatus(
                 name="AI Vision (CLIP)",
                 available=False,
                 error=f"Missing: {', '.join(missing)}",
-                impact="No AI classification - pip install torch open-clip-torch"
+                impact="No AI classification - pip install torch open-clip-torch",
             )
 
     def _check_database(self) -> None:
         """Check SQLAlchemy for database storage."""
         try:
             import sqlalchemy
-            self.features['database'] = FeatureStatus(
+
+            self.features["database"] = FeatureStatus(
                 name="Database (SQLAlchemy)",
                 available=True,
                 version=sqlalchemy.__version__,
-                impact="Graph-based file storage, relationships"
+                impact="Graph-based file storage, relationships",
             )
         except ImportError:
-            self.features['database'] = FeatureStatus(
+            self.features["database"] = FeatureStatus(
                 name="Database (SQLAlchemy)",
                 available=False,
                 error="sqlalchemy not installed",
-                impact="No DB storage - pip install sqlalchemy"
+                impact="No DB storage - pip install sqlalchemy",
             )
 
     def _check_geocoding(self) -> None:
         """Check geopy for GPS coordinate lookup."""
         try:
             import geopy
-            self.features['geocoding'] = FeatureStatus(
+
+            self.features["geocoding"] = FeatureStatus(
                 name="Geocoding (geopy)",
                 available=True,
                 # getattr: test suites stub geopy in sys.modules without __version__
-                version=getattr(geopy, '__version__', 'unknown'),
-                impact="GPS coordinates to location names"
+                version=getattr(geopy, "__version__", "unknown"),
+                impact="GPS coordinates to location names",
             )
         except ImportError:
-            self.features['geocoding'] = FeatureStatus(
+            self.features["geocoding"] = FeatureStatus(
                 name="Geocoding (geopy)",
                 available=False,
                 error="geopy not installed",
-                impact="No location lookup - pip install geopy"
+                impact="No location lookup - pip install geopy",
             )
 
     def _check_error_tracking(self) -> None:
         """Check Sentry SDK for error tracking."""
         try:
             import sentry_sdk
-            self.features['sentry'] = FeatureStatus(
+
+            self.features["sentry"] = FeatureStatus(
                 name="Error Tracking (Sentry)",
                 available=True,
                 version=sentry_sdk.VERSION,
-                impact="Error monitoring and performance tracking"
+                impact="Error monitoring and performance tracking",
             )
         except ImportError:
-            self.features['sentry'] = FeatureStatus(
+            self.features["sentry"] = FeatureStatus(
                 name="Error Tracking (Sentry)",
                 available=False,
                 error="sentry-sdk not installed",
-                impact="No error tracking - pip install sentry-sdk"
+                impact="No error tracking - pip install sentry-sdk",
             )
 
     def _check_document_processing(self) -> None:
@@ -216,6 +225,7 @@ class SystemHealthChecker:
         # Check python-docx
         try:
             import docx  # noqa: F401 — import IS the availability probe
+
             available_libs.append("docx")
         except ImportError:
             missing_libs.append("python-docx")
@@ -223,6 +233,7 @@ class SystemHealthChecker:
         # Check pypdf
         try:
             import pypdf  # noqa: F401 — import IS the availability probe
+
             available_libs.append("pypdf")
         except ImportError:
             missing_libs.append("pypdf")
@@ -230,24 +241,80 @@ class SystemHealthChecker:
         # Check openpyxl
         try:
             import openpyxl  # noqa: F401 — import IS the availability probe
+
             available_libs.append("openpyxl")
         except ImportError:
             missing_libs.append("openpyxl")
 
         if available_libs:
-            self.features['documents'] = FeatureStatus(
+            self.features["documents"] = FeatureStatus(
                 name="Document Processing",
                 available=True,
                 version=", ".join(available_libs),
-                impact=f"PDF/Word/Excel parsing ({len(available_libs)}/3 libs)"
+                impact=f"PDF/Word/Excel parsing ({len(available_libs)}/3 libs)",
             )
         else:
-            self.features['documents'] = FeatureStatus(
+            self.features["documents"] = FeatureStatus(
                 name="Document Processing",
                 available=False,
                 error=f"Missing: {', '.join(missing_libs)}",
-                impact="No document parsing available"
+                impact="No document parsing available",
             )
+
+    def _check_interior_probe(self) -> None:
+        """Check the trained interior-probe artifact (``InteriorSignal``, C1)."""
+        # Without the probe, PhotoCompositionSignal is the sole interior voter
+        # (0.455 weighted) and any cross-category signal scoring >= 0.355 pushes
+        # interiors to the low-margin fallback (docs/BACKLOG.md).
+        impact_when_missing = (
+            "InteriorSignal no-ops — interiors rely on PhotoCompositionSignal "
+            "alone and fall to the low-margin fallback against moderate "
+            "cross-category signals"
+        )
+        try:
+            from scoring.signals import interior
+        except ImportError:
+            try:
+                from src.scoring.signals import interior  # type: ignore[no-redef]
+            except ImportError:
+                self.features["interior_probe"] = FeatureStatus(
+                    name="Interior Probe",
+                    available=False,
+                    error="scoring.signals.interior not importable",
+                    impact=impact_when_missing,
+                )
+                return
+
+        if not interior.PROBE_PATH.exists():
+            self.features["interior_probe"] = FeatureStatus(
+                name="Interior Probe",
+                available=False,
+                error=(
+                    f"artifact missing: {interior.PROBE_PATH} — train with "
+                    "'python scripts/prototype_interior_probe.py train'"
+                ),
+                impact=impact_when_missing,
+            )
+            return
+
+        if interior.load_probe(interior.PROBE_PATH) is None:
+            self.features["interior_probe"] = FeatureStatus(
+                name="Interior Probe",
+                available=False,
+                error=(
+                    f"artifact unreadable: {interior.PROBE_PATH} "
+                    "(joblib/scikit-learn missing, or corrupt file — retrain)"
+                ),
+                impact=impact_when_missing,
+            )
+            return
+
+        self.features["interior_probe"] = FeatureStatus(
+            name="Interior Probe",
+            available=True,
+            version=str(interior.PROBE_PATH),
+            impact="Trained CLIP-embedding interior detection active (InteriorSignal)",
+        )
 
     def _check_name_validator(self) -> None:
         """Check person-name validation layers (``names`` extra)."""
@@ -257,7 +324,7 @@ class SystemHealthChecker:
             try:
                 from src.classifiers.person_name_validator import available_layers  # type: ignore[no-redef]
             except ImportError:
-                self.features['name_validator'] = FeatureStatus(
+                self.features["name_validator"] = FeatureStatus(
                     name="Person-Name Validator",
                     available=False,
                     error="person_name_validator module not found",
@@ -270,7 +337,7 @@ class SystemHealthChecker:
         missing = [name for name, ok in layers.items() if not ok]
         # denylist is always available; the optional layers add precision
         optional_ok = layers.get("shape", False) and layers.get("probablepeople", False)
-        self.features['name_validator'] = FeatureStatus(
+        self.features["name_validator"] = FeatureStatus(
             name="Person-Name Validator",
             available=True,
             version=f"layers: {', '.join(active)}",
@@ -330,7 +397,9 @@ class SystemHealthChecker:
             print("\033[92mAll features operational!\033[0m")
         else:
             missing = total_count - available_count
-            print(f"\033[93m{missing} feature(s) unavailable - see above for install commands\033[0m")
+            print(
+                f"\033[93m{missing} feature(s) unavailable - see above for install commands\033[0m"
+            )
 
         print("=" * SEPARATOR_WIDTH_MEDIUM + "\n")
 
@@ -343,7 +412,7 @@ class SystemHealthChecker:
                 "available": f.available,
                 "version": f.version,
                 "error": f.error,
-                "impact": f.impact
+                "impact": f.impact,
             }
             for name, f in self.features.items()
         }
@@ -393,6 +462,7 @@ def require_feature(feature: str) -> bool:
 if __name__ == "__main__":
     # Run standalone health check
     import argparse
+
     parser = argparse.ArgumentParser(description="Check system dependencies")
     parser.add_argument("-v", "--verbose", action="store_true", help="Show detailed output")
     args = parser.parse_args()
