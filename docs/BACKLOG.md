@@ -139,4 +139,6 @@ The document is GeneDx's public "variant classification assertion criteria" (a l
 
 **Routing consequence:** legacy would create a spurious `Organization/{Medical Genetics and Genomics and the Association}` folder (a mangled cited standards body, not GeneDx), so unified's `Technical/Other` is arguably the safer placement here — the fix belongs in `entity_detector`, not in re-weighting the org signal. Cross-check other citation-heavy PDFs (research papers, methodology docs) for the same false-positive-org pattern before changing extraction.
 
+**Chosen approach (2026-07-18):** full replacement plan in [`docs/plans/ORG_NER_REPLACEMENT_PLAN.md`](plans/ORG_NER_REPLACEMENT_PLAN.md) — GLiNER v2.1 (zero-shot ORG NER, Apache-2.0, bounded-window for latency) behind the existing `extract_company_names` seam, paired with `cleanco` canonicalization and a model-free scoping layer (reference-span exclusion + email-domain ownership ranking) that fixes both failure modes. Phase 0 (model-free) prototype and a GLiNER latency benchmark on real docs are being run to settle the design.
+
 
