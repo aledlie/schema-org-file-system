@@ -32,7 +32,6 @@ import sys
 import time
 from pathlib import Path
 from typing import Dict, List, Optional
-from urllib.error import URLError
 
 # Make sure src/ is on sys.path when run as a script.
 _PROJECT_ROOT = Path(__file__).parent.parent
@@ -153,11 +152,13 @@ def run(
                     )
 
     total = len(companies)
-    hit_rate = matched / total * 100 if total else 0.0
+    queried = total - already_enriched
+    hit_rate = matched / queried * 100 if queried else 0.0
     print(f"\n--- Summary ---")
     print(f"  Total      : {total}")
     print(f"  Skipped    : {already_enriched} (already enriched)")
-    print(f"  Matched    : {matched}  ({hit_rate:.1f}% hit rate)")
+    print(f"  Queried    : {queried}")
+    print(f"  Matched    : {matched}  ({hit_rate:.1f}% hit rate on queried)")
     print(f"  No match   : {no_match}")
     if check_events:
         print(f"  Event collisions: {len(event_collisions)}")

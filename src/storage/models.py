@@ -495,11 +495,6 @@ class Company(Base, SchemaOrgSerializable):
     domain: Mapped[Optional[str]] = mapped_column(String(MAX_STRING_LENGTH))  # Company website domain
     industry: Mapped[Optional[str]] = mapped_column(String(100))
 
-    # Wikidata QID, e.g. "Q95" for Google; populated by scripts/enrich_wikidata.py.
-    # NULL until enriched.  Fresh databases get this column automatically via
-    # Base.metadata.create_all; existing databases need `organize-files migrate-wikidata`.
-    wikidata_qid: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
-
     # Statistics
     file_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
     first_seen: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow)
@@ -967,9 +962,6 @@ def build_company_jsonld(f) -> Dict[str, Any]:
     same_as: list[Optional[str]] = []
     if f.domain:
         same_as.append(f"https://{f.domain.replace('https://', '').replace('http://', '')}")
-    wikidata_qid = getattr(f, "wikidata_qid", None)
-    if wikidata_qid:
-        same_as.append(Company.generate_wikidata_url(wikidata_qid))
     if same_as:
         result["sameAs"] = [url for url in same_as if url]
 
