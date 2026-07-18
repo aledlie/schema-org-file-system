@@ -135,6 +135,42 @@ class TestSignalRun:
         assert GameAssetSignal().applies_to(make_ctx("/any/file.bin")) is True
 
 
+class TestCameraScannerExclusion:
+    """Camera-roll and scanner stems must not fire the high-confidence sprite
+    pattern (^[a-z]+_\\d+$) — those are photos/scans, not game art.
+
+    Mirrors FilenamePatternSignal.graduated_filename_confidence which downgrades
+    the sprite result to FILENAME_WEAK_CONFIDENCE for the same stems; here we
+    skip the sprite pattern loop entirely so GameAssetSignal emits nothing
+    (rather than a GAME_STRONG_CONFIDENCE vote content signals cannot beat).
+    """
+
+    def test_img_prefix_skips_sprite_patterns(self):
+        # Apple/Android camera-roll: img_1234.png must not become a sprite.
+        assert detect("/photos/img_1234.png") is None
+
+    def test_pxl_prefix_skips_sprite_patterns(self):
+        assert detect("/photos/pxl_20250425_134500.png") is None
+
+    def test_dsc_prefix_skips_sprite_patterns(self):
+        assert detect("/photos/dsc_0001.png") is None
+
+    def test_scan_prefix_skips_sprite_patterns(self):
+        # Flatbed-scanner output: scan_0023.png matches ^[a-z]+_\d+$ but must
+        # not be tagged sprites — the renamed screenshot regression case.
+        assert detect("/scans/scan_0023.png") is None
+
+    def test_legitimate_sprite_still_matches(self):
+        # A non-camera, non-scanner numbered stem is still a valid game sprite.
+        assert detect("/sprites/frame_1.png") == ("game_assets", "sprites")
+
+    def test_camera_stem_sprite_keyword_still_eligible(self):
+        # Sprite/texture keyword matches emit GAME_KEYWORD_CONFIDENCE (0.5) which
+        # content signals can beat — do not exclude them for camera/scanner stems.
+        result = detect("/scans/img_sprite_atlas.png")
+        assert result == ("game_assets", "sprites")
+
+
 class TestConstructorOverrides:
     def test_custom_keyword_lists(self):
         signal = GameAssetSignal(

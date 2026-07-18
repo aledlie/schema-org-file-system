@@ -718,11 +718,11 @@ GOLDEN_CASES = [
     ),
     GoldenCase(
         # Phase-3 calibration item #5 (a) — scanner name with document text.
-        # "scan_0023" trips GameAssetSignal's ^[a-z]+_\d+$ sprite regex
-        # (parity-locked), but the OCR'd court-notice content accumulates
-        # (legal + text signals) well above the game-asset prior — content
-        # outscores the mis-firing sprite heuristic, the emergent-behavior
-        # replacement for the legacy _ocr_document_override.
+        # "scan_0023" previously tripped GameAssetSignal's ^[a-z]+_\d+$ sprite
+        # regex; GameAssetSignal now skips sprite patterns for camera/scanner
+        # stems (P2 sprite-overreach fix). FilenamePatternSignal still emits a
+        # weak sprite vote (FILENAME_WEAK_CONFIDENCE) which the legal/text signals
+        # outscore — content wins as intended.
         name="scanner_document_text_beats_sprite_regex",
         filename="scan_0023.png",
         schema_type="ImageObject",

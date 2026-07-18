@@ -26,6 +26,7 @@ import re
 from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Tuple
 
 from shared.constants import (
+    CAMERA_VENDOR_PREFIX_PATTERNS,
     GAME_AUDIO_KEYWORDS,
     GAME_FONT_KEYWORDS,
     GAME_MUSIC_KEYWORDS,
@@ -91,6 +92,23 @@ SCREENSHOT_STEM_MARKER = "screenshot"
 # Timestamp suffixes (e.g. _20251120_164506) are stripped before pattern
 # matching so renamed copies still match.
 _TIMESTAMP_SUFFIX_RE = re.compile(r"_\d{8}_\d{6}$")
+
+# Scanner stems (flatbed / document scanners) are photos/scans, not game art.
+_SCAN_STEM_PREFIX_RE = r"^scan_?\d+"
+
+# Camera-roll and scanner stems share the same exclusion logic as
+# FilenamePatternSignal (see filename_pattern._CAMERA_OR_SCAN_STEM_PATTERNS);
+# kept in sync so both signals agree on which stems to exclude from sprite
+# pattern matching (which emits GAME_STRONG_CONFIDENCE that content signals
+# cannot reliably outscore on low-content images).
+_CAMERA_OR_SCAN_STEM_PATTERNS: Tuple[re.Pattern[str], ...] = tuple(
+    re.compile(p) for p in (*CAMERA_VENDOR_PREFIX_PATTERNS, _SCAN_STEM_PREFIX_RE)
+)
+
+
+def _is_camera_or_scan_stem(stem: str) -> bool:
+    """True when *stem* (already case-folded) is a camera-roll or scanner name."""
+    return any(p.match(stem) for p in _CAMERA_OR_SCAN_STEM_PATTERNS)
 
 # Subset of game_sprite_keywords that implies sprite (vs texture)
 # classification. Moved verbatim from the ContentOrganizer class attribute
@@ -219,14 +237,22 @@ def detect_game_asset_match(
                 )
 
         # Regex patterns for numbered sprites and variants.
-        for pattern in sprite_patterns:
-            if pattern.match(clean_stem):
-                return GameAssetMatch(
-                    GAME_ASSETS_CATEGORY,
-                    SPRITES_SUBCATEGORY,
-                    MATCH_KIND_SPRITE_PATTERN,
-                    pattern.pattern,
-                )
+        # Camera-roll and scanner stems (img_1234, scan_0023) are photos/scans,
+        # not game art. The patterns emit GAME_STRONG_CONFIDENCE (0.9) — too high
+        # for content signals to beat on low-content images — so skip the loop
+        # entirely for these stems. Sprite/texture keyword matches remain
+        # eligible because they emit the lower GAME_KEYWORD_CONFIDENCE (0.5).
+        # Parity with FilenamePatternSignal which downgrades the sprite result
+        # for the same stem prefixes via graduated_filename_confidence.
+        if not _is_camera_or_scan_stem(stem):
+            for pattern in sprite_patterns:
+                if pattern.match(clean_stem):
+                    return GameAssetMatch(
+                        GAME_ASSETS_CATEGORY,
+                        SPRITES_SUBCATEGORY,
+                        MATCH_KIND_SPRITE_PATTERN,
+                        pattern.pattern,
+                    )
 
         # Sprite/texture keyword patterns; the discriminator subset
         # distinguishes sprites from textures.
