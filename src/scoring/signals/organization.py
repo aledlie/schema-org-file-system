@@ -87,6 +87,12 @@ ORG_INDICATORS: Dict[str, List[str]] = {
         "hipaa",
         "medical record",
         "lab results",
+        # Genomics / clinical-lab vocabulary (e.g. GeneDx variant classification
+        # process docs contain none of the clinical-care terms above).
+        "genomic",
+        "variant classification",
+        "pathogenic",
+        "sequencing",
     ],
     "financial": [
         "bank",

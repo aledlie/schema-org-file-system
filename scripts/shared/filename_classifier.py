@@ -583,6 +583,7 @@ def classify_by_filename_patterns(
         "capitalcityvillage": ("organization", "property_management", "Capital City Village"),
         "capital_city_village": ("organization", "property_management", "Capital City Village"),
         "capital-city-village": ("organization", "property_management", "Capital City Village"),
+        "genedx": ("organization", "healthcare", "GeneDx"),
         "google": ("organization", "vendors", "Google"),
         "microsoft": ("organization", "vendors", "Microsoft"),
         "adobe": ("organization", "vendors", "Adobe Systems"),

@@ -162,3 +162,45 @@ class TestOrganizationConfidence:
         assert organization_confidence(2) == pytest.approx(0.7)
         assert organization_confidence(3) == pytest.approx(0.8)
         assert organization_confidence(9) == 1.0
+
+
+class TestGenomicsLabDetection:
+    """Regression for GeneDx Variant Classification Process mis-route.
+
+    Before the fix, ORG_INDICATORS lacked genomics vocabulary so detect_organization
+    returned None (0 keyword hits across all types) for documents about variant
+    classification, sequencing, and pathogenicity — even when OCR correctly surfaces
+    the company name via domain cue.  The 'healthcare' type now includes genomics
+    keywords so these documents are routed to Organization/{company}/.
+    """
+
+    # Matches real GeneDx Variant Classification Process PDF OCR output.
+    GENEDX_TEXT = (
+        "General Variant Classification Assertion Criteria\n"
+        "Data analysis and variant classification at GeneDx is a multi-step process.\n"
+        "Variant interpretation at GeneDx combines automated algorithms and internal "
+        "databases. GeneDx classifies sequencing variants into five categories: "
+        "pathogenic, likely pathogenic, variant of uncertain significance (VUS), "
+        "likely benign, and benign.\n"
+        "207 Perry Parkway - Gaithersburg, MD 20877\n"
+        "zebras@genedx.com - genedx.com\n"
+    )
+
+    def test_genomics_lab_keywords_reach_minimum_hits(self):
+        # At least 3 of the added keywords appear in a real variant classification doc
+        # ("variant classification", "sequencing", "pathogenic") → 3 hits ≥ MIN 2.
+        result = detect_organization(
+            self.GENEDX_TEXT, extract_company_names=lambda _t: ["GeneDx"]
+        )
+        assert result is not None, "detect_organization must not return None for genomics docs"
+        org_type, org_name, hits = result
+        assert org_type == "healthcare"
+        assert org_name == "GeneDx"
+        assert hits >= 2
+
+    def test_genomics_lab_routes_to_healthcare_subcategory(self):
+        signal = OrganizationKeywordSignal(FakeClassifier(["GeneDx"]))
+        scores = signal.run(make_ctx(self.GENEDX_TEXT))
+        assert len(scores) == 1
+        assert (scores[0].category, scores[0].subcategory) == ("organization", "healthcare")
+        assert scores[0].evidence["company_name"] == "GeneDx"

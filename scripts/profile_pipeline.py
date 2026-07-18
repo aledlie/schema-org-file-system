@@ -4,7 +4,7 @@
 Runs the unified (or legacy) scorer over a set of files under cProfile and
 reports wall-clock, per-file average, the top-N functions by self-time, a
 grouped hotspot summary (OCR CNN / image-decode / face-detect / CLIP / ...),
-and OCR-gate telemetry (how many images skipped OCR via ``--ocr-clip-gate``).
+and OCR-gate telemetry (how many images skipped OCR via ``--ocr-clip-topk``).
 
 Because it drives the real ``ContentBasedFileOrganizer`` scorer path, it is
 the tool to use for before/after comparisons of any classification-cost change
@@ -16,7 +16,7 @@ Usage
     python scripts/profile_pipeline.py --source ~/Documents/Media/Photos --limit 50
 
     # Compare the CLIP OCR gate on/off (run twice, diff the summaries):
-    python scripts/profile_pipeline.py --source DIR --ocr-clip-gate 0.15
+    python scripts/profile_pipeline.py --source DIR --ocr-clip-topk 3
     python scripts/profile_pipeline.py --source DIR   # baseline
 
     # Machine-readable output for A/B harnesses:
@@ -65,7 +65,7 @@ _HOTSPOT_BUCKETS: List[tuple] = [
 @dataclass
 class ProfileResult:
     scorer: str
-    ocr_clip_gate: Optional[float]
+    ocr_clip_topk: Optional[int]
     n_files: int
     n_images: int
     wall_seconds: float
@@ -89,7 +89,7 @@ def collect_files(sources: List[str], limit: Optional[int]) -> List[Path]:
     return files[:limit] if limit else files
 
 
-def _build_organizer(scorer: str, ocr_clip_gate: Optional[float]):
+def _build_organizer(scorer: str, ocr_clip_topk: Optional[int]):
     from file_organizer_content_based import ContentBasedFileOrganizer
 
     return ContentBasedFileOrganizer(
@@ -97,7 +97,7 @@ def _build_organizer(scorer: str, ocr_clip_gate: Optional[float]):
         enable_cost_tracking=False,
         db_path=None,
         scorer=scorer,
-        ocr_clip_gate=ocr_clip_gate,
+        ocr_clip_topk=ocr_clip_topk,
     )
 
 
@@ -124,7 +124,7 @@ def _make_classify(org, counters: Dict[str, int]) -> Callable[[Path], object]:
 def _bucketize(stats: pstats.Stats) -> Dict[str, float]:
     totals: Dict[str, float] = {name: 0.0 for name, _ in _HOTSPOT_BUCKETS}
     totals["Other"] = 0.0
-    for (filename, _lineno, func), (_cc, _nc, tottime, _ct) in stats.stats.items():  # type: ignore[attr-defined]
+    for (filename, _lineno, func), (_cc, _nc, tottime, _ct, _callers) in stats.stats.items():  # type: ignore[attr-defined]
         hay = f"{filename}:{func}".lower()
         for name, needles in _HOTSPOT_BUCKETS:
             if any(n in hay for n in needles):
@@ -140,7 +140,7 @@ def _top_functions(stats: pstats.Stats, n: int) -> List[dict]:
     ordered = sorted(
         stats.stats.items(), key=lambda kv: kv[1][2], reverse=True  # type: ignore[index]
     )
-    for (filename, lineno, func), (_cc, nc, tottime, cumtime) in ordered[:n]:
+    for (filename, lineno, func), (_cc, nc, tottime, cumtime, _callers) in ordered[:n]:
         short = Path(filename).name if filename not in ("~", "") else filename
         rows.append(
             {
@@ -157,11 +157,11 @@ def profile(
     files: List[Path],
     *,
     scorer: str,
-    ocr_clip_gate: Optional[float],
+    ocr_clip_topk: Optional[int],
     top: int,
     warmup: bool = True,
 ) -> ProfileResult:
-    org = _build_organizer(scorer, ocr_clip_gate)
+    org = _build_organizer(scorer, ocr_clip_topk)
     counters = {"ocr_invocations": 0, "ocr_gated": 0}
     classify = _make_classify(org, counters)
     decisions: Dict[str, int] = {}
@@ -199,7 +199,7 @@ def profile(
     stats = pstats.Stats(pr)
     return ProfileResult(
         scorer=scorer,
-        ocr_clip_gate=ocr_clip_gate,
+        ocr_clip_topk=ocr_clip_topk,
         n_files=len(files),
         n_images=n_images,
         wall_seconds=round(wall, 3),
@@ -214,7 +214,7 @@ def profile(
 
 def print_report(res: ProfileResult) -> None:
     print("\n" + "=" * 64)
-    print(f"PROFILE  scorer={res.scorer}  ocr_clip_gate={res.ocr_clip_gate}")
+    print(f"PROFILE  scorer={res.scorer}  ocr_clip_topk={res.ocr_clip_topk}")
     print("=" * 64)
     print(f"files={res.n_files} (images={res.n_images})  "
           f"wall={res.wall_seconds}s  per_file={res.per_file_seconds}s")
@@ -239,8 +239,8 @@ def build_parser() -> argparse.ArgumentParser:
                    help="Directories or files to profile")
     p.add_argument("--limit", type=int, help="Max files to profile")
     p.add_argument("--scorer", default="unified", choices=["unified", "legacy", "shadow"])
-    p.add_argument("--ocr-clip-gate", type=float, default=None,
-                   help="CLIP text-bearing threshold below which OCR is skipped")
+    p.add_argument("--ocr-clip-topk", type=int, default=None,
+                   help="Skip OCR unless a text-bearing label ranks in the top-K CLIP labels")
     p.add_argument("--top", type=int, default=20, help="Top-N functions to report")
     p.add_argument("--no-warmup", action="store_true", help="Skip the warmup file")
     p.add_argument("--json", dest="json_out", help="Write ProfileResult JSON to this path")
@@ -256,7 +256,7 @@ def main(argv: Optional[List[str]] = None) -> None:
     res = profile(
         files,
         scorer=args.scorer,
-        ocr_clip_gate=args.ocr_clip_gate,
+        ocr_clip_topk=args.ocr_clip_topk,
         top=args.top,
         warmup=not args.no_warmup,
     )
