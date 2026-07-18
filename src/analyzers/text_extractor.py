@@ -7,7 +7,7 @@ from __future__ import annotations
 from contextlib import nullcontext
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any, Literal, Optional
 
 from shared.constants import TEXT_EXTENSIONS
 
@@ -61,7 +61,7 @@ except ImportError:
         def __enter__(self) -> "CostTracker":
             return self
 
-        def __exit__(self, *args: Any) -> bool:
+        def __exit__(self, *args: Any) -> Literal[False]:
             return False
 
 

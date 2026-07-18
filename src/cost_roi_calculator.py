@@ -13,7 +13,7 @@ from dataclasses import dataclass, field, asdict
 from datetime import datetime
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Literal, Optional, Any
 
 import pandas as pd
 
@@ -793,7 +793,7 @@ class CostTracker:
         self.start_time = time.time()
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> bool:
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> Literal[False]:
         processing_time = time.time() - self.start_time
 
         if exc_type is not None:

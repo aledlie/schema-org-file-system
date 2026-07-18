@@ -654,7 +654,7 @@ def classify_by_ocr(
 
     # Pass 1: screenshot-specific winner
     if screenshot_scores:
-        best_ss = max(screenshot_scores, key=screenshot_scores.get)
+        best_ss = max(screenshot_scores, key=lambda k: screenshot_scores[k])
         if screenshot_hits[best_ss] >= SCREENSHOT_MIN_HITS:
             return (best_ss, screenshot_scores[best_ss], all_scores, text)
 

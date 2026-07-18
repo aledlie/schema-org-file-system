@@ -201,14 +201,18 @@ class SchemaIntegration:
 
         if format == OutputFormat.JSON_LD:
             return self.to_json_ld(schema)
-        elif format == OutputFormat.MICRODATA:
-            return self.to_microdata(schema)
-        elif format == OutputFormat.RDFA:
-            return self.to_rdfa(schema)
-        elif format == OutputFormat.JSON:
+        if format == OutputFormat.JSON:
             return json.dumps(schema, indent=2)
-        else:
-            raise ValueError(f"Unsupported format: {format}")
+
+        if schema is None:
+            raise ValueError("No schema available to export")
+
+        if format == OutputFormat.MICRODATA:
+            return self.to_microdata(schema)
+        if format == OutputFormat.RDFA:
+            return self.to_rdfa(schema)
+
+        raise ValueError(f"Unsupported format: {format}")
 
     def export_all(self, format: OutputFormat) -> List[str]:
         """

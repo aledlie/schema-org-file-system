@@ -238,7 +238,7 @@ class JSONMigrator:
             "error": FileStatus.ERROR,
             "already_organized": FileStatus.ALREADY_ORGANIZED,
         }
-        status = status_map.get(result.get("status"), FileStatus.PENDING)
+        status = status_map.get(result.get("status", ""), FileStatus.PENDING)
 
         # Extract schema data
         schema_data = result.get("schema", {})

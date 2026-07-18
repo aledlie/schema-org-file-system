@@ -7,7 +7,7 @@ everything they need from a single place.
 
 import time
 from contextlib import contextmanager
-from typing import Any, Dict, Generator, Optional
+from typing import Any, Dict, Generator, Literal, Optional
 
 try:
     from src.error_tracking import (
@@ -155,7 +155,7 @@ class CostTracker:
         exc_type: Optional[type],
         exc_val: Optional[BaseException],
         exc_tb: Optional[Any],
-    ) -> bool:
+    ) -> Literal[False]:
         assert self._start is not None
         self.elapsed_seconds = time.monotonic() - self._start
         return False

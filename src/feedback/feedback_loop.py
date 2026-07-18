@@ -8,7 +8,7 @@ Provides three integration points:
 """
 
 import os
-from typing import Optional, Dict, List, Tuple, TypedDict
+from typing import Any, Optional, Dict, List, Tuple, TypedDict
 
 from .correction_tracker import CorrectionFeedbackSystem
 
@@ -30,9 +30,9 @@ class FeedbackIntegration:
             feedback_file: Path to corrections JSON file
         """
         self.feedback = CorrectionFeedbackSystem(feedback_file)
-        self._cached_rules = None
+        self._cached_rules: Optional[Dict[str, Any]] = None
 
-    def get_cached_rules(self) -> Dict:
+    def get_cached_rules(self) -> Dict[str, Any]:
         """Get or compute cached rules."""
         if self._cached_rules is None:
             self._cached_rules = self.feedback.export_rules()
@@ -48,7 +48,7 @@ class FeedbackIntegration:
         filename: str,
         proposed_category: str,
         proposed_subcategory: Optional[str] = None
-    ) -> Tuple[str, str, float]:
+    ) -> Tuple[str, Optional[str], float]:
         """Check if corrections suggest a different category.
 
         This should be called BEFORE final categorization to apply learned rules.
@@ -84,7 +84,7 @@ class FeedbackIntegration:
         # No correction needed
         return (proposed_category, proposed_subcategory, 1.0)
 
-    def get_pattern_keywords(self) -> Dict[str, Dict]:
+    def get_pattern_keywords(self) -> Dict[str, Dict[str, List[str]]]:
         """Get learned keyword patterns for each category.
 
         Returns keywords that should trigger specific categories based on
@@ -124,9 +124,9 @@ class FeedbackIntegration:
 
     def apply_to_organization_result(
         self,
-        result: Dict,
+        result: Dict[str, Any],
         auto_apply: bool = False
-    ) -> Dict:
+    ) -> Dict[str, Any]:
         """Apply feedback suggestions to an organization result.
 
         Args:
@@ -157,9 +157,9 @@ class FeedbackIntegration:
 
     def batch_apply_corrections(
         self,
-        results: List[Dict],
+        results: List[Dict[str, Any]],
         confidence_threshold: float = 0.85
-    ) -> Tuple[List[Dict], _ApplyStats]:
+    ) -> Tuple[List[Dict[str, Any]], _ApplyStats]:
         """Apply corrections to a batch of organization results.
 
         Args:
@@ -197,7 +197,7 @@ class FeedbackIntegration:
 
         return modified, stats
 
-    def generate_correction_report(self, results: List[Dict]) -> str:
+    def generate_correction_report(self, results: List[Dict[str, Any]]) -> str:
         """Generate a report of suggested corrections from organization results.
 
         Args:

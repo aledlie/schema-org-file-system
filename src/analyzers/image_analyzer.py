@@ -7,7 +7,7 @@ CLIP inference is delegated to the shared CLIPClassifier singleton
 
 from contextlib import nullcontext
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Literal, Tuple
 
 # Vision libraries are optional
 try:
@@ -41,7 +41,7 @@ except ImportError:
         def __enter__(self) -> "CostTracker":
             return self
 
-        def __exit__(self, *args: Any) -> bool:
+        def __exit__(self, *args: Any) -> Literal[False]:
             return False
 
 

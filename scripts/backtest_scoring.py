@@ -484,7 +484,7 @@ def replay_rows(
     return outcomes, skipped
 
 
-def _pair_text(category: str, subcategory: Optional[str]) -> str:
+def _pair_text(category: Optional[str], subcategory: Optional[str]) -> str:
     return f"{category}/{subcategory}" if subcategory else str(category)
 
 

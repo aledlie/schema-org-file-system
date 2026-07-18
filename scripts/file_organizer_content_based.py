@@ -143,7 +143,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         organize_by_date: bool = False,
         organize_by_location: bool = False,
         enable_cost_tracking: bool = True,
-        db_path: str = "results/file_organization.db",
+        db_path: Optional[str] = "results/file_organization.db",
         scorer: str = SCORER_DEFAULT,
     ):
         """
@@ -158,7 +158,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
             scorer: Classification engine — legacy | unified | shadow
                 (UNIFIED_SCORING_PLAN §6 Phase 0)
         """
-        base_path = Path(base_path or "~/Documents").expanduser()
+        base_dir = Path(base_path or "~/Documents").expanduser()
 
         # Initialize cost tracking if available and enabled
         self.cost_calculator = None
@@ -188,7 +188,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         # game-asset keywords, per-file OCR/KIE state) is initialized by
         # ContentOrganizer.
         super().__init__(
-            base_path=base_path,
+            base_path=base_dir,
             content_classifier=classifier,
             organize_by_date=organize_by_date,
             organize_by_location=organize_by_location,
@@ -210,7 +210,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         # (should_skip_file, detect_file_category, get_destination_path,
         # generate_schema hooks) and the shared ``stats`` counter.
         self._file_processor = FileProcessor(
-            base_path=base_path,
+            base_path=base_dir,
             db_path=None,  # graph_store is injected directly below
             cost_calculator=self.cost_calculator,
             graph_store=self.graph_store,

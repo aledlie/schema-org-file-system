@@ -32,7 +32,7 @@ def organize_files(
 ) -> Dict:
     """Organize files based on content classification."""
 
-    base_path = Path(base_path).expanduser()
+    base_dir = Path(base_path).expanduser()
 
     # Load rename log with content types
     with open(rename_log_file, 'r') as f:
@@ -41,7 +41,7 @@ def organize_files(
     print(f"\n{'='*60}")
     print(f"Organizing Files by Content {'(DRY RUN)' if dry_run else ''}")
     print(f"{'='*60}\n")
-    print(f"Base path: {base_path}")
+    print(f"Base path: {base_dir}")
     print(f"Files to organize: {len(data['log'])}")
     print(f"Mode: {'Move' if move_files else 'Copy'}\n")
 
@@ -63,7 +63,7 @@ def organize_files(
             continue
 
         # Get destination path
-        dest_dir = get_schema_path(content_type, base_path)
+        dest_dir = get_schema_path(content_type, base_dir)
         dest_path = dest_dir / source_path.name
 
         # Skip if already in correct location
@@ -96,7 +96,7 @@ def organize_files(
 
             if i <= 30 or i % 50 == 0:
                 action = "Would move" if dry_run else ("Moved" if move_files else "Copied")
-                rel_dest = dest_path.relative_to(base_path)
+                rel_dest = dest_path.relative_to(base_dir)
                 print(f"  {action}: {source_path.name}")
                 print(f"       → {rel_dest}")
 

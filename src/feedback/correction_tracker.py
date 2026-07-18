@@ -285,7 +285,7 @@ class CorrectionFeedbackSystem:
         self,
         patterns: List[str],
         correct_category: str,
-        correct_subcategory: str
+        correct_subcategory: Optional[str]
     ) -> None:
         """Update learned patterns from corrections."""
         for pattern in patterns:
