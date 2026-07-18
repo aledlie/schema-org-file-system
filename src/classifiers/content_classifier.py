@@ -76,7 +76,10 @@ try:
 except ImportError:  # scripts/shared/ not on sys.path (unusual; fallback keeps tests green)
     _KIE_CLASSIFICATION_MIN_CONFIDENCE = 0.5
     _KIE_VENDOR_CLASSES: tuple[str, ...] = ("vendor_name", "store_name")  # type: ignore[no-redef]
-    _KIE_AMOUNT_CLASSES: tuple[str, ...] = ("total_amount", "receipt_total")  # type: ignore[no-redef]
+    _KIE_AMOUNT_CLASSES: tuple[str, ...] = (  # type: ignore[no-redef]
+        "total_amount",
+        "receipt_total",
+    )
     _KIE_DATE_CLASSES: tuple[str, ...] = ("invoice_date", "receipt_date")  # type: ignore[no-redef]
 
 

@@ -8,9 +8,16 @@ Provides three integration points:
 """
 
 import os
-from typing import Any, Optional, Dict, List, Tuple
+from typing import Optional, Dict, List, Tuple, TypedDict
 
 from .correction_tracker import CorrectionFeedbackSystem
+
+
+class _ApplyStats(TypedDict):
+    total: int
+    suggestions_made: int
+    auto_applied: int
+    categories_changed: Dict[str, int]
 
 
 class FeedbackIntegration:
@@ -152,7 +159,7 @@ class FeedbackIntegration:
         self,
         results: List[Dict],
         confidence_threshold: float = 0.85
-    ) -> Tuple[List[Dict], Dict]:
+    ) -> Tuple[List[Dict], _ApplyStats]:
         """Apply corrections to a batch of organization results.
 
         Args:
@@ -163,7 +170,7 @@ class FeedbackIntegration:
             Tuple of (modified_results, statistics)
         """
         modified = []
-        stats: Dict[str, Any] = {
+        stats: _ApplyStats = {
             "total": len(results),
             "suggestions_made": 0,
             "auto_applied": 0,

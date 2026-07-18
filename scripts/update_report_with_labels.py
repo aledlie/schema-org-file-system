@@ -9,7 +9,7 @@ from the labeling sessions stored in the database.
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Tuple
+from typing import Dict, List, Tuple, TypedDict
 
 from shared.db_utils import db_connection
 
@@ -61,7 +61,18 @@ def get_labeled_categories(db_path: str, ml_session: str) -> Tuple[Dict, Dict]:
     return labeled_by_path, labeled_by_filename
 
 
-def update_report(report_path: str, labeled_data: Tuple[Dict, Dict], output_path: str) -> Dict:
+class _UpdateStats(TypedDict):
+    total_files: int
+    updated: int
+    unchanged: int
+    matched_by_path: int
+    matched_by_filename: int
+    not_found: int
+    category_changes: Dict[str, int]
+    updated_files: List[Dict[str, str]]
+
+
+def update_report(report_path: str, labeled_data: Tuple[Dict, Dict], output_path: str) -> _UpdateStats:
     """
     Update the organization report with labeled category data.
 
@@ -81,7 +92,7 @@ def update_report(report_path: str, labeled_data: Tuple[Dict, Dict], output_path
 
     results = report.get('results', [])
 
-    stats: Dict[str, Any] = {
+    stats: _UpdateStats = {
         'total_files': len(results),
         'updated': 0,
         'unchanged': 0,

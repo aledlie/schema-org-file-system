@@ -12,7 +12,7 @@ The result is an enriched dataset with more diverse labeled examples.
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, TypedDict
 
 from shared.db_utils import db_connection
 
@@ -84,7 +84,16 @@ def get_labeling_session_data(db_path: str, ml_session: str) -> List[Dict]:
     return records
 
 
-def merge_reports(report_path: str, labeling_data: List[Dict], output_path: str) -> Dict:
+class _MergeStats(TypedDict):
+    original_count: int
+    labeling_records: int
+    added: int
+    skipped_duplicate_path: int
+    skipped_duplicate_filename: int
+    categories_added: Dict[str, int]
+
+
+def merge_reports(report_path: str, labeling_data: List[Dict], output_path: str) -> _MergeStats:
     """
     Merge labeling session data into the organization report.
 
@@ -106,7 +115,7 @@ def merge_reports(report_path: str, labeling_data: List[Dict], output_path: str)
     existing_sources = set(r.get('source', '') for r in results)
     existing_filenames = set(Path(r.get('source', '')).name for r in results if r.get('source'))
 
-    stats = {
+    stats: _MergeStats = {
         'original_count': len(results),
         'labeling_records': len(labeling_data),
         'added': 0,
