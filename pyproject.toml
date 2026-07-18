@@ -8,7 +8,7 @@ version = "2.1.0"
 description = "AI-powered file organization using CLIP vision, OCR, and Schema.org metadata"
 readme = "CLAUDE.md"
 license = {text = "MIT"}
-requires-python = ">=3.12,<3.14"
+requires-python = "<=3.14"
 authors = [
     {name = "Alyshia Ledlie"}
 ]
@@ -31,6 +31,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Desktop Environment :: File Managers",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
@@ -144,7 +145,7 @@ package-dir = {"" = "."}
 
 [tool.black]
 line-length = 100
-target-version = ['py312', 'py313']
+target-version = ['py314']
 include = '\.pyi?$'
 exclude = '''
 /(
@@ -165,7 +166,7 @@ line_length = 100
 skip = [".git", ".venv", "venv", "build", "dist", "node_modules", "results", "_site"]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.14"
 warn_return_any = true
 warn_unused_configs = true
 ignore_missing_imports = true
