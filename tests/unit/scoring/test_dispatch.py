@@ -80,7 +80,9 @@ class TestShadowDispatch:
         sample = tmp_path / "frame_1.png"
         sample.write_bytes(b"\x89PNG\r\n")
 
-        legacy_expected = make_organizer(tmp_path).detect_file_category(sample)
+        # Pin to legacy explicitly so legacy_expected reflects the 10-tier chain,
+        # not the new unified default introduced by the Phase-5 base-class flip.
+        legacy_expected = make_organizer(tmp_path, scorer=SCORER_LEGACY).detect_file_category(sample)
         shadow_result = organizer.detect_file_category(sample)
         assert shadow_result == legacy_expected
 
@@ -107,7 +109,8 @@ class TestShadowDispatch:
         monkeypatch.setattr(organizer, "_build_file_context", explode)
         sample = tmp_path / "frame_1.png"
         sample.write_bytes(b"\x89PNG\r\n")
-        legacy_expected = make_organizer(tmp_path).detect_file_category(sample)
+        # Pin to legacy explicitly (Phase-5 base-class default flip).
+        legacy_expected = make_organizer(tmp_path, scorer=SCORER_LEGACY).detect_file_category(sample)
         assert organizer.detect_file_category(sample) == legacy_expected
 
 
