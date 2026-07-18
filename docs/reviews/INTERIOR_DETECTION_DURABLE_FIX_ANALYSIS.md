@@ -176,6 +176,29 @@ python scripts/prototype_interior_probe.py eval --score-reference
 
 Target ~150–300 interiors (mixing AI renders + real photos) against the DB-derived negatives, then read ROC-AUC / AP and the false-positive column. If it separates, ship C1 as an `InteriorSignal`; if not, that is the empirical trigger to move to SigLIP / `ViT-L`.
 
+## Production deployment & persistence (2026-07-17)
+
+C1 shipped: the probe (`results/interior_probe.joblib`, `StandardScaler` + class-balanced `LogisticRegression` over cached `ViT-B-32` embeddings) is wired as **`InteriorSignal`** (`src/scoring/signals/interior.py`, `W_INTERIOR = 0.85`, `INTERIOR_MIN_PROB = 0.5`). Two compounding blockers were cleared alongside it:
+
+- **Filename preemption (option 2).** Source-provenance filenames (`photos_chatgpt`, `photos_facebook`) are now content-agnostic — `graduated_filename_confidence` demotes them to `FILENAME_WEAK_CONFIDENCE` (0.4 × `W_FILENAME` = 0.44), below a firing interior vote (~0.99 × 0.85 ≈ 0.85).
+- **Blindness.** The zero-shot 0.30 CLIP gate fired 0/25 on confirmed interiors; the probe scores them ~0.99.
+
+Verified on 25 hand-labeled interiors (`results/interior_positives.txt`): all 25 route to `media/interiors_other` → schema.org **`Room`**, `winning_signals = ['interior']`. These are in-sample for the probe; the held-out generalization signal is the reference render at **0.994**.
+
+### Persistence gap found and fixed (commit `368d70f`)
+
+Routing honored `Room`, but persistence dropped it: `FileProcessor.generate_schema` had no `Room` branch, so a `Room` decision fell through to `DocumentGenerator` and was saved as `DigitalDocument` (and the description regressed to the zero-shot "an interior room (5% confident)" floor). Fixes:
+
+- **Room `@type`.** `_IMAGE_SCHEMA_TYPES` now includes the interior Room family (`Room`/`HotelRoom`/`MeetingRoom`); they build via `ImageGenerator`, keeping `contentUrl`/`width`/`height` while carrying the assigned `@type`.
+- **Description.** `ContentOrganizer._stash_decision_state` surfaces the probe's calibrated `P(interior)` (`"Content: an interior room (100% confident)"`) instead of the CLIP softmax-floor label, when the interior signal wins.
+
+### One-time data operations on `results/file_organization.db`
+
+- **Schema migration.** `organize-files migrate-scoring` added the nullable `file_categories.signal_evidence` JSON column (this DB predated it), so `_supports_signal_evidence()` is now `True` and future content runs persist the decision snapshot per file.
+- **Row backfill.** The 25 interior rows organized before these fixes were corrected in place, keyed by row id rather than re-run — file identity is `sha256(original_path)`, so a re-run reading from `Media/Interiors` would have minted duplicates. Corrections: `schema_type` → `Room`, `schema_data` image-shaped, descriptions → probe-based, and `signal_evidence` re-scored with the unified organizer (scoring-only, no moves). Verified: **25/25** `signal_evidence` populated, all `scorer = unified`, decision `media/interiors_other` → `Room`, `winning_signals = [interior]`.
+
+`original_path` on the 25 reflects the staging dir used to scope the apply to exactly those files (not their pre-move homes) — a deliberate artifact of the scoped backfill, left as-is.
+
 ---
 
 ## Related
