@@ -9,17 +9,13 @@ Last updated: 2026-07-17 (added diverse-source robustness + shadow healthcare-de
 
 Leaky denylist (prune and dead-path tooling shipped 2026-07-12).
 
-**Status:** Open — gaps 1 and 3 closed (prune tooling, `--prune-missing`); gap 2 remains.
+**Status:** Done — all open gaps closed 2026-07-18.
 **Priority:** P3
 **Source:** person-view / index-people operational session, 2026-07-12
 
-One remaining gap handles false-positive "people" in the symlink view.
+1. **`get_all_people_with_files` denylist is leaky.** ✓ Done 2026-07-18. Full validation plan (Phases 1–4) shipped: layered name validator (`person_name_validator.py`, L0 denylist + L1 nameparser shape + L2 probablepeople + L3 census gazetteer), write-time gate in `get_or_create_person`, `review_status`/`detection_confidence`/`validation_scores`/`validated_at` columns + migration, `organize-files review-people` CLI (`--status`/`--accept`/`--reject`/`--revalidate`/`--apply`), `additionalProperty` JSON-LD sidecar in `build_person_jsonld`, and `organize-files health` now reports validator layer availability. Read-time `_PERSON_NAME_DENYLIST` loop removed from `get_all_people_with_files`; status filter is now the sole gate. 30 new tests in `tests/unit/test_graph_store_review.py`.
 
-1. **`get_all_people_with_files` denylist is leaky.** False-positive "people" (event/org names) still pass the org/keyword denylist — e.g. `Morning Train` (from `Burning_Flipside_Map.pdf`) — and would create spurious `Person/{Name}/` folders on `person-view --apply` unless pruned first.
-
-   *Fix planned (2026-07-13):* layered local-only confidence gate at write time (`nameparser` shape → `probablepeople` CRF → Census gazetteer, weighted composite) with three-way routing (auto-accept / `pending_review` queue via a new `organize-files review-people` CLI / reject), `review_status`+`validation_scores` columns on `people`, and an `additionalProperty` JSON-LD sidecar. External KB validation rejected (notability gap — see the Wikidata item below). Full phased design: [`docs/plans/PERSON_NAME_VALIDATION_PLAN.md`](plans/PERSON_NAME_VALIDATION_PLAN.md).
-
-2. **`review_status` should be a SQLAlchemy `Enum` column type.** The valid values now live in `Person.REVIEW_STATUSES` (a plain tuple) and are enforced only by hand-rolled `if status not in ...: raise ValueError` guards in `GraphStore.list_people_by_status` / `set_person_review_status`. Migrating the `String(20)` column to `sqlalchemy.Enum(*Person.REVIEW_STATUSES)` would give DB- and ORM-level validation and delete those manual checks.
+2. **`review_status` should be a SQLAlchemy `Enum` column type.**
 
    *Deferred:* it is a column-type schema change requiring a migration, for modest gain over the already-centralized tuple. Do it only when the schema is being touched for another reason.
 
@@ -57,22 +53,6 @@ Minimal brand graphics carry no EXIF/text metadata and defeat the CLIP vocab in 
 
 The signal for graphics is non-visual-semantic and should come from cheap non-CLIP cues, evaluated as a pre-CLIP gate: alpha/transparency channel presence, low color-palette entropy / large flat-color regions, small distinct-color count, square or icon-standard aspect ratios, and source-domain hints in the filename (hash-style names, `cdn`/asset hosts). A purpose-trained binary photo-vs-graphic classifier is the heavier fallback. Route positives to a `Graphics/` (or `Media/Graphics/`) folder instead of `Uncategorized`. Contrast with the sibling finding that the **screenshot** label *is* CLIP-separable (binary precision 26→3 false-pos after rewording) — graphics are the harder case that CLIP alone can't solve.
 
-### Cross-file duplication within `src/` (investigation)
-
-The scripts↔src audit and the TimelineAPI copypasta trim both surfaced duplication that is *internal to `src/`* — out of scope for the scripts↔src cleanup but worth a dedicated pass. Investigate whether each is worth consolidating or is a deliberate layer split before changing anything.
-
-**Status:** Done (2026-07-18) — both candidates investigated; both are deliberate splits. No consolidation.
-**Priority:** P3
-**Source:** TimelineAPI copypasta trim + scripts↔src audit out-of-scope observations, 2026-07-14
-
-Candidates investigated (2026-07-18):
-
-1. **Session/aggregate stats at two layers — deliberate split.** `TimelineAPI.get_cumulative_stats` (`src/api/timeline_api.py`, raw sqlite3) uses lightweight raw SQL to avoid pulling the ORM and its torch imports into the dashboard path; `GraphStore.get_statistics` (`src/storage/graph_store.py:1548`, SQLAlchemy ORM) is the ORM aggregate. Both are global-scope aggregates over the same DB — the split is a backend-isolation choice (raw sqlite3 vs full ORM), not a scoping difference. Do not merge; the different backends are load-isolation by design.
-
-2. **`Technical/` extension map and `mime_classifier.py` code routing — deliberate split, different taxonomies.** `FILEPATH_PATTERNS` in `src/scoring/signals/filepath.py` routes code extensions (`.py`, `.ts`, `.js`, …) to `Technical/*` string paths — used by `FilepathSignal` at weight 0.6. `classify_by_mime` in `src/organizers/mime_classifier.py` routes the same extensions to `(code, python, SoftwareSourceCode)` tuples, which `MimeFallbackSignal` translates through `MIME_TO_CONTENT` to `(technical, other)` at weight 0.4. The destinations are different (`Technical/Python` vs `Technical/Other`) and the tables serve different clients (unified scorer vs type organizer + MIME fallback). FilepathSignal always wins when it fires; the MIME fallback is a catch-all that deliberately coalesces subcategories. No consolidation needed.
-
-Both candidates are recorded in the review doc's "Out-of-scope observations": [`docs/reviews/SCRIPTS_SRC_DUPLICATION_AUDIT.md`](reviews/SCRIPTS_SRC_DUPLICATION_AUDIT.md).
-
 ### `PHOTO_PROPERTY_CONFIDENCE` re-tune for `Media/Interiors` commit margin
 
 `PhotoCompositionSignal`'s home-interior flag routes to `media/interiors_other` (folder `Media/Interiors`, schema.org `Room`) but scores `PHOTO_PROPERTY_CONFIDENCE(0.7) × W_PEOPLE_PHOTO(0.65) = 0.455` — only 0.055 over an image's `mime_fallback` vote (`0.4`). That lead is below `MIN_DECISION_MARGIN(0.10)`, so an interior photo whose only signals are composition + mime routes to `LOW_CONFIDENCE_FALLBACK` instead of committing to `Media/Interiors`. The `Room` schema override is wired but effectively unreachable for the common two-signal case.
@@ -85,17 +65,6 @@ Both candidates are recorded in the review doc's "Out-of-scope observations": [`
 - **Target invariant:** `PHOTO_PROPERTY_CONFIDENCE × W_PEOPLE_PHOTO − (MIME_MATCH_CONFIDENCE × W_MIME) ≥ MIN_DECISION_MARGIN`, i.e. `conf ≥ (0.4 + 0.10) / 0.65 ≈ 0.77`, so interiors commit over the mime-only floor.
 - **Regression guard:** measure false positives — staged/real-estate listing photos and any non-interior images the analyzer flags `is_property_mgmt` — before raising, since a higher confidence also strengthens every interior vote against genuine content winners.
 - **Legacy parity note:** the legacy `_classify_photo_composition` still routes interiors to `property_management/other`; a unified re-tune widens the shadow legacy-vs-unified disagreement for interior photos until the legacy chain is retired (Phase 5).
-
-### Phase 5: flip base `ContentOrganizer` default to unified + retire legacy tests
-
-**Status:** Done (2026-07-18, commit 0da8c22) — default flip + test re-pin complete.
-**Priority:** P3
-**Source:** Phase-4 default flip, 2026-07-17 (see [`UNIFIED_SCORING_PLAN.md`](architecture/UNIFIED_SCORING_PLAN.md) Phase 5)
-
-`ContentOrganizer.__init__` now defaults to `SCORER_DEFAULT` (= `SCORER_UNIFIED`). All seven `ContentOrganizer(...)` constructions in `tests/unit/test_content_organizer.py` pass `scorer=SCORER_LEGACY` explicitly. `test_dispatch.py::test_default_is_legacy` renamed to `test_default_is_unified`. Split-brain comment removed from `src/scoring/types.py`.
-
-Still remaining from Phase 5 (not part of this item):
-- **Retire the legacy chain** — remove the legacy `_classify_*` paths and the `legacy`/`shadow` scorer modes per UNIFIED_SCORING_PLAN Phase 5 (separate, larger refactor).
 
 ### Content pipeline is OCR-bound (gate OCR on text-likelihood)
 
@@ -112,33 +81,12 @@ Profiling `organize-files content` (unified scorer, dry-run) on 2026-07-17 showe
 
 ### Content organizer misclassifies diverse/screenshot sources (review-gate + robustness gaps)
 
-A live `organize-files content --source ~/Desktop --limit 10` (unified scorer) on mixed real-world desktop content committed most files to wrong folders and surfaced several distinct gaps. Every file was verified by eye; the batch was fully rolled back afterward. The organizer is reliable on homogeneous sources (e.g. ChatGPT property renders) but not on heterogeneous user directories.
+A live `organize-files content --source ~/Desktop --limit 10` (unified scorer) on mixed real-world desktop content committed most files to wrong folders and surfaced several distinct gaps. Items 2–5 shipped; item 1 remains open.
 
-**Status:** Open — items 2, 3, and 4 shipped; items 1 and 5 remain open. Item 1 gates safe use on real user directories.
+**Status:** Open — item 1 gates safe use on real user directories.
 **Priority:** P2 (item 1)
 **Source:** `~/Desktop` content-run audit + full rollback, 2026-07-17
 
 1. **The review gate keys on decision-confidence, which `InteriorSignal` inflates.** UI screenshots of real-estate listings committed to `Media/Interiors` (`Room`) because the interior probe votes ~0.99 (decision confidence ~0.85, margin ~0.81) even when the OCR/label confidence is 1–12%. The `low_confidence`/`low_margin` review bucket exists and *does* fire (confirmed in a `--scorer shadow` pass — one opaque PDF routed to `uncategorized/other`), but cannot catch these because the probe supplies genuine high decision-confidence to wrong content. Options: a per-signal reliability cap, or require corroboration for `InteriorSignal` on screenshot-detected inputs. Distinct from the `PHOTO_PROPERTY_CONFIDENCE` item above (that is the `PhotoCompositionSignal` property flag *under*-committing; this is the `InteriorSignal` probe *over*-committing). The scene-model swap in [`docs/plans/MEDIA_EXTERIORS_PLAN.md`](plans/MEDIA_EXTERIORS_PLAN.md) also intersects here.
-2. ~~**`DecompressionBombError` bypasses all content signals.**~~ **Done (2026-07-18, commit d192033).** `CLIPClassifier._thumbnail_oversized` now bypasses Pillow's bomb guard (`Image.MAX_IMAGE_PIXELS = None` + finally restore) so `thumbnail()` can load then downscale images > 2× the pixel limit. Applied to all three call sites in `scripts/shared/clip_utils.py` (`_preprocess_image`, `encode_images_to_numpy`, `_classify_batch_impl`).
-3. ~~**Write-path inconsistencies on the same run.**~~ **Done (2026-07-17, commit 98d41cd).** `GraphStore.set_file_category` replaces all category edges for a file with a single correct one (adjusting `file_count` on both old and new), and `prune_missing_files` removes File rows whose paths are gone. `organize-files reconcile --set-category FILE CATEGORY [--subcategory SUB]` and `--prune-missing` expose both operations; dry-run by default, `--apply` backs up the DB first. 14 tests in `tests/unit/test_graph_store_reconcile.py` cover all cases.
-4. ~~**Sprite-regex `^[a-z]+_\d+$` overreach still live.**~~ **Done (2026-07-18, commit 67fd81d).** `GameAssetSignal` now skips sprite-pattern matching for camera-roll and scanner stems (`img_\d+`, `pxl_\d+`, `dsc_\d+`, `dcim_\d+`, `scan_?\d+`) via `_is_camera_or_scan_stem`, mirroring `FilenamePatternSignal.graduated_filename_confidence`. Generic renamed-screenshot stems like `creative_1` (no camera/scanner prefix) still match; a deeper fix would require design decisions about screenshot-title detection.
-5. ~~**Sensitive-source PII hazard.**~~ **Done (2026-07-18).** `--no-db` already skips all DB writes (OCR text, schema_data) end-to-end. Documented in `QUICK_START.md` Tips section (sensitive/private sources note) and improved `--no-db` help text to name the PII risk. Redact-first alternative (`scripts/redact_pii.py`) also surfaced there.
-
-### `entity_detector` misses brand-name orgs and over-extracts cited bodies from reference sections
-
-Surfaced as a legacy↔unified disagreement on `GeneDx_Variant_Classification_Process_June_2021.pdf` (`--scorer shadow`, `~/Downloads`): legacy → `organization/healthcare`, unified → `technical/other`. Analyzing the PDF (2026-07-17, verified by reproducing `EntityDetector.extract_company_names` on its text) shows the disagreement is a symptom of two entity-detection bugs — and that **neither placement is clearly right**, so the earlier "legacy won / OCR starved the org signal" framing was wrong. The PDF has a clean 11 k-char text layer; the logged `OCR error: unable to read file` was on the redundant raster-OCR path and did not affect org detection.
-
-**Status:** Done (2026-07-18, Phase 0) — both failure modes fixed by `src/classifiers/org_extraction.py` (commit `bf62484`); Phase 1 GLiNER benchmarked (see plan). Phase 2 (optional gazetteer + hosted-API) deferred.
-**Priority:** P3
-**Source:** GeneDx PDF content analysis, 2026-07-17
-
-The document is GeneDx's public "variant classification assertion criteria" (a lab methodology doc, the kind labs publish to ClinVar). `extract_company_names` returns exactly one org — `"Medical Genetics and Genomics and the Association"` — and **does not detect GeneDx at all** (8 occurrences incl. footer + `genedx.com`). Two regex-design causes (`src/classifiers/entity_detector.py`):
-
-1. **Single-token brand names are invisible.** Every company pattern needs either a legal suffix (`LLC/Inc/Corp/…`) or the institutional pattern's ≥2 leading tokens + trailing keyword (`…Association/University/…`). A bare CamelCase brand like `GeneDx` (one token, no suffix) matches nothing. Add a known-brand lexicon or CamelCase-token path, and/or use the email domain (`genedx.com`) as an org cue.
-2. **Cited orgs in reference sections become truncated false positives.** The institutional pattern anchored on `Association` in the References line *"American College of Medical Genetics and Genomics and the Association for Molecular Pathology"*; its `{1,5}` inter-token cap dropped the leading "American College of", and `[^\S\r\n]` stopped at the line wrap before "…for Molecular Pathology" — yielding the garbled `"Medical Genetics and Genomics and the Association"`. The detector has no document-structure awareness, so any org cited in a References/bibliography block is extracted as the document's own org. Consider skipping reference regions or de-ranking orgs found only in citations.
-
-**Routing consequence:** legacy would create a spurious `Organization/{Medical Genetics and Genomics and the Association}` folder (a mangled cited standards body, not GeneDx), so unified's `Technical/Other` is arguably the safer placement here — the fix belongs in `entity_detector`, not in re-weighting the org signal. Cross-check other citation-heavy PDFs (research papers, methodology docs) for the same false-positive-org pattern before changing extraction.
-
-**Shipped (2026-07-18):** `src/classifiers/org_extraction.py` (Phase 0, commit `bf62484`) — 6-layer model-free pipeline: reference-span exclusion → base regex delegation → gazetteer hook → email/URL domain-ownership cue (recovers single-token brands like `GeneDx`) → salience ranking → `cleanco` canonicalization. Wired at the single seam `ContentClassifier.extract_company_names`. 629 tests green; `test_org_extraction.py` (7) added. Full plan: [`docs/plans/ORG_NER_REPLACEMENT_PLAN.md`](plans/ORG_NER_REPLACEMENT_PLAN.md). Phase 1 (GLiNER `small-v2.1`, windowed 1800+500 chars, 138 ms/doc) benchmarked and recommended as an optional escalation, not the default. Phase 2 (known-brand gazetteer + hosted-API opt-in) deferred.
 
 

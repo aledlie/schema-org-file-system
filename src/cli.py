@@ -289,6 +289,105 @@ def cmd_reconcile(args: argparse.Namespace) -> None:
             print(f"    {entry['file_id'][:12]}… {entry['path']}")
 
 
+def cmd_review_people(args: argparse.Namespace) -> None:
+    """Manage the person-name review queue (list / accept / reject / revalidate)."""
+    import shutil
+    from datetime import datetime
+
+    from storage.graph_store import GraphStore, PERSON_REVIEW_STATUSES
+
+    apply = bool(getattr(args, "apply", False))
+    label = "APPLIED" if apply else "DRY RUN"
+
+    db_file = Path(args.db_path)
+
+    def _backup() -> None:
+        if db_file.exists():
+            stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            for suffix in ("", "-wal", "-shm"):
+                src = Path(str(db_file) + suffix)
+                if src.exists():
+                    shutil.copy2(src, Path(f"{db_file}.bak-{stamp}{suffix}"))
+            print(f"Backed up database to {db_file}.bak-{stamp}")
+
+    store = GraphStore(args.db_path)
+
+    # --accept / --reject: set status for named people
+    accept_names: list = getattr(args, "accept", None) or []
+    reject_names: list = getattr(args, "reject", None) or []
+    revalidate: bool = getattr(args, "revalidate", False)
+    status_filter: str = getattr(args, "status", "pending_review")
+
+    if accept_names or reject_names:
+        if apply:
+            _backup()
+        for name in accept_names:
+            if apply:
+                result = store.set_person_review_status(name, "confirmed")
+            else:
+                result = store.set_person_review_status.__doc__ and None  # dry-run stub
+                result = {"name": name, "old_status": "(unchanged)", "new_status": "confirmed"}
+            if result is None:
+                print(f"[{label}] --accept {name!r}: no matching person")
+            else:
+                print(
+                    f"[{label}] {result['name']}: "
+                    f"{result['old_status']} → {result['new_status']}"
+                )
+        for name in reject_names:
+            if apply:
+                result = store.set_person_review_status(name, "rejected")
+            else:
+                result = {"name": name, "old_status": "(unchanged)", "new_status": "rejected"}
+            if result is None:
+                print(f"[{label}] --reject {name!r}: no matching person")
+            else:
+                print(
+                    f"[{label}] {result['name']}: "
+                    f"{result['old_status']} → {result['new_status']}"
+                )
+        return
+
+    if revalidate:
+        if apply:
+            _backup()
+        rows = store.revalidate_people(apply=apply)
+        changed = [r for r in rows if r["changed"]]
+        print(f"[{label}] revalidate: {len(rows)} candidate(s), {len(changed)} change(s)")
+        for row in rows:
+            marker = "*" if row["changed"] else " "
+            score = f"{row['score']:.2f}" if row["score"] is not None else "n/a"
+            print(
+                f"  {marker} {row['name']}: "
+                f"{row['old_status']} → {row['new_status']}  (score={score})"
+            )
+            if row.get("layer_scores"):
+                for layer, val in row["layer_scores"].items():
+                    if val is not None:
+                        print(f"      {layer}: {val:.2f}")
+        return
+
+    # Default: list people by status
+    if status_filter not in PERSON_REVIEW_STATUSES and status_filter != "all":
+        print(
+            f"Unknown --status {status_filter!r}; "
+            f"choose one of {PERSON_REVIEW_STATUSES} or 'all'"
+        )
+        sys.exit(2)
+    rows = store.list_people_by_status(
+        status=None if status_filter == "all" else status_filter
+    )
+    if not rows:
+        print(f"No people with status={status_filter!r}")
+        return
+    print(f"People with status={status_filter!r} ({len(rows)}):")
+    for row in rows:
+        score = f"{row['detection_confidence']:.2f}" if row["detection_confidence"] is not None else "n/a"
+        print(f"  [{row['review_status']}] {row['name']}  (id={row['person_id']}, score={score})")
+        for path in row.get("paths", []):
+            print(f"    {path}")
+
+
 def cmd_health(args: argparse.Namespace) -> None:
     """Run system health check."""
     from health_check import check_system
@@ -396,6 +495,16 @@ def add_content_arguments(parser: argparse.ArgumentParser) -> None:
         "unified = weighted signal scorer; shadow = legacy placement "
         "with unified decisions logged for disagreement analysis "
         "(default: %(default)s)",
+    )
+    parser.add_argument(
+        "--ocr-clip-topk",
+        type=int,
+        default=None,
+        metavar="K",
+        help="Skip OCR on an image unless a text-bearing label ranks in its "
+        "top-K CLIP labels (e.g. 3). Cuts the dominant OCR cost on text-free "
+        "photos; K=3 keeps ~100%% of documents/screenshots in eval. Unified "
+        "scorer only; disabled by default. Requires CLIP.",
     )
 
 
@@ -738,6 +847,52 @@ For more help on a specific command:
         "--apply", action="store_true", help="Write changes (default is dry-run)"
     )
     reconcile_parser.set_defaults(func=cmd_reconcile)
+
+    # Review-people queue (person-name validation, accept/reject/revalidate)
+    review_people_parser = subparsers.add_parser(
+        "review-people",
+        help="Manage the person-name review queue (list / accept / reject / revalidate)",
+        description="List, accept, reject, or revalidate Person nodes in the pending-review "
+        "queue. Dry-run by default; --apply backs up the database first, then writes.",
+    )
+    review_people_parser.add_argument(
+        "--status",
+        default="pending_review",
+        metavar="STATUS",
+        help=(
+            "Filter listing by review_status "
+            "(auto_accepted | pending_review | confirmed | rejected | all; "
+            "default: pending_review)"
+        ),
+    )
+    review_people_parser.add_argument(
+        "--accept",
+        nargs="+",
+        metavar="NAME",
+        help="Mark named person(s) as confirmed (pending → confirmed)",
+    )
+    review_people_parser.add_argument(
+        "--reject",
+        nargs="+",
+        metavar="NAME",
+        help="Mark named person(s) as rejected (tombstone; prune-person still deletes)",
+    )
+    review_people_parser.add_argument(
+        "--revalidate",
+        action="store_true",
+        help=(
+            "Re-run the name validator over pending_review rows and legacy "
+            "auto_accepted rows with empty validation_scores. "
+            "Human-set confirmed/rejected rows are never touched."
+        ),
+    )
+    review_people_parser.add_argument(
+        "--db-path", default=DEFAULT_DB_PATH, help="Path to SQLite database"
+    )
+    review_people_parser.add_argument(
+        "--apply", action="store_true", help="Write changes (default is dry-run)"
+    )
+    review_people_parser.set_defaults(func=cmd_review_people)
 
     # Health check
     health_parser = subparsers.add_parser(

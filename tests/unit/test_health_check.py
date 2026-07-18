@@ -16,7 +16,7 @@ from src.health_check import (
 
 EXPECTED_FEATURES = {
     'python', 'pillow', 'heic', 'ocr', 'clip_vision',
-    'database', 'geocoding', 'sentry', 'documents',
+    'database', 'geocoding', 'sentry', 'documents', 'name_validator',
 }
 
 _VersionInfo = namedtuple('_VersionInfo', 'major minor micro releaselevel serial')

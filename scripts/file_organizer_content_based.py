@@ -145,6 +145,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         enable_cost_tracking: bool = True,
         db_path: Optional[str] = "results/file_organization.db",
         scorer: str = SCORER_DEFAULT,
+        ocr_clip_topk: Optional[int] = None,
     ):
         """
         Initialize the organizer.
@@ -201,6 +202,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
             screenshot_content_classifier=self.rename_analyzer.content_classifier,
             ocr_available=OCR_AVAILABLE,
             scorer=scorer,
+            ocr_clip_topk=ocr_clip_topk,
         )
 
         # Pipeline layer by composition: FileProcessor handles per-file schema
@@ -404,6 +406,7 @@ def run(args: "ContentInputs") -> None:
         enable_cost_tracking=not args.no_cost_tracking,
         db_path=db_path,
         scorer=args.scorer,
+        ocr_clip_topk=args.ocr_clip_topk,
     )
 
     # Organize directories

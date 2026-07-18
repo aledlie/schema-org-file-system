@@ -53,6 +53,7 @@ class SystemHealthChecker:
         self._check_geocoding()
         self._check_error_tracking()
         self._check_document_processing()
+        self._check_name_validator()
         self._checked = True
         return self
 
@@ -247,6 +248,45 @@ class SystemHealthChecker:
                 error=f"Missing: {', '.join(missing_libs)}",
                 impact="No document parsing available"
             )
+
+    def _check_name_validator(self) -> None:
+        """Check person-name validation layers (``names`` extra)."""
+        try:
+            from classifiers.person_name_validator import available_layers
+        except ImportError:
+            try:
+                from src.classifiers.person_name_validator import available_layers  # type: ignore[no-redef]
+            except ImportError:
+                self.features['name_validator'] = FeatureStatus(
+                    name="Person-Name Validator",
+                    available=False,
+                    error="person_name_validator module not found",
+                    impact="No person-name validation — all detected names route to review",
+                )
+                return
+
+        layers = available_layers()
+        active = [name for name, ok in layers.items() if ok]
+        missing = [name for name, ok in layers.items() if not ok]
+        # denylist is always available; the optional layers add precision
+        optional_ok = layers.get("shape", False) and layers.get("probablepeople", False)
+        self.features['name_validator'] = FeatureStatus(
+            name="Person-Name Validator",
+            available=True,
+            version=f"layers: {', '.join(active)}",
+            error=(
+                f"optional layers unavailable: {', '.join(missing)} "
+                "(pip install nameparser probablepeople)"
+                if missing and not optional_ok
+                else None
+            ),
+            impact=(
+                "Name validation active — precision increases with optional layers"
+                if optional_ok
+                else "Name validation degraded — optional layers missing; "
+                "install nameparser probablepeople for higher precision"
+            ),
+        )
 
     def is_available(self, feature: str) -> bool:
         """Check if a specific feature is available."""

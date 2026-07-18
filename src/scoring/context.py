@@ -16,7 +16,7 @@ returns its empty value. The context never imports OCR/CLIP/KIE modules.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional, cast
+from typing import Any, Callable, Dict, FrozenSet, Optional, cast
 
 from .weights import OCR_CONFIDENCE_GATE
 
@@ -44,6 +44,8 @@ class FileContext:
         image_metadata_provider: Optional[Callable[[Path], Dict[str, Any]]] = None,
         kie_provider: Optional[Callable[[Path], Any]] = None,
         ocr_confidence_gate: float = OCR_CONFIDENCE_GATE,
+        ocr_clip_topk: Optional[int] = None,
+        clip_text_labels: FrozenSet[str] = frozenset(),
     ) -> None:
         self.path = Path(path)
         self.schema_type = schema_type
@@ -56,12 +58,24 @@ class FileContext:
         self._image_metadata_provider = image_metadata_provider
         self._kie_provider = kie_provider
         self._ocr_confidence_gate = ocr_confidence_gate
+        # CLIP-based OCR gate (opt-in). None disables it (OCR always runs on
+        # images, the historical behavior). When set to an integer K, an image
+        # skips OCR unless a text-bearing label (``clip_text_labels``) ranks in
+        # its top-K CLIP labels. Ranking, not magnitude: cached CLIP scores are
+        # a near-uniform softmax (~0.05/label over 20 labels), so absolute
+        # summed probability can't separate text images from photos — the
+        # signal is in which labels rank highest (eval: K=3 → 100% text recall,
+        # 35% of photos skip OCR). OCR is the dominant per-file cost.
+        self._ocr_clip_topk = ocr_clip_topk
+        self._clip_text_labels = clip_text_labels
 
         self._text: Any = _UNSET
         self._ocr: Any = _UNSET
         self._clip: Any = _UNSET
         self._image_metadata: Any = _UNSET
         self._kie: Any = _UNSET
+        # Telemetry: set when ensure_ocr suppressed OCR via the CLIP gate.
+        self._ocr_gated: bool = False
 
     # ------------------------------------------------------------------ #
     # Derived path conveniences                                            #
@@ -102,10 +116,45 @@ class FileContext:
         return len(self.ensure_text())
 
     def ensure_ocr(self) -> Any:
-        """OCR result (``shared.ocr_classifier.OCRResult``-shaped) or None."""
+        """OCR result (``shared.ocr_classifier.OCRResult``-shaped) or None.
+
+        When the CLIP OCR gate is enabled, an image CLIP confidently reads as
+        a text-free photo skips OCR (returns None) — the OCR CNN pass is the
+        dominant per-file cost, so this is the primary throughput lever on
+        photo-heavy sources. The gate never fires when no OCR provider exists,
+        on non-images, or when CLIP yields no signal (fail-open: run OCR).
+        """
         if self._ocr is _UNSET:
-            self._ocr = self._ocr_provider(self.path) if self._ocr_provider else None
+            if self._ocr_provider is None:
+                self._ocr = None
+            elif self._skip_ocr_by_clip_gate():
+                self._ocr_gated = True
+                self._ocr = None
+            else:
+                self._ocr = self._ocr_provider(self.path)
         return self._ocr
+
+    def _skip_ocr_by_clip_gate(self) -> bool:
+        """True when the CLIP gate is enabled and votes 'text-free photo'.
+
+        Keeps OCR when any text-bearing label ranks in the top-K CLIP labels;
+        skips otherwise. Fails open (keeps OCR) when the gate is disabled, the
+        file is not an image, or CLIP produced no signal.
+        """
+        if self._ocr_clip_topk is None or not self.is_image:
+            return False
+        clip = self.ensure_clip()
+        if not clip:  # no CLIP signal → fail open, keep OCR
+            return False
+        top_labels = sorted(clip, key=lambda label: clip[label], reverse=True)[
+            : self._ocr_clip_topk
+        ]
+        return not any(label in self._clip_text_labels for label in top_labels)
+
+    @property
+    def ocr_gated(self) -> bool:
+        """Whether the CLIP gate suppressed OCR for this file (telemetry)."""
+        return self._ocr_gated
 
     @property
     def ocr_text(self) -> str:

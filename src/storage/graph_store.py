@@ -53,19 +53,6 @@ except ImportError:
     )
 
 
-# Substrings (case-insensitive) that mark a `Person.name` as an obvious
-# non-person false positive (organization/meeting names misdetected as
-# people). Used by `get_all_people_with_files` to filter results.
-_PERSON_NAME_DENYLIST = (
-    "studio",
-    "meeting",
-    "member id",
-    "inc",
-    "llc",
-    "corp",
-    "company",
-)
-
 # Valid values for `Person.review_status` — single source of truth lives on the
 # model (docs/plans/PERSON_NAME_VALIDATION_PLAN.md); re-exported here for the
 # review-queue validation call sites below.
@@ -690,9 +677,9 @@ class GraphStore:
         """
         Get all people who have at least `min_files` organized files.
 
-        Filters out obvious non-person false positives (organization or
-        meeting names accidentally detected as people) using
-        `_PERSON_NAME_DENYLIST`, and excludes files that haven't been
+        Filters out rejected and pending-review persons via the review_status
+        gate (false positives are caught at write time by the person_name_validator
+        and tombstoned via review_status). Excludes files that haven't been
         organized yet (current_path is None).
 
         Args:
@@ -710,14 +697,10 @@ class GraphStore:
             for person in people:
                 # Validation-gate status filter: hide rejected tombstones and
                 # names awaiting human review from the person-view. Legacy rows
-                # (NULL/'' status) are treated as visible. The substring
-                # denylist stays as a belt-and-suspenders guard through this
-                # phase (legacy rows were backfilled to 'auto_accepted' and are
-                # only re-scored by the Phase 3 --revalidate sweep).
+                # (NULL/'' status) are treated as visible. False positives are
+                # caught at write time by the person_name_validator (L0 denylist
+                # + composite score) and tombstoned here via review_status.
                 if getattr(person, "review_status", None) in ("rejected", "pending_review"):
-                    continue
-                name_lower = person.name.lower()
-                if any(term in name_lower for term in _PERSON_NAME_DENYLIST):
                     continue
 
                 paths = [f.current_path for f in person.files if f.current_path]

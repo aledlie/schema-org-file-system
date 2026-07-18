@@ -139,6 +139,7 @@ try:
         CLIP_CONTENT_LABELS,
         CLIP_ENHANCE_THRESHOLD,
         CLIP_LABEL_TO_ORGANIZER,
+        CLIP_TEXT_BEARING_LABELS,
     )
 
     ENHANCED_CLIP_AVAILABLE = True
@@ -148,6 +149,7 @@ except ImportError:
     CLIP_CONTENT_LABELS: List[str] = []  # type: ignore[no-redef]
     CLIP_LABEL_TO_ORGANIZER: Dict[str, Tuple[str, str]] = {}  # type: ignore[no-redef]
     CLIP_ENHANCE_THRESHOLD: float = 0.3  # type: ignore[no-redef]
+    CLIP_TEXT_BEARING_LABELS: frozenset = frozenset()  # type: ignore[no-redef]
 
 # CLIP classifier — used by the weak-image enhancement signal (_run_clip_signal).
 # Image composition/face detection lives in the injected image_analyzer.
@@ -272,6 +274,7 @@ class ContentOrganizer(BaseOrganizer):
         screenshot_content_classifier: Any = None,
         ocr_available: Optional[bool] = None,
         scorer: str = SCORER_DEFAULT,
+        ocr_clip_topk: Optional[int] = None,
     ) -> None:
         super().__init__(
             base_path=base_path,
@@ -283,6 +286,11 @@ class ContentOrganizer(BaseOrganizer):
         if scorer not in SCORER_MODES:
             raise ValueError(f"scorer must be one of {SCORER_MODES}, got {scorer!r}")
         self.scorer_mode = scorer
+        # Optional CLIP-based OCR gate top-K (None = disabled). Passed into
+        # every FileContext so the unified scorer can skip OCR on text-free
+        # photos — OCR runs only when a text-bearing label ranks in the top-K
+        # CLIP labels (UNIFIED_SCORING_PLAN P1).
+        self.ocr_clip_topk = ocr_clip_topk
         # Shadow log is append-only per file; truncate once per run so a fresh
         # run's disagreement report never inherits stale records from prior runs
         # (e.g. leftover scratchpad paths from an earlier session).
@@ -1161,6 +1169,8 @@ class ContentOrganizer(BaseOrganizer):
             image_metadata_provider=metadata_provider,
             kie_provider=kie_provider,
             ocr_confidence_gate=_OCR_CONFIDENCE_THRESHOLD,
+            ocr_clip_topk=self.ocr_clip_topk,
+            clip_text_labels=CLIP_TEXT_BEARING_LABELS,
         )
 
     def _detect_file_category_unified(

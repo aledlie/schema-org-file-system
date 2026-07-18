@@ -65,6 +65,22 @@ CLIP_CONTENT_LABELS = [
     "abstract art or pattern",
 ]
 
+# CLIP content labels that indicate a text-bearing image — one where OCR is
+# worth running. Used by the optional CLIP-based OCR gate
+# (FileContext.ensure_ocr, --ocr-clip-gate): when the summed CLIP probability
+# over these labels falls below the gate, OCR is skipped because the image is
+# almost certainly a text-free photo. Keep in sync with CLIP_CONTENT_LABELS.
+CLIP_TEXT_BEARING_LABELS = frozenset(
+    {
+        "a document or text",
+        "screenshot: a computer screen",
+        "screenshot: a mobile phone",
+        "a diagram or chart",
+        "a meme or social media image",
+        "a logo or brand image",
+    }
+)
+
 # Labels that CLIP handles better without "a photo of" prefix.
 _NO_PHOTO_PREFIX = {
     "a diagram or chart",

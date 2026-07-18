@@ -42,9 +42,8 @@ _WEIGHT_PROBABLEPEOPLE = 0.4
 _WEIGHT_GAZETTEER = 0.4
 
 # L0 denylist: case-insensitive substrings that mark an obvious non-person
-# (organization / event / meeting names misdetected as people). This is the
-# authoritative copy; graph_store re-exports it until its read-time filter is
-# removed (plan Phase 3).
+# (organization / event / meeting names misdetected as people). Authoritative
+# copy; graph_store's read-time filter and private copy were removed in Phase 3.
 PERSON_NAME_DENYLIST: Tuple[str, ...] = (
     "studio",
     "meeting",

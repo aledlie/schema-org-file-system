@@ -41,6 +41,7 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship,
 from sqlalchemy.ext.hybrid import hybrid_property
 import enum
 import hashlib
+import json
 import uuid
 
 from .schema_org_base import SchemaOrgSerializable
@@ -991,6 +992,23 @@ def build_person_jsonld(f) -> Dict[str, Any]:
         result["dateModified"] = f.last_seen.isoformat()
 
     result["mentionCount"] = f.file_count or 0  # custom ml: extension
+
+    # additionalProperty sidecar: machine-detection provenance per the RO-Crate
+    # community pattern (schema.org has no native uncertainty construct).
+    # Guards use getattr so pre-migration rows (missing columns) stay serializable.
+    props = []
+    review_status = getattr(f, "review_status", None)
+    detection_confidence = getattr(f, "detection_confidence", None)
+    validation_scores = getattr(f, "validation_scores", None)
+    if review_status:
+        props.append({"@type": "PropertyValue", "propertyID": "ml:reviewStatus", "value": review_status})
+    if detection_confidence is not None:
+        props.append({"@type": "PropertyValue", "propertyID": "ml:detectionConfidence", "value": detection_confidence})
+    if validation_scores:
+        props.append({"@type": "PropertyValue", "propertyID": "ml:validationScores", "value": json.dumps(validation_scores)})
+    if props:
+        result["additionalProperty"] = props
+
     return result
 
 
