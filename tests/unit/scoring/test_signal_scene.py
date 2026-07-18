@@ -86,6 +86,21 @@ class TestRun:
         assert score.evidence[EVIDENCE_SCENE_CLASS] == scene_class
         assert score.evidence[EVIDENCE_SCENE_PROB] == pytest.approx(0.95, abs=1e-3)
 
+    def test_graphic_argmax_routes_to_graphics_other(self):
+        # 5-class artifact (graphic added): the graphic column winning routes to
+        # media/graphics_other with the generic ImageObject @type. A pre-graphic
+        # 4-class artifact still loads — SceneSignal ignores unknown columns.
+        scores = signal_with(
+            probs=[0.01, 0.02, 0.01, 0.02, 0.94],
+            class_order=DEFAULT_ORDER + ["graphic"],
+        ).run(make_ctx())
+        assert len(scores) == 1
+        score = scores[0]
+        assert (score.category, score.subcategory) == ("media", "graphics_other")
+        assert score.evidence[EVIDENCE_SCHEMA_TYPE] == "ImageObject"
+        assert score.evidence[EVIDENCE_SCENE_CLASS] == "graphic"
+        assert score.evidence[EVIDENCE_SCENE_PROB] == pytest.approx(0.94, abs=1e-3)
+
     def test_neither_argmax_emits_nothing(self):
         # Reject class wins -> no positive class clears the threshold.
         assert signal_with(probs=[0.85, 0.05, 0.05, 0.05]).run(make_ctx()) == []

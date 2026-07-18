@@ -75,11 +75,15 @@ SCENE_CLASSES: Dict[str, int] = {
     "interior": 1,
     "exterior": 2,
     "place": 3,
+    # Non-photographic imagery (logos, posters, icon sets, diagrams, data-viz,
+    # flat/vector illustrations). Emitting class — routes to Media/Graphics — that
+    # catches opaque full-bleed graphics the cheap GraphicDetectionSignal misses.
+    "graphic": 4,
 }
 CLASS_NAMES: Dict[int, str] = {v: k for k, v in SCENE_CLASSES.items()}
 _NEITHER = SCENE_CLASSES["neither"]
 # Directory-root class names (everything but the DB-fed reject class).
-_POSITIVE_NAMES: Tuple[str, ...] = ("interior", "exterior", "place")
+_POSITIVE_NAMES: Tuple[str, ...] = ("interior", "exterior", "place", "graphic")
 
 _DEFAULT_MANIFEST = Path("results/scene_labels.csv")
 _DEFAULT_DB = Path("results/file_organization.db")

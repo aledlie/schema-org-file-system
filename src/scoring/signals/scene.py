@@ -55,15 +55,30 @@ SCENE_CATEGORY: Dict[str, Tuple[str, str]] = {
     "interior": ("media", "interiors_other"),
     "exterior": ("media", "exteriors_other"),
     "place": ("media", "place_other"),
+    # ``graphics_other`` resolves through the media split to Media/Graphics/Other
+    # (same target GraphicDetectionSignal emits): the trained probe is the heavy
+    # voter for opaque graphics the cheap pixel gate cannot see.
+    "graphic": ("media", "graphics_other"),
 }
 
 # Scene class -> schema.org @type (plan §Design — hierarchy encoded here).
-SCENE_SCHEMA: Dict[str, str] = {"interior": "Room", "exterior": "House", "place": "Place"}
+SCENE_SCHEMA: Dict[str, str] = {
+    "interior": "Room",
+    "exterior": "House",
+    "place": "Place",
+    "graphic": "ImageObject",  # not a Place/Accommodation — generic image @type
+}
 STRUCTURE_PARENT = "Accommodation"  # v2 backoff: common ancestor of Room & House
 
 # Trainer label ints -> names (mirrors SCENE_CLASSES in
 # scripts/prototype_scene_probe.py); fallback when meta lacks class_names.
-_INT_CLASS_NAMES: Dict[int, str] = {0: "neither", 1: "interior", 2: "exterior", 3: "place"}
+_INT_CLASS_NAMES: Dict[int, str] = {
+    0: "neither",
+    1: "interior",
+    2: "exterior",
+    3: "place",
+    4: "graphic",
+}
 
 # Signal-local evidence keys: the winning class name + its raw probability.
 EVIDENCE_SCENE_CLASS = "scene_class"
