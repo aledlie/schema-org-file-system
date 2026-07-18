@@ -152,7 +152,7 @@ def rich_session():
 
     f_img = _file(
         "/docs/one.jpg", mime_type="image/jpeg", gps_latitude=0.0, gps_longitude=5.0
-    )  # lat falsy -> no contentLocation
+    )  # lat=0.0 (equator) is a valid coordinate; contentLocation must be emitted
     f_img.categories = [root]  # single category, no "about"
     f_img.locations = [us2]  # single -> object
 
@@ -216,6 +216,27 @@ def test_core_file_export_emits_schema_data_description(rich_session):
 
     assert rich["description"] == "Content: a chart or graph (84% confident)"
     assert "description" not in plain
+
+
+def test_gps_zero_latitude_emits_content_location(rich_session):
+    """gps_latitude=0.0 (equator) must not be dropped by a falsy guard.
+
+    Regression for the `if f.gps_latitude and f.gps_longitude:` bug in
+    build_file_jsonld — a coordinate of exactly 0.0 is valid and must appear
+    in contentLocation.  Covers both the ORM and core-query export paths.
+    """
+    f_img_id = File.generate_canonical_id("/docs/one.jpg")
+    for use_core in (False, True):
+        records = _by_id(
+            SchemaOrgExporter(rich_session, use_core=use_core)._collect_records([File])
+        )
+        img = records[f_img_id]
+        assert "contentLocation" in img, (
+            f"contentLocation missing for lat=0.0 (use_core={use_core})"
+        )
+        geo = img["contentLocation"]["geo"]
+        assert geo["latitude"] == 0.0
+        assert geo["longitude"] == 5.0
 
 
 def test_core_export_file_roundtrip(rich_session, tmp_path):

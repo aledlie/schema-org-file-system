@@ -881,7 +881,7 @@ def build_file_jsonld(f, categories, companies, people, locations) -> Dict[str, 
             result["hasFaces"] = f.has_faces  # custom ml: extension
         if f.exif_datetime:
             result["datePublished"] = f.exif_datetime.isoformat()
-        if f.gps_latitude and f.gps_longitude:
+        if f.gps_latitude is not None and f.gps_longitude is not None:
             result["contentLocation"] = {
                 "@type": "Place",
                 "geo": {
