@@ -1,62 +1,62 @@
 {
   "metadata": {
-    "generated_at": "2026-07-17T18:10:05.358171",
-    "session_start": "2026-07-17T18:09:53.602376",
-    "session_duration_sec": 11.755799,
-    "total_usage_records": 7
+    "generated_at": "2026-07-17T19:22:04.744840",
+    "session_start": "2026-07-17T19:09:07.265427",
+    "session_duration_sec": 777.479441,
+    "total_usage_records": 50
   },
   "cost_summary": {
-    "total_cost": 0.00030000000000000003,
-    "total_files_processed": 7,
-    "total_processing_time_sec": 5.169340133666992,
-    "avg_cost_per_file": 4.285714285714286e-05,
+    "total_cost": 0.002625,
+    "total_files_processed": 50,
+    "total_processing_time_sec": 19.11493945121765,
+    "avg_cost_per_file": 5.25e-05,
     "feature_breakdown": {
-      "doctr_ocr": {
-        "feature_name": "doctr_ocr",
-        "total_invocations": 1,
-        "total_processing_time_sec": 4.368327856063843,
-        "total_cost": 0.0,
-        "avg_cost_per_file": 0.0,
+      "clip_vision": {
+        "feature_name": "clip_vision",
+        "total_invocations": 25,
+        "total_processing_time_sec": 4.68923544883728,
+        "total_cost": 0.0025,
+        "avg_cost_per_file": 0.0001,
         "success_rate": 1.0,
-        "total_files_processed": 1
+        "total_files_processed": 25
       },
-      "pdf_extraction": {
-        "feature_name": "pdf_extraction",
-        "total_invocations": 6,
-        "total_processing_time_sec": 0.8010122776031494,
-        "total_cost": 0.00030000000000000003,
-        "avg_cost_per_file": 5e-05,
+      "face_detection": {
+        "feature_name": "face_detection",
+        "total_invocations": 25,
+        "total_processing_time_sec": 14.425704002380371,
+        "total_cost": 0.000125,
+        "avg_cost_per_file": 5e-06,
         "success_rate": 1.0,
-        "total_files_processed": 6
+        "total_files_processed": 25
       }
     }
   },
   "roi_summary": {
-    "total_cost": 0.00030000000000000003,
-    "total_value": 4.341666666666668,
-    "overall_roi_percentage": 1447122.2222222225,
-    "total_manual_hours_saved": 0.1736666666666667,
+    "total_cost": 0.002625,
+    "total_value": 5.121527777777779,
+    "overall_roi_percentage": 195005.8201058201,
+    "total_manual_hours_saved": 0.2048611111111111,
     "hourly_rate_used": 25.0,
     "feature_breakdown": {
-      "pdf_extraction": {
-        "feature_name": "pdf_extraction",
-        "total_cost": 0.00030000000000000003,
-        "total_value": 4.000000000000001,
-        "roi_percentage": 1333233.3333333335,
-        "manual_hours_saved": 0.16000000000000003,
-        "cost_per_file": 5e-05,
-        "value_per_file": 0.6666666666666667,
+      "clip_vision": {
+        "feature_name": "clip_vision",
+        "total_cost": 0.0025,
+        "total_value": 4.427083333333334,
+        "roi_percentage": 176983.33333333334,
+        "manual_hours_saved": 0.17708333333333334,
+        "cost_per_file": 0.0001,
+        "value_per_file": 0.17708333333333334,
         "break_even_files": 1
       },
-      "doctr_ocr": {
-        "feature_name": "doctr_ocr",
-        "total_cost": 0.0,
-        "total_value": 0.3416666666666666,
-        "roi_percentage": Infinity,
-        "manual_hours_saved": 0.013666666666666666,
-        "cost_per_file": 0.0,
-        "value_per_file": 0.3416666666666667,
-        "break_even_files": 0
+      "face_detection": {
+        "feature_name": "face_detection",
+        "total_cost": 0.000125,
+        "total_value": 0.6944444444444444,
+        "roi_percentage": 555455.5555555555,
+        "manual_hours_saved": 0.027777777777777776,
+        "cost_per_file": 5e-06,
+        "value_per_file": 0.02777777777777778,
+        "break_even_files": 1
       }
     }
   },
