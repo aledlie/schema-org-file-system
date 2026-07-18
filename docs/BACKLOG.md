@@ -61,14 +61,15 @@ The signal for graphics is non-visual-semantic and should come from cheap non-CL
 
 The scripts↔src audit and the TimelineAPI copypasta trim both surfaced duplication that is *internal to `src/`* — out of scope for the scripts↔src cleanup but worth a dedicated pass. Investigate whether each is worth consolidating or is a deliberate layer split before changing anything.
 
-**Status:** Open — investigation, not committed work
+**Status:** Done (2026-07-18) — both candidates investigated; both are deliberate splits. No consolidation.
 **Priority:** P3
 **Source:** TimelineAPI copypasta trim + scripts↔src audit out-of-scope observations, 2026-07-14
 
-Candidates found so far:
+Candidates investigated (2026-07-18):
 
-1. **Session/aggregate stats computed at two layers.** `TimelineAPI.get_cumulative_stats` (`src/api/timeline_api.py`, raw sqlite3) and `GraphStore.get_statistics` (`src/storage/graph_store.py:1215`, SQLAlchemy ORM) both aggregate total files / organized count / category + extension breakdowns over the same DB. Likely *intentional* — timeline reads lightweight raw SQL to avoid pulling the ORM (and its torch import weight) into the dashboard path — but the scopes also differ (session-scoped vs global), so confirm the split is deliberate and, if so, document it rather than merging.
-2. **`Technical/` extension map overlap.** `content_organizer.py`'s extension map (~lines 240-330) overlaps `mime_classifier.py`'s extension routing — two extension→category tables that can drift.
+1. **Session/aggregate stats at two layers — deliberate split.** `TimelineAPI.get_cumulative_stats` (`src/api/timeline_api.py`, raw sqlite3) uses lightweight raw SQL to avoid pulling the ORM and its torch imports into the dashboard path; `GraphStore.get_statistics` (`src/storage/graph_store.py:1215`, SQLAlchemy ORM) is the global-scope ORM aggregate. Scopes also differ: `get_cumulative_stats` is session-scoped, `get_statistics` is library-global. Do not merge; the different backends are load-isolation by design.
+
+2. **`Technical/` extension map and `mime_classifier.py` code routing — deliberate split, different taxonomies.** `FILEPATH_PATTERNS` in `src/scoring/signals/filepath.py` routes code extensions (`.py`, `.ts`, `.js`, …) to `Technical/*` string paths — used by `FilepathSignal` at weight 0.6. `classify_by_mime` in `src/organizers/mime_classifier.py` routes the same extensions to `(code, python, SoftwareSourceCode)` tuples, which `MimeFallbackSignal` translates through `MIME_TO_CONTENT` to `(technical, other)` at weight 0.4. The destinations are different (`Technical/Python` vs `Technical/Other`) and the tables serve different clients (unified scorer vs type organizer + MIME fallback). FilepathSignal always wins when it fires; the MIME fallback is a catch-all that deliberately coalesces subcategories. No consolidation needed.
 
 Both candidates are recorded in the review doc's "Out-of-scope observations": [`docs/reviews/SCRIPTS_SRC_DUPLICATION_AUDIT.md`](reviews/SCRIPTS_SRC_DUPLICATION_AUDIT.md).
 
@@ -127,7 +128,7 @@ A live `organize-files content --source ~/Desktop --limit 10` (unified scorer) o
 
 Surfaced as a legacy↔unified disagreement on `GeneDx_Variant_Classification_Process_June_2021.pdf` (`--scorer shadow`, `~/Downloads`): legacy → `organization/healthcare`, unified → `technical/other`. Analyzing the PDF (2026-07-17, verified by reproducing `EntityDetector.extract_company_names` on its text) shows the disagreement is a symptom of two entity-detection bugs — and that **neither placement is clearly right**, so the earlier "legacy won / OCR starved the org signal" framing was wrong. The PDF has a clean 11 k-char text layer; the logged `OCR error: unable to read file` was on the redundant raster-OCR path and did not affect org detection.
 
-**Status:** Open — not committed work; entity-detection quality.
+**Status:** Done (2026-07-18, Phase 0) — both failure modes fixed by `src/classifiers/org_extraction.py` (commit `bf62484`); Phase 1 GLiNER benchmarked (see plan). Phase 2 (optional gazetteer + hosted-API) deferred.
 **Priority:** P3
 **Source:** GeneDx PDF content analysis, 2026-07-17
 
@@ -138,6 +139,6 @@ The document is GeneDx's public "variant classification assertion criteria" (a l
 
 **Routing consequence:** legacy would create a spurious `Organization/{Medical Genetics and Genomics and the Association}` folder (a mangled cited standards body, not GeneDx), so unified's `Technical/Other` is arguably the safer placement here — the fix belongs in `entity_detector`, not in re-weighting the org signal. Cross-check other citation-heavy PDFs (research papers, methodology docs) for the same false-positive-org pattern before changing extraction.
 
-**Chosen approach (2026-07-18):** full replacement plan in [`docs/plans/ORG_NER_REPLACEMENT_PLAN.md`](plans/ORG_NER_REPLACEMENT_PLAN.md) — GLiNER v2.1 (zero-shot ORG NER, Apache-2.0, bounded-window for latency) behind the existing `extract_company_names` seam, paired with `cleanco` canonicalization and a model-free scoping layer (reference-span exclusion + email-domain ownership ranking) that fixes both failure modes. Phase 0 (model-free) prototype and a GLiNER latency benchmark on real docs are being run to settle the design.
+**Shipped (2026-07-18):** `src/classifiers/org_extraction.py` (Phase 0, commit `bf62484`) — 6-layer model-free pipeline: reference-span exclusion → base regex delegation → gazetteer hook → email/URL domain-ownership cue (recovers single-token brands like `GeneDx`) → salience ranking → `cleanco` canonicalization. Wired at the single seam `ContentClassifier.extract_company_names`. 629 tests green; `test_org_extraction.py` (7) added. Full plan: [`docs/plans/ORG_NER_REPLACEMENT_PLAN.md`](plans/ORG_NER_REPLACEMENT_PLAN.md). Phase 1 (GLiNER `small-v2.1`, windowed 1800+500 chars, 138 ms/doc) benchmarked and recommended as an optional escalation, not the default. Phase 2 (known-brand gazetteer + hosted-API opt-in) deferred.
 
 
