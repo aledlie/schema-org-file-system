@@ -260,6 +260,20 @@ CONTENT_CATEGORY_PATHS: Dict[str, Any] = {
             "meeting": "Media/Interiors/MeetingRoom",
             "other": "Media/Interiors",
         },
+        # Building/house exteriors — facades, porches, and attached patios.
+        # schema.org @type ``House`` (Accommodation, sibling of Room), emitted by
+        # the scene signal's schema_type evidence; folder ``Media/Exteriors``.
+        # Reached via the underscored ``exteriors_other`` subcategory form. See
+        # docs/plans/MEDIA_EXTERIORS_PLAN.md for the scene taxonomy + schema map.
+        "exteriors": {
+            "other": "Media/Exteriors",
+        },
+        # Outdoor / landscape / travel and non-residential or commercial scenes.
+        # schema.org @type ``Place`` (the generic superclass of Accommodation);
+        # folder ``Media/Place``. Reached via the underscored ``place_other`` form.
+        "place": {
+            "other": "Media/Place",
+        },
         "other": "Media/Other",
     },
     "uncategorized": "Uncategorized",

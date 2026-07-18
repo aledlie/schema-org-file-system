@@ -1,0 +1,7 @@
+# Scene-probe hand-labeling corpus. The class dirs hold local copies/symlinks of
+# personal images used to train the 4-class scene probe — never commit those.
+# This file + README.md stay tracked; the image corpus does not.
+interior/
+exterior/
+place/
+neither/

@@ -248,6 +248,24 @@ class TestGetDestinationPath:
         )
         assert "Travel" in str(result)
 
+    def test_media_exteriors_other(self, organizer: ContentOrganizer, tmp_path: Path) -> None:
+        # Scene taxonomy: exteriors_other -> Media/Exteriors (schema.org House).
+        result = organizer.get_destination_path(
+            file_path=Path("/photos/house.jpg"),
+            category="media",
+            subcategory="exteriors_other",
+        )
+        assert "Media/Exteriors" in str(result)
+
+    def test_media_place_other(self, organizer: ContentOrganizer, tmp_path: Path) -> None:
+        # Scene taxonomy: place_other -> Media/Place (schema.org Place).
+        result = organizer.get_destination_path(
+            file_path=Path("/photos/park.jpg"),
+            category="media",
+            subcategory="place_other",
+        )
+        assert "Media/Place" in str(result)
+
     def test_date_organization_overrides_path(
         self, tmp_path: Path, mock_classifier: MagicMock
     ) -> None:
