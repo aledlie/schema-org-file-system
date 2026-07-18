@@ -18,6 +18,7 @@ from src.organizers.content_organizer import (
     ContentOrganizer,
     _mime_result_to_content_category,
 )
+from src.scoring.signals.interior import INTERIOR_DESCRIPTION_LABEL
 
 MODULE = "src.organizers.content_organizer"
 
@@ -977,6 +978,61 @@ class TestRunClipSignal:
             org._run_clip_signal(Path("/pics/img.png"))
             org._run_clip_signal(Path("/pics/img.png"))
         assert clip.classify_raw.call_count == 1
+
+
+class TestStashDecisionStateInteriorDescription:
+    """A probe-detected interior describes itself from its calibrated
+    P(interior), overriding the zero-shot CLIP label's softmax-floor score."""
+
+    @staticmethod
+    def _score(signal_name: str, evidence: dict, confidence: float = 0.9) -> SimpleNamespace:
+        return SimpleNamespace(
+            signal_name=signal_name,
+            category="media",
+            subcategory="interiors_other",
+            confidence=confidence,
+            evidence=evidence,
+        )
+
+    def _decision(self, winning: list, scores: list) -> SimpleNamespace:
+        return SimpleNamespace(
+            category="media",
+            subcategory="interiors_other",
+            schema_type="Room",
+            confidence=0.85,
+            margin=0.4,
+            decision_state="committed",
+            winning_signals=winning,
+            all_scores=scores,
+        )
+
+    def test_interior_win_overrides_clip_floor(self, organizer: ContentOrganizer) -> None:
+        # clip_vision listed first to prove the precedence is order-independent,
+        # not merely first-write-wins on all_scores ordering.
+        decision = self._decision(
+            winning=["interior"],
+            scores=[
+                self._score("clip_vision", {"clip_label": "an interior room", "clip_score": 0.05}),
+                self._score("interior", {"interior_prob": 0.9991}, confidence=0.9991),
+            ],
+        )
+        organizer._stash_decision_state(decision, scorer_label="unified")
+        label, score = organizer._last_file_state["clip_description"]
+        assert label == INTERIOR_DESCRIPTION_LABEL
+        assert score == pytest.approx(0.9991)
+
+    def test_interior_not_winner_keeps_clip_label(self, organizer: ContentOrganizer) -> None:
+        decision = self._decision(
+            winning=["clip_vision"],
+            scores=[
+                self._score("interior", {"interior_prob": 0.72}, confidence=0.72),
+                self._score("clip_vision", {"clip_label": "food or a meal", "clip_score": 0.8}),
+            ],
+        )
+        organizer._stash_decision_state(decision, scorer_label="unified")
+        label, score = organizer._last_file_state["clip_description"]
+        assert label == "food or a meal"
+        assert score == pytest.approx(0.8)
 
 
 # ------------------------------------------------------------------ #

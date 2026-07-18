@@ -41,6 +41,13 @@ INTERIOR_MIN_PROB = 0.5
 # Signal-local evidence key carrying the raw probe probability.
 EVIDENCE_INTERIOR_PROB = "interior_prob"
 
+# Signal identity + the human phrase surfaced in schema.org descriptions for a
+# probe-detected interior. Replaces the zero-shot CLIP label whose softmax-floor
+# confidence (~5%) understated these images (the probe's calibrated P is ~99%);
+# ContentOrganizer._stash_decision_state prefers this when the probe wins.
+INTERIOR_SIGNAL_NAME = "interior"
+INTERIOR_DESCRIPTION_LABEL = "an interior room"
+
 
 def _load_probe(path: Path) -> Optional[Any]:
     """Load the persisted sklearn pipeline, or None if unavailable."""
@@ -56,7 +63,7 @@ def _load_probe(path: Path) -> Optional[Any]:
 class InteriorSignal:
     """Votes ``media/interiors_other`` (schema.org ``Room``) from the C1 probe."""
 
-    name = "interior"
+    name = INTERIOR_SIGNAL_NAME
     weight = W_INTERIOR
     cost_tier = "heavy"
 

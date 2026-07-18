@@ -404,6 +404,31 @@ class TestContentDescription:
         )
 
 
+class TestGenerateSchemaRoomFamily:
+    """Interior Room family (from the unified InteriorSignal) is image-shaped:
+    generate_schema must persist the assigned @type with image properties, not
+    fall through to DocumentGenerator's ``DigitalDocument`` default."""
+
+    @pytest.mark.parametrize("room_type", ["Room", "HotelRoom", "MeetingRoom"])
+    def test_room_family_keeps_its_type_and_is_image_shaped(
+        self, tmp_path: Path, room_type: str
+    ) -> None:
+        fp = _make_file_processor(tmp_path)
+        img = tmp_path / "interior.png"
+        img.write_bytes(b"x")
+        schema = fp.generate_schema(img, room_type)
+        assert schema["@type"] == room_type
+        # contentUrl is an ImageGenerator property; its presence proves we did
+        # NOT drop into the DocumentGenerator branch.
+        assert "contentUrl" in schema
+
+    def test_unknown_type_still_falls_back_to_document(self, tmp_path: Path) -> None:
+        fp = _make_file_processor(tmp_path)
+        f = tmp_path / "x.bin"
+        f.write_bytes(b"x")
+        assert fp.generate_schema(f, "TotallyUnknownType")["@type"] == "DigitalDocument"
+
+
 # ---------------------------------------------------------------------------
 # organize_file — AI classification paths (skip, already-organized, error,
 # non-dry-run)

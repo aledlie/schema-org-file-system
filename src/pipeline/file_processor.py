@@ -47,6 +47,16 @@ try:
 except ImportError:
     SCHOLARLY_ARTICLE_SCHEMA_TYPE = "ScholarlyArticle"
 
+# Schema.org types that describe image *files* and so build via ImageGenerator
+# (contentUrl/width/height), even when the routing decision assigns a more
+# specific @type. Includes the interior "Room" family emitted by the unified
+# InteriorSignal (src/scoring/signals/interior.py; mirrors ROOM_SUBTYPE_SCHEMA
+# in photo_composition.py): an interior photo is still an image, so it keeps
+# image metadata while carrying the Room @type the decision assigned. Without
+# this the Room family falls through _generate_schema's ``else`` branch to
+# DocumentGenerator and is silently persisted as "DigitalDocument".
+_IMAGE_SCHEMA_TYPES = frozenset({"ImageObject", "Room", "HotelRoom", "MeetingRoom"})
+
 # KIE (Key Information Extraction) schema mapping for graph-store persistence.
 try:
     from shared.kie_schema_mapping import kie_result_to_schema_org
@@ -146,8 +156,10 @@ class FileProcessor:
         actual_path = str(file_path.absolute())
         description = self._content_description(file_path)
 
-        # Create generator based on type
-        if schema_type == "ImageObject":
+        # Create generator based on type. The Room family (interior photos) is
+        # image-shaped: ImageGenerator emits the assigned @type (Room/HotelRoom/
+        # MeetingRoom) while keeping contentUrl/width/height.
+        if schema_type in _IMAGE_SCHEMA_TYPES:
             generator: Any = ImageGenerator(schema_type)
             generator.set_property("name", file_path.name, PropertyType.TEXT)
             generator.set_property("contentUrl", file_url, PropertyType.URL)

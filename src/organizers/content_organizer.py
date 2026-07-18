@@ -26,6 +26,11 @@ from src.scoring.registry import build_default_signals
 from src.scoring.scorer import Scorer
 from src.scoring.signals.clip_vision import GEOGRAPHIC_LABELS, map_clip_label
 from src.scoring.signals.identity_document import ID_MIN_TEXT_CHARS, detect_identity_document
+from src.scoring.signals.interior import (
+    EVIDENCE_INTERIOR_PROB,
+    INTERIOR_DESCRIPTION_LABEL,
+    INTERIOR_SIGNAL_NAME,
+)
 
 # Logic extracted into the unified-scoring signal modules (Phase 1); the
 # legacy chain delegates to these and keeps the historical names importable.
@@ -1157,6 +1162,18 @@ class ContentOrganizer(BaseOrganizer):
         plus the JSON-safe ``scoring_decision`` snapshot persisted into
         ``file_categories.signal_evidence``.
         """
+        # A probe-detected interior describes itself from its calibrated
+        # P(interior), not the zero-shot CLIP label whose softmax floor (~5%)
+        # understated these images. Set first so the first-write-wins clip_label
+        # loop below cannot overwrite it.
+        if INTERIOR_SIGNAL_NAME in decision.winning_signals:
+            for score in decision.all_scores:
+                if score.signal_name == INTERIOR_SIGNAL_NAME:
+                    self._last_file_state["clip_description"] = (
+                        INTERIOR_DESCRIPTION_LABEL,
+                        score.evidence.get(EVIDENCE_INTERIOR_PROB, score.confidence),
+                    )
+                    break
         for score in decision.all_scores:
             research = score.evidence.get("research")
             if research and "research" not in self._last_file_state:
