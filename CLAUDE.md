@@ -146,7 +146,7 @@ pytest tests/e2e/            # Playwright E2E
 
 ## Gotchas
 
-- **Oversized images** — Pillow's >178M-pixel bomb guard raises `DecompressionBombError`; `CLIPClassifier` catches it and thumbnails to `_CLIP_INPUT_SIZE`, so large renders classify instead of skipping.
+- **Oversized images** — Pillow's >178M-pixel bomb guard raises `DecompressionBombError` during `img.load()` (called inside `thumbnail()`). `CLIPClassifier._thumbnail_oversized` temporarily sets `Image.MAX_IMAGE_PIXELS = None` before the thumbnail call and restores it after, so oversized images are downscaled to `_CLIP_INPUT_SIZE` and classify instead of erroring out. Not thread-safe (global mutation), but the organizer pipeline is single-threaded for image classification.
 - **CLIP embedding cache** — `.cache/clip_embeddings_v2/` (fp32 `.npy` per image); `rm -rf` to reset.
 - **FileOrganizer modes** — `rename_images.py --profile {photo,screenshot}`; mode default comes from the profile (`photo`=in-place, `screenshot`=folder), overridable via `--mode` / `FILE_ORGANIZE_MODE`.
 - **Unified CLIP+OCR API** — `classify_with_ocr_fallback()` in `scripts/shared/clip_classification.py` is the shared entry point; returns `CLIPResult(category, confidence, all_scores)`. Both renamers call it.
