@@ -1,7 +1,7 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-07-17 (added content-pipeline OCR performance items from profiling session).
+Last updated: 2026-07-17 (added diverse-source robustness + shadow healthcare-detection regression items from the ~/Desktop audit and ~/Downloads shadow pass).
 
 ## Open Items
 
@@ -108,5 +108,35 @@ Profiling `organize-files content` (unified scorer, dry-run) on 2026-07-17 showe
 1. **Gate OCR on text-likelihood (P1 — biggest remaining win).** easyocr's CRAFT detector still runs on every image because `IdentityDocumentSignal.applies_to` is just `is_image`. Gating OCR on text-likelihood would cut the bulk of the remaining cost, but it changes classification (an ID doc can be a photo) and needs an eval.
 
 2. **P2 docTR-fallback gate — recall tradeoff to monitor.** The shipped gate (`extract_ocr_with_confidence`: skip the docTR fallback when easyocr cleanly finds no text) was eval'd over 7 text images at varying difficulty: **1/7 recall loss — very-low-contrast text** (easyocr's detector found nothing; docTR would have caught it). Clean, dark-mode, and rotated text were all gate-safe. So P2 trades a rare miss on near-invisible text for eliminating the docTR fallback. For a screenshot/photo-dominated 265k-file library this is very likely a net win, but it is a real behavior change — put it behind a config flag or revert if faint-text recall matters.
+
+
+### Content organizer misclassifies diverse/screenshot sources (review-gate + robustness gaps)
+
+A live `organize-files content --source ~/Desktop --limit 10` (unified scorer) on mixed real-world desktop content committed most files to wrong folders and surfaced several distinct gaps. Every file was verified by eye; the batch was fully rolled back afterward. The organizer is reliable on homogeneous sources (e.g. ChatGPT property renders) but not on heterogeneous user directories.
+
+**Status:** Open — findings from a stress-test; rollback done.
+**Priority:** P2 (item 1 gates safe use on real user directories)
+**Source:** `~/Desktop` content-run audit + full rollback, 2026-07-17
+
+1. **The review gate keys on decision-confidence, which `InteriorSignal` inflates.** UI screenshots of real-estate listings committed to `Media/Interiors` (`Room`) because the interior probe votes ~0.99 (decision confidence ~0.85, margin ~0.81) even when the OCR/label confidence is 1–12%. The `low_confidence`/`low_margin` review bucket exists and *does* fire (confirmed in a `--scorer shadow` pass — one opaque PDF routed to `uncategorized/other`), but cannot catch these because the probe supplies genuine high decision-confidence to wrong content. Options: a per-signal reliability cap, or require corroboration for `InteriorSignal` on screenshot-detected inputs. Distinct from the `PHOTO_PROPERTY_CONFIDENCE` item above (that is the `PhotoCompositionSignal` property flag *under*-committing; this is the `InteriorSignal` probe *over*-committing). The scene-model swap in [`docs/plans/MEDIA_EXTERIORS_PLAN.md`](plans/MEDIA_EXTERIORS_PLAN.md) also intersects here.
+2. **`DecompressionBombError` bypasses all content signals.** A 1.75-B-pixel PNG made the unified `clip_vision` *and* `interior` signals ERROR (EXIF/OCR/CLIP all failed) → the file fell through to `Media/Photos/Other` with zero analysis. The `CLIPClassifier` >178 M-pixel thumbnail recovery documented in `CLAUDE.md` (Gotchas) is **not wired into the unified signal path** — move it into a shared pre-signal image load (or into the CLIP/interior signals) so oversized images classify instead of erroring out.
+3. **Write-path inconsistencies on the same run.** 4 files got duplicate `file_categories` rows (`sprites`+`interiors_other`); ≥3 files had recorded category ≠ destination folder (the renamer picked the folder, the scorer wrote a different category); 1 file got no `file_categories` row at all. The renamer's folder decision and the scorer's category association can disagree — reconcile to a single source of truth for destination.
+4. **Sprite-regex `^[a-z]+_\d+$` overreach still live.** Renamed screenshots (`creative_1`) match the sprite pattern and get tagged `game_assets/sprites` (also noted in `UNIFIED_SCORING_PLAN` calibration — `IMG_`/`scan_` overreach).
+5. **Sensitive-source PII hazard.** OCR'd health/genetics text (SNPedia/Promethease genomics) and a vehicle VIN landed in `files.extracted_text`/`schema_data`. Recommend `--no-db` for sensitive sources (or a redaction pass), and document the hazard in QUICK_START.
+
+### `entity_detector` misses brand-name orgs and over-extracts cited bodies from reference sections
+
+Surfaced as a legacy↔unified disagreement on `GeneDx_Variant_Classification_Process_June_2021.pdf` (`--scorer shadow`, `~/Downloads`): legacy → `organization/healthcare`, unified → `technical/other`. Analyzing the PDF (2026-07-17, verified by reproducing `EntityDetector.extract_company_names` on its text) shows the disagreement is a symptom of two entity-detection bugs — and that **neither placement is clearly right**, so the earlier "legacy won / OCR starved the org signal" framing was wrong. The PDF has a clean 11 k-char text layer; the logged `OCR error: unable to read file` was on the redundant raster-OCR path and did not affect org detection.
+
+**Status:** Open — not committed work; entity-detection quality.
+**Priority:** P3
+**Source:** GeneDx PDF content analysis, 2026-07-17
+
+The document is GeneDx's public "variant classification assertion criteria" (a lab methodology doc, the kind labs publish to ClinVar). `extract_company_names` returns exactly one org — `"Medical Genetics and Genomics and the Association"` — and **does not detect GeneDx at all** (8 occurrences incl. footer + `genedx.com`). Two regex-design causes (`src/classifiers/entity_detector.py`):
+
+1. **Single-token brand names are invisible.** Every company pattern needs either a legal suffix (`LLC/Inc/Corp/…`) or the institutional pattern's ≥2 leading tokens + trailing keyword (`…Association/University/…`). A bare CamelCase brand like `GeneDx` (one token, no suffix) matches nothing. Add a known-brand lexicon or CamelCase-token path, and/or use the email domain (`genedx.com`) as an org cue.
+2. **Cited orgs in reference sections become truncated false positives.** The institutional pattern anchored on `Association` in the References line *"American College of Medical Genetics and Genomics and the Association for Molecular Pathology"*; its `{1,5}` inter-token cap dropped the leading "American College of", and `[^\S\r\n]` stopped at the line wrap before "…for Molecular Pathology" — yielding the garbled `"Medical Genetics and Genomics and the Association"`. The detector has no document-structure awareness, so any org cited in a References/bibliography block is extracted as the document's own org. Consider skipping reference regions or de-ranking orgs found only in citations.
+
+**Routing consequence:** legacy would create a spurious `Organization/{Medical Genetics and Genomics and the Association}` folder (a mangled cited standards body, not GeneDx), so unified's `Technical/Other` is arguably the safer placement here — the fix belongs in `entity_detector`, not in re-weighting the org signal. Cross-check other citation-heavy PDFs (research papers, methodology docs) for the same false-positive-org pattern before changing extraction.
 
 
