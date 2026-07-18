@@ -77,6 +77,8 @@ Full module map, data flow, and diagrams: [`docs/ARCHITECTURE.md`](docs/ARCHITEC
 
 Layered pipeline (see [`docs/FILE_ORGANIZATION.md`](docs/FILE_ORGANIZATION.md#4b-classification-priority-contentorganizerdetect_file_category-srcorganizerscontent_organizerpy)):
 
+**Default engine:** `organize-files content` now defaults to the **unified** weighted-signal scorer (`--scorer unified`; weights/signals in `src/scoring/`). The numbered chain below is the **legacy** engine — still selectable via `--scorer legacy` (also the base `ContentOrganizer` default, kept so Phase-0 unit tests pin the chain); `--scorer shadow` runs legacy placement while logging unified decisions for comparison.
+
 1. **Organization** — client/vendor/invoice/company names
 2. **Personal Documents** — resume/CV/vCard (`contacts`), employment, identification, certificates (OCR). Person attribution is a graph relationship (`GraphStore.add_file_to_person`), not a filing category — see `docs/changelog/2.1.0/PERSON_TAXONOMY_OPTION_C_PLAN.md`
 3. **Legal/Contract** — contracts, agreements, terms

@@ -81,4 +81,16 @@ Both candidates are recorded in the review doc's "Out-of-scope observations": [`
 - **Regression guard:** measure false positives — staged/real-estate listing photos and any non-interior images the analyzer flags `is_property_mgmt` — before raising, since a higher confidence also strengthens every interior vote against genuine content winners.
 - **Legacy parity note:** the legacy `_classify_photo_composition` still routes interiors to `property_management/other`; a unified re-tune widens the shadow legacy-vs-unified disagreement for interior photos until the legacy chain is retired (Phase 5).
 
+### Phase 5: flip base `ContentOrganizer` default to unified + retire legacy tests
+
+`SCORER_DEFAULT` became `unified` on 2026-07-17 (Phase-4 flip), driving the CLI `--scorer` flag and `ContentBasedFileOrganizer` — the production path, which passes `super().__init__(scorer=…)`. The base `ContentOrganizer.__init__` (`src/organizers/content_organizer.py:271`) still hardcodes `SCORER_LEGACY`. That path is **test-only**: no production code constructs `ContentOrganizer` directly, but `tests/unit/test_content_organizer.py` fixtures build `ContentOrganizer()` at the default and assert legacy 10-tier placements. Making the base track `SCORER_DEFAULT` today would cascade-break dozens of those tests, so the split-brain default was left in place and documented in the `src/scoring/types.py` comment.
+
+**Status:** Open — deferred; larger change than the Phase-4 flag flip.
+**Priority:** P3
+**Source:** Phase-4 default flip, 2026-07-17 (see [`UNIFIED_SCORING_PLAN.md`](architecture/UNIFIED_SCORING_PLAN.md) Phase 5)
+
+- **Single source of truth.** Change `ContentOrganizer.__init__(scorer: str = SCORER_LEGACY)` → `= SCORER_DEFAULT` so base construction, the CLI flag, and `ContentBasedFileOrganizer` share one default; then delete the split-brain note in `src/scoring/types.py`.
+- **Re-pin the legacy-behavior tests.** `tests/unit/test_content_organizer.py` fixtures and `tests/unit/scoring/test_dispatch.py::test_default_is_legacy` build `ContentOrganizer()` at the default and expect the 10-tier chain — re-record them against unified, or make them pass `scorer=SCORER_LEGACY` explicitly to keep exercising the chain.
+- **Then retire the legacy chain (full Phase 5).** Once nothing defaults to legacy, remove the legacy `_classify_*` paths and the `legacy`/`shadow` scorer modes per UNIFIED_SCORING_PLAN Phase 5; the interior re-tune's "Legacy parity note" (above) resolves when the chain is gone.
+
 

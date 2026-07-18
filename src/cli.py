@@ -386,7 +386,8 @@ def add_content_arguments(parser: argparse.ArgumentParser) -> None:
         default=SCORER_DEFAULT,
         help="Classification engine: legacy = 10-tier priority chain; "
         "unified = weighted signal scorer; shadow = legacy placement "
-        "with unified decisions logged for disagreement analysis",
+        "with unified decisions logged for disagreement analysis "
+        "(default: %(default)s)",
     )
 
 
