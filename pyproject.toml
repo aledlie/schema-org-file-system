@@ -81,6 +81,23 @@ monitoring = [
     "sentry-sdk>=2.0.0",
 ]
 
+# Person-name validation gate (local-only). nameparser = name shape;
+# probablepeople = CRF person/corporation tagging. Optional: the validator
+# degrades gracefully (unavailable layers score None) without this extra.
+names = [
+    "nameparser>=1.1.3",
+    "probablepeople>=0.5.5",
+]
+
+# Text→location address extraction. pyap detects full street addresses in free
+# text; usaddress (CRF) tags bare "City ST ZIP". Optional: the extractor
+# degrades gracefully (returns nothing) without them.
+geo = [
+    "pyap>=0.3.1",
+    "usaddress>=0.5.16",
+    "us>=3.2.0",
+]
+
 # Classical ML (scikit-learn) — backs src/ml (data_preprocessor: train/test
 # split, CountVectorizer, LabelEncoder) for `organize-files preprocess` /
 # `evaluate`, and the interior-probe prototype. Floor >=1.5.0 for numpy-2.0
@@ -91,7 +108,7 @@ ml = [
 
 # All optional features
 all = [
-    "schema-org-file-system[ai,docs,monitoring,ml]",
+    "schema-org-file-system[ai,docs,monitoring,ml,names,geo]",
 ]
 
 # Development dependencies
@@ -121,11 +138,12 @@ Repository = "https://github.com/aledlie/schema-org-file-system.git"
 Issues = "https://github.com/aledlie/schema-org-file-system/issues"
 
 [tool.setuptools]
-packages = ["src", "src.storage", "src.scoring", "src.scoring.signals"]
+packages = ["src", "src.storage", "src.scoring", "src.scoring.signals", "src.classifiers"]
 package-dir = {"" = "."}
 
 [tool.setuptools.package-data]
 "*" = ["*.md", "*.json"]
+"src.classifiers" = ["data/census_names/*.txt"]
 
 [tool.black]
 line-length = 100
