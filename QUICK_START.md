@@ -42,7 +42,9 @@ organize-files content --source ~/Desktop ~/Downloads --target ~/Documents
 # Save a JSON report of what was done
 organize-files content --source ~/Downloads --limit 500 --report results/run_report.json
 
-# Lighter-weight runs: skip DB persistence / Sentry / cost tracking
+# Sensitive sources: OCR text is stored verbatim in files.extracted_text.
+# Use --no-db for health, genomics, or any source with personal data
+# (VINs, medical records, genomic reports) to skip all DB writes.
 organize-files content --source ~/Downloads --dry-run --no-db --no-sentry --no-cost-tracking
 ```
 
@@ -153,6 +155,7 @@ black src/ scripts/ && flake8 src/ scripts/ && mypy src/ scripts/
 
 ## Tips
 
+- **Sensitive/private sources:** OCR text and extracted metadata are stored verbatim in `results/file_organization.db` (`files.extracted_text`, `schema_data`). Pass `--no-db` to skip all DB writes when running on health records, genomics reports (SNPedia, Promethease), documents containing VINs, or any source with personal data. Alternatively, run `scripts/redact_pii.py` on files first to redact PII before organizing.
 - Start every real run with `--dry-run --limit N` and read the classification output before applying.
 - `organize-files <command> --help` shows all flags for a subcommand.
 - Scripts in `scripts/` must run from the project root so `from shared.x import y` resolves; the `organize-files` CLI handles this automatically.

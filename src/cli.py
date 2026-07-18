@@ -374,7 +374,12 @@ def add_content_arguments(parser: argparse.ArgumentParser) -> None:
     )
     parser.add_argument("--no-sentry", action="store_true", help="Disable Sentry error tracking")
     parser.add_argument("--db-path", default=DEFAULT_DB_PATH, help="SQLite database path")
-    parser.add_argument("--no-db", action="store_true", help="Disable database persistence")
+    parser.add_argument(
+        "--no-db",
+        action="store_true",
+        help="Disable database persistence (use for sensitive sources — OCR text is "
+        "stored verbatim in files.extracted_text; see QUICK_START.md § Tips)",
+    )
     parser.add_argument(
         "--run-migration",
         action="store_true",
