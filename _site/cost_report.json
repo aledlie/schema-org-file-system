@@ -1,20 +1,20 @@
 {
   "metadata": {
-    "generated_at": "2026-07-17T21:46:26.100902",
-    "session_start": "2026-07-17T21:41:54.775799",
-    "session_duration_sec": 271.325121,
+    "generated_at": "2026-07-17T23:02:39.480374",
+    "session_start": "2026-07-17T22:58:52.557542",
+    "session_duration_sec": 226.922853,
     "total_usage_records": 20
   },
   "cost_summary": {
     "total_cost": 0.00105,
     "total_files_processed": 20,
-    "total_processing_time_sec": 6.666258096694946,
+    "total_processing_time_sec": 4.401463747024536,
     "avg_cost_per_file": 5.2499999999999995e-05,
     "feature_breakdown": {
       "clip_vision": {
         "feature_name": "clip_vision",
         "total_invocations": 10,
-        "total_processing_time_sec": 1.6961438655853271,
+        "total_processing_time_sec": 0.2889096736907959,
         "total_cost": 0.001,
         "avg_cost_per_file": 0.0001,
         "success_rate": 1.0,
@@ -23,7 +23,7 @@
       "face_detection": {
         "feature_name": "face_detection",
         "total_invocations": 10,
-        "total_processing_time_sec": 4.970114231109619,
+        "total_processing_time_sec": 4.11255407333374,
         "total_cost": 5e-05,
         "avg_cost_per_file": 5e-06,
         "success_rate": 1.0,

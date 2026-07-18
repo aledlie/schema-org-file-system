@@ -1,8 +1,8 @@
 {
-  "generated_at": "2026-07-18T01:40:05.982418",
+  "generated_at": "2026-07-18T03:58:02.252095",
   "cumulative": {
-    "total_sessions": 2,
-    "total_files": 29,
+    "total_sessions": 3,
+    "total_files": 38,
     "total_organized": 0,
     "avg_processing_time": null,
     "top_categories": [
@@ -12,7 +12,7 @@
       },
       {
         "name": "interiors_other",
-        "count": 25
+        "count": 34
       },
       {
         "name": "photos_other",
@@ -158,7 +158,85 @@
         "cost_delta": 0.0,
         "time_delta": 0
       }
+    },
+    {
+      "id": "dfc76ca9-7a87-43f9-a362-dca1192603dd",
+      "started_at": "2026-07-18 02:13:25.727873",
+      "completed_at": "2026-07-18 02:13:30.441504",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Media/Photos/ChatGPT"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 10,
+      "total_files": 10,
+      "organized_count": 0,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "dfc76ca9",
+      "success_rate": 0.0,
+      "categories": [],
+      "schema_types": [],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": -15,
+        "organized_delta": -25,
+        "success_rate_delta": -100.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "88f17e9e-b5b3-4db0-965e-8234438419dc",
+      "started_at": "2026-07-18 02:41:58.776407",
+      "completed_at": "2026-07-18 02:46:26.047931",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Media/Photos/ChatGPT"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 10,
+      "total_files": 10,
+      "organized_count": 10,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "88f17e9e",
+      "success_rate": 100.0,
+      "categories": [
+        {
+          "name": "interiors_other",
+          "color": null,
+          "icon": null,
+          "count": 9,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "Room",
+          "count": 9
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".png",
+          "count": 9
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": 0,
+        "organized_delta": 10,
+        "success_rate_delta": 100.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
     }
   ],
-  "session_count": 2
+  "session_count": 4
 }
