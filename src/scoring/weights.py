@@ -56,6 +56,16 @@ TEXT_MIN_CHARS = 30
 # tier-3.5 → tier-6 hidden dependency is encoded by FileContext.ensure_kie).
 OCR_CONFIDENCE_GATE = 0.3
 
+# CLIP-based OCR gate: skip OCR unless a text-bearing label ranks in the top-K
+# CLIP labels. K=3 is the eval-backed default (eval over ~270 images from the
+# ~/Documents photo-library layout: 100% text recall, 35% of photos skip OCR).
+# Ranking signal only — CLIP softmax scores are near-uniform (~0.05/label) so
+# absolute probability cannot separate text from photos; the discriminative
+# signal is whether a text-bearing label outranks non-text labels.
+# Disable by passing 0 or None; applies to the unified scorer only (gate
+# fails open when CLIP is unavailable or produces no scores).
+OCR_CLIP_GATE_TOPK = 3
+
 # --------------------------------------------------------------------------- #
 # Decision thresholds (§3.3) — raw aggregate scale                             #
 # --------------------------------------------------------------------------- #

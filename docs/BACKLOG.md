@@ -39,11 +39,11 @@ Technical notes from the research: `P31` (instance-of) checks against class QIDs
 
 Profiling `organize-files content` (unified scorer, dry-run) on 2026-07-17 showed the workflow is **~85% OCR-bound** (`torch.conv2d` in the easyocr CRAFT + docTR detection CNNs ≈ 67% of self-time; CLIP is negligible). This session shipped P2/P3/P5 (docTR-fallback gate, screenshot double-OCR dedup, CLIP text-embedding memoization) — conv2d call count dropped 1189→528 (−56%). Two items remain.
 
-**Status:** Open — P1 not started; P2 gate shipped (recall tradeoff to monitor).
-**Priority:** P3 (P1 is the largest remaining perf win)
+**Status:** Open — P1 shipped 2026-07-18 (gate on by default); P2 gate shipped (recall tradeoff to monitor).
+**Priority:** P3
 **Source:** content-classification profiling + P2/P3/P5 optimization session, 2026-07-17
 
-1. **Gate OCR on text-likelihood (P1 — biggest remaining win).** easyocr's CRAFT detector still runs on every image because `IdentityDocumentSignal.applies_to` is just `is_image`. Gating OCR on text-likelihood would cut the bulk of the remaining cost, but it changes classification (an ID doc can be a photo) and needs an eval.
+1. **Gate OCR on text-likelihood (P1) — Done.** `OCR_CLIP_GATE_TOPK = 3` constant added to `src/scoring/weights.py`; gate enabled by default in `ContentOrganizer` and `ContentBasedFileOrganizer` (was opt-in only). `FileContext._skip_ocr_by_clip_gate` now also treats `K=0` as disabled so users can opt out with `--ocr-clip-topk 0`. Eval: K=3 → 100% text recall, ~35% of photos skip OCR. Gate fails open when CLIP is unavailable. 15 unit tests added to `tests/unit/scoring/test_context.py::TestClipOcrGate`.
 
 2. **P2 docTR-fallback gate — recall tradeoff to monitor.** The shipped gate (`extract_ocr_with_confidence`: skip the docTR fallback when easyocr cleanly finds no text) was eval'd over 7 text images at varying difficulty: **1/7 recall loss — very-low-contrast text** (easyocr's detector found nothing; docTR would have caught it). Clean, dark-mode, and rotated text were all gate-safe. So P2 trades a rare miss on near-invisible text for eliminating the docTR fallback. For a screenshot/photo-dominated 265k-file library this is very likely a net win, but it is a real behavior change — put it behind a config flag or revert if faint-text recall matters.
 

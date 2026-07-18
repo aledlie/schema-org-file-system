@@ -39,6 +39,7 @@ from cli_inputs import (  # noqa: E402  (needs the src path insert above)
 )
 from constants import DEFAULT_DB_PATH  # noqa: E402  (src on path via insert above)
 from scoring.types import SCORER_DEFAULT, SCORER_MODES  # noqa: E402  (src on path)
+from scoring.weights import OCR_CLIP_GATE_TOPK  # noqa: E402  (src on path)
 
 # Shared option defaults, single-sourced for the parser definitions below.
 DEFAULT_SOURCES = ["~/Desktop", "~/Downloads"]
@@ -499,12 +500,12 @@ def add_content_arguments(parser: argparse.ArgumentParser) -> None:
     parser.add_argument(
         "--ocr-clip-topk",
         type=int,
-        default=None,
+        default=OCR_CLIP_GATE_TOPK,
         metavar="K",
         help="Skip OCR on an image unless a text-bearing label ranks in its "
-        "top-K CLIP labels (e.g. 3). Cuts the dominant OCR cost on text-free "
-        "photos; K=3 keeps ~100%% of documents/screenshots in eval. Unified "
-        "scorer only; disabled by default. Requires CLIP.",
+        "top-K CLIP labels. Default %(default)s (eval: 100%%%% text recall, "
+        "35%%%% of photos skip OCR). Unified scorer only; pass 0 to disable. "
+        "Fails open when CLIP is unavailable.",
     )
 
 

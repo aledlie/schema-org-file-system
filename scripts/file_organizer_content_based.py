@@ -72,6 +72,7 @@ from src.organizers.content_organizer import (  # noqa: E402,F401  (re-exported 
     _SCREENSHOT_OCR_KEYWORD_THRESHOLD,
 )
 from src.scoring.types import SCORER_DEFAULT  # noqa: E402
+from src.scoring.weights import OCR_CLIP_GATE_TOPK  # noqa: E402
 
 # Pipeline layer (per-file processing + batch orchestration). Imported after
 # the sys.path inserts above so the flat module aliases (storage.*, shared.*)
@@ -145,7 +146,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         enable_cost_tracking: bool = True,
         db_path: Optional[str] = "results/file_organization.db",
         scorer: str = SCORER_DEFAULT,
-        ocr_clip_topk: Optional[int] = None,
+        ocr_clip_topk: Optional[int] = OCR_CLIP_GATE_TOPK,
     ):
         """
         Initialize the organizer.
@@ -158,6 +159,9 @@ class ContentBasedFileOrganizer(ContentOrganizer):
             db_path: Path to SQLite database for persistent storage
             scorer: Classification engine — legacy | unified | shadow
                 (UNIFIED_SCORING_PLAN §6 Phase 0)
+            ocr_clip_topk: Skip OCR on images unless a text-bearing CLIP label
+                ranks in the top-K labels. Defaults to OCR_CLIP_GATE_TOPK (3).
+                Pass 0 to disable. Fails open when CLIP is unavailable.
         """
         base_dir = Path(base_path or "~/Documents").expanduser()
 

@@ -34,6 +34,10 @@
 - **Generator fluent builders** — `generators.py` `set_basic_info`/`set_file_info`/etc. removed; build schemas via `set_property(name, value, PropertyType)` or the `add_person`/`add_organization`/`set_dates` helpers (`4c08a42`)
 - **Legacy standalone organizer** — Deleted `scripts/file_organizer.py` and its test suite; functionality ported to `src/pipeline/FileProcessor` and integrated into the unified CLI. Unique snapshot tests re-pointed to live implementation; exhaustive `get_schema_type_from_mime` table consolidated into `tests/unit/test_storage_models.py` (`924d9ab`, `378de0c`)
 
+### Performance
+
+- **CLIP-based OCR gate enabled by default** — `OCR_CLIP_GATE_TOPK = 3` added to `src/scoring/weights.py`; `ContentOrganizer` and `ContentBasedFileOrganizer` now default to `ocr_clip_topk=OCR_CLIP_GATE_TOPK` (was `None` = disabled). OCR is skipped on images where no text-bearing CLIP label ranks in the top-3 labels. Eval: K=3 → 100% text recall, ~35% of photos skip the easyocr CRAFT pass — the dominant per-file cost. Gate fails open when CLIP is unavailable (no scores = always run OCR). Disable with `--ocr-clip-topk 0`. `FileContext._skip_ocr_by_clip_gate` updated to treat K=0 as disabled. 15 unit tests added (`TestClipOcrGate` in `tests/unit/scoring/test_context.py`).
+
 ### Backlog Resolved (from 2026-07-18 session)
 
 - **Person-graph edge hygiene — validation & review workflow** — All open gaps closed: layered name validator (`person_name_validator.py`, L0 denylist + L1 nameparser shape + L2 probablepeople + L3 census gazetteer) with write-time gate in `get_or_create_person`; schema columns `review_status`/`detection_confidence`/`validation_scores`/`validated_at` with migration; CLI `organize-files review-people` with `--status`/`--accept`/`--reject`/`--revalidate`/`--apply` flags; `additionalProperty` JSON-LD sidecar in `build_person_jsonld`; `organize-files health` reports validator layer availability. Read-time `_PERSON_NAME_DENYLIST` loop removed from `get_all_people_with_files`; status filter is the sole gate. 30 new tests in `tests/unit/test_graph_store_review.py`.

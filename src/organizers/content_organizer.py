@@ -59,6 +59,7 @@ from src.scoring.types import (
     SCORER_SHADOW,
     SCORER_UNIFIED,
 )
+from src.scoring.weights import OCR_CLIP_GATE_TOPK
 
 # Extracted mid-tier signal cores (UNIFIED_SCORING_PLAN Phase 1, batch B).
 # The classify_* methods below delegate to these pure functions so the legacy
@@ -274,7 +275,7 @@ class ContentOrganizer(BaseOrganizer):
         screenshot_content_classifier: Any = None,
         ocr_available: Optional[bool] = None,
         scorer: str = SCORER_DEFAULT,
-        ocr_clip_topk: Optional[int] = None,
+        ocr_clip_topk: Optional[int] = OCR_CLIP_GATE_TOPK,
     ) -> None:
         super().__init__(
             base_path=base_path,
@@ -286,10 +287,11 @@ class ContentOrganizer(BaseOrganizer):
         if scorer not in SCORER_MODES:
             raise ValueError(f"scorer must be one of {SCORER_MODES}, got {scorer!r}")
         self.scorer_mode = scorer
-        # Optional CLIP-based OCR gate top-K (None = disabled). Passed into
-        # every FileContext so the unified scorer can skip OCR on text-free
-        # photos — OCR runs only when a text-bearing label ranks in the top-K
-        # CLIP labels (UNIFIED_SCORING_PLAN P1).
+        # CLIP-based OCR gate top-K (0 or None = disabled). Defaults to
+        # OCR_CLIP_GATE_TOPK so OCR is skipped on text-free photos without
+        # any flag: a text-bearing CLIP label must rank in the top-K for OCR
+        # to run. Fails open when CLIP is unavailable (no signal = run OCR).
+        # Pass 0 to disable. (UNIFIED_SCORING_PLAN P1)
         self.ocr_clip_topk = ocr_clip_topk
         # Shadow log is append-only per file; truncate once per run so a fresh
         # run's disagreement report never inherits stale records from prior runs
