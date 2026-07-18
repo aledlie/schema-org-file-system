@@ -49,6 +49,7 @@ dependencies = [
     "PyYAML>=6.0.3",
     "fastapi>=0.139.0",
     "pydantic>=2.13.4",
+    "cleanco>=2.3",
 ]
 
 [project.optional-dependencies]
