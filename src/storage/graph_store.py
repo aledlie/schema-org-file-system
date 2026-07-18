@@ -43,7 +43,7 @@ try:
         TOP_EXTENSIONS_LIMIT,
     )
 except ImportError:
-    from constants import (
+    from constants import (  # type: ignore[no-redef]
         COORDINATE_TOLERANCE_DEG,
         DEFAULT_DB_PATH,
         DEFAULT_SEARCH_LIMIT,
@@ -638,7 +638,7 @@ class GraphStore:
             from ..classifiers.person_name_validator import validate_person_name
         except ImportError:
             try:
-                from classifiers.person_name_validator import validate_person_name
+                from classifiers.person_name_validator import validate_person_name  # type: ignore[no-redef]
             except ImportError:
                 return None
         try:

@@ -37,7 +37,7 @@ try:
         DEFAULT_DB_PATH,
     )
 except ImportError:
-    from constants import (
+    from constants import (  # type: ignore[no-redef]
         SHA256_HEX_LENGTH,
         UUID_STRING_LENGTH,
         SHORT_FIELD_LENGTH,

@@ -29,7 +29,7 @@ from ..weights import W_CLIP
 try:
     from shared.constants import CLIP_LABEL_TO_ORGANIZER
 except ImportError:  # scripts/shared not on sys.path — no labels map, signal emits nothing
-    CLIP_LABEL_TO_ORGANIZER: Dict[str, Tuple[str, str]] = {}
+    CLIP_LABEL_TO_ORGANIZER: Dict[str, Tuple[str, str]] = {}  # type: ignore[no-redef]
 
 # CLIP labels describing geography; with GPS metadata present they upgrade to
 # the travel bucket. Moved from ContentOrganizer._GEOGRAPHIC_LABELS (which now

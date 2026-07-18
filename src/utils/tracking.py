@@ -21,7 +21,7 @@ try:
 except ImportError:
     # Fallback stubs — keeps this module usable when src is not on sys.path
 
-    class ErrorLevel:
+    class ErrorLevel:  # type: ignore[no-redef]
         """Stub error severity levels."""
 
         FATAL = "fatal"
@@ -54,7 +54,7 @@ except ImportError:
             return func
         return decorator
 
-    class FileProcessingErrorTracker:
+    class FileProcessingErrorTracker:  # type: ignore[no-redef]
         """
         Standalone file processing error tracker (stub — no Sentry).
 

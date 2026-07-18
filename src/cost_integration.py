@@ -16,8 +16,8 @@ try:
     from .constants import SEPARATOR_WIDTH_LARGE
     from .enrichment import cached_stat
 except ImportError:
-    from constants import SEPARATOR_WIDTH_LARGE
-    from enrichment import cached_stat
+    from constants import SEPARATOR_WIDTH_LARGE  # type: ignore[no-redef]
+    from enrichment import cached_stat  # type: ignore[no-redef]
 
 
 # Global calculator instance for easy integration

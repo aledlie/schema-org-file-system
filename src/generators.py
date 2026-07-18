@@ -10,7 +10,7 @@ from typing import List, Optional, Tuple
 try:
     from .base import SchemaOrgBase
 except ImportError:
-    from base import SchemaOrgBase
+    from base import SchemaOrgBase  # type: ignore[no-redef]
 
 # =============================================================================
 # Required Properties Constants

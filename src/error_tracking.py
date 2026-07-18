@@ -29,7 +29,7 @@ from contextlib import contextmanager
 try:
     from .constants import DEFAULT_TRACES_SAMPLE_RATE, DEFAULT_PROFILES_SAMPLE_RATE
 except ImportError:
-    from constants import DEFAULT_TRACES_SAMPLE_RATE, DEFAULT_PROFILES_SAMPLE_RATE
+    from constants import DEFAULT_TRACES_SAMPLE_RATE, DEFAULT_PROFILES_SAMPLE_RATE  # type: ignore[no-redef]
 
 # Sentry SDK import with graceful degradation
 try:

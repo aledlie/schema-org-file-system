@@ -33,7 +33,7 @@ from .graph_store import GraphStore
 try:
     from ..constants import SEPARATOR_WIDTH_MEDIUM, DEFAULT_DB_PATH
 except ImportError:
-    from constants import SEPARATOR_WIDTH_MEDIUM, DEFAULT_DB_PATH
+    from constants import SEPARATOR_WIDTH_MEDIUM, DEFAULT_DB_PATH  # type: ignore[no-redef]
 
 try:
     from shared.file_ops import is_os_junk_file, resolve_collision

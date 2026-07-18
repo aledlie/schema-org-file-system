@@ -24,7 +24,7 @@ try:
         SEPARATOR_WIDTH_MEDIUM,
     )
 except ImportError:
-    from constants import (
+    from constants import (  # type: ignore[no-redef]
         DEFAULT_DB_PATH,
         SEPARATOR_WIDTH_SMALL,
         SEPARATOR_WIDTH_MEDIUM,

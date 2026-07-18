@@ -21,7 +21,7 @@ from .models import Base, KeyValueStore
 try:
     from ..constants import DEFAULT_DB_PATH
 except ImportError:
-    from constants import DEFAULT_DB_PATH
+    from constants import DEFAULT_DB_PATH  # type: ignore[no-redef]
 
 
 class KeyValueStorage:

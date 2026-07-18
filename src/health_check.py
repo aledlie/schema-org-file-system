@@ -11,7 +11,7 @@ from typing import Optional
 try:
     from .constants import SEPARATOR_WIDTH_MEDIUM
 except ImportError:
-    from constants import SEPARATOR_WIDTH_MEDIUM
+    from constants import SEPARATOR_WIDTH_MEDIUM  # type: ignore[no-redef]
 
 
 @dataclass

@@ -28,7 +28,7 @@ def cached_stat(path: str) -> os.stat_result:
 try:
     from .constants import SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 except ImportError:
-    from constants import SECONDS_PER_HOUR, SECONDS_PER_MINUTE
+    from constants import SECONDS_PER_HOUR, SECONDS_PER_MINUTE  # type: ignore[no-redef]
 
 
 class MetadataEnricher:
