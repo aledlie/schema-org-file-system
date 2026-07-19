@@ -1,13 +1,13 @@
 # Schema.org File Organization System
 
 AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and entity detection.
-**Python:** 3.12–3.13 (3.14 blocked by macOS 26 libexpat ABI) | **Version:** 2.1.0 | **Files:** 265,000+
+**Python:** 3.12–3.14, pyenv builds (brew pythons blocked on macOS 26 by libexpat ABI) | **Version:** 2.1.0 | **Files:** 265,000+
 
 ## Quick Start
 
 ```bash
-# First-time setup
-python3.13 -m venv venv && source venv/bin/activate
+# First-time setup (pyenv-built Python — see Dependencies)
+python3.14 -m venv venv && source venv/bin/activate
 pip install -e ".[all]" && brew install tesseract poppler
 
 # Daily use
@@ -113,10 +113,10 @@ Layered pipeline (see [`docs/FILE_ORGANIZATION.md`](docs/FILE_ORGANIZATION.md#4b
 
 ## Dependencies
 
-Requires Python 3.12 or 3.13 (3.14 broken on macOS 26; `pyproject.toml` declares `>=3.8` but 3.12/3.13 are tested).
+Requires Python 3.12–3.14 (`pyproject.toml` declares `>=3.8`; the current venv runs pyenv-built 3.14.0). On macOS 26, use a **pyenv-built** interpreter — pyenv links expat statically, avoiding the libexpat ABI break that hits brew's `python@3.13/3.14` (see Troubleshooting).
 
 ```bash
-python3.13 -m venv venv && source venv/bin/activate
+python3.14 -m venv venv && source venv/bin/activate
 pip install -e ".[all]" && brew install tesseract poppler
 ```
 
@@ -127,7 +127,7 @@ pip install -e ".[all]" && brew install tesseract poppler
 | HEIC fails | `pip install pillow-heif` |
 | No OCR | `pip install 'python-doctr[torch]'` |
 | No AI | `pip install torch open-clip-torch` (or `pip install -e ".[ai]"`) |
-| `pyexpat` / `_XML_SetAllocTrackerActivationThreshold` on macOS 26 | brew's `python@3.13/3.14` link a newer `libexpat` than macOS ships. `brew install expat`, then `install_name_tool -change /usr/lib/libexpat.1.dylib /opt/homebrew/opt/expat/lib/libexpat.1.dylib $(python3.13 -c 'import pyexpat;print(pyexpat.__file__)')` and `codesign --force --sign - $(python3.13 -c 'import pyexpat;print(pyexpat.__file__)')` |
+| `pyexpat` / `_XML_SetAllocTrackerActivationThreshold` on macOS 26 | brew's `python@3.13/3.14` link a newer `libexpat` than macOS ships; pyenv-built interpreters are unaffected (static expat) — prefer those. To patch a brew python: `brew install expat`, then `install_name_tool -change /usr/lib/libexpat.1.dylib /opt/homebrew/opt/expat/lib/libexpat.1.dylib $(python3.13 -c 'import pyexpat;print(pyexpat.__file__)')` and `codesign --force --sign - $(python3.13 -c 'import pyexpat;print(pyexpat.__file__)')` |
 
 ## REST API
 
