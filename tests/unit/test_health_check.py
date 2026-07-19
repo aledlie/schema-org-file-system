@@ -20,7 +20,7 @@ EXPECTED_FEATURES = {
     "heic",
     "ocr",
     "clip_vision",
-    "interior_probe",
+    "scene_probe",
     "database",
     "geocoding",
     "sentry",
@@ -150,52 +150,58 @@ class TestImportFailureHandling:
             assert hint in status.error
 
 
-def _interior_module():
-    """Resolve the interior module via the same import order as the checker."""
+def _scene_module():
+    """Resolve the scene module via the same import order as the checker."""
     try:
-        from scoring.signals import interior
+        from scoring.signals import scene
     except ImportError:
-        from src.scoring.signals import interior  # type: ignore[no-redef]
-    return interior
+        from src.scoring.signals import scene  # type: ignore[no-redef]
+    return scene
 
 
-class TestInteriorProbe:
+class TestSceneProbe:
     def test_missing_artifact_reports_unavailable_with_train_hint(self, monkeypatch, tmp_path):
-        interior = _interior_module()
-        monkeypatch.setattr(interior, "PROBE_PATH", tmp_path / "absent.joblib")
+        scene = _scene_module()
+        monkeypatch.setattr(scene, "PROBE_PATH", tmp_path / "absent.joblib")
 
         checker = SystemHealthChecker()
-        checker._check_interior_probe()
+        checker._check_scene_probe()
 
-        status = checker.features["interior_probe"]
+        status = checker.features["scene_probe"]
         assert status.available is False
-        assert "prototype_interior_probe.py train" in status.error
-        assert "InteriorSignal no-ops" in status.impact
+        assert "prototype_scene_probe.py train" in status.error
+        assert "SceneSignal no-ops" in status.impact
 
     def test_unreadable_artifact_reports_unavailable(self, monkeypatch, tmp_path):
-        interior = _interior_module()
+        scene = _scene_module()
         corrupt = tmp_path / "corrupt.joblib"
         corrupt.write_bytes(b"not a joblib payload")
-        monkeypatch.setattr(interior, "PROBE_PATH", corrupt)
+        monkeypatch.setattr(scene, "PROBE_PATH", corrupt)
 
         checker = SystemHealthChecker()
-        checker._check_interior_probe()
+        checker._check_scene_probe()
 
-        status = checker.features["interior_probe"]
+        status = checker.features["scene_probe"]
         assert status.available is False
         assert "unreadable" in status.error
 
     def test_loadable_artifact_reports_available(self, monkeypatch, tmp_path):
         joblib = pytest.importorskip("joblib")
-        interior = _interior_module()
+        scene = _scene_module()
         artifact = tmp_path / "probe.joblib"
-        joblib.dump({"pipeline": {"stub": True}, "meta": {}}, artifact)
-        monkeypatch.setattr(interior, "PROBE_PATH", artifact)
+        joblib.dump(
+            {
+                "pipeline": {"stub": True},
+                "meta": {"classes": [0, 1], "class_names": {0: "neither", 1: "interior"}},
+            },
+            artifact,
+        )
+        monkeypatch.setattr(scene, "PROBE_PATH", artifact)
 
         checker = SystemHealthChecker()
-        checker._check_interior_probe()
+        checker._check_scene_probe()
 
-        status = checker.features["interior_probe"]
+        status = checker.features["scene_probe"]
         assert status.available is True
         assert str(artifact) in status.version
 

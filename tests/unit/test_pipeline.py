@@ -10,10 +10,10 @@ import pytest
 
 from src.pipeline import BatchProcessor, FileProcessor
 
-
 # ---------------------------------------------------------------------------
 # Helpers / Fixtures
 # ---------------------------------------------------------------------------
+
 
 def _make_file_processor(
     base_path: Path,
@@ -37,6 +37,7 @@ def _make_batch_processor(file_processor: Any) -> BatchProcessor:
 # ---------------------------------------------------------------------------
 # scan_directory
 # ---------------------------------------------------------------------------
+
 
 class TestScanDirectory:
     def test_returns_list_of_paths(self, tmp_path: Path) -> None:
@@ -101,6 +102,7 @@ class TestScanDirectory:
 # organize_file (dry_run mode)
 # ---------------------------------------------------------------------------
 
+
 def _make_mock_organizer(dest: Path) -> MagicMock:
     """Mock organizer exposing the classification hooks FileProcessor calls."""
     org = MagicMock()
@@ -108,7 +110,13 @@ def _make_mock_organizer(dest: Path) -> MagicMock:
     org.should_skip_file.return_value = False
     org._maybe_rename_image.side_effect = lambda p, dry_run: p
     org.detect_file_category.return_value = (
-        "technical", "other", "DigitalDocument", "", None, [], {},
+        "technical",
+        "other",
+        "DigitalDocument",
+        "",
+        None,
+        [],
+        {},
     )
     org.generate_schema.return_value = {"@type": "DigitalDocument"}
     org.get_destination_path.return_value = dest
@@ -186,6 +194,7 @@ class TestOrganizeFileDryRun:
 # ---------------------------------------------------------------------------
 # print_summary
 # ---------------------------------------------------------------------------
+
 
 class TestPrintSummary:
     def _make_summary(self, dry_run: bool = False) -> Dict[str, Any]:
@@ -269,6 +278,7 @@ class TestPrintSummary:
 # get_cost_report / save_cost_report
 # ---------------------------------------------------------------------------
 
+
 class TestCostReports:
     def test_get_cost_report_returns_none_without_calculator(self, tmp_path: Path) -> None:
         fp = _make_file_processor(tmp_path, cost_calculator=None)
@@ -309,6 +319,7 @@ class TestCostReports:
 # save_report
 # ---------------------------------------------------------------------------
 
+
 class TestSaveReport:
     def test_save_report_writes_json_file(self, tmp_path: Path) -> None:
         fp = _make_file_processor(tmp_path)
@@ -326,6 +337,7 @@ class TestSaveReport:
 # ---------------------------------------------------------------------------
 # _persist_to_graph_store — location edge from image metadata
 # ---------------------------------------------------------------------------
+
 
 class TestPersistLocationEdge:
     def _persist(self, tmp_path: Path, image_metadata: Any) -> MagicMock:
@@ -350,10 +362,13 @@ class TestPersistLocationEdge:
     def test_metadata_summary_shape_creates_location_edge(self, tmp_path: Path) -> None:
         """get_metadata_summary() emits location_name/gps_coordinates — the
         shape ContentOrganizer actually passes in."""
-        store = self._persist(tmp_path, {
-            "location_name": "San Francisco, California, USA",
-            "gps_coordinates": (37.77, -122.42),
-        })
+        store = self._persist(
+            tmp_path,
+            {
+                "location_name": "San Francisco, California, USA",
+                "gps_coordinates": (37.77, -122.42),
+            },
+        )
         store.add_file_to_location.assert_called_once()
         kwargs = store.add_file_to_location.call_args.kwargs
         assert kwargs["location_name"] == "San Francisco, California, USA"
@@ -361,10 +376,19 @@ class TestPersistLocationEdge:
         assert kwargs["longitude"] == -122.42
 
     def test_structured_location_shape_still_supported(self, tmp_path: Path) -> None:
-        store = self._persist(tmp_path, {
-            "location": {"display_name": "NYC", "latitude": 40.7, "longitude": -74.0,
-                         "city": "New York", "state": "NY", "country": "US"},
-        })
+        store = self._persist(
+            tmp_path,
+            {
+                "location": {
+                    "display_name": "NYC",
+                    "latitude": 40.7,
+                    "longitude": -74.0,
+                    "city": "New York",
+                    "state": "NY",
+                    "country": "US",
+                },
+            },
+        )
         kwargs = store.add_file_to_location.call_args.kwargs
         assert kwargs["location_name"] == "NYC"
         assert kwargs["city"] == "New York"
@@ -384,6 +408,7 @@ class TestPersistLocationEdge:
 # _content_description
 # ---------------------------------------------------------------------------
 
+
 class TestContentDescription:
     def test_filename_fallback_without_organizer(self, tmp_path: Path) -> None:
         fp = _make_file_processor(tmp_path)
@@ -396,28 +421,29 @@ class TestContentDescription:
 
     def test_composes_clip_label_and_confidence(self, tmp_path: Path) -> None:
         fp = _make_file_processor(tmp_path)
-        fp._organizer = MagicMock(
-            _last_file_state={"clip_description": ("food or a meal", 0.914)}
-        )
+        fp._organizer = MagicMock(_last_file_state={"clip_description": ("food or a meal", 0.914)})
         assert fp._content_description(tmp_path / "img.jpg") == (
             "Content: food or a meal (91% confident)"
         )
 
 
-class TestGenerateSchemaRoomFamily:
-    """Interior Room family (from the unified InteriorSignal) is image-shaped:
-    generate_schema must persist the assigned @type with image properties, not
-    fall through to DocumentGenerator's ``DigitalDocument`` default."""
+class TestGenerateSchemaSceneTypes:
+    """Scene @types (from the unified SceneSignal: Room family, House, Place)
+    are image-shaped: generate_schema must persist the assigned @type with
+    image properties, not fall through to DocumentGenerator's
+    ``DigitalDocument`` default."""
 
-    @pytest.mark.parametrize("room_type", ["Room", "HotelRoom", "MeetingRoom"])
-    def test_room_family_keeps_its_type_and_is_image_shaped(
-        self, tmp_path: Path, room_type: str
+    @pytest.mark.parametrize(
+        "scene_type", ["Room", "HotelRoom", "MeetingRoom", "House", "Place", "Accommodation"]
+    )
+    def test_scene_type_keeps_its_type_and_is_image_shaped(
+        self, tmp_path: Path, scene_type: str
     ) -> None:
         fp = _make_file_processor(tmp_path)
         img = tmp_path / "interior.png"
         img.write_bytes(b"x")
-        schema = fp.generate_schema(img, room_type)
-        assert schema["@type"] == room_type
+        schema = fp.generate_schema(img, scene_type)
+        assert schema["@type"] == scene_type
         # contentUrl is an ImageGenerator property; its presence proves we did
         # NOT drop into the DocumentGenerator branch.
         assert "contentUrl" in schema
@@ -433,6 +459,7 @@ class TestGenerateSchemaRoomFamily:
 # organize_file — AI classification paths (skip, already-organized, error,
 # non-dry-run)
 # ---------------------------------------------------------------------------
+
 
 class TestOrganizeFileAIPaths:
     """Exercises the organize_file branches not covered by dry-run tests."""
@@ -460,7 +487,13 @@ class TestOrganizeFileAIPaths:
         fp = self._make_fp(tmp_path)
         org = self._attach_organizer(fp, dest)
         org.detect_file_category.return_value = (
-            "skip", "duplicate", "DigitalDocument", "", None, [], {},
+            "skip",
+            "duplicate",
+            "DigitalDocument",
+            "",
+            None,
+            [],
+            {},
         )
 
         result = fp.organize_file(src, dry_run=True)
@@ -575,6 +608,7 @@ class TestOrganizeFileAIPaths:
 # organize_directories (BatchProcessor AI paths)
 # ---------------------------------------------------------------------------
 
+
 class TestOrganizeDirectories:
     """Exercises the organize_directories / organize_batch main loop."""
 
@@ -594,7 +628,13 @@ class TestOrganizeDirectories:
         org.should_skip_file.return_value = False
         org._maybe_rename_image.side_effect = lambda p, dr: p
         org.detect_file_category.return_value = (
-            "technical", "other", "DigitalDocument", "", None, [], {}
+            "technical",
+            "other",
+            "DigitalDocument",
+            "",
+            None,
+            [],
+            {},
         )
         org.generate_schema.return_value = {"@type": "DigitalDocument"}
         org.get_destination_path.return_value = tmp_path / "organized" / "file.txt"
@@ -623,7 +663,13 @@ class TestOrganizeDirectories:
         org.should_skip_file.return_value = False
         org._maybe_rename_image.side_effect = lambda p, dr: p
         org.detect_file_category.return_value = (
-            "technical", "other", "DigitalDocument", "", None, [], {}
+            "technical",
+            "other",
+            "DigitalDocument",
+            "",
+            None,
+            [],
+            {},
         )
         org.generate_schema.return_value = {"@type": "DigitalDocument"}
         org.get_destination_path.return_value = tmp_path / "organized" / "x.txt"
@@ -666,7 +712,14 @@ class TestOrganizeDirectories:
         bp = BatchProcessor(file_processor=fp)
         summary = bp.organize_directories([], dry_run=True)
 
-        for key in ("total_files", "organized", "already_organized", "skipped", "errors", "dry_run"):
+        for key in (
+            "total_files",
+            "organized",
+            "already_organized",
+            "skipped",
+            "errors",
+            "dry_run",
+        ):
             assert key in summary
 
     def test_organize_directories_ocr_warning(

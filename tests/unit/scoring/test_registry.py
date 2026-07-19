@@ -12,13 +12,9 @@ from src.scoring.types import COST_TIER_PRIORITY, Signal
 
 @pytest.fixture(autouse=True)
 def _no_scene_artifact(monkeypatch, tmp_path):
-    """Pin the scene probe absent so the interior fallback is deterministic.
-
-    The registry swaps SceneSignal in for InteriorSignal when
-    results/scene_probe.joblib loads (MEDIA_EXTERIORS_PLAN transition guard);
-    without this pin the expected order would depend on whether the artifact
-    happens to be trained on the machine running the suite.
-    """
+    """Pin the scene probe absent so registry tests never load the real
+    trained artifact from disk (hermetic + fast; registration is identical
+    either way — SceneSignal registers always and no-ops when unloaded)."""
     monkeypatch.setattr(scene_mod, "PROBE_PATH", tmp_path / "absent_scene_probe.joblib")
 
 
@@ -31,7 +27,7 @@ FULL_REGISTRY_ORDER = [
     "organization_keyword",
     "personal_doc",
     "legal_content",
-    "interior",
+    "scene",
     "game_asset",
     "text_content",
     "screenshot_ocr",
@@ -82,33 +78,22 @@ class TestFullRegistry:
         Scorer(build_full())
 
 
-class TestSceneSwap:
-    """MEDIA_EXTERIORS_PLAN transition: scene probe replaces interior probe."""
+class TestSceneSlot:
+    """SceneSignal (MEDIA_EXTERIORS_PLAN) registers unconditionally."""
 
-    @pytest.fixture
-    def _scene_artifact_loaded(self, monkeypatch):
+    def test_scene_registers_without_artifact(self):
+        # Autouse pin keeps the artifact absent: the signal must still be in
+        # the registry (it no-ops via applies_to, like other heavy signals).
+        scene = next(s for s in build_full() if s.name == "scene")
+        assert scene.is_loaded is False
+
+    def test_loaded_probe_keeps_plan_order(self, monkeypatch):
         monkeypatch.setattr(
             scene_mod,
             "load_probe",
             lambda path: ({"stub": True}, ["neither", "interior", "exterior", "place"]),
         )
-
-    def test_loaded_probe_swaps_scene_in_for_interior(self, _scene_artifact_loaded):
-        names = [s.name for s in build_full()]
-        expected = [n if n != "interior" else "scene" for n in FULL_REGISTRY_ORDER]
-        assert names == expected
-
-    def test_swap_preserves_descending_weights(self, _scene_artifact_loaded):
-        # W_SCENE aliases W_INTERIOR, so the swap cannot break §4 order.
-        weights = [s.weight for s in build_full()]
-        assert weights == sorted(weights, reverse=True)
-
-    def test_absent_probe_keeps_interior_fallback(self):
-        # The autouse pin guarantees the absent branch; never swap ahead of a
-        # trained artifact (plan §Sequencing).
-        names = {s.name for s in build_full()}
-        assert "interior" in names
-        assert "scene" not in names
+        assert [s.name for s in build_full()] == FULL_REGISTRY_ORDER
 
 
 class TestDegradedRegistry:

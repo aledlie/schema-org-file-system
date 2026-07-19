@@ -29,11 +29,13 @@ from src.integration import SchemaRegistry
 try:
     from storage.graph_store import GraphStore
     from storage.models import FileStatus
+
     GRAPH_STORE_AVAILABLE = True
 except ImportError:
     try:
         from src.storage.graph_store import GraphStore
         from src.storage.models import FileStatus
+
         GRAPH_STORE_AVAILABLE = True
     except ImportError:
         GRAPH_STORE_AVAILABLE = False
@@ -49,13 +51,16 @@ except ImportError:
 
 # Schema.org types that describe image *files* and so build via ImageGenerator
 # (contentUrl/width/height), even when the routing decision assigns a more
-# specific @type. Includes the interior "Room" family emitted by the unified
-# InteriorSignal (src/scoring/signals/interior.py; mirrors ROOM_SUBTYPE_SCHEMA
-# in photo_composition.py): an interior photo is still an image, so it keeps
-# image metadata while carrying the Room @type the decision assigned. Without
-# this the Room family falls through _generate_schema's ``else`` branch to
-# DocumentGenerator and is silently persisted as "DigitalDocument".
-_IMAGE_SCHEMA_TYPES = frozenset({"ImageObject", "Room", "HotelRoom", "MeetingRoom"})
+# specific @type. Includes every scene @type emitted by the unified
+# SceneSignal (src/scoring/signals/scene.py: SCENE_SCHEMA + ROOM_SUBTYPE_SCHEMA
+# — Room family, House, Place, and the v2 Accommodation backoff): a scene
+# photo is still an image, so it keeps image metadata while carrying the
+# scene @type the decision assigned. Without this those types fall through
+# _generate_schema's ``else`` branch to DocumentGenerator and are silently
+# persisted as "DigitalDocument".
+_IMAGE_SCHEMA_TYPES = frozenset(
+    {"ImageObject", "Room", "HotelRoom", "MeetingRoom", "House", "Place", "Accommodation"}
+)
 
 # KIE (Key Information Extraction) schema mapping for graph-store persistence.
 try:
@@ -70,6 +75,7 @@ try:
     from shared.file_ops import resolve_collision
     from shared.filename_utils import is_generic_filename
     from shared.status import ProcessingStatus
+
     _RENAME_SUPPORT_AVAILABLE = True
 except ImportError:
     _RENAME_SUPPORT_AVAILABLE = False
@@ -120,7 +126,12 @@ class FileProcessor:
         self.cost_calculator = cost_calculator
 
         self.graph_store = graph_store
-        if self.graph_store is None and GRAPH_STORE_AVAILABLE and GraphStore is not None and db_path:
+        if (
+            self.graph_store is None
+            and GRAPH_STORE_AVAILABLE
+            and GraphStore is not None
+            and db_path
+        ):
             self.graph_store = GraphStore(db_path=db_path)
 
         self.enricher = enricher if enricher is not None else MetadataEnricher()
@@ -156,9 +167,9 @@ class FileProcessor:
         actual_path = str(file_path.absolute())
         description = self._content_description(file_path)
 
-        # Create generator based on type. The Room family (interior photos) is
-        # image-shaped: ImageGenerator emits the assigned @type (Room/HotelRoom/
-        # MeetingRoom) while keeping contentUrl/width/height.
+        # Create generator based on type. Scene types (Room family, House,
+        # Place) are image-shaped: ImageGenerator emits the assigned @type
+        # while keeping contentUrl/width/height.
         if schema_type in _IMAGE_SCHEMA_TYPES:
             generator: SchemaOrgBase = ImageGenerator(schema_type)
             generator.set_property("name", file_path.name, PropertyType.TEXT)

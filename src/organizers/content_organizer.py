@@ -1260,7 +1260,9 @@ class ContentOrganizer(BaseOrganizer):
         )
 
     @staticmethod
-    def _decision_snapshot(decision: ClassificationDecision, *, scorer_label: str) -> Dict[str, Any]:
+    def _decision_snapshot(
+        decision: ClassificationDecision, *, scorer_label: str
+    ) -> Dict[str, Any]:
         """JSON-safe snapshot of a ClassificationDecision (§7.1 record core)."""
         snapshot = {
             "scorer": scorer_label,

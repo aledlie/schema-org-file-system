@@ -50,7 +50,7 @@ class SystemHealthChecker:
         self._check_heic_support()
         self._check_ocr()
         self._check_clip_vision()
-        self._check_interior_probe()
+        self._check_scene_probe()
         self._check_database()
         self._check_geocoding()
         self._check_error_tracking()
@@ -261,59 +261,60 @@ class SystemHealthChecker:
                 impact="No document parsing available",
             )
 
-    def _check_interior_probe(self) -> None:
-        """Check the trained interior-probe artifact (``InteriorSignal``, C1)."""
-        # Without the probe, PhotoCompositionSignal is the sole interior voter
-        # (0.455 weighted) and any cross-category signal scoring >= 0.355 pushes
-        # interiors to the low-margin fallback (docs/BACKLOG.md).
+    def _check_scene_probe(self) -> None:
+        """Check the trained scene-probe artifact (``SceneSignal``)."""
+        # Without the probe, no signal votes interiors/exteriors/places/opaque
+        # graphics at all (the binary interior probe and photo_composition's
+        # interior vote were retired with the SceneSignal swap) — those images
+        # fall to weaker generic signals or the low-margin fallback.
         impact_when_missing = (
-            "InteriorSignal no-ops — interiors rely on PhotoCompositionSignal "
-            "alone and fall to the low-margin fallback against moderate "
-            "cross-category signals"
+            "SceneSignal no-ops — interior/exterior/place/graphic scenes get "
+            "no scene vote and fall to weaker generic signals or the "
+            "low-margin fallback"
         )
         try:
-            from scoring.signals import interior
+            from scoring.signals import scene
         except ImportError:
             try:
-                from src.scoring.signals import interior  # type: ignore[no-redef]
+                from src.scoring.signals import scene  # type: ignore[no-redef]
             except ImportError:
-                self.features["interior_probe"] = FeatureStatus(
-                    name="Interior Probe",
+                self.features["scene_probe"] = FeatureStatus(
+                    name="Scene Probe",
                     available=False,
-                    error="scoring.signals.interior not importable",
+                    error="scoring.signals.scene not importable",
                     impact=impact_when_missing,
                 )
                 return
 
-        if not interior.PROBE_PATH.exists():
-            self.features["interior_probe"] = FeatureStatus(
-                name="Interior Probe",
+        if not scene.PROBE_PATH.exists():
+            self.features["scene_probe"] = FeatureStatus(
+                name="Scene Probe",
                 available=False,
                 error=(
-                    f"artifact missing: {interior.PROBE_PATH} — train with "
-                    "'python scripts/prototype_interior_probe.py train'"
+                    f"artifact missing: {scene.PROBE_PATH} — train with "
+                    "'python scripts/prototype_scene_probe.py train'"
                 ),
                 impact=impact_when_missing,
             )
             return
 
-        if interior.load_probe(interior.PROBE_PATH) is None:
-            self.features["interior_probe"] = FeatureStatus(
-                name="Interior Probe",
+        if scene.load_probe(scene.PROBE_PATH) is None:
+            self.features["scene_probe"] = FeatureStatus(
+                name="Scene Probe",
                 available=False,
                 error=(
-                    f"artifact unreadable: {interior.PROBE_PATH} "
+                    f"artifact unreadable: {scene.PROBE_PATH} "
                     "(joblib/scikit-learn missing, or corrupt file — retrain)"
                 ),
                 impact=impact_when_missing,
             )
             return
 
-        self.features["interior_probe"] = FeatureStatus(
-            name="Interior Probe",
+        self.features["scene_probe"] = FeatureStatus(
+            name="Scene Probe",
             available=True,
-            version=str(interior.PROBE_PATH),
-            impact="Trained CLIP-embedding interior detection active (InteriorSignal)",
+            version=str(scene.PROBE_PATH),
+            impact="Trained CLIP-embedding scene classification active (SceneSignal)",
         )
 
     def _check_name_validator(self) -> None:

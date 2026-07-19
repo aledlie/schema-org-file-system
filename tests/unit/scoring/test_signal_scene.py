@@ -166,3 +166,40 @@ class TestLoadProbe:
 
     def test_absent_artifact_returns_none(self, tmp_path):
         assert load_probe(tmp_path / "absent.joblib") is None
+
+
+class TestSceneTaxonomyParity:
+    """Lock the scene maps against taxonomy drift (moved from the retired
+    photo_composition interior vote): every ROOM_SUBTYPE_SCHEMA key must have
+    a Media/Interiors folder path, and every SCENE_CATEGORY target must
+    resolve to its Media/<Scene> folder."""
+
+    def test_room_schema_keys_match_folder_keys(self) -> None:
+        from src.organizers.category_config import CONTENT_CATEGORY_PATHS
+        from src.scoring.signals.scene import ROOM_SUBTYPE_SCHEMA
+
+        folder = CONTENT_CATEGORY_PATHS["media"]["interiors"]
+        assert set(folder) == set(ROOM_SUBTYPE_SCHEMA)
+
+    def test_every_room_subtype_resolves_under_media_interiors(self) -> None:
+        from src.organizers.category_config import CONTENT_CATEGORY_PATHS
+        from src.scoring.signals.scene import ROOM_SUBTYPE_SCHEMA
+
+        folder = CONTENT_CATEGORY_PATHS["media"]["interiors"]
+        for key in ROOM_SUBTYPE_SCHEMA:
+            assert folder[key].startswith("Media/Interiors")
+
+    def test_scene_targets_resolve_in_media_taxonomy(self) -> None:
+        from src.organizers.category_config import CONTENT_CATEGORY_PATHS
+        from src.scoring.signals.scene import SCENE_CATEGORY
+
+        media = CONTENT_CATEGORY_PATHS["media"]
+        for scene_class, (category, subcategory) in SCENE_CATEGORY.items():
+            assert category == "media"
+            branch, key = subcategory.rsplit("_", 1)
+            assert key in media[branch], (scene_class, subcategory)
+
+    def test_interior_schema_is_generic_room(self) -> None:
+        from src.scoring.signals.scene import ROOM_SUBTYPE_SCHEMA, SCENE_SCHEMA
+
+        assert SCENE_SCHEMA["interior"] == ROOM_SUBTYPE_SCHEMA["other"] == "Room"
