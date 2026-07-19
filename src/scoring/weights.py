@@ -21,6 +21,12 @@ W_FILENAME = 1.1  # FilenamePatternSignal — shared/filename_classifier rules
 W_KIE = 1.1  # KieStructuredSignal — structured invoice/receipt fields
 W_ID = 1.0  # IdentityDocumentSignal — MRZ/OCR identity documents
 W_ORG = 1.0  # OrganizationKeywordSignal — org indicators + company name
+# EventContentSignal — event-flyer/map structure (title line adjacent to a
+# date range). Same prior tier as W_ORG; the signal's structural gate is
+# strict (name + date-range adjacency), so its confidence must let it clear
+# keyword-taxonomy misfires (W_TEXT 0.8 × 1.0) by MIN_DECISION_MARGIN — see
+# EVENT_CONFIDENCE in signals/event_content.py.
+W_EVENT = 1.0
 W_PERSON = 0.9  # PersonalDocSignal — person-document indicators (Option C)
 W_LEGAL = 0.85  # LegalContentSignal — replaces the hard person-tier veto
 # SceneSignal — trained multi-class CLIP-embedding scene probe

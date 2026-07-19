@@ -51,9 +51,13 @@ DecisionState = Literal["committed", "low_confidence", "low_margin"]
 #   regardless of the winning category (Option C graph edges).
 # - ``schema_type`` (str): overrides the context schema_type when the emitting
 #   signal contributes to the winner (e.g. research → ScholarlyArticle).
+# - ``event_name`` (str): detected event title; the organizer routes a
+#   committed ``events`` winner to Events/{EventName}/ (mirrors company_name's
+#   Organization/{OrgName}/ role, threaded via the _last_file_state stash).
 EVIDENCE_COMPANY = "company_name"
 EVIDENCE_PEOPLE = "people_names"
 EVIDENCE_SCHEMA_TYPE = "schema_type"
+EVIDENCE_EVENT_NAME = "event_name"
 
 
 @dataclass(frozen=True)

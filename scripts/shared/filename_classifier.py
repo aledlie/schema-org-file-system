@@ -38,6 +38,13 @@ from shared.constants import (
 RESEARCH_CATEGORY = "research"
 SCHOLARLY_ARTICLE_SCHEMA_TYPE = "ScholarlyArticle"
 
+# Event/venue map stems ("3'x5'_PlacementMap_Draft", "FestivalSiteMap"):
+# event-grounds documents route to the events category (Events/{EventName}/;
+# the event name itself comes from content — EventContentSignal — never from
+# the filename). Matched against the lowercased stem.
+EVENTS_CATEGORY = "events"
+_EVENT_MAP_PATTERN = re.compile(r"(?:placement|venue|event|festival)[ _-]?map")
+
 # Publisher-prefix patterns for Schema.org ScholarlyArticle detection.
 # Order matters: explicit publisher prefixes are checked before bare identifiers
 # so "arxiv-2401.12345" is attributed to arXiv rather than matched twice.
@@ -964,6 +971,16 @@ def classify_by_filename_patterns(
         # Default to Media/Audio for non-game audio
         print(f"  ✓ Filename pattern: Audio file ({ext})")
         return ("media", "audio_other", None, [])
+
+    # =========================================================
+    # EVENT/VENUE MAPS: placement maps, festival site maps
+    # Must check BEFORE the extension/shape catch-alls below (vector
+    # graphics, diagram images, single-word game assets) — the stem
+    # semantics are more specific than the file format.
+    # =========================================================
+    if _EVENT_MAP_PATTERN.search(stem):
+        print("  ✓ Filename pattern: Event/venue map")
+        return (EVENTS_CATEGORY, "other", None, [])
 
     # =========================================================
     # VECTOR GRAPHICS: .svg, .ai, .eps → Media/Graphics

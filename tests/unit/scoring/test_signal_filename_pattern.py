@@ -193,6 +193,32 @@ class TestCameraScanSpriteDowngradeThroughSignal:
         assert scores[0].confidence == FILENAME_WEAK_CONFIDENCE
 
 
+class TestEventMapStems:
+    def test_placement_map_routes_to_events_at_weak_confidence(self):
+        # Event/venue maps vote events but must not early-exit the cheap wave:
+        # the Events/{EventName}/ folder name comes from EventContentSignal in
+        # the mid wave (see EVENTS_MAP_RESULT in filename_pattern.py).
+        scores = make_signal().run(make_ctx("/downloads/3'x5'_PlacementMap_Draft (1).pdf"))
+        assert len(scores) == 1
+        score = scores[0]
+        assert (score.category, score.subcategory) == ("events", "other")
+        assert score.confidence == FILENAME_WEAK_CONFIDENCE
+
+    def test_event_map_stem_variants_route_to_events(self):
+        for path in (
+            "/maps/venue map.pdf",
+            "/maps/FestivalMap.png",
+            "/maps/event_map.svg",
+        ):
+            scores = make_signal().run(make_ctx(path))
+            assert len(scores) == 1, path
+            assert (scores[0].category, scores[0].subcategory) == ("events", "other"), path
+
+    def test_placement_without_map_does_not_fire_events(self):
+        scores = make_signal().run(make_ctx("/docs/placement_strategy.pdf"))
+        assert all((s.category, s.subcategory) != ("events", "other") for s in scores)
+
+
 class TestSignalMetadata:
     def test_signal_metadata(self):
         signal = make_signal()

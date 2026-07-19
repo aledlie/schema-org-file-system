@@ -15,11 +15,13 @@ from src.organizers.content_organizer import (
     _TEXT_SIGNAL_PRIOR,
     RESEARCH_CATEGORY,
     SCHOLARLY_ARTICLE_SCHEMA_TYPE,
+    SCREENSHOT_SCENE_SUBCATEGORY,
     ContentOrganizer,
     _mime_result_to_content_category,
 )
-from src.scoring.signals.scene import SCENE_DESCRIPTION_LABELS
-from src.scoring.types import SCORER_LEGACY
+from src.scoring.context import FileContext
+from src.scoring.signals.scene import SCENE_CATEGORY, SCENE_DESCRIPTION_LABELS
+from src.scoring.types import SCORER_LEGACY, ClassificationDecision
 
 MODULE = "src.organizers.content_organizer"
 
@@ -275,6 +277,26 @@ class TestGetDestinationPath:
             subcategory="place_other",
         )
         assert "Media/Place" in str(result)
+
+    @pytest.mark.parametrize(
+        ("subcategory", "folder"),
+        [
+            ("photos_screenshots_interiors", "Media/Photos/Screenshots/Interiors"),
+            ("photos_screenshots_exteriors", "Media/Photos/Screenshots/Exteriors"),
+            ("photos_screenshots_places", "Media/Photos/Screenshots/Places"),
+        ],
+    )
+    def test_screenshot_scene_subcategories(
+        self, organizer: ContentOrganizer, subcategory: str, folder: str
+    ) -> None:
+        # Scene-classified screenshots (SCREENSHOT_SCENE_SUBCATEGORY reroute)
+        # resolve under the Screenshots subtree, not Media/{Interiors,...}.
+        result = organizer.get_destination_path(
+            file_path=Path("/shots/Screenshot 2026-05-30 at 12.45.50 AM.png"),
+            category="media",
+            subcategory=subcategory,
+        )
+        assert folder in str(result)
 
     def test_date_organization_overrides_path(
         self, tmp_path: Path, mock_classifier: MagicMock
@@ -1084,6 +1106,103 @@ class TestStashDecisionStateSceneDescription:
         label, score = organizer._last_file_state["clip_description"]
         assert label == "food or a meal"
         assert score == pytest.approx(0.8)
+
+
+class TestScreenshotSceneReroute:
+    """Provenance reroute: a scene-class win on a screenshot-named file
+    refiles under Media/Photos/Screenshots/* keeping the scene @type."""
+
+    SCREENSHOT_NAME = "Screenshot 2026-05-30 at 12.45.50 AM.png"
+    PHOTO_NAME = "20240426_living_room.heic"
+
+    @staticmethod
+    def _ctx(name: str) -> FileContext:
+        return FileContext(path=Path(f"/shots/{name}"), schema_type="ImageObject")
+
+    @staticmethod
+    def _decision(
+        category: str = "media",
+        subcategory: str = "interiors_other",
+        schema_type: str = "Room",
+    ) -> ClassificationDecision:
+        return ClassificationDecision(
+            category=category,
+            subcategory=subcategory,
+            schema_type=schema_type,
+            confidence=0.95,
+            margin=0.5,
+            winning_signals=["scene"],
+            all_scores=[],
+            company_name=None,
+            people_names=[],
+        )
+
+    @pytest.mark.parametrize(
+        ("subcategory", "rerouted"),
+        sorted(SCREENSHOT_SCENE_SUBCATEGORY.items()),
+    )
+    def test_scene_win_on_screenshot_reroutes(self, subcategory: str, rerouted: str) -> None:
+        decision = ContentOrganizer._reroute_screenshot_scene(
+            self._ctx(self.SCREENSHOT_NAME), self._decision(subcategory=subcategory)
+        )
+        assert decision.subcategory == rerouted
+        assert decision.category == "media"
+
+    def test_schema_type_kept_on_reroute(self) -> None:
+        # Content-first typing: the folder changes, the depicted-scene @type
+        # does not.
+        decision = ContentOrganizer._reroute_screenshot_scene(
+            self._ctx(self.SCREENSHOT_NAME), self._decision(schema_type="Room")
+        )
+        assert decision.subcategory == "photos_screenshots_interiors"
+        assert decision.schema_type == "Room"
+
+    def test_non_screenshot_name_unchanged(self) -> None:
+        decision = self._decision()
+        assert (
+            ContentOrganizer._reroute_screenshot_scene(self._ctx(self.PHOTO_NAME), decision)
+            is decision
+        )
+
+    def test_graphic_win_on_screenshot_unchanged(self) -> None:
+        # graphics_other is deliberately outside the reroute: the
+        # graphic-vs-screenshot boundary belongs to the probe corpus.
+        decision = self._decision(subcategory="graphics_other", schema_type="ImageObject")
+        assert (
+            ContentOrganizer._reroute_screenshot_scene(self._ctx(self.SCREENSHOT_NAME), decision)
+            is decision
+        )
+
+    def test_non_media_category_unchanged(self) -> None:
+        decision = self._decision(category="financial", subcategory="interiors_other")
+        assert (
+            ContentOrganizer._reroute_screenshot_scene(self._ctx(self.SCREENSHOT_NAME), decision)
+            is decision
+        )
+
+    def test_reroute_map_covers_all_scene_targets_except_graphic(self) -> None:
+        # Parity lock with SCENE_CATEGORY: adding a scene class without
+        # deciding its screenshot reroute must fail here, not silently file
+        # screenshots into Media/*.
+        scene_targets = {sub for cls, (_cat, sub) in SCENE_CATEGORY.items() if cls != "graphic"}
+        assert set(SCREENSHOT_SCENE_SUBCATEGORY) == scene_targets
+
+    def test_unified_path_applies_reroute(self, tmp_path: Path, mock_classifier: MagicMock) -> None:
+        # Wiring: _detect_file_category_unified returns the rerouted
+        # subcategory, and the persisted decision snapshot matches it.
+        org = ContentOrganizer(
+            base_path=tmp_path, content_classifier=mock_classifier, scorer="unified"
+        )
+        stub_scorer = SimpleNamespace(classify=lambda ctx: self._decision())
+        org._get_unified_scorer = lambda: stub_scorer  # type: ignore[method-assign]
+        result = org._detect_file_category_unified(Path(f"/shots/{self.SCREENSHOT_NAME}"))
+        assert (result[0], result[1], result[2]) == (
+            "media",
+            "photos_screenshots_interiors",
+            "Room",
+        )
+        snapshot = org._last_file_state["scoring_decision"]
+        assert snapshot["decision"]["subcategory"] == "photos_screenshots_interiors"
 
 
 # ------------------------------------------------------------------ #

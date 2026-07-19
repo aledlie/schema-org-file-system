@@ -61,6 +61,14 @@ FILENAME_MATCH_CONFIDENCE = 1.0
 FILENAME_WEAK_CONFIDENCE = 0.4
 FILENAME_WEAK_RESULTS = frozenset({("media", "photos_other")})
 
+# Event/venue-map stems route to events, but the Events/{EventName}/ folder
+# name comes from EventContentSignal (mid wave). At full confidence this
+# cheap-wave verdict would early-exit (W_FILENAME × 1.0 > EARLY_EXIT_CONFIDENCE)
+# before the event name is ever extracted; graduated, it corroborates the
+# content signal (0.44 + 0.95 aggregate) and still commits alone (0.44 ≥
+# MIN_DECISION_CONFIDENCE) when the map yields no extractable title.
+EVENTS_MAP_RESULT = ("events", "other")
+
 # Legacy filename naming traps (BACKLOG Phase-3 item #5): the shared rule
 # module answers these at full strength, but the stem is not what the verdict
 # claims, so the signal graduates their confidence down to let the
@@ -114,6 +122,10 @@ def graduated_filename_confidence(stem: str, category: str, subcategory: str, ex
     # Source/host provenance (ChatGPT / Facebook): filename says where the file
     # came from, not what it depicts — content signals should decide the bucket.
     if result in SOURCE_PROVENANCE_RESULTS:
+        return FILENAME_WEAK_CONFIDENCE
+    # Event/venue maps: let the mid wave run so EventContentSignal can supply
+    # the Events/{EventName}/ folder name (see EVENTS_MAP_RESULT above).
+    if result == EVENTS_MAP_RESULT:
         return FILENAME_WEAK_CONFIDENCE
     # Sprite verdict on a camera-roll / scanner stem: it is a photo or a scan.
     if result == GAME_SPRITES_RESULT and _is_camera_or_scan_stem(stem):

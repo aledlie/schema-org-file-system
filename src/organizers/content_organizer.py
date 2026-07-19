@@ -13,6 +13,7 @@ pipeline concerns (schema generation, graph persistence, renaming, moves).
 import json
 import re
 from copy import deepcopy
+from dataclasses import replace
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, cast
@@ -25,8 +26,9 @@ from src.organizers.mime_classifier import classify_by_mime
 from src.scoring.context import FileContext
 from src.scoring.registry import build_default_signals
 from src.scoring.scorer import Scorer
-from src.scoring.types import ClassificationDecision
+from src.scoring.types import EVIDENCE_EVENT_NAME, ClassificationDecision
 from src.scoring.signals.clip_vision import GEOGRAPHIC_LABELS, map_clip_label
+from src.scoring.signals.event_content import EVENT_SIGNAL_NAME, EVENTS_CATEGORY
 from src.scoring.signals.identity_document import ID_MIN_TEXT_CHARS, detect_identity_document
 from src.scoring.signals.scene import (
     EVIDENCE_SCENE_CLASS,
@@ -80,6 +82,7 @@ from src.scoring.signals.personal_doc import (
     is_resume_filename,
 )
 from src.scoring.signals.screenshot_ocr import (
+    MEDIA_CATEGORY,
     SCREENSHOT_OCR_KEYWORD_THRESHOLD,
     is_screenshot_named,
     route_screenshot_ocr,
@@ -182,6 +185,21 @@ _OCR_CONFIDENCE_THRESHOLD = 0.3
 # comment) to src/scoring/signals/screenshot_ocr.py; aliased for existing
 # importers (scripts/file_organizer_content_based.py re-exports it).
 _SCREENSHOT_OCR_KEYWORD_THRESHOLD = SCREENSHOT_OCR_KEYWORD_THRESHOLD
+
+# Provenance reroute for scene-classified screenshots: when a scene-class
+# media subcategory wins on a screenshot-named file, refile it under
+# Media/Photos/Screenshots/* — a screenshot OF a listing photo is reference
+# material and belongs with the other screenshots, while Media/{Interiors,
+# Exteriors,Place} hold first-party photos and renders. The scene schema
+# @type (Room/House/Place) is kept: the @type answers "what does it depict",
+# the folder answers "how was it captured". graphics_other is deliberately
+# absent — the graphic-vs-screenshot boundary is the probe corpus's job and
+# graphic already maps to ImageObject.
+SCREENSHOT_SCENE_SUBCATEGORY: Dict[str, str] = {
+    "interiors_other": "photos_screenshots_interiors",
+    "exteriors_other": "photos_screenshots_exteriors",
+    "place_other": "photos_screenshots_places",
+}
 
 # Unified-scoring weights for the image classification path.
 # CLIP score (already 0-1) is used as-is; OCR-text contributes a prior scaled by
@@ -1198,6 +1216,7 @@ class ContentOrganizer(BaseOrganizer):
 
         ctx = self._build_file_context(file_path, display_path)
         decision = self._get_unified_scorer().classify(ctx)
+        decision = self._reroute_screenshot_scene(ctx, decision)
 
         if update_state:
             ocr = ctx.ocr_if_loaded
@@ -1220,6 +1239,26 @@ class ContentOrganizer(BaseOrganizer):
             decision.people_names,
             ctx.image_metadata_if_loaded or {},
         )
+
+    @staticmethod
+    def _reroute_screenshot_scene(
+        ctx: FileContext, decision: ClassificationDecision
+    ) -> ClassificationDecision:
+        """Refile a scene-class win on a screenshot-named file under Screenshots/*.
+
+        Applied after scoring, before state stash/persistence, so the stored
+        subcategory matches the folder. Only the subcategory changes — the
+        schema @type and the raw votes in ``all_scores`` are untouched (the
+        original scene subcategory stays visible there for audit). Renamed or
+        cropped screenshots miss the filename gate and keep today's
+        ``Media/{Interiors,Exteriors,Place}`` placement by design.
+        """
+        if decision.category != MEDIA_CATEGORY:
+            return decision
+        rerouted = SCREENSHOT_SCENE_SUBCATEGORY.get(decision.subcategory)
+        if rerouted is None or not is_screenshot_named(ctx.path.stem.lower()):
+            return decision
+        return replace(decision, subcategory=rerouted)
 
     def _stash_decision_state(self, decision: ClassificationDecision, *, scorer_label: str) -> None:
         """Populate ``_last_file_state`` from decision evidence.
@@ -1244,6 +1283,16 @@ class ContentOrganizer(BaseOrganizer):
                         label,
                         score.evidence.get(EVIDENCE_SCENE_PROB, score.confidence),
                     )
+                break
+        # Event name for Events/{EventName}/ routing: only meaningful when
+        # the events category actually won (get_destination_path reads it).
+        if decision.category == EVENTS_CATEGORY and EVENT_SIGNAL_NAME in decision.winning_signals:
+            for score in decision.all_scores:
+                if score.signal_name != EVENT_SIGNAL_NAME:
+                    continue
+                event_name = score.evidence.get(EVIDENCE_EVENT_NAME)
+                if event_name:
+                    self._last_file_state[EVIDENCE_EVENT_NAME] = event_name
                 break
         for score in decision.all_scores:
             research = score.evidence.get("research")
@@ -1304,6 +1353,7 @@ class ContentOrganizer(BaseOrganizer):
         try:
             ctx = self._build_file_context(file_path, display_path)
             decision = self._get_unified_scorer().classify(ctx)
+            decision = self._reroute_screenshot_scene(ctx, decision)
             # Persist the unified decision alongside legacy placement
             # (plan §6 Phase 2: source tag 'shadow_unified').
             snapshot = self._decision_snapshot(decision, scorer_label="shadow_unified")
@@ -1697,6 +1747,18 @@ class ContentOrganizer(BaseOrganizer):
                 else:
                     # All other org types: Organization/{OrgName}/
                     relative_path = f"{relative_path}/{sanitized_company}"
+
+        # Events: entity-named subfolders under Events/, mirroring the
+        # Organization/{OrgName}/ structure. The event name arrives via the
+        # unified decision's evidence stash (_last_file_state); the title was
+        # already shape-validated by EventContentSignal, so only folder-unsafe
+        # characters are stripped here. Without a name, files stay in Events/.
+        if category == EVENTS_CATEGORY:
+            event_name = self._last_file_state.get(EVIDENCE_EVENT_NAME)
+            if event_name:
+                safe_event = re.sub(r'[<>:"/\\|?*]', "", event_name).strip()
+                if safe_event:
+                    relative_path = f"{relative_path}/{safe_event}"
 
         # Legacy: client files from business category with company name
         if category == "business" and subcategory == "clients" and company_name:

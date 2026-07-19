@@ -18,92 +18,85 @@ from typing import Any, Dict, Union
 # taxonomies below (previously duplicated verbatim in each). Consumers that
 # mutate a taxonomy already deepcopy it first, so the shared reference is safe.
 GAME_ASSETS_PATHS: Dict[str, str] = {
-    'sprites': 'GameAssets/Sprites',
-    'textures': 'GameAssets/Textures',
-    'fonts': 'GameAssets/Fonts',
-    'audio': 'GameAssets/Audio',
-    'music': 'GameAssets/Music',
-    'other': 'GameAssets/Other',
+    "sprites": "GameAssets/Sprites",
+    "textures": "GameAssets/Textures",
+    "fonts": "GameAssets/Fonts",
+    "audio": "GameAssets/Audio",
+    "music": "GameAssets/Music",
+    "other": "GameAssets/Other",
 }
 
 # Single source for the CreativeWork fonts subcategory→folder map, shared by
 # both taxonomies below (previously duplicated verbatim in each).
 FONTS_PATHS: Dict[str, str] = {
-    'truetype': 'CreativeWork/Fonts/TrueType',
-    'opentype': 'CreativeWork/Fonts/OpenType',
-    'web': 'CreativeWork/Fonts/Web',
-    'other': 'CreativeWork/Fonts/Other',
+    "truetype": "CreativeWork/Fonts/TrueType",
+    "opentype": "CreativeWork/Fonts/OpenType",
+    "web": "CreativeWork/Fonts/Web",
+    "other": "CreativeWork/Fonts/Other",
 }
 
 CATEGORY_PATHS: Dict[str, Union[str, Dict[str, str]]] = {
-    'images': {
-        'screenshots': 'Images/Screenshots',
-        'photos': 'Images/Photos',
-        'graphics': 'Images/Graphics',
-        'other': 'Images/Other'
+    "images": {
+        "screenshots": "Images/Screenshots",
+        "photos": "Images/Photos",
+        "graphics": "Images/Graphics",
+        "other": "Images/Other",
     },
-    'documents': {
-        'pdf': 'Documents/PDFs',
-        'word': 'Documents/Word',
-        'spreadsheets': 'Documents/Spreadsheets',
-        'presentations': 'Documents/Presentations',
-        'text': 'Documents/Text',
-        'markdown': 'Documents/Markdown',
-        'other': 'Documents/Other'
+    "documents": {
+        "pdf": "Documents/PDFs",
+        "word": "Documents/Word",
+        "spreadsheets": "Documents/Spreadsheets",
+        "presentations": "Documents/Presentations",
+        "text": "Documents/Text",
+        "markdown": "Documents/Markdown",
+        "other": "Documents/Other",
     },
-    'media': {
-        'videos': 'Media/Videos',
-        'audio': 'Media/Audio',
-        'music': 'Media/Music',
-        'other': 'Media/Other'
+    "media": {
+        "videos": "Media/Videos",
+        "audio": "Media/Audio",
+        "music": "Media/Music",
+        "other": "Media/Other",
     },
-    'archives': {
-        'zip': 'Archives/Compressed',
-        'other': 'Archives/Other'
+    "archives": {"zip": "Archives/Compressed", "other": "Archives/Other"},
+    "software": {
+        "installers": "Software/Installers",
+        "packages": "Software/Packages",
+        "other": "Software/Other",
     },
-    'software': {
-        'installers': 'Software/Installers',
-        'packages': 'Software/Packages',
-        'other': 'Software/Other'
+    "code": {
+        "python": "Code/Python",
+        "javascript": "Code/JavaScript",
+        "typescript": "Code/TypeScript",
+        "dart": "Code/Flutter",
+        "shell": "Code/Shell",
+        "web": "Code/Web",
+        "other": "Code/Other",
     },
-    'code': {
-        'python': 'Code/Python',
-        'javascript': 'Code/JavaScript',
-        'typescript': 'Code/TypeScript',
-        'dart': 'Code/Flutter',
-        'shell': 'Code/Shell',
-        'web': 'Code/Web',
-        'other': 'Code/Other'
+    "data": {
+        "json": "Data/JSON",
+        "csv": "Data/CSV",
+        "yaml": "Data/YAML",
+        "xml": "Data/XML",
+        "config": "Data/Config",
+        "databases": "Data/Databases",
+        "other": "Data/Other",
     },
-    'data': {
-        'json': 'Data/JSON',
-        'csv': 'Data/CSV',
-        'yaml': 'Data/YAML',
-        'xml': 'Data/XML',
-        'config': 'Data/Config',
-        'databases': 'Data/Databases',
-        'other': 'Data/Other'
+    "research": {"papers": "Research/Papers", "notes": "Research/Notes", "other": "Research/Other"},
+    "contacts": {
+        "people": "Contacts/People",
+        "vcards": "Contacts/vCards",
+        "other": "Contacts/Other",
     },
-    'research': {
-        'papers': 'Research/Papers',
-        'notes': 'Research/Notes',
-        'other': 'Research/Other'
+    "business": {
+        "companies": "Business/Companies",
+        "clients": "Business/Clients",
+        "invoices": "Business/Invoices",
+        "contracts": "Business/Contracts",
+        "other": "Business/Other",
     },
-    'contacts': {
-        'people': 'Contacts/People',
-        'vcards': 'Contacts/vCards',
-        'other': 'Contacts/Other'
-    },
-    'business': {
-        'companies': 'Business/Companies',
-        'clients': 'Business/Clients',
-        'invoices': 'Business/Invoices',
-        'contracts': 'Business/Contracts',
-        'other': 'Business/Other'
-    },
-    'game_assets': GAME_ASSETS_PATHS,
-    'fonts': FONTS_PATHS,
-    'other': 'Other'
+    "game_assets": GAME_ASSETS_PATHS,
+    "fonts": FONTS_PATHS,
+    "other": "Other",
 }
 
 CONTENT_CATEGORY_PATHS: Dict[str, Any] = {
@@ -201,6 +194,11 @@ CONTENT_CATEGORY_PATHS: Dict[str, Any] = {
         "meeting_notes": "Organization",  # Gets Meeting Notes subfolder after company
         "other": "Organization",
     },
+    # Events: root folder with event-named subfolders (Events/{EventName}/),
+    # mirroring Organization/{OrgName}/. The event name is appended
+    # dynamically by ContentOrganizer.get_destination_path from
+    # EventContentSignal evidence; schema.org @type is ``Event``.
+    "events": "Events",
     "game_assets": GAME_ASSETS_PATHS,
     "fonts": FONTS_PATHS,
     "media": {
@@ -214,6 +212,13 @@ CONTENT_CATEGORY_PATHS: Dict[str, Any] = {
                 "products": "Media/Photos/Screenshots/Products",
                 "dashboard": "Media/Photos/Screenshots/Dashboards",
                 "chat": "Media/Photos/Screenshots/Chat",
+                # Scene-classified screenshots (SCREENSHOT_SCENE_SUBCATEGORY
+                # reroute in content_organizer): a screenshot OF an interior/
+                # exterior/place scene files here, not in Media/{Interiors,
+                # Exteriors,Place} — those hold first-party photos and renders.
+                "interiors": "Media/Photos/Screenshots/Interiors",
+                "exteriors": "Media/Photos/Screenshots/Exteriors",
+                "places": "Media/Photos/Screenshots/Places",
                 "other": "Media/Photos/Screenshots",
             },
             "travel": "Media/Photos/Travel",

@@ -12,6 +12,7 @@ from __future__ import annotations
 from typing import Any, List, Optional
 
 from .signals.clip_vision import ClipVisionSignal
+from .signals.event_content import EventContentSignal
 from .signals.filename_pattern import FilenamePatternSignal
 from .signals.filepath import FilepathSignal
 from .signals.game_asset import GameAssetSignal
@@ -67,6 +68,9 @@ def build_default_signals(
         signals.append(KieStructuredSignal(classifier))  # W_KIE = 1.1
         signals.append(IdentityDocumentSignal(classifier))  # W_ID = 1.0
         signals.append(OrganizationKeywordSignal(classifier))  # W_ORG = 1.0
+    # Always-on (pure regex over extracted text/OCR, no classifier dep).
+    signals.append(EventContentSignal())  # W_EVENT = 1.0
+    if classifier is not None:
         signals.append(PersonalDocSignal(classifier))  # W_PERSON = 0.9
         signals.append(LegalContentSignal(classifier))  # W_LEGAL = 0.85
     # Always-on (no classifier dep) — trained CLIP-embedding scene probe
