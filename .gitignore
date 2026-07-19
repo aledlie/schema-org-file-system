@@ -95,3 +95,6 @@ htmlcov/
 
 # Session-local TypeScript hook cache (ephemeral, per-session)
 .claude/tsc-cache/
+
+# Census surname list (large data file)
+src/classifiers/data/census_names/surnames.txt

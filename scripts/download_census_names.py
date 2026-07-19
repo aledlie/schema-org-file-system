@@ -10,8 +10,10 @@ Public-domain sources:
 Outputs one lowercase name per line to
 ``src/classifiers/data/census_names/{given_names,surnames}.txt``.
 
-The pipeline does NOT require this script at runtime — the trimmed lists are
-committed. Run it only to regenerate them:
+``given_names.txt`` is committed; ``surnames.txt`` is gitignored for size
+(untracked 2026-07-18), so fresh clones must run this script once during
+setup (see QUICK_START.md §1) before person/entity detection has the
+surname gazetteer:
 
     python scripts/download_census_names.py
 """
