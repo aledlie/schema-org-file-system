@@ -98,6 +98,7 @@ Layered pipeline (see [`docs/FILE_ORGANIZATION.md`](docs/FILE_ORGANIZATION.md#4b
 ```
 ~/Documents/
 ├── Organization/{CompanyName}/    # Vendor/partner files
+├── Events/{EventName}/            # Event docs (flyers/maps/programs); name from EventContentSignal, schema.org Event
 ├── Personal/{Contacts,Employment,Identification,Certificates,Journal,Events,Legal,Records,Other}/
 ├── Person/{PersonName}/           # Derived symlink view (organize-files person-view), not a filing target
 ├── GameAssets/  Financial/  Technical/  Media/
