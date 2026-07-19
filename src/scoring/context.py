@@ -118,6 +118,12 @@ class FileContext:
     def ensure_ocr(self) -> Any:
         """OCR result (``shared.ocr_classifier.OCRResult``-shaped) or None.
 
+        The provider is *image* OCR (easyocr → docTR image readers), so
+        non-images resolve to None without invoking it — their text comes
+        from ``ensure_text``'s text_provider (PDF/docx/xlsx/plain-text
+        extractors), and feeding them to the image backends only produces
+        backend errors before returning None anyway.
+
         When the CLIP OCR gate is enabled, an image CLIP confidently reads as
         a text-free photo skips OCR (returns None) — the OCR CNN pass is the
         dominant per-file cost, so this is the primary throughput lever on
@@ -125,7 +131,7 @@ class FileContext:
         on non-images, or when CLIP yields no signal (fail-open: run OCR).
         """
         if self._ocr is _UNSET:
-            if self._ocr_provider is None:
+            if self._ocr_provider is None or not self.is_image:
                 self._ocr = None
             elif self._skip_ocr_by_clip_gate():
                 self._ocr_gated = True

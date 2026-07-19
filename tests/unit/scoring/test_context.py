@@ -220,8 +220,13 @@ class TestClipOcrGate:
         assert ctx.ensure_ocr() is not None
         assert ocr.calls == 1
 
-    def test_gate_disabled_for_non_images(self):
-        """Gate never fires on documents, even with K set."""
+    def test_non_images_never_invoke_image_ocr(self):
+        """Documents skip the image-OCR provider outright (not via the gate).
+
+        The provider is image OCR (easyocr → docTR image readers); feeding it
+        a PDF only errors before returning None. ``ocr_gated`` stays False —
+        this is type routing, not the CLIP gate firing.
+        """
         ocr = self._make_ocr()
         ctx = FileContext(
             path=Path("/tmp/doc.pdf"),
@@ -231,8 +236,9 @@ class TestClipOcrGate:
             ocr_clip_topk=3,
             clip_text_labels=self._TEXT_LABELS,
         )
-        ctx.ensure_ocr()
-        assert ocr.calls == 1
+        assert ctx.ensure_ocr() is None
+        assert ocr.calls == 0
+        assert ctx.ocr_gated is False
 
     # Gate fires — OCR skipped -----------------------------------------------------
 
