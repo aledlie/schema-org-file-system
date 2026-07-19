@@ -5,8 +5,8 @@ AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and en
 ## 1. Setup (first time)
 
 ```bash
-# Python 3.12 or 3.13 (3.14 broken on macOS 26 — see CLAUDE.md Troubleshooting)
-python3.13 -m venv venv && source venv/bin/activate
+# Python 3.14.0
+python3.14.0 -m venv venv && source venv/bin/activate
 pip install -e ".[all]"
 brew install tesseract poppler
 
@@ -19,7 +19,7 @@ python scripts/download_census_names.py
 Verify the install:
 
 ```bash
-organize-files health        # should report 10/10 features
+organize-files health        # should report 11/11 features
 ```
 
 ## 2. Daily use
