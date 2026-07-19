@@ -108,14 +108,14 @@ ORG_INDICATORS: Dict[str, List[str]] = {
         "account number",
         "fdic",
         "securities",
-        # Insurance vocabulary (e.g. a homeowners policy summary contains none
-        # of the banking terms above, except incidentally via a mortgagee
-        # clause — 2 hits, leaving the org signal too weak to win).
-        "insurance",
-        "policy number",
-        "premium",
-        "deductible",
-        "insured",
+        # Insurance POLICY vocabulary (insurance/policy number/premium/
+        # deductible/insured) is deliberately ABSENT: policy documents route
+        # financial/insurance via the text-content taxonomy, not
+        # organization/financial — org keywords here would score 1.0 on any
+        # policy page and (at W_ORG 1.0 > W_TEXT 0.8) steal every policy from
+        # that bucket. Insurer ACCOUNT STATEMENTS still route here via the
+        # banking terms above. Pinned by the named-insurer golden pair in
+        # tests/integration/test_unified_scoring_golden.py.
     ],
     "educational": [
         "university",
