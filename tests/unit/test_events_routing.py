@@ -82,7 +82,7 @@ class TestEventsDestinationPath:
     def test_folder_unsafe_characters_stripped(
         self, organizer: ContentOrganizer, tmp_path: Path
     ) -> None:
-        organizer._last_file_state[EVIDENCE_EVENT_NAME] = 'Burn: The/Event?'
+        organizer._last_file_state[EVIDENCE_EVENT_NAME] = "Burn: The/Event?"
         dest = organizer.get_destination_path(
             Path("/downloads/flyer.pdf"), EVENTS_CATEGORY, EVENTS_DEFAULT_SUBCATEGORY
         )

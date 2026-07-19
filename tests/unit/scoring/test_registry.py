@@ -25,6 +25,7 @@ FULL_REGISTRY_ORDER = [
     "kie_structured",
     "identity_document",
     "organization_keyword",
+    "event_content",
     "personal_doc",
     "legal_content",
     "scene",
@@ -60,7 +61,7 @@ def build_full():
 
 
 class TestFullRegistry:
-    def test_all_seventeen_signals_in_plan_order(self):
+    def test_all_eighteen_signals_in_plan_order(self):
         assert [s.name for s in build_full()] == FULL_REGISTRY_ORDER
 
     def test_every_entry_satisfies_signal_protocol(self):
