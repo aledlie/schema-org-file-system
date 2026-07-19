@@ -1,59 +1,59 @@
 {
   "metadata": {
-    "generated_at": "2026-07-17T23:29:36.953468",
-    "session_start": "2026-07-17T23:27:43.062098",
-    "session_duration_sec": 113.891377,
-    "total_usage_records": 17
+    "generated_at": "2026-07-18T20:17:12.063681",
+    "session_start": "2026-07-18T20:15:32.775538",
+    "session_duration_sec": 99.288179,
+    "total_usage_records": 40
   },
   "cost_summary": {
-    "total_cost": 0.0009400000000000001,
-    "total_files_processed": 17,
-    "total_processing_time_sec": 0.7349166870117188,
-    "avg_cost_per_file": 5.5294117647058825e-05,
+    "total_cost": 0.0021,
+    "total_files_processed": 40,
+    "total_processing_time_sec": 6.972410440444946,
+    "avg_cost_per_file": 5.2499999999999995e-05,
     "feature_breakdown": {
       "clip_vision": {
         "feature_name": "clip_vision",
-        "total_invocations": 9,
-        "total_processing_time_sec": 0.06970977783203125,
-        "total_cost": 0.0009000000000000001,
+        "total_invocations": 20,
+        "total_processing_time_sec": 0.9632914066314697,
+        "total_cost": 0.002,
         "avg_cost_per_file": 0.0001,
         "success_rate": 1.0,
-        "total_files_processed": 9
+        "total_files_processed": 20
       },
       "face_detection": {
         "feature_name": "face_detection",
-        "total_invocations": 8,
-        "total_processing_time_sec": 0.6652069091796875,
-        "total_cost": 4e-05,
+        "total_invocations": 20,
+        "total_processing_time_sec": 6.009119033813477,
+        "total_cost": 0.0001,
         "avg_cost_per_file": 5e-06,
         "success_rate": 1.0,
-        "total_files_processed": 8
+        "total_files_processed": 20
       }
     }
   },
   "roi_summary": {
-    "total_cost": 0.0009400000000000001,
-    "total_value": 1.8159722222222219,
-    "overall_roi_percentage": 193088.53427895976,
-    "total_manual_hours_saved": 0.07263888888888888,
+    "total_cost": 0.0021,
+    "total_value": 4.097222222222222,
+    "overall_roi_percentage": 195005.8201058201,
+    "total_manual_hours_saved": 0.1638888888888889,
     "hourly_rate_used": 25.0,
     "feature_breakdown": {
       "clip_vision": {
         "feature_name": "clip_vision",
-        "total_cost": 0.0009000000000000001,
-        "total_value": 1.5937499999999998,
+        "total_cost": 0.002,
+        "total_value": 3.5416666666666665,
         "roi_percentage": 176983.3333333333,
-        "manual_hours_saved": 0.06374999999999999,
+        "manual_hours_saved": 0.14166666666666666,
         "cost_per_file": 0.0001,
         "value_per_file": 0.17708333333333334,
         "break_even_files": 1
       },
       "face_detection": {
         "feature_name": "face_detection",
-        "total_cost": 4e-05,
-        "total_value": 0.2222222222222222,
-        "roi_percentage": 555455.5555555555,
-        "manual_hours_saved": 0.008888888888888889,
+        "total_cost": 0.0001,
+        "total_value": 0.5555555555555556,
+        "roi_percentage": 555455.5555555556,
+        "manual_hours_saved": 0.022222222222222223,
         "cost_per_file": 5e-06,
         "value_per_file": 0.02777777777777778,
         "break_even_files": 1
