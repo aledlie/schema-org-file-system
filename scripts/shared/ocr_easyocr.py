@@ -11,7 +11,9 @@ easyocr supports CUDA acceleration but has no usable MPS backend as of v1.7.
 On Apple Silicon the Reader always runs on CPU regardless of whether MPS is
 available. This is expected — easyocr's internal pin_memory calls are
 incompatible with MPS and the library falls back automatically. The CPU path
-is correct and stable; no workaround is applied.
+is correct and stable; the only workaround applied is cosmetic (the
+``_quiet_readtext`` funnel suppresses torch's per-call pin_memory-on-MPS
+warning).
 
 For latency-sensitive batch runs, consider:
   - Pre-warming the Reader before the per-file loop (see batch_processor).
@@ -24,6 +26,7 @@ import importlib.util
 import logging
 import os
 import threading
+import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -62,6 +65,43 @@ def _resolve_languages() -> list[str]:
 
 _reader = None
 _lock = threading.Lock()
+
+# torch deprecation fired by easyocr's quantized dynamic LSTM at Reader
+# construction (pytorch/pytorch#184982): quint8 tensor creation is deprecated,
+# but easyocr's quantize=True default depends on it and remains the fastest
+# CPU inference path (the content pipeline is OCR-bound — do not trade it for
+# a clean log). Suppressed at the single construction site below rather than
+# globally, so other torch callers' quantization warnings still surface.
+# Matched against the message START (warnings.filterwarnings semantics).
+# Revisit when torch actually removes the API: easyocr will then need
+# quantize=False (or an upstream fix) and this filter becomes dead.
+_TORCH_QUANTIZE_DEPRECATION_MSG = (
+    r"torch\.quantize_per_tensor, torch\.quantize_per_channel and other "
+    r"quantized tensor creation functions"
+)
+
+# torch UserWarning fired on every readtext call on Apple Silicon: easyocr's
+# recognizer builds a DataLoader(pin_memory=True) per call, and torch warns
+# that MPS cannot pin memory before ignoring the flag. Purely environmental —
+# no caller can act on it (easyocr owns the DataLoader) — so it is suppressed
+# in the _quiet_readtext funnel below. NOT docTR: probed 2026-07-18, docTR's
+# predictor emits no pin_memory warning on this stack.
+_TORCH_PIN_MEMORY_MPS_MSG = r"'pin_memory' argument is set as true but not supported on MPS"
+
+
+def _quiet_readtext(reader, image, **kwargs):
+    """``reader.readtext`` with the per-call MPS pin_memory warning suppressed.
+
+    Scoped to the single call so genuinely new easyocr/torch warnings still
+    surface; every production readtext goes through this funnel.
+    """
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message=_TORCH_PIN_MEMORY_MPS_MSG,
+            category=UserWarning,
+        )
+        return reader.readtext(image, **kwargs)
 
 
 def _use_gpu() -> bool:
@@ -105,7 +145,13 @@ def _get_reader():
                             )
                     except Exception:
                         pass
-                _reader = easyocr.Reader(_resolve_languages(), gpu=gpu, verbose=False)
+                with warnings.catch_warnings():
+                    warnings.filterwarnings(
+                        "ignore",
+                        message=_TORCH_QUANTIZE_DEPRECATION_MSG,
+                        category=UserWarning,
+                    )
+                    _reader = easyocr.Reader(_resolve_languages(), gpu=gpu, verbose=False)
     return _reader
 
 
@@ -166,7 +212,7 @@ def extract_text_easyocr(image_path: Path, max_chars: int = 500) -> str | None:
         return None
     try:
         reader = _get_reader()
-        lines = reader.readtext(_readtext_input(image_path), detail=0, paragraph=True)
+        lines = _quiet_readtext(reader, _readtext_input(image_path), detail=0, paragraph=True)
         text = " ".join(" ".join(lines).split())
         if not text.strip():
             return None
@@ -189,7 +235,7 @@ def extract_lines_easyocr(image_path: Path, max_lines: int = 20) -> list[str] | 
         return None
     try:
         reader = _get_reader()
-        raw = reader.readtext(_readtext_input(image_path), detail=0, paragraph=True)
+        raw = _quiet_readtext(reader, _readtext_input(image_path), detail=0, paragraph=True)
         lines = [" ".join(segment.split()) for segment in raw]
         lines = [line for line in lines if line]
         return lines[:max_lines] or None
@@ -217,7 +263,7 @@ def extract_text_easyocr_with_status(
         from shared.ocr_classifier import OCRResult
 
         reader = _get_reader()
-        detections = reader.readtext(_readtext_input(image_path), detail=1, paragraph=False)
+        detections = _quiet_readtext(reader, _readtext_input(image_path), detail=1, paragraph=False)
         if not detections:
             return None, False
 
