@@ -127,6 +127,16 @@ def test_add_same_as_scalar_then_list():
     ]
 
 
+def test_add_owns_appends_and_dedupes(store: GraphStore):
+    person = PersonEntity.from_graph_person(store, "Alyshia Ledlie")
+    assert person is not None
+    person.add_owns("a")
+    assert person.get_property("owns") == {"@id": "a"}
+
+    person.add_owns("a", "b")  # duplicate ignored, b appended
+    assert person.get_property("owns") == [{"@id": "a"}, {"@id": "b"}]
+
+
 def test_add_main_entity_of_page():
     entity = SchemaOrgEntity("thing-1")
     entity.add_main_entity_of_page("https://example.com/page")

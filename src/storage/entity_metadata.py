@@ -278,14 +278,43 @@ class EventEntity(SchemaOrgEntity):
     entity_type: ClassVar[str] = "Event"
 
 
+class OrganizationEntity(SchemaOrgEntity):
+    """schema.org Organization."""
+
+    entity_type: ClassVar[str] = "Organization"
+
+
+class ImageObjectEntity(SchemaOrgEntity):
+    """schema.org ImageObject."""
+
+    entity_type: ClassVar[str] = "ImageObject"
+
+
 class PersonEntity(SchemaOrgEntity):
     """schema.org Person: adds ``owns`` links and graph-store identity."""
 
     entity_type: ClassVar[str] = "Person"
 
     def owns(self, *entity_ids: str) -> None:
-        """Set ``owns`` references to other entities' ``@id``s."""
+        """Set (replace) ``owns`` references to other entities' ``@id``s."""
         refs: List[Dict[str, Any]] = [{_JSONLD_ID: eid} for eid in entity_ids]
+        self.set_property("owns", refs[0] if len(refs) == 1 else refs)
+
+    def add_owns(self, *entity_ids: str) -> None:
+        """Append ``owns`` references, preserving existing ones.
+
+        A single reference stays a scalar dict (schema.org convention);
+        further additions grow it into a list. Duplicate ``@id``s are ignored.
+        """
+        existing = self.get_property("owns")
+        refs: List[Dict[str, Any]] = (
+            [] if existing is None else existing if isinstance(existing, list) else [existing]
+        )
+        seen = {ref.get(_JSONLD_ID) for ref in refs}
+        for eid in entity_ids:
+            if eid not in seen:
+                seen.add(eid)
+                refs.append({_JSONLD_ID: eid})
         self.set_property("owns", refs[0] if len(refs) == 1 else refs)
 
     @classmethod
