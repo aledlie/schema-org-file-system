@@ -73,6 +73,29 @@ class SchemaOrgEntity:
         """Get a schema.org property (``None`` if unset)."""
         return self.properties.get(name)
 
+    def add_same_as(self, url: str) -> None:
+        """Add a ``sameAs`` reference URL (see ``_append_url_property``)."""
+        self._append_url_property("sameAs", url)
+
+    def add_main_entity_of_page(self, url: str) -> None:
+        """Add a ``mainEntityOfPage`` URL (see ``_append_url_property``)."""
+        self._append_url_property("mainEntityOfPage", url)
+
+    def _append_url_property(self, name: str, url: str) -> None:
+        """Append a URL to a property.
+
+        A single value stays a scalar (schema.org convention); further
+        additions grow it into a list. Duplicate URLs are ignored.
+        """
+        existing = self.properties.get(name)
+        if existing is None:
+            self.properties[name] = url
+            return
+        urls = existing if isinstance(existing, list) else [existing]
+        if url not in urls:
+            urls.append(url)
+        self.properties[name] = urls[0] if len(urls) == 1 else urls
+
     def to_jsonld(self) -> Dict[str, Any]:
         """Serialize to a schema.org JSON-LD document."""
         jsonld: Dict[str, Any] = {

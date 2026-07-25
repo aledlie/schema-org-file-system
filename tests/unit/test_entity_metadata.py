@@ -112,6 +112,33 @@ def test_person_owns_multiple(store: GraphStore):
     assert person.to_jsonld()["owns"] == [{"@id": "a"}, {"@id": "b"}]
 
 
+def test_add_same_as_scalar_then_list():
+    entity = SchemaOrgEntity("thing-1")
+    entity.add_same_as("https://example.com/a")
+    assert entity.get_property("sameAs") == "https://example.com/a"
+
+    entity.add_same_as("https://example.com/a")  # duplicate ignored
+    assert entity.get_property("sameAs") == "https://example.com/a"
+
+    entity.add_same_as("https://example.com/b")
+    assert entity.get_property("sameAs") == [
+        "https://example.com/a",
+        "https://example.com/b",
+    ]
+
+
+def test_add_main_entity_of_page():
+    entity = SchemaOrgEntity("thing-1")
+    entity.add_main_entity_of_page("https://example.com/page")
+    assert entity.get_property("mainEntityOfPage") == "https://example.com/page"
+
+    entity.add_main_entity_of_page("https://example.com/other")
+    assert entity.get_property("mainEntityOfPage") == [
+        "https://example.com/page",
+        "https://example.com/other",
+    ]
+
+
 def test_geocode_without_address_is_noop():
     place = PlaceEntity("place-1", name="Nowhere")
     assert place.geocode() is False
