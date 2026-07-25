@@ -98,3 +98,6 @@ htmlcov/
 
 # Census surname list (large data file)
 src/classifiers/data/census_names/surnames.txt
+
+# Residence gallery data (real addresses/geo; regenerate locally — see docs/GRAPH_STORE_QUICK_START.md)
+_site/residence_gallery.json
