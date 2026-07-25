@@ -1291,7 +1291,10 @@ class ContentOrganizer(BaseOrganizer):
             for score in decision.all_scores:
                 if score.signal_name != SCENE_SIGNAL_NAME:
                     continue
-                label = SCENE_DESCRIPTION_LABELS.get(score.evidence.get(EVIDENCE_SCENE_CLASS))
+                scene_class = score.evidence.get(EVIDENCE_SCENE_CLASS)
+                label = (
+                    SCENE_DESCRIPTION_LABELS.get(scene_class) if scene_class is not None else None
+                )
                 if label is not None:
                     self._last_file_state["clip_description"] = (
                         label,

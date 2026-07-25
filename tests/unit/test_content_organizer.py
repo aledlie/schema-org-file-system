@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from types import SimpleNamespace
+from typing import cast
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -20,6 +21,7 @@ from src.organizers.content_organizer import (
     _mime_result_to_content_category,
 )
 from src.scoring.context import FileContext
+from src.scoring.scorer import Scorer
 from src.scoring.signals.scene import SCENE_CATEGORY, SCENE_DESCRIPTION_LABELS
 from src.scoring.types import SCORER_LEGACY, ClassificationDecision
 
@@ -472,12 +474,14 @@ class TestOcrConfidenceGating:
         # Stub out all heavyweight dependencies used inside detect_file_category
         org.enricher = MagicMock()
         org.enricher.detect_mime_type.return_value = "application/pdf"
-        org.classify_by_filename_patterns = MagicMock(return_value=None)
-        org.classify_by_organization = MagicMock(return_value=None)
-        org.classify_by_person = MagicMock(return_value=None)
-        org.classify_game_asset = MagicMock(return_value=None)
-        org.classify_by_filepath = MagicMock(return_value=None)
-        org.classify_media_file = MagicMock(return_value=None)
+        org.classify_by_filename_patterns = MagicMock(  # type: ignore[method-assign]
+            return_value=None
+        )
+        org.classify_by_organization = MagicMock(return_value=None)  # type: ignore[method-assign]
+        org.classify_by_person = MagicMock(return_value=None)  # type: ignore[method-assign]
+        org.classify_game_asset = MagicMock(return_value=None)  # type: ignore[method-assign]
+        org.classify_by_filepath = MagicMock(return_value=None)  # type: ignore[method-assign]
+        org.classify_media_file = MagicMock(return_value=None)  # type: ignore[method-assign]
         org.image_analyzer = MagicMock()
         org.image_analyzer.vision_available = False
         return org
@@ -486,9 +490,9 @@ class TestOcrConfidenceGating:
         self, tmp_path: Path, mock_classifier: MagicMock
     ) -> "ContentOrganizer":
         org = self._make_organizer(tmp_path, mock_classifier)
-        org.enricher.detect_mime_type.return_value = "image/png"
+        cast(MagicMock, org.enricher).detect_mime_type.return_value = "image/png"
         org.ocr_available = True
-        org.extract_text = lambda _p: ""
+        org.extract_text = lambda file_path: ""  # type: ignore[method-assign]
         return org
 
     def test_extracted_text_reaches_classifier(
@@ -498,7 +502,7 @@ class TestOcrConfidenceGating:
         mock_classifier.classify_content.return_value = ("legal", "contracts", None, [])
 
         legal_text = "contract terms and conditions agreement"
-        org.extract_text = lambda _p: legal_text
+        org.extract_text = lambda file_path: legal_text  # type: ignore[method-assign]
 
         fake_pdf = tmp_path / "doc.pdf"
         fake_pdf.write_bytes(b"%PDF")
@@ -517,7 +521,7 @@ class TestOcrConfidenceGating:
         org = self._make_organizer(tmp_path, mock_classifier)
         mock_classifier.classify_content.return_value = ("financial", "invoices", None, [])
 
-        org.extract_text = lambda _p: ""
+        org.extract_text = lambda file_path: ""  # type: ignore[method-assign]
 
         fake_pdf = tmp_path / "invoice.pdf"
         fake_pdf.write_bytes(b"%PDF")
@@ -1061,16 +1065,22 @@ class TestStashDecisionStateSceneDescription:
             evidence=evidence,
         )
 
-    def _decision(self, winning: list, scores: list) -> SimpleNamespace:
-        return SimpleNamespace(
-            category="media",
-            subcategory="interiors_other",
-            schema_type="Room",
-            confidence=0.85,
-            margin=0.4,
-            decision_state="committed",
-            winning_signals=winning,
-            all_scores=scores,
+    def _decision(self, winning: list, scores: list) -> ClassificationDecision:
+        # Duck-typed stand-in: _stash_decision_state only reads the fields
+        # populated below, so a SimpleNamespace covers it without building a
+        # full ClassificationDecision (company_name/people_names included).
+        return cast(
+            ClassificationDecision,
+            SimpleNamespace(
+                category="media",
+                subcategory="interiors_other",
+                schema_type="Room",
+                confidence=0.85,
+                margin=0.4,
+                decision_state="committed",
+                winning_signals=winning,
+                all_scores=scores,
+            ),
         )
 
     def test_scene_win_overrides_clip_floor(self, organizer: ContentOrganizer) -> None:
@@ -1166,9 +1176,7 @@ class TestScreenshotSceneReroute:
         "subcategory",
         sorted(SCREENSHOT_SCENE_SUBCATEGORY),
     )
-    def test_solo_scene_win_on_screenshot_falls_back_to_generic(
-        self, subcategory: str
-    ) -> None:
+    def test_solo_scene_win_on_screenshot_falls_back_to_generic(self, subcategory: str) -> None:
         # SceneSignal alone (no corroboration) on a screenshot-named file:
         # the probe's high confidence must not commit the scene-class bucket.
         # Routes to the generic screenshots fallback instead.
@@ -1239,7 +1247,7 @@ class TestScreenshotSceneReroute:
         )
         corroborated = self._decision(winning_signals=["scene", "clip_vision"])
         stub_scorer = SimpleNamespace(classify=lambda ctx: corroborated)
-        org._get_unified_scorer = lambda: stub_scorer  # type: ignore[method-assign]
+        org._get_unified_scorer = lambda: cast(Scorer, stub_scorer)  # type: ignore[method-assign]
         result = org._detect_file_category_unified(Path(f"/shots/{self.SCREENSHOT_NAME}"))
         assert (result[0], result[1], result[2]) == (
             "media",
@@ -1259,7 +1267,7 @@ class TestScreenshotSceneReroute:
         )
         solo = self._decision(winning_signals=["scene"])
         stub_scorer = SimpleNamespace(classify=lambda ctx: solo)
-        org._get_unified_scorer = lambda: stub_scorer  # type: ignore[method-assign]
+        org._get_unified_scorer = lambda: cast(Scorer, stub_scorer)  # type: ignore[method-assign]
         result = org._detect_file_category_unified(Path(f"/shots/{self.SCREENSHOT_NAME}"))
         assert (result[0], result[1]) == ("media", "photos_screenshots_other")
         snapshot = org._last_file_state["scoring_decision"]
@@ -1273,21 +1281,27 @@ class TestScreenshotSceneReroute:
 
 class TestCrossCheckWithClip:
     def test_no_clip_signal_keeps_original(self, organizer: ContentOrganizer) -> None:
-        organizer._run_clip_signal = MagicMock(return_value=(None, 0.0))
+        organizer._run_clip_signal = MagicMock(  # type: ignore[method-assign]
+            return_value=(None, 0.0)
+        )
         result = organizer._cross_check_with_clip(
             Path("/pics/img.png"), None, "financial", "invoices", 100
         )
         assert result == ("financial", "invoices")
 
     def test_clip_outscores_sparse_text(self, organizer: ContentOrganizer) -> None:
-        organizer._run_clip_signal = MagicMock(return_value=(("media", "photos_nature"), 0.9))
+        organizer._run_clip_signal = MagicMock(  # type: ignore[method-assign]
+            return_value=(("media", "photos_nature"), 0.9)
+        )
         result = organizer._cross_check_with_clip(
             Path("/pics/img.png"), None, "financial", "invoices", 0
         )
         assert result == ("media", "photos_nature")
 
     def test_long_text_survives_weak_clip(self, organizer: ContentOrganizer) -> None:
-        organizer._run_clip_signal = MagicMock(return_value=(("media", "photos_nature"), 0.2))
+        organizer._run_clip_signal = MagicMock(  # type: ignore[method-assign]
+            return_value=(("media", "photos_nature"), 0.2)
+        )
         result = organizer._cross_check_with_clip(
             Path("/pics/img.png"), None, "financial", "invoices", _TEXT_LENGTH_FULL_CHARS
         )
@@ -1303,15 +1317,21 @@ class TestEnhanceWeakImageClassification:
     def test_ocr_text_decides_when_clip_silent(
         self, organizer: ContentOrganizer, mock_classifier: MagicMock
     ) -> None:
-        organizer._run_clip_signal = MagicMock(return_value=(None, 0.0))
+        organizer._run_clip_signal = MagicMock(  # type: ignore[method-assign]
+            return_value=(None, 0.0)
+        )
         organizer.ocr_available = True
-        organizer.extract_text_from_image = MagicMock(return_value="x" * 200)
+        organizer.extract_text_from_image = MagicMock(  # type: ignore[method-assign]
+            return_value="x" * 200
+        )
         mock_classifier.classify_content.return_value = ("financial", "invoices", None, [])
         result = organizer.enhance_weak_image_classification(Path("/pics/statement.png"))
         assert result == ("financial", "invoices")
 
     def test_clip_decides_when_ocr_unavailable(self, organizer: ContentOrganizer) -> None:
-        organizer._run_clip_signal = MagicMock(return_value=(("media", "photos_nature"), 0.5))
+        organizer._run_clip_signal = MagicMock(  # type: ignore[method-assign]
+            return_value=(("media", "photos_nature"), 0.5)
+        )
         organizer.ocr_available = False
         result = organizer.enhance_weak_image_classification(Path("/pics/img.png"))
         assert result == ("media", "photos_nature")
@@ -1319,16 +1339,24 @@ class TestEnhanceWeakImageClassification:
     def test_uncategorized_text_yields_none(
         self, organizer: ContentOrganizer, mock_classifier: MagicMock
     ) -> None:
-        organizer._run_clip_signal = MagicMock(return_value=(None, 0.0))
+        organizer._run_clip_signal = MagicMock(  # type: ignore[method-assign]
+            return_value=(None, 0.0)
+        )
         organizer.ocr_available = True
-        organizer.extract_text_from_image = MagicMock(return_value="x" * 200)
+        organizer.extract_text_from_image = MagicMock(  # type: ignore[method-assign]
+            return_value="x" * 200
+        )
         mock_classifier.classify_content.return_value = ("uncategorized", "other", None, [])
         assert organizer.enhance_weak_image_classification(Path("/pics/img.png")) is None
 
     def test_ocr_error_swallowed(self, organizer: ContentOrganizer) -> None:
-        organizer._run_clip_signal = MagicMock(return_value=(None, 0.0))
+        organizer._run_clip_signal = MagicMock(  # type: ignore[method-assign]
+            return_value=(None, 0.0)
+        )
         organizer.ocr_available = True
-        organizer.extract_text_from_image = MagicMock(side_effect=RuntimeError("ocr died"))
+        organizer.extract_text_from_image = MagicMock(  # type: ignore[method-assign]
+            side_effect=RuntimeError("ocr died")
+        )
         assert organizer.enhance_weak_image_classification(Path("/pics/img.png")) is None
 
 
@@ -1410,7 +1438,7 @@ class TestDetectFileCategoryPriorities:
         org.enricher = MagicMock()
         org.enricher.detect_mime_type.return_value = mime
         org.ocr_available = False
-        org.extract_text = MagicMock(return_value="")
+        org.extract_text = MagicMock(return_value="")  # type: ignore[method-assign]
         return org
 
     def test_renamed_screenshot_routes_by_content_label(
@@ -1428,7 +1456,9 @@ class TestDetectFileCategoryPriorities:
 
     def test_skip_category_short_circuits(self, tmp_path: Path, mock_classifier: MagicMock) -> None:
         org = self._stubbed_organizer(tmp_path, mock_classifier, None)
-        org.classify_by_filename_patterns = MagicMock(return_value=("skip", "duplicate", None, []))
+        org.classify_by_filename_patterns = MagicMock(  # type: ignore[method-assign]
+            return_value=("skip", "duplicate", None, [])
+        )
         cat, subcat, *_ = org.detect_file_category(Path("/docs/report_20241201_123456.pdf"))
         assert (cat, subcat) == ("skip", "duplicate")
 
@@ -1436,7 +1466,7 @@ class TestDetectFileCategoryPriorities:
         self, tmp_path: Path, mock_classifier: MagicMock
     ) -> None:
         org = self._stubbed_organizer(tmp_path, mock_classifier, "application/pdf")
-        org.classify_by_filename_patterns = MagicMock(
+        org.classify_by_filename_patterns = MagicMock(  # type: ignore[method-assign]
             return_value=(RESEARCH_CATEGORY, "papers", None, [])
         )
         cat, _, schema_type, *_ = org.detect_file_category(Path("/docs/arxiv_2401.12345.pdf"))
@@ -1448,10 +1478,10 @@ class TestDetectFileCategoryPriorities:
     ) -> None:
         # Point A: a filename-pattern photos_other on an image runs enhancement.
         org = self._stubbed_organizer(tmp_path, mock_classifier, "image/jpeg")
-        org.classify_by_filename_patterns = MagicMock(
+        org.classify_by_filename_patterns = MagicMock(  # type: ignore[method-assign]
             return_value=("media", "photos_other", None, [])
         )
-        org.enhance_weak_image_classification = MagicMock(
+        org.enhance_weak_image_classification = MagicMock(  # type: ignore[method-assign]
             return_value=("technical", "data_visualization")
         )
         cat, subcat, *_ = org.detect_file_category(Path("/pics/IMG_1234.jpg"))
@@ -1463,8 +1493,12 @@ class TestDetectFileCategoryPriorities:
         org = self._stubbed_organizer(tmp_path, mock_classifier, "audio/ogg")
         # Bypass the filename-pattern tier — this test pins the game-asset vs
         # filepath ordering below it.
-        org.classify_by_filename_patterns = MagicMock(return_value=None)
-        org.classify_by_filepath = MagicMock(return_value="Technical/Whatever")
+        org.classify_by_filename_patterns = MagicMock(  # type: ignore[method-assign]
+            return_value=None
+        )
+        org.classify_by_filepath = MagicMock(  # type: ignore[method-assign]
+            return_value="Technical/Whatever"
+        )
         cat, subcat, *_ = org.detect_file_category(Path("dungeon.ogg"))
         assert (cat, subcat) == ("game_assets", "music")
         org.classify_by_filepath.assert_not_called()
@@ -1479,7 +1513,9 @@ class TestDetectFileCategoryPriorities:
         # Priority 4 formats (media, type, subcat) as "type_subcat".
         org = self._stubbed_organizer(tmp_path, mock_classifier, "audio/mp4")
         # Bypass the filename-pattern tier so the media tier (Priority 4) runs.
-        org.classify_by_filename_patterns = MagicMock(return_value=None)
+        org.classify_by_filename_patterns = MagicMock(  # type: ignore[method-assign]
+            return_value=None
+        )
         cat, subcat, schema_type, *_ = org.detect_file_category(Path("album_01.m4a"))
         assert (cat, subcat) == ("media", "audio_music")
         assert schema_type == "AudioObject"
@@ -1491,8 +1527,12 @@ class TestDetectFileCategoryPriorities:
         # uncategorized; the MIME fallback routes it to media/graphics_other
         # instead of Uncategorized.
         org = self._stubbed_organizer(tmp_path, mock_classifier, "image/gif")
-        org.classify_by_filename_patterns = MagicMock(return_value=None)
-        org.enhance_weak_image_classification = MagicMock(return_value=None)
+        org.classify_by_filename_patterns = MagicMock(  # type: ignore[method-assign]
+            return_value=None
+        )
+        org.enhance_weak_image_classification = MagicMock(  # type: ignore[method-assign]
+            return_value=None
+        )
         cat, subcat, *_ = org.detect_file_category(Path("/pics/animation.gif"))
         assert (cat, subcat) == ("media", "graphics_other")
 
@@ -1592,7 +1632,9 @@ class TestClassifyScreenshotOcr:
 
     def test_low_confidence_ocr_falls_back(self, organizer: ContentOrganizer) -> None:
         ocr = MagicMock(return_value=("dashboard", 0.05, {}, "noise"))
-        organizer.enhance_weak_image_classification = MagicMock(return_value=None)
+        organizer.enhance_weak_image_classification = MagicMock(  # type: ignore[method-assign]
+            return_value=None
+        )
         with patch(f"{MODULE}._shared_classify_by_ocr", ocr):
             result = organizer._classify_screenshot_ocr(self.SCREENSHOT, "ImageObject", {})
         assert result is not None
@@ -1607,7 +1649,7 @@ class TestClassifyScreenshotOcr:
         assert result[1] == "financial_invoices"
 
     def test_clip_reclassifies_non_media(self, organizer: ContentOrganizer) -> None:
-        organizer.enhance_weak_image_classification = MagicMock(
+        organizer.enhance_weak_image_classification = MagicMock(  # type: ignore[method-assign]
             return_value=("game_assets", "sprites")
         )
         with patch(f"{MODULE}._shared_classify_by_ocr", MagicMock(return_value=None)):
@@ -1616,7 +1658,7 @@ class TestClassifyScreenshotOcr:
         assert (result[0], result[1]) == ("game_assets", "sprites")
 
     def test_clip_screenshot_subcategory_accepted(self, organizer: ContentOrganizer) -> None:
-        organizer.enhance_weak_image_classification = MagicMock(
+        organizer.enhance_weak_image_classification = MagicMock(  # type: ignore[method-assign]
             return_value=("media", "photos_screenshots_terminal")
         )
         with patch(f"{MODULE}._shared_classify_by_ocr", MagicMock(return_value=None)):
@@ -1627,7 +1669,7 @@ class TestClassifyScreenshotOcr:
     def test_unhelpful_clip_falls_back_to_other(self, organizer: ContentOrganizer) -> None:
         # A generic media guess (not a screenshot subfolder) is not a
         # reclassification — keep the generic screenshots folder.
-        organizer.enhance_weak_image_classification = MagicMock(
+        organizer.enhance_weak_image_classification = MagicMock(  # type: ignore[method-assign]
             return_value=("media", "photos_nature")
         )
         with patch(f"{MODULE}._shared_classify_by_ocr", MagicMock(return_value=None)):
@@ -1691,7 +1733,7 @@ class TestClassifyByContentAndKie:
     def test_kie_classification_preferred(
         self, organizer: ContentOrganizer, mock_classifier: MagicMock
     ) -> None:
-        organizer.extract_text = MagicMock(return_value="x" * 100)
+        organizer.extract_text = MagicMock(return_value="x" * 100)  # type: ignore[method-assign]
         organizer._last_file_state["kie_result"] = {"total": "42.00"}
         mock_classifier.classify_with_kie.return_value = ("financial", "invoices", "Acme", [])
         result = organizer._classify_by_content_and_kie(
@@ -1704,7 +1746,7 @@ class TestClassifyByContentAndKie:
     def test_falls_back_to_content_classifier(
         self, organizer: ContentOrganizer, mock_classifier: MagicMock
     ) -> None:
-        organizer.extract_text = MagicMock(return_value="x" * 100)
+        organizer.extract_text = MagicMock(return_value="x" * 100)  # type: ignore[method-assign]
         mock_classifier.classify_content.return_value = ("legal", "contracts", None, [])
         result = organizer._classify_by_content_and_kie(
             Path("/docs/nda.pdf"), "DigitalDocument", {}
@@ -1715,7 +1757,7 @@ class TestClassifyByContentAndKie:
     def test_no_text_classifies_by_filename(
         self, organizer: ContentOrganizer, mock_classifier: MagicMock
     ) -> None:
-        organizer.extract_text = MagicMock(return_value="")
+        organizer.extract_text = MagicMock(return_value="")  # type: ignore[method-assign]
         mock_classifier.classify_content.return_value = ("financial", "invoices", None, [])
         organizer._classify_by_content_and_kie(Path("/docs/invoice.pdf"), "DigitalDocument", {})
         args = mock_classifier.classify_content.call_args[0]
@@ -1725,9 +1767,9 @@ class TestClassifyByContentAndKie:
         self, organizer: ContentOrganizer, mock_classifier: MagicMock
     ) -> None:
         # Point C: uncategorized images get one more CLIP+OCR attempt.
-        organizer.extract_text = MagicMock(return_value="x" * 100)
+        organizer.extract_text = MagicMock(return_value="x" * 100)  # type: ignore[method-assign]
         mock_classifier.classify_content.return_value = ("uncategorized", "other", None, [])
-        organizer.enhance_weak_image_classification = MagicMock(
+        organizer.enhance_weak_image_classification = MagicMock(  # type: ignore[method-assign]
             return_value=("technical", "data_visualization")
         )
         result = organizer._classify_by_content_and_kie(Path("/pics/chart.png"), "ImageObject", {})

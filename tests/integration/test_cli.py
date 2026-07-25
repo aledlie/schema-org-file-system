@@ -35,6 +35,10 @@ from src.cli import DEFAULT_COST_REPORT, main  # noqa: E402
 
 def run_cli(monkeypatch, *argv: str) -> None:
     """Run the CLI main() with the given argv (excluding the prog name)."""
+    # Python 3.14 argparse colorizes help/usage whenever FORCE_COLOR is set,
+    # even under pytest capture; NO_COLOR takes precedence and keeps captured
+    # output plain so substring assertions hold in any shell.
+    monkeypatch.setenv("NO_COLOR", "1")
     monkeypatch.setattr(sys, "argv", ["organize-files", *argv])
     main()
 
@@ -102,7 +106,12 @@ class TestNameCommand:
         source, target = org_dirs
         run_cli(
             monkeypatch,
-            "name", "--source", str(source), "--target", str(target), "--dry-run",
+            "name",
+            "--source",
+            str(source),
+            "--target",
+            str(target),
+            "--dry-run",
         )
         assert (source / "report.pdf").exists()
         assert (source / "script.py").exists()
@@ -129,8 +138,11 @@ class TestNameCommand:
         run_cli(
             monkeypatch,
             "name",
-            "--source", str(source_a), str(source_b),
-            "--target", str(target),
+            "--source",
+            str(source_a),
+            str(source_b),
+            "--target",
+            str(target),
             "--dry-run",
         )
         out = capsys.readouterr().out
@@ -148,8 +160,13 @@ class TestNameCommand:
 
         run_cli(
             monkeypatch,
-            "name", "--source", str(source), "--target", str(target),
-            "--recursive", "--dry-run",
+            "name",
+            "--source",
+            str(source),
+            "--target",
+            str(target),
+            "--recursive",
+            "--dry-run",
         )
         assert "deep.txt" in capsys.readouterr().out
 
@@ -169,7 +186,12 @@ class TestTypeCommand:
         source, target = org_dirs
         run_cli(
             monkeypatch,
-            "type", "--source", str(source), "--target", str(target), "--dry-run",
+            "type",
+            "--source",
+            str(source),
+            "--target",
+            str(target),
+            "--dry-run",
         )
         assert (source / "report.pdf").exists()
         assert not (target / "Documents" / "PDFs" / "report.pdf").exists()
@@ -185,7 +207,12 @@ class TestTypeCommand:
 
         run_cli(
             monkeypatch,
-            "type", "--source", str(source_a), str(source_b), "--target", str(target),
+            "type",
+            "--source",
+            str(source_a),
+            str(source_b),
+            "--target",
+            str(target),
         )
         assert (target / "Documents" / "PDFs" / "one.pdf").exists()
         assert (target / "Documents" / "PDFs" / "two.pdf").exists()
@@ -216,9 +243,7 @@ class TestPrunePersonCommand:
         try:
             normalized = Person.normalize_name(name)
             return (
-                session.query(Person)
-                .filter(Person.normalized_name == normalized)
-                .first()
+                session.query(Person).filter(Person.normalized_name == normalized).first()
                 is not None
             )
         finally:
@@ -253,7 +278,7 @@ class TestStubbedWiring:
             captured["args"] = args
 
         module = types.ModuleType(module_name)
-        module.run = fake_run
+        setattr(module, "run", fake_run)
         for key, value in extra_attrs.items():
             setattr(module, key, value)
         monkeypatch.setitem(sys.modules, module_name, module)
@@ -264,9 +289,12 @@ class TestStubbedWiring:
         run_cli(
             monkeypatch,
             "content",
-            "--source", "/x", "/y",
+            "--source",
+            "/x",
+            "/y",
             "--dry-run",
-            "--limit", "5",
+            "--limit",
+            "5",
             "--no-db",
         )
         args = captured["args"]
@@ -371,7 +399,11 @@ class TestStubbedWiring:
         captured = self._stub_run(monkeypatch, "file_organizer_content_based")
         run_cli(
             monkeypatch,
-            "content", "--force", "--skip-health-check", "--sentry-dsn", "dsn123",
+            "content",
+            "--force",
+            "--skip-health-check",
+            "--sentry-dsn",
+            "dsn123",
         )
         args = captured["args"]
         assert args.force is True
