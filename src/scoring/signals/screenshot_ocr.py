@@ -72,7 +72,9 @@ _RENAMED_SCREENSHOT_PREFIX_RE = re.compile(
 # stack the signal emits only the weak fallback.
 _default_ocr_classify: Optional[Callable[..., Any]]
 try:
-    from shared.ocr_classifier import classify_by_ocr as _default_ocr_classify
+    from shared.ocr_classifier import (  # type: ignore[no-redef]
+        classify_by_ocr as _default_ocr_classify,
+    )
 except ImportError:  # pragma: no cover - depends on optional OCR stack
     _default_ocr_classify = None
 

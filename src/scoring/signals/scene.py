@@ -153,6 +153,7 @@ class SceneSignal:
 
     def __init__(self, probe_path: Optional[Path] = None) -> None:
         loaded = load_probe(Path(probe_path) if probe_path else PROBE_PATH)
+        self._pipeline: Any
         self._pipeline, self._class_order = loaded if loaded else (None, [])
 
     @property

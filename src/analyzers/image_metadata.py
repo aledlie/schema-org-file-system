@@ -309,7 +309,8 @@ class ImageMetadataParser:
                 return None
 
             gps_info: Dict[str, Any] = {
-                GPSTAGS.get(tag_id, tag_id): value for tag_id, value in raw_gps.items()
+                str(GPSTAGS.get(tag_id, tag_id)): value
+                for tag_id, value in raw_gps.items()
             }
 
             if not gps_info:

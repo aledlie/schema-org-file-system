@@ -130,7 +130,7 @@ class FileFeatureExtractor:
         tokens = re.split(r'[_\-\s\.]+', name)
 
         # Split camelCase
-        expanded_tokens = []
+        expanded_tokens: list[str] = []
         for token in tokens:
             # Split on camelCase boundaries
             parts = re.findall(r'[A-Z]?[a-z]+|[A-Z]+(?=[A-Z][a-z]|\d|\W|$)|\d+', token)

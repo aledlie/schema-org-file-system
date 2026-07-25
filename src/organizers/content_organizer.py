@@ -535,10 +535,13 @@ class ContentOrganizer(BaseOrganizer):
         single-homed with ``scripts/file_organizer_content_based.py``. Returns
         ``(category, subcategory, company_name, people_names)`` or ``None``.
         """
-        return _classify_by_filename_patterns(
-            file_path,
-            game_sprite_keywords=self.game_sprite_keywords,
-            last_file_state=self._last_file_state,
+        return cast(
+            Optional[Tuple[str, str, Optional[str], List[str]]],
+            _classify_by_filename_patterns(
+                file_path,
+                game_sprite_keywords=self.game_sprite_keywords,
+                last_file_state=self._last_file_state,
+            ),
         )
 
     # ------------------------------------------------------------------ #
@@ -1812,4 +1815,4 @@ class ContentOrganizer(BaseOrganizer):
 
     def should_skip_file(self, file_path: Path) -> bool:
         """Check if file should be skipped (delegates to shared.file_ops.should_skip_file)."""
-        return _shared_should_skip_file(file_path)
+        return bool(_shared_should_skip_file(file_path))
