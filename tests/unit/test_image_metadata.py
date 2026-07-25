@@ -4,7 +4,7 @@ import sys
 import types
 from datetime import datetime
 from pathlib import Path
-from typing import Optional
+from typing import TYPE_CHECKING, Any, Optional
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -14,13 +14,13 @@ import pytest
 # Helpers to inject stub modules before the module under test is imported
 # ---------------------------------------------------------------------------
 
-def _make_pil_stub() -> types.ModuleType:
+def _make_pil_stub() -> Any:
     """Return a minimal PIL stub that satisfies the import in image_metadata."""
     import importlib.machinery
 
-    pil = types.ModuleType("PIL")
-    image_mod = types.ModuleType("PIL.Image")
-    exif_tags_mod = types.ModuleType("PIL.ExifTags")
+    pil: Any = types.ModuleType("PIL")
+    image_mod: Any = types.ModuleType("PIL.Image")
+    exif_tags_mod: Any = types.ModuleType("PIL.ExifTags")
 
     # Give stubs a non-None __spec__ so importlib.util.find_spec doesn't crash
     pil.__spec__ = importlib.machinery.ModuleSpec("PIL", None)
@@ -47,9 +47,9 @@ def _inject_stubs() -> None:
     sys.modules.setdefault("piexif", types.ModuleType("piexif"))
 
     # geopy
-    geopy = types.ModuleType("geopy")
-    geocoders_mod = types.ModuleType("geopy.geocoders")
-    exc_mod = types.ModuleType("geopy.exc")
+    geopy: Any = types.ModuleType("geopy")
+    geocoders_mod: Any = types.ModuleType("geopy.geocoders")
+    exc_mod: Any = types.ModuleType("geopy.exc")
 
     class _Nominatim:  # minimal stub
         def __init__(self, *a, **kw):
@@ -68,13 +68,13 @@ def _inject_stubs() -> None:
     sys.modules.setdefault("geopy.exc", exc_mod)
 
     # cost_roi_calculator
-    croi = types.ModuleType("cost_roi_calculator")
+    croi: Any = types.ModuleType("cost_roi_calculator")
     croi.CostROICalculator = MagicMock
     croi.CostTracker = MagicMock
     sys.modules.setdefault("cost_roi_calculator", croi)
 
     # pillow_heif (optional, just needs to not fail)
-    heif = types.ModuleType("pillow_heif")
+    heif: Any = types.ModuleType("pillow_heif")
     heif.register_heif_opener = lambda: None
     sys.modules.setdefault("pillow_heif", heif)
 
@@ -90,14 +90,18 @@ _spec = importlib.util.spec_from_file_location(
     "src.analyzers.image_metadata",
     str(Path(__file__).parent.parent.parent / "src" / "analyzers" / "image_metadata.py"),
 )
-_meta_module = importlib.util.module_from_spec(_spec)
+assert _spec is not None and _spec.loader is not None
+_meta_module: Any = importlib.util.module_from_spec(_spec)
 sys.modules["src.analyzers.image_metadata"] = _meta_module
-_spec.loader.exec_module(_meta_module)  # type: ignore[union-attr]
+_spec.loader.exec_module(_meta_module)
 
 # Force METADATA_AVAILABLE = True so the parser actually executes logic
 _meta_module.METADATA_AVAILABLE = True
 
-ImageMetadataParser = _meta_module.ImageMetadataParser
+if TYPE_CHECKING:
+    from src.analyzers.image_metadata import ImageMetadataParser
+else:
+    ImageMetadataParser = _meta_module.ImageMetadataParser
 
 
 # ---------------------------------------------------------------------------
