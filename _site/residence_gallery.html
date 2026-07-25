@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Residence Galleries - Schema.org File Organization System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5568d3;
+            --secondary: #764ba2;
+            --accent: #f5576c;
+            --dark-bg: #0f1419;
+            --dark-surface: #1a1f2e;
+            --dark-surface-alt: #252d3d;
+            --dark-border: #3a4556;
+            --light-text: #e8eef7;
+            --light-text-secondary: #b0b8cc;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--dark-bg);
+            color: var(--light-text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .back-link {
+            display: inline-block;
+            color: var(--light-text-secondary);
+            text-decoration: none;
+            margin-bottom: 1.5rem;
+        }
+
+        .back-link:hover {
+            color: var(--primary);
+        }
+
+        .entity-header {
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 12px;
+            padding: 1.5rem 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .residence-select {
+            background: var(--dark-surface-alt);
+            color: var(--light-text);
+            border: 1px solid var(--dark-border);
+            border-radius: 8px;
+            padding: 0.5rem 0.75rem;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .residence-select:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .entity-header h1 {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2rem;
+        }
+
+        .entity-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem 2rem;
+            margin-top: 0.75rem;
+            color: var(--light-text-secondary);
+            font-size: 0.95rem;
+        }
+
+        .entity-meta a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+
+        .entity-meta a:hover {
+            text-decoration: underline;
+        }
+
+        .photo-count {
+            margin: 0 0 1rem 0.25rem;
+            color: var(--light-text-secondary);
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+
+        .photo-card {
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 10px;
+            overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+
+        .photo-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary);
+        }
+
+        .photo-card img {
+            display: block;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            object-fit: cover;
+            background: var(--dark-surface-alt);
+        }
+
+        .photo-card .caption {
+            padding: 0.5rem 0.75rem;
+            font-size: 0.75rem;
+            color: var(--light-text-secondary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .lightbox {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 20, 25, 0.95);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            z-index: 100;
+            padding: 2rem;
+        }
+
+        .lightbox.open {
+            display: flex;
+        }
+
+        .lightbox img {
+            max-width: 90vw;
+            max-height: 82vh;
+            border-radius: 8px;
+        }
+
+        .lightbox .caption {
+            margin-top: 0.75rem;
+            color: var(--light-text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .lightbox .nav-hint {
+            margin-top: 0.25rem;
+            color: var(--dark-border);
+            font-size: 0.8rem;
+        }
+
+        .notice {
+            background: var(--dark-surface);
+            border: 1px solid var(--dark-border);
+            border-radius: 10px;
+            padding: 1.25rem 1.5rem;
+            color: var(--light-text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a class="back-link" href="index.html">&larr; Back to Dashboard</a>
+        <header class="entity-header">
+            <div class="header-row">
+                <h1 id="entity-name">Residences</h1>
+                <select class="residence-select" id="residence-select" hidden></select>
+            </div>
+            <div class="entity-meta" id="entity-meta"></div>
+        </header>
+        <p class="photo-count" id="photo-count"></p>
+        <div class="gallery" id="gallery"></div>
+        <div class="notice" id="notice" hidden></div>
+    </div>
+
+    <div class="lightbox" id="lightbox">
+        <img id="lightbox-img" alt="">
+        <div class="caption" id="lightbox-caption"></div>
+        <div class="nav-hint">&larr; / &rarr; to navigate &middot; Esc or click to close</div>
+    </div>
+
+    <script>
+        const DATA_URL = 'residence_gallery.json';
+        let residences = [];
+        let photos = [];
+        let lightboxIndex = -1;
+
+        function metaItem(html) {
+            const span = document.createElement('span');
+            span.innerHTML = html;
+            return span;
+        }
+
+        function renderHeader(entity) {
+            document.getElementById('entity-name').textContent =
+                `${entity.name} (${entity['@type']})`;
+            const meta = document.getElementById('entity-meta');
+            meta.innerHTML = '';
+            const addr = entity.address;
+            if (addr) {
+                meta.appendChild(metaItem(
+                    `\u{1F4CD} ${addr.streetAddress}, ${addr.addressLocality}, ` +
+                    `${addr.addressRegion} ${addr.postalCode}`));
+            }
+            const geo = entity.geo;
+            if (geo) {
+                meta.appendChild(metaItem(
+                    `\u{1F310} <a href="https://www.openstreetmap.org/?mlat=${geo.latitude}&mlon=${geo.longitude}#map=18/${geo.latitude}/${geo.longitude}" target="_blank" rel="noopener">` +
+                    `${geo.latitude.toFixed(6)}, ${geo.longitude.toFixed(6)}</a>`));
+            }
+            const page = entity.mainEntityOfPage;
+            if (page) {
+                const url = Array.isArray(page) ? page[0] : page;
+                meta.appendChild(metaItem(
+                    `\u{1F517} <a href="${url}" target="_blank" rel="noopener">Property record</a>`));
+            }
+        }
+
+        function renderGallery() {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
+            photos.forEach((photo, i) => {
+                const card = document.createElement('div');
+                card.className = 'photo-card';
+                const img = document.createElement('img');
+                img.loading = 'lazy';
+                img.src = photo.contentUrl;
+                img.alt = photo.name;
+                const caption = document.createElement('div');
+                caption.className = 'caption';
+                caption.textContent = photo.name;
+                card.appendChild(img);
+                card.appendChild(caption);
+                card.addEventListener('click', () => openLightbox(i));
+                gallery.appendChild(card);
+            });
+            document.getElementById('photo-count').textContent =
+                `${photos.length} photos`;
+        }
+
+        function openLightbox(index) {
+            lightboxIndex = index;
+            const photo = photos[index];
+            document.getElementById('lightbox-img').src = photo.contentUrl;
+            document.getElementById('lightbox-caption').textContent =
+                `${photo.name} (${index + 1}/${photos.length})`;
+            document.getElementById('lightbox').classList.add('open');
+        }
+
+        function closeLightbox() {
+            lightboxIndex = -1;
+            document.getElementById('lightbox').classList.remove('open');
+        }
+
+        function step(delta) {
+            if (lightboxIndex < 0) return;
+            openLightbox((lightboxIndex + delta + photos.length) % photos.length);
+        }
+
+        document.getElementById('lightbox').addEventListener('click', closeLightbox);
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeLightbox();
+            if (e.key === 'ArrowRight') step(1);
+            if (e.key === 'ArrowLeft') step(-1);
+        });
+
+        function showResidence(index) {
+            const entity = residences[index];
+            renderHeader(entity);
+            photos = entity.photo || [];
+            renderGallery();
+        }
+
+        function setupSelector() {
+            const select = document.getElementById('residence-select');
+            if (residences.length < 2) return;
+            select.hidden = false;
+            residences.forEach((r, i) => {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent =
+                    `${r.name} (${(r.photo || []).length} photos)`;
+                select.appendChild(option);
+            });
+            select.addEventListener('change', () => {
+                closeLightbox();
+                showResidence(Number(select.value));
+            });
+        }
+
+        fetch(DATA_URL)
+            .then((r) => r.json())
+            .then((data) => {
+                residences = Array.isArray(data) ? data : [data];
+                setupSelector();
+                showResidence(0);
+                if (window.location.protocol !== 'file:' && residences.some((r) => (r.photo || []).length)) {
+                    const notice = document.getElementById('notice');
+                    notice.hidden = false;
+                    notice.textContent =
+                        'Note: photos use local file:// URLs, which browsers block on ' +
+                        'http-served pages. Open this page directly from disk to see images.';
+                }
+            })
+            .catch(() => {
+                const notice = document.getElementById('notice');
+                notice.hidden = false;
+                notice.textContent =
+                    'Could not load residence_gallery.json. If opened via file://, your ' +
+                    'browser may block fetch; serve _site/ locally or regenerate the data.';
+            });
+    </script>
+</body>
+</html>
