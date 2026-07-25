@@ -98,7 +98,8 @@ def detect_and_cover_barcodes(png: Path) -> tuple[int, int]:
     all_polys: list[np.ndarray] = []
 
     # 1-D / PDF417 / DataMatrix barcodes
-    bd = cv2.barcode_BarcodeDetector()
+    # cv2 stubs omit the barcode module; the symbol exists at runtime.
+    bd = cv2.barcode_BarcodeDetector()  # type: ignore[attr-defined]
     ok_bd, pts_bd = bd.detectMulti(img_bgr)
     if ok_bd and pts_bd is not None:
         for poly in pts_bd:

@@ -38,7 +38,7 @@ def _file_identity(path: Path) -> str:
     stat = path.stat()
     raw = f"{path.name}_{stat.st_mtime}_{stat.st_size}"
     if _HAS_XXHASH:
-        return xxhash.xxh64(raw.encode()).hexdigest()
+        return str(xxhash.xxh64(raw.encode()).hexdigest())
     return hashlib.md5(raw.encode()).hexdigest()
 
 

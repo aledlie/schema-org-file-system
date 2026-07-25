@@ -37,13 +37,16 @@ import sys
 import time
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
-from typing import Callable, Dict, List, Optional
+from typing import TYPE_CHECKING, Callable, Dict, List, Optional
 
 # Allow ``from shared.x import y`` and src imports when run from the repo root.
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 for _p in (str(_REPO_ROOT), str(_REPO_ROOT / "scripts"), str(_REPO_ROOT / "src")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
+
+if TYPE_CHECKING:
+    from src.scoring.types import ClassificationDecision
 
 IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".heic", ".webp", ".gif", ".bmp", ".tiff"}
 
@@ -101,7 +104,9 @@ def _build_organizer(scorer: str, ocr_clip_topk: Optional[int]):
     )
 
 
-def _make_classify(org, counters: Dict[str, int]) -> Callable[[Path], object]:
+def _make_classify(
+    org, counters: Dict[str, int]
+) -> Callable[[Path], ClassificationDecision]:
     """Return a per-file classify closure that records OCR telemetry.
 
     Wraps the organizer's own context build + scorer so the profile reflects
@@ -137,9 +142,9 @@ def _bucketize(stats: pstats.Stats) -> Dict[str, float]:
 
 def _top_functions(stats: pstats.Stats, n: int) -> List[dict]:
     rows: List[dict] = []
-    ordered = sorted(
-        stats.stats.items(), key=lambda kv: kv[1][2], reverse=True  # type: ignore[index]
-    )
+    # pstats stubs omit the raw ``.stats`` dict; access it dynamically.
+    raw_stats = getattr(stats, "stats")
+    ordered = sorted(raw_stats.items(), key=lambda kv: kv[1][2], reverse=True)
     for (filename, lineno, func), (_cc, nc, tottime, cumtime, _callers) in ordered[:n]:
         short = Path(filename).name if filename not in ("~", "") else filename
         rows.append(
