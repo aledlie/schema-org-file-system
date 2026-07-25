@@ -83,6 +83,7 @@ from src.scoring.signals.personal_doc import (
 )
 from src.scoring.signals.screenshot_ocr import (
     MEDIA_CATEGORY,
+    SCREENSHOT_FALLBACK_SUBCATEGORY,
     SCREENSHOT_OCR_KEYWORD_THRESHOLD,
     is_screenshot_named,
     route_screenshot_ocr,
@@ -1252,12 +1253,25 @@ class ContentOrganizer(BaseOrganizer):
         original scene subcategory stays visible there for audit). Renamed or
         cropped screenshots miss the filename gate and keep today's
         ``Media/{Interiors,Exteriors,Place}`` placement by design.
+
+        Corroboration guard: when ``SceneSignal`` is the *sole* winner
+        (``winning_signals == ["scene"]``), the probe's calibrated high
+        confidence (~0.99) inflates the decision margin to ~0.81, bypassing
+        the ``low_margin`` gate even when all other signals score 1–12%.  A
+        screenshot labelled as an interior by the probe alone is ambiguous
+        (real-estate listing screenshot vs. an actual room photo) — route to
+        the generic screenshots bucket instead of committing the scene class.
+        When another signal also voted for the winning (category, subcategory)
+        the decision is corroborated and the specific reroute applies normally.
         """
         if decision.category != MEDIA_CATEGORY:
             return decision
         rerouted = SCREENSHOT_SCENE_SUBCATEGORY.get(decision.subcategory)
         if rerouted is None or not is_screenshot_named(ctx.path.stem.lower()):
             return decision
+        # Solo scene win → conservative fallback; corroborated → specific bucket.
+        if len(decision.winning_signals) == 1 and SCENE_SIGNAL_NAME in decision.winning_signals:
+            return replace(decision, subcategory=SCREENSHOT_FALLBACK_SUBCATEGORY)
         return replace(decision, subcategory=rerouted)
 
     def _stash_decision_state(self, decision: ClassificationDecision, *, scorer_label: str) -> None:

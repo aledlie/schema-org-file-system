@@ -11,6 +11,7 @@ from __future__ import annotations
 
 from typing import Any, List, Optional
 
+from .signals.archive_manifest import ArchiveManifestSignal
 from .signals.clip_vision import ClipVisionSignal
 from .signals.event_content import EventContentSignal
 from .signals.filename_pattern import FilenamePatternSignal
@@ -70,6 +71,8 @@ def build_default_signals(
         signals.append(OrganizationKeywordSignal(classifier))  # W_ORG = 1.0
     # Always-on (pure regex over extracted text/OCR, no classifier dep).
     signals.append(EventContentSignal())  # W_EVENT = 1.0
+    # Always-on (stdlib zipfile listing, no classifier dep).
+    signals.append(ArchiveManifestSignal())  # W_ARCHIVE = 0.9
     if classifier is not None:
         signals.append(PersonalDocSignal(classifier))  # W_PERSON = 0.9
         signals.append(LegalContentSignal(classifier))  # W_LEGAL = 0.85

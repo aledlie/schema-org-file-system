@@ -67,6 +67,7 @@ from src.scoring.scorer import Scorer  # noqa: E402
 from src.scoring.signals.screenshot_ocr import ScreenshotOcrSignal  # noqa: E402
 from src.scoring.weights import (  # noqa: E402
     W_CLIP,
+    W_ARCHIVE,
     W_EVENT,
     W_FILENAME,
     W_GAME,
@@ -137,6 +138,7 @@ WEIGHT_SIGNALS: List[Tuple[str, float, str]] = [
     ("W_ID", W_ID, "identity_document"),
     ("W_ORG", W_ORG, "organization_keyword"),
     ("W_EVENT", W_EVENT, "event_content"),
+    ("W_ARCHIVE", W_ARCHIVE, "archive_manifest"),
     ("W_PERSON", W_PERSON, "personal_doc"),
     ("W_LEGAL", W_LEGAL, "legal_content"),
     ("W_SCENE", W_SCENE, "scene"),

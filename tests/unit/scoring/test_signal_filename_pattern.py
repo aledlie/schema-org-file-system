@@ -219,6 +219,17 @@ class TestEventMapStems:
         assert all((s.category, s.subcategory) != ("events", "other") for s in scores)
 
 
+class TestArchiveGraduation:
+    def test_archive_verdict_emits_weak_confidence(self):
+        # Extension-only evidence: the mid-wave manifest signal decides what
+        # the archive holds (see ARCHIVE_RESULT in filename_pattern.py).
+        scores = make_signal().run(make_ctx("/downloads/Photos.zip"))
+        assert len(scores) == 1
+        score = scores[0]
+        assert (score.category, score.subcategory) == ("technical", "archives")
+        assert score.confidence == FILENAME_WEAK_CONFIDENCE
+
+
 class TestSignalMetadata:
     def test_signal_metadata(self):
         signal = make_signal()

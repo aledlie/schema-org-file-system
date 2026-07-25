@@ -27,6 +27,11 @@ W_ORG = 1.0  # OrganizationKeywordSignal — org indicators + company name
 # keyword-taxonomy misfires (W_TEXT 0.8 × 1.0) by MIN_DECISION_MARGIN — see
 # EVENT_CONFIDENCE in signals/event_content.py.
 W_EVENT = 1.0
+# ArchiveManifestSignal — zip member listing (no extraction). An enumerated
+# member census is strong direct evidence; paired with the graduated archive
+# filename verdict (0.44) so a media/medical manifest (0.9 × 0.9 = 0.81)
+# outscores it with margin, while a silent manifest leaves Technical/Other.
+W_ARCHIVE = 0.9
 W_PERSON = 0.9  # PersonalDocSignal — person-document indicators (Option C)
 W_LEGAL = 0.85  # LegalContentSignal — replaces the hard person-tier veto
 # SceneSignal — trained multi-class CLIP-embedding scene probe

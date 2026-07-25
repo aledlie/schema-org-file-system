@@ -1110,7 +1110,15 @@ class TestStashDecisionStateSceneDescription:
 
 class TestScreenshotSceneReroute:
     """Provenance reroute: a scene-class win on a screenshot-named file
-    refiles under Media/Photos/Screenshots/* keeping the scene @type."""
+    refiles under Media/Photos/Screenshots/* keeping the scene @type.
+
+    Corroboration guard (P2 item 1): when SceneSignal is the *sole* winner its
+    calibrated ~0.99 confidence inflates the decision margin past the
+    low_margin gate even when all other signals score 1-12%.  A solo scene win
+    on a screenshot-named file routes to the generic screenshots fallback
+    instead of committing the scene-class bucket.  When another signal also
+    voted for the winning (category, subcategory) the specific bucket applies.
+    """
 
     SCREENSHOT_NAME = "Screenshot 2026-05-30 at 12.45.50 AM.png"
     PHOTO_NAME = "20240426_living_room.heic"
@@ -1124,6 +1132,7 @@ class TestScreenshotSceneReroute:
         category: str = "media",
         subcategory: str = "interiors_other",
         schema_type: str = "Room",
+        winning_signals: "list[str] | None" = None,
     ) -> ClassificationDecision:
         return ClassificationDecision(
             category=category,
@@ -1131,7 +1140,7 @@ class TestScreenshotSceneReroute:
             schema_type=schema_type,
             confidence=0.95,
             margin=0.5,
-            winning_signals=["scene"],
+            winning_signals=winning_signals if winning_signals is not None else ["scene"],
             all_scores=[],
             company_name=None,
             people_names=[],
@@ -1141,20 +1150,52 @@ class TestScreenshotSceneReroute:
         ("subcategory", "rerouted"),
         sorted(SCREENSHOT_SCENE_SUBCATEGORY.items()),
     )
-    def test_scene_win_on_screenshot_reroutes(self, subcategory: str, rerouted: str) -> None:
+    def test_corroborated_scene_win_on_screenshot_reroutes(
+        self, subcategory: str, rerouted: str
+    ) -> None:
+        # When a second signal also voted for the scene category the specific
+        # screenshot subfolder applies (e.g. photos_screenshots_interiors).
         decision = ContentOrganizer._reroute_screenshot_scene(
-            self._ctx(self.SCREENSHOT_NAME), self._decision(subcategory=subcategory)
+            self._ctx(self.SCREENSHOT_NAME),
+            self._decision(subcategory=subcategory, winning_signals=["scene", "clip_vision"]),
         )
         assert decision.subcategory == rerouted
         assert decision.category == "media"
 
-    def test_schema_type_kept_on_reroute(self) -> None:
-        # Content-first typing: the folder changes, the depicted-scene @type
-        # does not.
+    @pytest.mark.parametrize(
+        "subcategory",
+        sorted(SCREENSHOT_SCENE_SUBCATEGORY),
+    )
+    def test_solo_scene_win_on_screenshot_falls_back_to_generic(
+        self, subcategory: str
+    ) -> None:
+        # SceneSignal alone (no corroboration) on a screenshot-named file:
+        # the probe's high confidence must not commit the scene-class bucket.
+        # Routes to the generic screenshots fallback instead.
         decision = ContentOrganizer._reroute_screenshot_scene(
-            self._ctx(self.SCREENSHOT_NAME), self._decision(schema_type="Room")
+            self._ctx(self.SCREENSHOT_NAME),
+            self._decision(subcategory=subcategory, winning_signals=["scene"]),
+        )
+        assert decision.subcategory == "photos_screenshots_other"
+        assert decision.category == "media"
+
+    def test_schema_type_kept_on_corroborated_reroute(self) -> None:
+        # Content-first typing: the folder changes, the depicted-scene @type
+        # does not (corroborated case uses the specific reroute).
+        decision = ContentOrganizer._reroute_screenshot_scene(
+            self._ctx(self.SCREENSHOT_NAME),
+            self._decision(schema_type="Room", winning_signals=["scene", "clip_vision"]),
         )
         assert decision.subcategory == "photos_screenshots_interiors"
+        assert decision.schema_type == "Room"
+
+    def test_schema_type_kept_on_solo_fallback(self) -> None:
+        # The @type is preserved even when falling back to the generic bucket.
+        decision = ContentOrganizer._reroute_screenshot_scene(
+            self._ctx(self.SCREENSHOT_NAME),
+            self._decision(schema_type="Room", winning_signals=["scene"]),
+        )
+        assert decision.subcategory == "photos_screenshots_other"
         assert decision.schema_type == "Room"
 
     def test_non_screenshot_name_unchanged(self) -> None:
@@ -1187,13 +1228,17 @@ class TestScreenshotSceneReroute:
         scene_targets = {sub for cls, (_cat, sub) in SCENE_CATEGORY.items() if cls != "graphic"}
         assert set(SCREENSHOT_SCENE_SUBCATEGORY) == scene_targets
 
-    def test_unified_path_applies_reroute(self, tmp_path: Path, mock_classifier: MagicMock) -> None:
-        # Wiring: _detect_file_category_unified returns the rerouted
-        # subcategory, and the persisted decision snapshot matches it.
+    def test_unified_path_applies_reroute_when_corroborated(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        # Wiring: _detect_file_category_unified returns the scene-specific
+        # rerouted subcategory when signals are corroborated, and the
+        # persisted decision snapshot matches it.
         org = ContentOrganizer(
             base_path=tmp_path, content_classifier=mock_classifier, scorer="unified"
         )
-        stub_scorer = SimpleNamespace(classify=lambda ctx: self._decision())
+        corroborated = self._decision(winning_signals=["scene", "clip_vision"])
+        stub_scorer = SimpleNamespace(classify=lambda ctx: corroborated)
         org._get_unified_scorer = lambda: stub_scorer  # type: ignore[method-assign]
         result = org._detect_file_category_unified(Path(f"/shots/{self.SCREENSHOT_NAME}"))
         assert (result[0], result[1], result[2]) == (
@@ -1203,6 +1248,22 @@ class TestScreenshotSceneReroute:
         )
         snapshot = org._last_file_state["scoring_decision"]
         assert snapshot["decision"]["subcategory"] == "photos_screenshots_interiors"
+
+    def test_unified_path_solo_scene_falls_back(
+        self, tmp_path: Path, mock_classifier: MagicMock
+    ) -> None:
+        # Wiring: when SceneSignal is the sole winner the generic screenshots
+        # bucket is committed, not the scene-class subfolder.
+        org = ContentOrganizer(
+            base_path=tmp_path, content_classifier=mock_classifier, scorer="unified"
+        )
+        solo = self._decision(winning_signals=["scene"])
+        stub_scorer = SimpleNamespace(classify=lambda ctx: solo)
+        org._get_unified_scorer = lambda: stub_scorer  # type: ignore[method-assign]
+        result = org._detect_file_category_unified(Path(f"/shots/{self.SCREENSHOT_NAME}"))
+        assert (result[0], result[1]) == ("media", "photos_screenshots_other")
+        snapshot = org._last_file_state["scoring_decision"]
+        assert snapshot["decision"]["subcategory"] == "photos_screenshots_other"
 
 
 # ------------------------------------------------------------------ #

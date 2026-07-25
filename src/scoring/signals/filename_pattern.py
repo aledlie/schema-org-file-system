@@ -69,6 +69,13 @@ FILENAME_WEAK_RESULTS = frozenset({("media", "photos_other")})
 # MIN_DECISION_CONFIDENCE) when the map yields no extractable title.
 EVENTS_MAP_RESULT = ("events", "other")
 
+# Archives: the extension says "it's an archive", never what it holds — the
+# member listing does (ArchiveManifestSignal, mid wave). Same downgrade
+# rationale as EVENTS_MAP_RESULT: full confidence would early-exit before the
+# manifest is read; graduated, a media/medical manifest outscores this verdict
+# and a silent manifest leaves it to commit Technical/Other alone.
+ARCHIVE_RESULT = ("technical", "archives")
+
 # Legacy filename naming traps (BACKLOG Phase-3 item #5): the shared rule
 # module answers these at full strength, but the stem is not what the verdict
 # claims, so the signal graduates their confidence down to let the
@@ -126,6 +133,9 @@ def graduated_filename_confidence(stem: str, category: str, subcategory: str, ex
     # Event/venue maps: let the mid wave run so EventContentSignal can supply
     # the Events/{EventName}/ folder name (see EVENTS_MAP_RESULT above).
     if result == EVENTS_MAP_RESULT:
+        return FILENAME_WEAK_CONFIDENCE
+    # Archives: let the mid wave read the member listing (ARCHIVE_RESULT above).
+    if result == ARCHIVE_RESULT:
         return FILENAME_WEAK_CONFIDENCE
     # Sprite verdict on a camera-roll / scanner stem: it is a photo or a scan.
     if result == GAME_SPRITES_RESULT and _is_camera_or_scan_stem(stem):

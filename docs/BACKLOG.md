@@ -95,15 +95,17 @@ Profiling `organize-files content` (unified scorer, dry-run) on 2026-07-17 showe
 2. **P2 docTR-fallback gate — recall tradeoff to monitor.** The shipped gate (`extract_ocr_with_confidence`: skip the docTR fallback when easyocr cleanly finds no text) was eval'd over 7 text images at varying difficulty: **1/7 recall loss — very-low-contrast text** (easyocr's detector found nothing; docTR would have caught it). Clean, dark-mode, and rotated text were all gate-safe. So P2 trades a rare miss on near-invisible text for eliminating the docTR fallback. For a screenshot/photo-dominated 265k-file library this is very likely a net win, but it is a real behavior change — put it behind a config flag or revert if faint-text recall matters.
 
 
-### Content organizer misclassifies diverse/screenshot sources (review-gate + robustness gaps)
+### [Done] Content organizer misclassifies diverse/screenshot sources (review-gate + robustness gaps)
 
-A live `organize-files content --source ~/Desktop --limit 10` (unified scorer) on mixed real-world desktop content committed most files to wrong folders and surfaced several distinct gaps. Items 2–5 shipped; item 1 remains open.
+A live `organize-files content --source ~/Desktop --limit 10` (unified scorer) on mixed real-world desktop content committed most files to wrong folders and surfaced several distinct gaps. Items 2–5 shipped; item 1 shipped 2026-07-24.
 
-**Status:** Open — item 1 gates safe use on real user directories.
+**Status:** Done — item 1 shipped 2026-07-24. All items resolved.
 **Priority:** P2 (item 1)
 **Source:** `~/Desktop` content-run audit + full rollback, 2026-07-17
 
 1. **The review gate keys on decision-confidence, which the scene probe inflates.** (Originally filed against `InteriorSignal`; the mechanism carries over unchanged to its successor `SceneSignal` — swap completed 2026-07-18.) UI screenshots of real-estate listings committed to `Media/Interiors` (`Room`) because the interior probe votes ~0.99 (decision confidence ~0.85, margin ~0.81) even when the OCR/label confidence is 1–12%. The `low_confidence`/`low_margin` review bucket exists and *does* fire (confirmed in a `--scorer shadow` pass — one opaque PDF routed to `uncategorized/other`), but cannot catch these because the probe supplies genuine high decision-confidence to wrong content. Options: a per-signal reliability cap, or require corroboration for `SceneSignal` on screenshot-detected inputs — note the 5-class probe's trained `neither`/`graphic` classes (which include many UI screenshots as negatives) already reduce, but do not eliminate, this failure mode relative to the binary interior probe.
+
+   **Resolved 2026-07-24** — corroboration guard added to `ContentOrganizer._reroute_screenshot_scene`: when `SceneSignal` is the sole entry in `winning_signals` AND the file is screenshot-named, the decision routes to `photos_screenshots_other` instead of the scene-class bucket (`photos_screenshots_{interiors,exteriors,places}`). `CLIP_LABEL_TO_ORGANIZER["an interior room"]` maps to `property_management/other`, not `media/interiors_other`, so no other signal co-votes for the scene key — the solo-win condition is the invariant for all real-world SceneSignal wins on screenshot-named files. 14 new/updated tests in `TestScreenshotSceneReroute`; 2241 unit tests pass.
 
 ## Repo Snapshot — 2026-07-18
 
