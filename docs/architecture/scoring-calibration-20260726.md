@@ -120,6 +120,30 @@ decisions, non-media slice, golden corpus). This closes the final open item of
   MIN_DECISION_MARGIN` would still hold at 0.06: 0.40 < 0.41 — no slack, a
   further reason to hold at 0.10).
 
+## 3.2 Oracle cleanup (addendum, same day)
+
+Investigating the `game_assets/textures → financial/invoices` ×4 disagreement
+proved the **stored labels wrong, not the scorer**: the four rows are
+loan-calculator screenshots (OCR: "Loan details… Monthly payment… Interest
+rate") that carried a stale `game_assets/textures` edge alongside (or instead
+of) `financial/invoices`. Fixes applied (DB backed up to
+`file_organization.db.bak-20260726_021646`):
+
+- Dropped the stale `game_assets/textures` edge from all 4 rows; ensured
+  `financial/invoices`; moved the 2 still in `Documents/Uncategorized/` into
+  `Financial/Invoices/` and updated `current_path`.
+- Migrated the stale pre-Option-C taxonomy: category `person/contacts`
+  (6 files) updated in place to `personal/contacts` (`categories.name` is
+  globally UNIQUE, so in-place beats create+repoint); the single
+  `person/identity` edge repointed to `personal/identification`; orphaned
+  `person`/`person/identity` category rows deleted.
+
+**Replay agreement: 152/356 (42.7%) → 162/356 (45.5%).** The
+`textures → invoices` and `person/contacts` disagreement rows are gone.
+The remaining `game_assets/sprites → media/graphics_other` ×5 rows are
+screenshots whose stored label came from a live-CLIP production run — the
+replay-fidelity artifact, not an oracle error; they stay.
+
 ## 4. Caveats & when to re-run
 
 - The stored-decision oracle is biased: it contains manual corrections and
