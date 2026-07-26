@@ -57,6 +57,26 @@ Profiling `organize-files content` (unified scorer, dry-run) on 2026-07-17 showe
 2. **P2 docTR-fallback gate — recall tradeoff to monitor.** The shipped gate (`extract_ocr_with_confidence`: skip the docTR fallback when easyocr cleanly finds no text) was eval'd over 7 text images at varying difficulty: **1/7 recall loss — very-low-contrast text** (easyocr's detector found nothing; docTR would have caught it). Clean, dark-mode, and rotated text were all gate-safe. So P2 trades a rare miss on near-invisible text for eliminating the docTR fallback. For a screenshot/photo-dominated 265k-file library this is very likely a net win, but it is a real behavior change — put it behind a config flag or revert if faint-text recall matters. **Config flag shipped 2026-07-25:** `--ocr-doctr-fallback` (store_true, default off = gate on; constant `OCR_FORCE_DOCTR_FALLBACK` in `src/scoring/weights.py`) forces the docTR pass after a clean easyocr negative. Plumbed `force_doctr_fallback` through `extract_ocr_with_confidence`, `TextExtractor`, `ContentOrganizer` (all 3 call sites incl. the FileContext `ocr_provider`), `ContentBasedFileOrganizer`, `ContentInputs`, and the CLI — same pattern as `--ocr-clip-topk`. 5 gate tests in `tests/unit/test_shared.py::TestDoctrFallbackGate`; CLI-inputs contract + integration suites pass.
 
 
+### `copy_to_site.sh` clobbers `_site/index.html` with a stale `results/` copy
+
+Every `organize-files content` run ends with "✓ Updated _site directory with latest
+HTML files", which runs `scripts/copy_to_site.sh` → `cp results/index.html
+_site/index.html` (line 23). `results/index.html` is an older snapshot, so the copy
+**silently deletes newer dashboard content**. Observed 2026-07-26: a content run
+removed the "Residence Galleries" feature card (13 lines) from `_site/index.html`
+while `_site/residence_gallery.html` itself still existed — i.e. the page was
+orphaned from navigation. Reverted by hand (`git checkout -- _site/index.html`).
+
+The copy direction is backwards for `index.html`: `_site/` is the maintained
+artifact (committed, e.g. `7ef99a5`), `results/` is scratch output. Either stop
+copying `index.html` at all, regenerate it from the same source that produces the
+`_site` version, or make the copy additive. Until then, check
+`git diff _site/` after any content run.
+
+**Status:** Open — observed and reverted; root cause identified, not fixed.
+**Priority:** P3 (cosmetic/navigation; no data affected, caught by `git diff`)
+**Source:** `~/Desktop/Uncategorized` ingestion, 2026-07-26
+
 ### `categories.name` UNIQUE silently drops category edges for 26% of files
 
 `categories.name` carries a **UNIQUE index** (`ix_categories_name`), but
