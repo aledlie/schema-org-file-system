@@ -49,6 +49,67 @@ def test_generic_entity_any_type():
     assert "additionalType" not in jsonld
 
 
+def test_organization_subtypes():
+    import src.storage.entity_metadata as em
+    from src.storage.entity_metadata import OrganizationEntity
+
+    for type_name in (
+        "Corporation",
+        "LocalBusiness",
+        "EducationalOrganization",
+        "GovernmentOrganization",
+        "NGO",
+        "PerformingGroup",
+        "SportsOrganization",
+        "NewsMediaOrganization",
+        "PoliticalParty",
+    ):
+        cls = getattr(em, f"{type_name}Entity")
+        assert issubclass(cls, OrganizationEntity)
+        assert cls(f"org-{type_name.lower()}").to_jsonld()["@type"] == type_name
+
+
+def test_local_business_subtypes():
+    import src.storage.entity_metadata as em
+    from src.storage.entity_metadata import LocalBusinessEntity
+
+    for type_name in (
+        "AnimalShelter",
+        "ArchiveOrganization",
+        "AutomotiveBusiness",
+        "ChildCare",
+        "Dentist",
+        "DryCleaningOrLaundry",
+        "EmergencyService",
+        "EmploymentAgency",
+        "EntertainmentBusiness",
+        "FinancialService",
+        "FoodEstablishment",
+        "GovernmentOffice",
+        "HealthAndBeautyBusiness",
+        "HomeAndConstructionBusiness",
+        "InternetCafe",
+        "LegalService",
+        "Library",
+        "LodgingBusiness",
+        "MedicalBusiness",
+        "ProfessionalService",
+        "RadioStation",
+        "RealEstateAgent",
+        "RecyclingCenter",
+        "SelfStorage",
+        "ShoppingCenter",
+        "SportsActivityLocation",
+        "Store",
+        "TelevisionStation",
+        "TouristInformationCenter",
+        "TravelAgency",
+    ):
+        cls = getattr(em, f"{type_name}Entity")
+        assert issubclass(cls, LocalBusinessEntity)
+        assert cls(f"biz-{type_name.lower()}").to_jsonld()["@type"] == type_name
+
+
 def test_from_jsonld_round_trip():
     original = _residence()
     rebuilt = ResidenceEntity.from_jsonld(original.to_jsonld())
@@ -147,6 +208,19 @@ def test_add_main_entity_of_page():
         "https://example.com/page",
         "https://example.com/other",
     ]
+
+
+def test_strip_unit_suffix():
+    from src.storage.entity_metadata import _strip_unit_suffix
+
+    assert _strip_unit_suffix("1115 Kinney Avenue, #3") == "1115 Kinney Avenue"
+    assert _strip_unit_suffix("4201 S Congress Ave Suite 108") == "4201 S Congress Ave"
+    assert _strip_unit_suffix("2702 Willow Street") == "2702 Willow Street"
+    assert _strip_unit_suffix("500 Main St Apt 2B") == "500 Main St"
+    assert _strip_unit_suffix("500 Main St Unit 4") == "500 Main St"
+    assert _strip_unit_suffix("500 Main St Ste. 12") == "500 Main St"
+    # Street names containing designator words are not mangled
+    assert _strip_unit_suffix("12 Suite Life Blvd") == "12 Suite Life Blvd"
 
 
 def test_geocode_without_address_is_noop():

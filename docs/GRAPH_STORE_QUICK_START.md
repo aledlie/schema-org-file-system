@@ -17,22 +17,39 @@ python  # or a script with: sys.path.insert(0, '<project root>')
 
 ```python
 from src.storage.entity_metadata import (
-    EventEntity, PersonEntity, PlaceEntity, ResidenceEntity, SchemaOrgEntity,
+    EventEntity, ImageObjectEntity, LocalBusinessEntity, NGOEntity,
+    OrganizationEntity, PersonEntity, PlaceEntity, ResidenceEntity,
+    SchemaOrgEntity,
 )
 from src.storage.graph_store import GraphStore
 
 store = GraphStore()  # defaults to results/file_organization.db
 ```
 
+Available concrete types (all two-liner subclasses of `SchemaOrgEntity`):
+
+- `PlaceEntity` -> `ResidenceEntity`
+- `EventEntity`, `ImageObjectEntity`, `PersonEntity`
+- `OrganizationEntity` -> `CorporationEntity`, `EducationalOrganizationEntity`,
+  `GovernmentOrganizationEntity`, `NGOEntity`, `PerformingGroupEntity`,
+  `SportsOrganizationEntity`, `NewsMediaOrganizationEntity`,
+  `PoliticalPartyEntity`, and `LocalBusinessEntity`
+- `LocalBusinessEntity` -> all 30 schema.org direct subtypes
+  (`DentistEntity`, `FoodEstablishmentEntity`, `StoreEntity`, ...)
+
 ## Create an entity
 
 ```python
 residence = ResidenceEntity("residence-casa-azul", name="Casa Azul")
-residence.set_address("1117 Delano St", "Austin", "TX", "78721-2101")
+residence.set_address("1115 Kinney Avenue, #3", "Austin", "TX", "78704")
 residence.geocode()          # Nominatim forward-geocode address -> geo (True on success)
 residence.set_geo(30.27, -97.68)  # or set coordinates directly
 residence.save(store)        # upsert by @id
 ```
+
+`geocode()` strips trailing unit/suite designators (`#3`, `Suite 108`,
+`Apt 2B`, ...) from the lookup — Nominatim can't resolve them — while the
+stored `address` keeps the full street.
 
 Any type works via the base class or a two-line subclass:
 
@@ -62,6 +79,44 @@ residence.save(store)
 `add_same_as` / `add_main_entity_of_page` keep a single URL scalar, grow to a
 deduplicated list on further additions.
 
+To retype an entity (e.g. Organization -> its Corporation subtype), load it
+through the target subclass and save — properties carry over, `@type` and the
+indexed `schema_type` column update in place:
+
+```python
+from src.storage.entity_metadata import CorporationEntity
+
+org = CorporationEntity.load(store, "org-integrity-studio")
+org.save(store)   # row now has @type/schema_type "Corporation"
+```
+
+## Organizations and businesses
+
+```python
+org = OrganizationEntity("org-integrity-studio", name="Integrity Studio")
+org.set_property("url", "https://integritystudio.ai")
+org.set_property("founder", {"@type": "Person", "@id": alyshia.entity_id, "name": alyshia.name})
+org.add_same_as("https://www.linkedin.com/company/integrity-studio-ai")
+org.add_same_as("https://github.com/integritystudio")   # sameAs grows to a list
+org.save(store)
+
+ngo = NGOEntity("ngo-capital-city-village", name="Capital City Village")
+ngo.set_property("taxID", "27-0539952")
+ngo.set_property("nonprofitStatus", "Nonprofit501c3")
+ngo.set_property("areaServed", {"@type": "City", "name": "Austin"})
+ngo.save(store)
+
+biz = LocalBusinessEntity("business-inspired-movement", name="Inspired Movement")
+biz.set_property("telephone", "+1 512 920 2182")
+biz.set_property("address", {"@type": "PostalAddress", "streetAddress": "4201 S Congress Ave Suite 108", ...})
+biz.save(store)
+```
+
+`LocalBusinessEntity` extends `OrganizationEntity` (schema.org dual-parents it
+with Place; Python forces a pick) — `set_address`/`geocode` are `PlaceEntity`
+methods, so on a business either set `address` via `set_property` and borrow a
+throwaway `PlaceEntity` for geocoding, or set `geo` directly.
+
 ## People and associations
 
 People go through the graph store's name-validation gate so the JSON-LD `@id`
@@ -71,15 +126,40 @@ is the person's canonical id (also creating/reusing their `people`-table row):
 person = PersonEntity.from_graph_person(store, "Amy Diane Morrow")  # None if rejected
 person = PersonEntity.load(store, person.entity_id) or person       # reuse saved row
 person.owns("residence-casa-azul")   # ownership lives on Person.owns (schema.org)
+person.add_owns("business-inspired-movement")  # append, preserving existing owns
 person.add_main_entity_of_page("https://www.linkedin.com/in/amydianemorrow/")
+person.set_property("image", {"@id": "image-profile"})  # profile photo (ImageObject @id)
 person.save(store)
 ```
+
+`owns(*ids)` replaces; `add_owns(*ids)` appends with `@id` dedup — use it when
+the person already owns something.
 
 Cross-entity links are `{"@id": ...}` references — e.g. an event attendee:
 
 ```python
 event.set_property("attendee", {"@type": "Person", "@id": person.entity_id, "name": person.name})
 ```
+
+## Standalone images
+
+For an image file with no `files`-table row (never indexed by
+`organize-files content`):
+
+```python
+from urllib.parse import quote
+
+image = ImageObjectEntity("image-profile", name="profile.png")
+image.set_property("contentUrl", "file://" + quote(str(path)))
+image.set_property("encodingFormat", "image/png")
+image.set_property("width", 532)   # from PIL Image.open(path).size
+image.set_property("height", 684)
+image.save(store)
+```
+
+For files that ARE indexed, key the entity by the file's canonical id so
+references line up: `ImageObjectEntity(file.schema_data["@id"], ...)` —
+`save()` is an upsert, so bulk backfills are idempotent.
 
 ## Associate indexed images (photo property)
 

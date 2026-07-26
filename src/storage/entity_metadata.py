@@ -10,6 +10,7 @@ types — see ``PlaceEntity``/``ResidenceEntity``/``PersonEntity``.
 """
 
 import json
+import re
 from pathlib import Path
 from typing import Any, ClassVar, Dict, Iterable, List, Optional, Type, TypeVar, Union
 
@@ -26,6 +27,14 @@ _JSONLD_ID = "@id"
 _JSONLD_TYPE = "@type"
 _RESERVED_KEYS = (_JSONLD_CONTEXT, _JSONLD_TYPE, _JSONLD_ID, "name", "additionalType")
 
+# Unit/suite suffixes confuse Nominatim ("1115 Kinney Avenue, #3" resolves,
+# "4201 S Congress Ave Suite 108" doesn't) — strip them from geocode queries.
+_UNIT_SUFFIX_RE = re.compile(
+    r"\s*(?:,\s*)?(?:#|(?:suite|ste|unit|apt|apartment|bldg|building|fl|floor|rm|room)\.?\s+)"
+    r"[\w-]+\s*$",
+    re.IGNORECASE,
+)
+
 # Nominatim usage policy: <=1 req/s (matches src/analyzers/image_metadata.py).
 _GEOCODE_USER_AGENT = "schema-org-file-system/2.1.0"
 _GEOCODE_TIMEOUT_SEC = 5
@@ -33,6 +42,11 @@ _GEOCODE_MIN_DELAY_SEC = 1.0
 _GEOCODE_MAX_RETRIES = 2
 
 E = TypeVar("E", bound="SchemaOrgEntity")
+
+
+def _strip_unit_suffix(street: str) -> str:
+    """Drop a trailing unit/suite/apartment designator from a street address."""
+    return _UNIT_SUFFIX_RE.sub("", street).rstrip(" ,")
 
 
 class SchemaOrgEntity:
@@ -229,7 +243,9 @@ class PlaceEntity(SchemaOrgEntity):
     def geocode(self) -> bool:
         """Forward-geocode ``address`` into ``geo`` via Nominatim.
 
-        Rate-limited per OSM policy. Returns ``False`` (leaving ``geo``
+        Rate-limited per OSM policy. Unit/suite suffixes are stripped from
+        the street for the lookup (Nominatim can't resolve them); the stored
+        ``address`` keeps the full street. Returns ``False`` (leaving ``geo``
         unset) when geopy is unavailable, no address is set, the lookup
         fails, or the address does not resolve.
         """
@@ -242,8 +258,9 @@ class PlaceEntity(SchemaOrgEntity):
         except ImportError:
             return False
 
+        street = address.get("streetAddress")
         query = {
-            "street": address.get("streetAddress"),
+            "street": _strip_unit_suffix(street) if street else None,
             "city": address.get("addressLocality"),
             "state": address.get("addressRegion"),
             "postalcode": address.get("postalCode"),
@@ -282,6 +299,240 @@ class OrganizationEntity(SchemaOrgEntity):
     """schema.org Organization."""
 
     entity_type: ClassVar[str] = "Organization"
+
+
+class CorporationEntity(OrganizationEntity):
+    """schema.org Corporation (Organization subtype)."""
+
+    entity_type: ClassVar[str] = "Corporation"
+
+
+class LocalBusinessEntity(OrganizationEntity):
+    """schema.org LocalBusiness (Organization subtype; also a Place)."""
+
+    entity_type: ClassVar[str] = "LocalBusiness"
+
+
+class AnimalShelterEntity(LocalBusinessEntity):
+    """schema.org AnimalShelter (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "AnimalShelter"
+
+
+class ArchiveOrganizationEntity(LocalBusinessEntity):
+    """schema.org ArchiveOrganization (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "ArchiveOrganization"
+
+
+class AutomotiveBusinessEntity(LocalBusinessEntity):
+    """schema.org AutomotiveBusiness (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "AutomotiveBusiness"
+
+
+class ChildCareEntity(LocalBusinessEntity):
+    """schema.org ChildCare (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "ChildCare"
+
+
+class DentistEntity(LocalBusinessEntity):
+    """schema.org Dentist (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "Dentist"
+
+
+class DryCleaningOrLaundryEntity(LocalBusinessEntity):
+    """schema.org DryCleaningOrLaundry (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "DryCleaningOrLaundry"
+
+
+class EmergencyServiceEntity(LocalBusinessEntity):
+    """schema.org EmergencyService (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "EmergencyService"
+
+
+class EmploymentAgencyEntity(LocalBusinessEntity):
+    """schema.org EmploymentAgency (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "EmploymentAgency"
+
+
+class EntertainmentBusinessEntity(LocalBusinessEntity):
+    """schema.org EntertainmentBusiness (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "EntertainmentBusiness"
+
+
+class FinancialServiceEntity(LocalBusinessEntity):
+    """schema.org FinancialService (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "FinancialService"
+
+
+class FoodEstablishmentEntity(LocalBusinessEntity):
+    """schema.org FoodEstablishment (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "FoodEstablishment"
+
+
+class GovernmentOfficeEntity(LocalBusinessEntity):
+    """schema.org GovernmentOffice (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "GovernmentOffice"
+
+
+class HealthAndBeautyBusinessEntity(LocalBusinessEntity):
+    """schema.org HealthAndBeautyBusiness (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "HealthAndBeautyBusiness"
+
+
+class HomeAndConstructionBusinessEntity(LocalBusinessEntity):
+    """schema.org HomeAndConstructionBusiness (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "HomeAndConstructionBusiness"
+
+
+class InternetCafeEntity(LocalBusinessEntity):
+    """schema.org InternetCafe (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "InternetCafe"
+
+
+class LegalServiceEntity(LocalBusinessEntity):
+    """schema.org LegalService (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "LegalService"
+
+
+class LibraryEntity(LocalBusinessEntity):
+    """schema.org Library (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "Library"
+
+
+class LodgingBusinessEntity(LocalBusinessEntity):
+    """schema.org LodgingBusiness (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "LodgingBusiness"
+
+
+class MedicalBusinessEntity(LocalBusinessEntity):
+    """schema.org MedicalBusiness (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "MedicalBusiness"
+
+
+class ProfessionalServiceEntity(LocalBusinessEntity):
+    """schema.org ProfessionalService (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "ProfessionalService"
+
+
+class RadioStationEntity(LocalBusinessEntity):
+    """schema.org RadioStation (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "RadioStation"
+
+
+class RealEstateAgentEntity(LocalBusinessEntity):
+    """schema.org RealEstateAgent (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "RealEstateAgent"
+
+
+class RecyclingCenterEntity(LocalBusinessEntity):
+    """schema.org RecyclingCenter (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "RecyclingCenter"
+
+
+class SelfStorageEntity(LocalBusinessEntity):
+    """schema.org SelfStorage (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "SelfStorage"
+
+
+class ShoppingCenterEntity(LocalBusinessEntity):
+    """schema.org ShoppingCenter (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "ShoppingCenter"
+
+
+class SportsActivityLocationEntity(LocalBusinessEntity):
+    """schema.org SportsActivityLocation (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "SportsActivityLocation"
+
+
+class StoreEntity(LocalBusinessEntity):
+    """schema.org Store (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "Store"
+
+
+class TelevisionStationEntity(LocalBusinessEntity):
+    """schema.org TelevisionStation (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "TelevisionStation"
+
+
+class TouristInformationCenterEntity(LocalBusinessEntity):
+    """schema.org TouristInformationCenter (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "TouristInformationCenter"
+
+
+class TravelAgencyEntity(LocalBusinessEntity):
+    """schema.org TravelAgency (LocalBusiness subtype)."""
+
+    entity_type: ClassVar[str] = "TravelAgency"
+
+
+class EducationalOrganizationEntity(OrganizationEntity):
+    """schema.org EducationalOrganization (Organization subtype)."""
+
+    entity_type: ClassVar[str] = "EducationalOrganization"
+
+
+class GovernmentOrganizationEntity(OrganizationEntity):
+    """schema.org GovernmentOrganization (Organization subtype)."""
+
+    entity_type: ClassVar[str] = "GovernmentOrganization"
+
+
+class NGOEntity(OrganizationEntity):
+    """schema.org NGO (Organization subtype)."""
+
+    entity_type: ClassVar[str] = "NGO"
+
+
+class PerformingGroupEntity(OrganizationEntity):
+    """schema.org PerformingGroup (Organization subtype)."""
+
+    entity_type: ClassVar[str] = "PerformingGroup"
+
+
+class SportsOrganizationEntity(OrganizationEntity):
+    """schema.org SportsOrganization (Organization subtype)."""
+
+    entity_type: ClassVar[str] = "SportsOrganization"
+
+
+class NewsMediaOrganizationEntity(OrganizationEntity):
+    """schema.org NewsMediaOrganization (Organization subtype)."""
+
+    entity_type: ClassVar[str] = "NewsMediaOrganization"
+
+
+class PoliticalPartyEntity(OrganizationEntity):
+    """schema.org PoliticalParty (Organization subtype)."""
+
+    entity_type: ClassVar[str] = "PoliticalParty"
 
 
 class ImageObjectEntity(SchemaOrgEntity):
