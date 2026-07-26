@@ -62,7 +62,7 @@ from src.scoring.types import (
     SCORER_SHADOW,
     SCORER_UNIFIED,
 )
-from src.scoring.weights import OCR_CLIP_GATE_TOPK
+from src.scoring.weights import OCR_CLIP_GATE_TOPK, OCR_FORCE_DOCTR_FALLBACK
 
 # Extracted mid-tier signal cores (UNIFIED_SCORING_PLAN Phase 1, batch B).
 # The classify_* methods below delegate to these pure functions so the legacy
@@ -296,6 +296,7 @@ class ContentOrganizer(BaseOrganizer):
         ocr_available: Optional[bool] = None,
         scorer: str = SCORER_DEFAULT,
         ocr_clip_topk: Optional[int] = OCR_CLIP_GATE_TOPK,
+        force_doctr_fallback: bool = OCR_FORCE_DOCTR_FALLBACK,
     ) -> None:
         super().__init__(
             base_path=base_path,
@@ -313,6 +314,10 @@ class ContentOrganizer(BaseOrganizer):
         # unavailable (no signal = run OCR). Pass 0 or None to disable.
         # (UNIFIED_SCORING_PLAN P1)
         self.ocr_clip_topk = ocr_clip_topk
+        # docTR-fallback gate (P2): False (default) skips the docTR pass when
+        # easyocr cleanly finds no text; True always runs it (faint-text
+        # recall over cost). CLI: --ocr-doctr-fallback.
+        self.force_doctr_fallback = force_doctr_fallback
         # Shadow log is append-only per file; truncate once per run so a fresh
         # run's disagreement report never inherits stale records from prior runs
         # (e.g. leftover scratchpad paths from an earlier session).
@@ -779,7 +784,9 @@ class ContentOrganizer(BaseOrganizer):
             return None
         ocr_text = self._last_file_ocr_text
         if not ocr_text:
-            _res = extract_ocr_with_confidence(file_path, max_chars=0)
+            _res = extract_ocr_with_confidence(
+                file_path, max_chars=0, force_doctr_fallback=self.force_doctr_fallback
+            )
             if _res:
                 ocr_text = _res.text
                 self._last_file_ocr_confidence = _res.confidence
@@ -1164,7 +1171,9 @@ class ContentOrganizer(BaseOrganizer):
         if self.ocr_available and extract_ocr_with_confidence is not None:
 
             def ocr_provider(path: Path):  # noqa: F811 — conditional binding
-                return extract_ocr_with_confidence(path, max_chars=0)
+                return extract_ocr_with_confidence(
+                    path, max_chars=0, force_doctr_fallback=self.force_doctr_fallback
+                )
 
         clip_provider = None
         if (
@@ -1415,7 +1424,11 @@ class ContentOrganizer(BaseOrganizer):
         # Extract text from image via OCR with confidence metadata.
         # Low-confidence results (e.g. blurry photos) must not trigger ID detection.
         _ocr_result = (
-            extract_ocr_with_confidence(file_path, max_chars=0) if self.ocr_available else None
+            extract_ocr_with_confidence(
+                file_path, max_chars=0, force_doctr_fallback=self.force_doctr_fallback
+            )
+            if self.ocr_available
+            else None
         )
         ocr_text = _ocr_result.text if _ocr_result else ""
         _ocr_conf = _ocr_result.confidence if _ocr_result else None

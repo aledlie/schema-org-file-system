@@ -72,7 +72,7 @@ from src.organizers.content_organizer import (  # noqa: E402,F401  (re-exported 
     _SCREENSHOT_OCR_KEYWORD_THRESHOLD,
 )
 from src.scoring.types import SCORER_DEFAULT  # noqa: E402
-from src.scoring.weights import OCR_CLIP_GATE_TOPK  # noqa: E402
+from src.scoring.weights import OCR_CLIP_GATE_TOPK, OCR_FORCE_DOCTR_FALLBACK  # noqa: E402
 
 # Pipeline layer (per-file processing + batch orchestration). Imported after
 # the sys.path inserts above so the flat module aliases (storage.*, shared.*)
@@ -90,7 +90,10 @@ from rename_images import PHOTO_PROFILE, ImageAnalyzer  # noqa: E402
 
 from analyzers.image_analyzer import ImageContentAnalyzer  # noqa: E402
 from enrichment import MetadataEnricher  # noqa: E402
-from integration import SchemaRegistry  # noqa: E402
+# src.integration (not bare `integration`): matches FileProcessor's import so
+# both see the same class object, and avoids the mypy namespace-package
+# collision with tests/integration/ when tests are in the checked set.
+from src.integration import SchemaRegistry  # noqa: E402
 from validator import SchemaValidator  # noqa: E402
 
 # Graph storage imports
@@ -147,6 +150,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         db_path: Optional[str] = "results/file_organization.db",
         scorer: str = SCORER_DEFAULT,
         ocr_clip_topk: Optional[int] = OCR_CLIP_GATE_TOPK,
+        force_doctr_fallback: bool = OCR_FORCE_DOCTR_FALLBACK,
     ):
         """
         Initialize the organizer.
@@ -162,6 +166,10 @@ class ContentBasedFileOrganizer(ContentOrganizer):
             ocr_clip_topk: Skip OCR on images unless a text-bearing CLIP label
                 ranks in the top-K labels. Defaults to OCR_CLIP_GATE_TOPK (3).
                 Pass 0 or None to disable. Fails open when CLIP is unavailable.
+            force_doctr_fallback: Always run the docTR fallback even when
+                easyocr cleanly finds no text (recovers very-low-contrast text
+                at ~25x the OCR cost). Defaults to OCR_FORCE_DOCTR_FALLBACK
+                (False, i.e. the clean-negative gate stays on).
         """
         base_dir = Path(base_path or "~/Documents").expanduser()
 
@@ -187,7 +195,10 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         self.rename_analyzer = ImageAnalyzer(PHOTO_PROFILE)
         image_analyzer = ImageContentAnalyzer(cost_calculator=self.cost_calculator)
         metadata_parser = ImageMetadataParser(cost_calculator=self.cost_calculator)
-        text_extractor = TextExtractor(cost_calculator=self.cost_calculator)
+        text_extractor = TextExtractor(
+            cost_calculator=self.cost_calculator,
+            force_doctr_fallback=force_doctr_fallback,
+        )
 
         # Classification layer (filepath patterns, category taxonomy,
         # game-asset keywords, per-file OCR/KIE state) is initialized by
@@ -207,6 +218,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
             ocr_available=OCR_AVAILABLE,
             scorer=scorer,
             ocr_clip_topk=ocr_clip_topk,
+            force_doctr_fallback=force_doctr_fallback,
         )
 
         # Pipeline layer by composition: FileProcessor handles per-file schema
@@ -411,6 +423,7 @@ def run(args: "ContentInputs") -> None:
         db_path=db_path,
         scorer=args.scorer,
         ocr_clip_topk=args.ocr_clip_topk,
+        force_doctr_fallback=args.ocr_doctr_fallback,
     )
 
     # Organize directories

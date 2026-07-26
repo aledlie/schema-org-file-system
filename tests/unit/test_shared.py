@@ -198,6 +198,85 @@ class TestExtractOcrWithConfidence:
             # language and orientation may be None for simple images
 
 
+class TestDoctrFallbackGate:
+    """Clean-negative gate in extract_ocr_with_confidence (P2) and its
+    force_doctr_fallback override."""
+
+    @pytest.fixture()
+    def gated(self, monkeypatch: pytest.MonkeyPatch):
+        """Force the easyocr-first path and record whether docTR ran."""
+        from shared import ocr_classifier
+
+        doctr_calls: list = []
+
+        def fake_run_image_ocr(image_path):
+            doctr_calls.append(image_path)
+            return None
+
+        monkeypatch.setattr(ocr_classifier, "EASYOCR_AVAILABLE", True)
+        monkeypatch.setattr(ocr_classifier, "_run_image_ocr", fake_run_image_ocr)
+        return ocr_classifier, doctr_calls
+
+    def test_clean_negative_skips_doctr_by_default(
+        self, gated, monkeypatch: pytest.MonkeyPatch, sample_image_file: Path
+    ) -> None:
+        ocr_classifier, doctr_calls = gated
+        monkeypatch.setattr(
+            ocr_classifier,
+            "extract_text_easyocr_with_status",
+            lambda path, max_chars=0: (None, False),
+        )
+        assert ocr_classifier.extract_ocr_with_confidence(sample_image_file) is None
+        assert doctr_calls == []
+
+    def test_force_doctr_fallback_runs_doctr_on_clean_negative(
+        self, gated, monkeypatch: pytest.MonkeyPatch, sample_image_file: Path
+    ) -> None:
+        ocr_classifier, doctr_calls = gated
+        monkeypatch.setattr(
+            ocr_classifier,
+            "extract_text_easyocr_with_status",
+            lambda path, max_chars=0: (None, False),
+        )
+        result = ocr_classifier.extract_ocr_with_confidence(
+            sample_image_file, force_doctr_fallback=True
+        )
+        assert result is None  # fake docTR found nothing
+        assert doctr_calls == [sample_image_file]
+
+    def test_easyocr_error_still_falls_back_to_doctr(
+        self, gated, monkeypatch: pytest.MonkeyPatch, sample_image_file: Path
+    ) -> None:
+        ocr_classifier, doctr_calls = gated
+        monkeypatch.setattr(
+            ocr_classifier,
+            "extract_text_easyocr_with_status",
+            lambda path, max_chars=0: (None, True),
+        )
+        assert ocr_classifier.extract_ocr_with_confidence(sample_image_file) is None
+        assert doctr_calls == [sample_image_file]
+
+    def test_easyocr_hit_short_circuits(
+        self, gated, monkeypatch: pytest.MonkeyPatch, sample_image_file: Path
+    ) -> None:
+        from shared.ocr_classifier import OCRResult
+
+        ocr_classifier, doctr_calls = gated
+        hit = OCRResult(
+            text="hello", confidence=0.9, language="en", word_count=1, orientation=None
+        )
+        monkeypatch.setattr(
+            ocr_classifier,
+            "extract_text_easyocr_with_status",
+            lambda path, max_chars=0: (hit, False),
+        )
+        result = ocr_classifier.extract_ocr_with_confidence(
+            sample_image_file, force_doctr_fallback=True
+        )
+        assert result is hit
+        assert doctr_calls == []
+
+
 # ---------------------------------------------------------------------------
 # title_snippet_from_lines
 # ---------------------------------------------------------------------------

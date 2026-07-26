@@ -88,9 +88,16 @@ class ExtractionResult:
 class TextExtractor:
     """Extract text content from various file formats."""
 
-    def __init__(self, cost_calculator: Any | None = None) -> None:
+    def __init__(
+        self,
+        cost_calculator: Any | None = None,
+        force_doctr_fallback: bool = False,
+    ) -> None:
         self.cost_calculator = cost_calculator
         self.ocr_available = OCR_AVAILABLE
+        # When True, image OCR always runs the docTR fallback even after a
+        # clean easyocr negative (faint-text recall over cost).
+        self.force_doctr_fallback = force_doctr_fallback
 
     def extract_text_from_image(self, image_path: Path) -> str:
         """Extract text from image using docTR OCR."""
@@ -120,7 +127,9 @@ class TextExtractor:
             else nullcontext()
         ):
             try:
-                ocr_result = extract_ocr_with_confidence(image_path, max_chars=0)
+                ocr_result = extract_ocr_with_confidence(
+                    image_path, max_chars=0, force_doctr_fallback=self.force_doctr_fallback
+                )
                 if ocr_result is None:
                     return ExtractionResult(text="", source="ocr")
                 return ExtractionResult(

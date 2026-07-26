@@ -370,6 +370,7 @@ def extract_ocr_with_confidence(
     image_path: Path,
     max_chars: int = 0,
     prefer_easyocr: bool = True,
+    force_doctr_fallback: bool = False,
 ) -> OCRResult | None:
     """Extract text with confidence scores, language, and orientation.
 
@@ -378,6 +379,10 @@ def extract_ocr_with_confidence(
     screenshots and mobile UI captures. Falls back to docTR if easyocr returns
     nothing. Set ``prefer_easyocr=False`` to force the docTR path (e.g. for
     scanned documents where docTR is the stronger backend).
+
+    ``force_doctr_fallback`` disables the clean-negative gate below: docTR runs
+    even when easyocr cleanly found no text, recovering very-low-contrast text
+    that easyocr's detector misses (eval: 1/7 such images) at ~25x the cost.
 
     Returns None if OCR unavailable or no text found.
     Use max_chars=0 for no truncation.
@@ -391,8 +396,9 @@ def extract_ocr_with_confidence(
         # easyocr ran cleanly and found no text: the image is (almost certainly)
         # text-free, and a full docTR pass would repeat the same negative at
         # ~25x the cost. Skip it. Fall back to docTR only when easyocr actually
-        # errored (its detector never produced a verdict).
-        if not easyocr_errored:
+        # errored (its detector never produced a verdict) or the caller forced
+        # the fallback (faint-text recall over cost).
+        if not easyocr_errored and not force_doctr_fallback:
             return None
 
     result = _run_image_ocr(image_path)

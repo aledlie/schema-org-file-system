@@ -80,6 +80,14 @@ OCR_CONFIDENCE_GATE = 0.3
 # fails open when CLIP is unavailable or produces no scores).
 OCR_CLIP_GATE_TOPK = 3
 
+# docTR-fallback gate (P2): when easyocr runs cleanly and finds no text, skip
+# the docTR pass (~25x the cost) that would almost always repeat the same
+# negative. Eval (7 text images, 2026-07-17): 1/7 recall loss, on
+# very-low-contrast text only; clean/dark-mode/rotated text were gate-safe.
+# Set True (CLI: --ocr-doctr-fallback) to always run docTR after a clean
+# easyocr negative, recovering faint text at full OCR cost.
+OCR_FORCE_DOCTR_FALLBACK = False
+
 # --------------------------------------------------------------------------- #
 # Decision thresholds (§3.3) — raw aggregate scale                             #
 # --------------------------------------------------------------------------- #

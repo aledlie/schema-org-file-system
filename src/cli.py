@@ -39,7 +39,7 @@ from cli_inputs import (  # noqa: E402  (needs the src path insert above)
 )
 from constants import DEFAULT_DB_PATH  # noqa: E402  (src on path via insert above)
 from scoring.types import SCORER_DEFAULT, SCORER_MODES  # noqa: E402  (src on path)
-from scoring.weights import OCR_CLIP_GATE_TOPK  # noqa: E402  (src on path)
+from scoring.weights import OCR_CLIP_GATE_TOPK, OCR_FORCE_DOCTR_FALLBACK  # noqa: E402  (src on path)
 
 # Shared option defaults, single-sourced for the parser definitions below.
 DEFAULT_SOURCES = ["~/Desktop", "~/Downloads"]
@@ -527,6 +527,15 @@ def add_content_arguments(parser: argparse.ArgumentParser) -> None:
         "top-K CLIP labels. Default %(default)s (eval: 100%%%% text recall, "
         "~35%%%% of photos skip OCR). Unified scorer only; pass 0 to disable. "
         "Fails open when CLIP is unavailable.",
+    )
+    parser.add_argument(
+        "--ocr-doctr-fallback",
+        action="store_true",
+        default=OCR_FORCE_DOCTR_FALLBACK,
+        help="Always run the docTR OCR fallback, even when easyocr cleanly "
+        "finds no text. Recovers very-low-contrast text (eval: 1/7 such "
+        "images) at ~25x the OCR cost per gated image; by default the "
+        "clean-negative gate skips docTR.",
     )
 
 

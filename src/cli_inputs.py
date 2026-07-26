@@ -72,6 +72,7 @@ class ContentInputs(CommandInputs):
     run_migration: bool
     scorer: str
     ocr_clip_topk: Optional[int]
+    ocr_doctr_fallback: bool
 
 
 @dataclass(frozen=True)
