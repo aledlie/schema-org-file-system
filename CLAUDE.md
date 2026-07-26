@@ -9,6 +9,7 @@ AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and en
 # First-time setup (pyenv-built Python — see Dependencies)
 python3.14 -m venv venv && source venv/bin/activate
 pip install -e ".[all]" && brew install tesseract poppler
+python scripts/download_census_names.py   # surnames.txt gazetteer (gitignored; person detection needs it)
 
 # Daily use
 source venv/bin/activate
