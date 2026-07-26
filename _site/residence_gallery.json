@@ -428,5 +428,38 @@
         "@id": "urn:uuid:9c435a63-522e-4352-b6d7-47fa2e0e0b51"
       }
     ]
+  },
+  {
+    "@context": "https://schema.org",
+    "@type": "Residence",
+    "@id": "residence-kinney-townhouse",
+    "name": "Kinney Townhouse",
+    "additionalType": "https://schema.org/Accommodation",
+    "mainEntityOfPage": "https://travis.prodigycad.com/property-detail/583309/",
+    "address": {
+      "@type": "PostalAddress",
+      "streetAddress": "1115 Kinney Avenue, #3",
+      "addressLocality": "Austin",
+      "addressRegion": "TX",
+      "postalCode": "78704",
+      "addressCountry": "US"
+    },
+    "alternateName": "1115 Kinney Avenue #3",
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": 30.256149,
+      "longitude": -97.765604
+    },
+    "sameAs": "https://www.redfin.com/TX/Austin/1115-Kinney-Ave-78704/unit-3/home/30993488",
+    "yearBuilt": 2004,
+    "numberOfBedrooms": 2,
+    "numberOfFullBathrooms": 2,
+    "numberOfPartialBathrooms": 1,
+    "floorSize": {
+      "@type": "QuantitativeValue",
+      "value": 1416,
+      "unitCode": "FTK",
+      "unitText": "sq ft"
+    }
   }
 ]

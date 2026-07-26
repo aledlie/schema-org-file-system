@@ -1,30 +1,30 @@
 {
-  "generated_at": "2026-07-18T03:58:02.252095",
+  "generated_at": "2026-07-25T19:53:52.387514",
   "cumulative": {
-    "total_sessions": 3,
-    "total_files": 38,
+    "total_sessions": 19,
+    "total_files": 317,
     "total_organized": 0,
     "avg_processing_time": null,
     "top_categories": [
       {
-        "name": "sprites",
-        "count": 61
+        "name": "interiors_other",
+        "count": 76
       },
       {
-        "name": "interiors_other",
-        "count": 34
+        "name": "graphics_other",
+        "count": 66
+      },
+      {
+        "name": "sprites",
+        "count": 53
+      },
+      {
+        "name": "exteriors_other",
+        "count": 25
       },
       {
         "name": "photos_other",
         "count": 18
-      },
-      {
-        "name": "photos_screenshots_terminal",
-        "count": 17
-      },
-      {
-        "name": "vendors",
-        "count": 7
       }
     ]
   },
@@ -236,7 +236,1310 @@
         "cost_delta": 0.0,
         "time_delta": 0
       }
+    },
+    {
+      "id": "f97756f0-23ec-49d8-8d5c-e1deece4c636",
+      "started_at": "2026-07-18 03:58:56.647923",
+      "completed_at": "2026-07-18 04:02:39.428342",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Media/Photos/ChatGPT"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 10,
+      "total_files": 10,
+      "organized_count": 9,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "f97756f0",
+      "success_rate": 90.0,
+      "categories": [
+        {
+          "name": "interiors_other",
+          "color": null,
+          "icon": null,
+          "count": 5,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "exteriors_other",
+          "color": "",
+          "icon": "",
+          "count": 4,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "Room",
+          "count": 5
+        },
+        {
+          "schema_type": "House",
+          "count": 4
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".png",
+          "count": 9
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": 0,
+        "organized_delta": -1,
+        "success_rate_delta": -10.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "f7235ad9-1fe6-4456-8793-0693ab50b85a",
+      "started_at": "2026-07-18 04:19:14.074139",
+      "completed_at": "2026-07-18 04:19:58.091469",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Media/Photos/ChatGPT"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 10,
+      "total_files": 10,
+      "organized_count": 6,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "f7235ad9",
+      "success_rate": 60.0,
+      "categories": [
+        {
+          "name": "exteriors_other",
+          "color": "",
+          "icon": "",
+          "count": 4,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "interiors_other",
+          "color": null,
+          "icon": null,
+          "count": 2,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "House",
+          "count": 4
+        },
+        {
+          "schema_type": "Room",
+          "count": 2
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".png",
+          "count": 6
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": 0,
+        "organized_delta": -3,
+        "success_rate_delta": -30.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "d1b750de-9e3c-49a3-9460-2d49dcf11f8f",
+      "started_at": "2026-07-19 01:15:41.954621",
+      "completed_at": "2026-07-19 01:17:12.013780",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Media/Photos/ChatGPT"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 20,
+      "total_files": 20,
+      "organized_count": 19,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "d1b750de",
+      "success_rate": 95.0,
+      "categories": [
+        {
+          "name": "interiors_other",
+          "color": null,
+          "icon": null,
+          "count": 12,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "graphics_other",
+          "color": null,
+          "icon": null,
+          "count": 4,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "exteriors_other",
+          "color": "",
+          "icon": "",
+          "count": 3,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "Room",
+          "count": 12
+        },
+        {
+          "schema_type": "ImageObject",
+          "count": 4
+        },
+        {
+          "schema_type": "House",
+          "count": 3
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".png",
+          "count": 19
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": 10,
+        "organized_delta": 13,
+        "success_rate_delta": 35.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "a78d69bf-3a36-4097-b6c9-df05253b1838",
+      "started_at": "2026-07-19 01:19:04.592949",
+      "completed_at": "2026-07-19 01:19:50.143759",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Media/Photos/ChatGPT"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 20,
+      "total_files": 20,
+      "organized_count": 18,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "a78d69bf",
+      "success_rate": 90.0,
+      "categories": [
+        {
+          "name": "interiors_other",
+          "color": null,
+          "icon": null,
+          "count": 13,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "exteriors_other",
+          "color": "",
+          "icon": "",
+          "count": 4,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "graphics_other",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "Room",
+          "count": 13
+        },
+        {
+          "schema_type": "House",
+          "count": 4
+        },
+        {
+          "schema_type": "ImageObject",
+          "count": 1
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".png",
+          "count": 18
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": 0,
+        "organized_delta": -1,
+        "success_rate_delta": -5.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "d0172207-3dc5-41c9-aa48-de5c14fbc5a4",
+      "started_at": "2026-07-19 01:28:02.436221",
+      "completed_at": "2026-07-19 01:29:00.073857",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Media/Photos/ChatGPT"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 20,
+      "total_files": 9,
+      "organized_count": 6,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "d0172207",
+      "success_rate": 66.7,
+      "categories": [
+        {
+          "name": "interiors_other",
+          "color": null,
+          "icon": null,
+          "count": 4,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "exteriors_other",
+          "color": "",
+          "icon": "",
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "graphics_other",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "Room",
+          "count": 4
+        },
+        {
+          "schema_type": "ImageObject",
+          "count": 1
+        },
+        {
+          "schema_type": "House",
+          "count": 1
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".png",
+          "count": 6
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": -11,
+        "organized_delta": -12,
+        "success_rate_delta": -23.3,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "aa3cbb0b-733e-48ba-8fa0-8d17f7814137",
+      "started_at": "2026-07-19 01:29:32.427907",
+      "completed_at": "2026-07-19 01:30:06.044151",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Media/Photos/ChatGPT"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 20,
+      "total_files": 3,
+      "organized_count": 0,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "aa3cbb0b",
+      "success_rate": 0.0,
+      "categories": [],
+      "schema_types": [],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": -6,
+        "organized_delta": -6,
+        "success_rate_delta": -66.7,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "f3d2dc15-a13d-4c0f-96fb-3727c4eeefa5",
+      "started_at": "2026-07-19 01:35:55.587743",
+      "completed_at": "2026-07-19 01:36:47.929940",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Media/Photos/ChatGPT"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 20,
+      "total_files": 3,
+      "organized_count": 0,
+      "skipped_count": 1,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "f3d2dc15",
+      "success_rate": 0.0,
+      "categories": [],
+      "schema_types": [],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": 0,
+        "organized_delta": 0,
+        "success_rate_delta": 0.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "f97a33b1-49b4-4f15-89eb-61b7ebbc7035",
+      "started_at": "2026-07-19 01:38:30.473451",
+      "completed_at": "2026-07-19 01:38:30.591968",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Media/Photos/Stock"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 20,
+      "total_files": 20,
+      "organized_count": 0,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "f97a33b1",
+      "success_rate": 0.0,
+      "categories": [],
+      "schema_types": [],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": 17,
+        "organized_delta": 0,
+        "success_rate_delta": 0.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "7c93fe1b-040b-4326-9435-f7fd1a749685",
+      "started_at": "2026-07-19 01:44:26.556938",
+      "completed_at": "2026-07-19 01:44:27.805437",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Business/Marketing"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 20,
+      "total_files": 11,
+      "organized_count": 0,
+      "skipped_count": 2,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "7c93fe1b",
+      "success_rate": 0.0,
+      "categories": [],
+      "schema_types": [],
+      "extensions": [],
+      "changes": {
+        "is_first": false,
+        "files_delta": -9,
+        "organized_delta": 0,
+        "success_rate_delta": 0.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "9f077b59-e358-4a3c-8204-05ed3e5771d4",
+      "started_at": "2026-07-25 19:04:49.142720",
+      "completed_at": "2026-07-25 19:07:58.717451",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Desktop"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 20,
+      "total_files": 20,
+      "organized_count": 20,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "9f077b59",
+      "success_rate": 100.0,
+      "categories": [
+        {
+          "name": "graphics_other",
+          "color": null,
+          "icon": null,
+          "count": 8,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "exteriors_other",
+          "color": "",
+          "icon": "",
+          "count": 3,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "interiors_other",
+          "color": null,
+          "icon": null,
+          "count": 2,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "sprites",
+          "color": null,
+          "icon": null,
+          "count": 2,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "records",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "photos_other",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 14
+        },
+        {
+          "schema_type": "House",
+          "count": 3
+        },
+        {
+          "schema_type": "Room",
+          "count": 2
+        },
+        {
+          "schema_type": "DigitalDocument",
+          "count": 1
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".png",
+          "count": 19
+        },
+        {
+          "extension": ".pdf",
+          "count": 1
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": 9,
+        "organized_delta": 20,
+        "success_rate_delta": 100.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "f33db4ee-a6e7-4c54-a5c7-02bf0ee74067",
+      "started_at": "2026-07-25 19:08:28.974066",
+      "completed_at": "2026-07-25 19:11:40.189676",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Desktop"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 20,
+      "total_files": 20,
+      "organized_count": 20,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "f33db4ee",
+      "success_rate": 100.0,
+      "categories": [
+        {
+          "name": "graphics_other",
+          "color": null,
+          "icon": null,
+          "count": 12,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "sprites",
+          "color": null,
+          "icon": null,
+          "count": 4,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "exteriors_other",
+          "color": "",
+          "icon": "",
+          "count": 2,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "identification",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "identity",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "photos_other",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 17
+        },
+        {
+          "schema_type": "House",
+          "count": 2
+        },
+        {
+          "schema_type": "DigitalDocument",
+          "count": 1
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".png",
+          "count": 18
+        },
+        {
+          "extension": ".pdf",
+          "count": 1
+        },
+        {
+          "extension": ".jpg",
+          "count": 1
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": 0,
+        "organized_delta": 0,
+        "success_rate_delta": 0.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "276c572d-c29e-495a-90a6-00d9d5058c13",
+      "started_at": "2026-07-25 19:16:01.155697",
+      "completed_at": "2026-07-25 19:18:38.047950",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Desktop"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 20,
+      "total_files": 20,
+      "organized_count": 20,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "276c572d",
+      "success_rate": 100.0,
+      "categories": [
+        {
+          "name": "sprites",
+          "color": null,
+          "icon": null,
+          "count": 5,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "exteriors_other",
+          "color": "",
+          "icon": "",
+          "count": 3,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "interiors_other",
+          "color": null,
+          "icon": null,
+          "count": 3,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "graphics_other",
+          "color": null,
+          "icon": null,
+          "count": 3,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "contacts",
+          "color": null,
+          "icon": null,
+          "count": 2,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "textures",
+          "color": null,
+          "icon": null,
+          "count": 2,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "architecture",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "events",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "documentation",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "government",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 8
+        },
+        {
+          "schema_type": "DigitalDocument",
+          "count": 6
+        },
+        {
+          "schema_type": "Room",
+          "count": 3
+        },
+        {
+          "schema_type": "House",
+          "count": 3
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".png",
+          "count": 14
+        },
+        {
+          "extension": ".pdf",
+          "count": 3
+        },
+        {
+          "extension": ".txt",
+          "count": 1
+        },
+        {
+          "extension": ".md",
+          "count": 1
+        },
+        {
+          "extension": ".json",
+          "count": 1
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": 0,
+        "organized_delta": 0,
+        "success_rate_delta": 0.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "7a999e77-00c1-41f5-95f7-5c6a6e73510e",
+      "started_at": "2026-07-25 19:19:31.447896",
+      "completed_at": "2026-07-25 19:22:04.453033",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Media/Photos/Screenshots"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 20,
+      "total_files": 20,
+      "organized_count": 20,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "7a999e77",
+      "success_rate": 100.0,
+      "categories": [
+        {
+          "name": "graphics_other",
+          "color": null,
+          "icon": null,
+          "count": 11,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "meeting_notes",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "clients",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 20
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".png",
+          "count": 18
+        },
+        {
+          "extension": ".webp",
+          "count": 2
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": 0,
+        "organized_delta": 0,
+        "success_rate_delta": 0.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "e2aac41f-f245-4cc7-87d6-ff33b8f0cc33",
+      "started_at": "2026-07-25 19:23:08.963555",
+      "completed_at": "2026-07-25 19:26:33.410267",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Media/Photos/Screenshots"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 20,
+      "total_files": 20,
+      "organized_count": 20,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "e2aac41f",
+      "success_rate": 100.0,
+      "categories": [
+        {
+          "name": "graphics_other",
+          "color": null,
+          "icon": null,
+          "count": 7,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "crm",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "identification",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 20
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".png",
+          "count": 20
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": 0,
+        "organized_delta": 0,
+        "success_rate_delta": 0.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "64987df5-2649-4056-abdd-2921b405dc8c",
+      "started_at": "2026-07-25 19:32:32.814900",
+      "completed_at": "2026-07-25 19:35:15.708606",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Media/Photos/Screenshots"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 20,
+      "total_files": 20,
+      "organized_count": 20,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "64987df5",
+      "success_rate": 100.0,
+      "categories": [
+        {
+          "name": "graphics_other",
+          "color": null,
+          "icon": null,
+          "count": 5,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "contracts",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 20
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".png",
+          "count": 20
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": 0,
+        "organized_delta": 0,
+        "success_rate_delta": 0.0,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "a8ae4c50-89eb-4055-bafc-d0f2469e6cb1",
+      "started_at": "2026-07-25 19:37:48.059335",
+      "completed_at": "2026-07-25 19:38:10.946649",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Media/Photos/Social"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 20,
+      "total_files": 7,
+      "organized_count": 4,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "a8ae4c50",
+      "success_rate": 57.1,
+      "categories": [
+        {
+          "name": "exteriors_other",
+          "color": "",
+          "icon": "",
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "graphics_other",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 3
+        },
+        {
+          "schema_type": "House",
+          "count": 1
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".png",
+          "count": 4
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": -13,
+        "organized_delta": -16,
+        "success_rate_delta": -42.9,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "61ec8d83-9cd3-47f1-b96d-23a0bde0fb0b",
+      "started_at": "2026-07-25 19:39:42.857551",
+      "completed_at": "2026-07-25 19:43:06.373200",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Media/Photos/Screenshots"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 20,
+      "total_files": 20,
+      "organized_count": 20,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "61ec8d83",
+      "success_rate": 100.0,
+      "categories": [
+        {
+          "name": "graphics_other",
+          "color": null,
+          "icon": null,
+          "count": 5,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "crm",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 20
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".png",
+          "count": 19
+        },
+        {
+          "extension": ".jpeg",
+          "count": 1
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": 13,
+        "organized_delta": 16,
+        "success_rate_delta": 42.9,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "40b1ce42-7c95-4d51-a2ad-7d3e287d4ecf",
+      "started_at": "2026-07-25 19:43:57.599382",
+      "completed_at": "2026-07-25 19:48:31.875385",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Documents/Media/Photos/Screenshots"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 36,
+      "total_files": 36,
+      "organized_count": 28,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "40b1ce42",
+      "success_rate": 77.8,
+      "categories": [
+        {
+          "name": "graphics_other",
+          "color": null,
+          "icon": null,
+          "count": 5,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "proposals",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "crm",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "ImageObject",
+          "count": 28
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".png",
+          "count": 28
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": 16,
+        "organized_delta": 8,
+        "success_rate_delta": -22.2,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
+    },
+    {
+      "id": "7cbbd94d-d283-4a27-8b6b-5835641d0ffc",
+      "started_at": "2026-07-25 19:52:16.752935",
+      "completed_at": "2026-07-25 19:53:32.497657",
+      "dry_run": 0,
+      "source_directories": [
+        "/Users/alyshialedlie/Downloads"
+      ],
+      "base_path": "/Users/alyshialedlie/Documents",
+      "file_limit": 32,
+      "total_files": 32,
+      "organized_count": 32,
+      "skipped_count": 0,
+      "error_count": 0,
+      "total_cost": 0.0,
+      "total_processing_time_sec": 0.0,
+      "id_short": "7cbbd94d",
+      "success_rate": 100.0,
+      "categories": [
+        {
+          "name": "graphics_vector",
+          "color": null,
+          "icon": null,
+          "count": 6,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "statements",
+          "color": null,
+          "icon": null,
+          "count": 2,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "events",
+          "color": null,
+          "icon": null,
+          "count": 2,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "healthcare",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "ssrn",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "Technical/Web",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "litigation",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "software_packages",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "architecture",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        },
+        {
+          "name": "interiors_other",
+          "color": null,
+          "icon": null,
+          "count": 1,
+          "avg_confidence": 1.0
+        }
+      ],
+      "schema_types": [
+        {
+          "schema_type": "DigitalDocument",
+          "count": 19
+        },
+        {
+          "schema_type": "ImageObject",
+          "count": 11
+        },
+        {
+          "schema_type": "ScholarlyArticle",
+          "count": 1
+        },
+        {
+          "schema_type": "Room",
+          "count": 1
+        }
+      ],
+      "extensions": [
+        {
+          "extension": ".pdf",
+          "count": 13
+        },
+        {
+          "extension": ".svg",
+          "count": 6
+        },
+        {
+          "extension": ".png",
+          "count": 5
+        },
+        {
+          "extension": ".zip",
+          "count": 2
+        },
+        {
+          "extension": ".html",
+          "count": 2
+        },
+        {
+          "extension": ".md",
+          "count": 1
+        },
+        {
+          "extension": ".jpg",
+          "count": 1
+        },
+        {
+          "extension": ".dmg",
+          "count": 1
+        },
+        {
+          "extension": ".br",
+          "count": 1
+        }
+      ],
+      "changes": {
+        "is_first": false,
+        "files_delta": -4,
+        "organized_delta": 4,
+        "success_rate_delta": 22.2,
+        "cost_delta": 0.0,
+        "time_delta": 0
+      }
     }
   ],
-  "session_count": 4
+  "session_count": 23
 }

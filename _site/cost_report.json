@@ -1,24 +1,102 @@
 {
   "metadata": {
-    "generated_at": "2026-07-18T20:44:27.861161",
-    "session_start": "2026-07-18T20:44:17.933934",
-    "session_duration_sec": 9.927318,
-    "total_usage_records": 0
+    "generated_at": "2026-07-25T14:58:08.662240",
+    "session_start": "2026-07-25T14:57:50.191350",
+    "session_duration_sec": 18.470895,
+    "total_usage_records": 11
   },
   "cost_summary": {
-    "total_cost": 0.0,
-    "total_files_processed": 0,
-    "total_processing_time_sec": 0.0,
-    "avg_cost_per_file": 0.0,
-    "feature_breakdown": {}
+    "total_cost": 0.00041,
+    "total_files_processed": 11,
+    "total_processing_time_sec": 12.841710090637207,
+    "avg_cost_per_file": 3.727272727272727e-05,
+    "feature_breakdown": {
+      "clip_vision": {
+        "feature_name": "clip_vision",
+        "total_invocations": 2,
+        "total_processing_time_sec": 0.06733107566833496,
+        "total_cost": 0.0002,
+        "avg_cost_per_file": 0.0001,
+        "success_rate": 1.0,
+        "total_files_processed": 2
+      },
+      "face_detection": {
+        "feature_name": "face_detection",
+        "total_invocations": 2,
+        "total_processing_time_sec": 0.023639202117919922,
+        "total_cost": 1e-05,
+        "avg_cost_per_file": 5e-06,
+        "success_rate": 1.0,
+        "total_files_processed": 2
+      },
+      "nominatim_geocoding": {
+        "feature_name": "nominatim_geocoding",
+        "total_invocations": 3,
+        "total_processing_time_sec": 1.7348058223724365,
+        "total_cost": 0.0,
+        "avg_cost_per_file": 0.0,
+        "success_rate": 1.0,
+        "total_files_processed": 3
+      },
+      "pdf_extraction": {
+        "feature_name": "pdf_extraction",
+        "total_invocations": 4,
+        "total_processing_time_sec": 11.015933990478516,
+        "total_cost": 0.0002,
+        "avg_cost_per_file": 5e-05,
+        "success_rate": 1.0,
+        "total_files_processed": 4
+      }
+    }
   },
   "roi_summary": {
-    "total_cost": 0.0,
-    "total_value": 0.0,
-    "overall_roi_percentage": Infinity,
-    "total_manual_hours_saved": 0.0,
+    "total_cost": 0.00041000000000000005,
+    "total_value": 5.326388888888889,
+    "overall_roi_percentage": 1299019.2411924119,
+    "total_manual_hours_saved": 0.21305555555555553,
     "hourly_rate_used": 25.0,
-    "feature_breakdown": {}
+    "feature_breakdown": {
+      "pdf_extraction": {
+        "feature_name": "pdf_extraction",
+        "total_cost": 0.0002,
+        "total_value": 2.666666666666667,
+        "roi_percentage": 1333233.3333333335,
+        "manual_hours_saved": 0.10666666666666667,
+        "cost_per_file": 5e-05,
+        "value_per_file": 0.6666666666666667,
+        "break_even_files": 1
+      },
+      "nominatim_geocoding": {
+        "feature_name": "nominatim_geocoding",
+        "total_cost": 0.0,
+        "total_value": 2.25,
+        "roi_percentage": Infinity,
+        "manual_hours_saved": 0.09,
+        "cost_per_file": 0.0,
+        "value_per_file": 0.75,
+        "break_even_files": 0
+      },
+      "clip_vision": {
+        "feature_name": "clip_vision",
+        "total_cost": 0.0002,
+        "total_value": 0.35416666666666663,
+        "roi_percentage": 176983.3333333333,
+        "manual_hours_saved": 0.014166666666666666,
+        "cost_per_file": 0.0001,
+        "value_per_file": 0.17708333333333334,
+        "break_even_files": 1
+      },
+      "face_detection": {
+        "feature_name": "face_detection",
+        "total_cost": 1e-05,
+        "total_value": 0.05555555555555555,
+        "roi_percentage": 555455.5555555555,
+        "manual_hours_saved": 0.0022222222222222222,
+        "cost_per_file": 5e-06,
+        "value_per_file": 0.02777777777777778,
+        "break_even_files": 1
+      }
+    }
   },
   "recommendations": [],
   "model_configs": {
