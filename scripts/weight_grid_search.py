@@ -58,6 +58,18 @@ from constants import DEFAULT_DB_PATH  # noqa: E402  (src on path)
 # Default perturbation factors applied to each prior (one at a time).
 DEFAULT_FACTORS = (0.8, 0.9, 1.1, 1.2)
 
+# Default MIN_DECISION_CONFIDENCE candidates for --sweep-confidence (shipped
+# value 0.35; the sweep probes whether the commit threshold leaves correct
+# decisions in the low_confidence fallback, per scoring-calibration-20260726
+# follow-up #1). Values above W_MIME (0.40) would stop mime-only commits;
+# values at/below 0.30 start committing single weak mid-tier votes.
+DEFAULT_CONFIDENCE_CANDIDATES = (0.30, 0.32, 0.38, 0.40)
+
+# Default MIN_DECISION_MARGIN candidates for --sweep-margin (shipped value
+# 0.10). The 2026-07-26 replay showed every scored fallback row is gated by
+# margin, not confidence (margins 0.00-0.076), so this is the live threshold.
+DEFAULT_MARGIN_CANDIDATES = (0.04, 0.06, 0.08, 0.12)
+
 # Stored category excluded from the fidelity-filtered agreement slice (see
 # module docstring: replay lacks live CLIP/scene votes for media decisions).
 MEDIA_CATEGORY = "media"
@@ -177,6 +189,87 @@ def run_grid(
     }
 
 
+def run_threshold_sweep(
+    db_path: Path,
+    threshold: str,
+    candidates: Sequence[float],
+    limit: Optional[int] = None,
+) -> Dict[str, Any]:
+    """Replay with a decision-threshold override; classify flips vs stored.
+
+    Same fix/break/neutral methodology as the weight grid, but perturbing one
+    of the commit thresholds instead of a signal prior. Weights stay shipped.
+    ``threshold`` is ``"confidence"`` (MIN_DECISION_CONFIDENCE) or
+    ``"margin"`` (MIN_DECISION_MARGIN).
+    """
+    from src.classifiers.content_classifier import ContentClassifier
+    from src.scoring.weights import MIN_DECISION_CONFIDENCE, MIN_DECISION_MARGIN
+
+    shipped = {
+        "confidence": ("MIN_DECISION_CONFIDENCE", MIN_DECISION_CONFIDENCE),
+        "margin": ("MIN_DECISION_MARGIN", MIN_DECISION_MARGIN),
+    }
+    if threshold not in shipped:
+        raise ValueError(f"threshold must be one of {sorted(shipped)}, got {threshold!r}")
+    constant_name, shipped_value = shipped[threshold]
+
+    rows = load_replay_rows(db_path, limit=limit)
+    if not rows:
+        raise SystemExit(f"no stored File rows to replay in {db_path}")
+    classifier = ContentClassifier()
+    text_by_path = screenshot_text_lookup(rows)
+
+    base_scorer = build_replay_scorer(classifier, screenshot_text_by_path=text_by_path)
+    base_outcomes, _ = replay_rows(rows, base_scorer)
+    total, agree, nm_total, nm_agree, base_by_id = agreement_stats(base_outcomes)
+    print(
+        f"BASELINE ({constant_name}={shipped_value}) "
+        f"agreement {agree}/{total} ({100 * agree / total:.1f}%)  "
+        f"non-media {nm_agree}/{nm_total} ({100 * nm_agree / nm_total:.1f}%)"
+    )
+
+    sweep: List[Dict[str, Any]] = []
+    for candidate in candidates:
+        scorer = build_replay_scorer(
+            classifier,
+            screenshot_text_by_path=text_by_path,
+            min_decision_confidence=candidate if threshold == "confidence" else None,
+            min_decision_margin=candidate if threshold == "margin" else None,
+        )
+        outcomes, _ = replay_rows(rows, scorer)
+        _, cand_agree, _, cand_nm_agree, cand_by_id = agreement_stats(outcomes)
+        fixes, breaks, neutral = classify_flips(base_by_id, cand_by_id)
+        entry = {
+            constant_name.lower(): candidate,
+            "agree": cand_agree,
+            "d_agree": cand_agree - agree,
+            "nonmedia_agree": cand_nm_agree,
+            "d_nonmedia": cand_nm_agree - nm_agree,
+            "fixes": fixes,
+            "breaks": breaks,
+            "neutral": neutral,
+        }
+        sweep.append(entry)
+        print(
+            f"{constant_name}={candidate:<5} "
+            f"dAgree={entry['d_agree']:+3d} dNonMedia={entry['d_nonmedia']:+3d} "
+            f"fix={fixes} break={breaks} neutral={neutral}"
+        )
+
+    return {
+        "baseline": {
+            constant_name.lower(): shipped_value,
+            "agree": agree,
+            "total": total,
+            "nonmedia_agree": nm_agree,
+            "nonmedia_total": nm_total,
+        },
+        "threshold": threshold,
+        "candidates": list(candidates),
+        "sweep": sweep,
+    }
+
+
 def main(argv: Optional[List[str]] = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument(
@@ -204,13 +297,40 @@ def main(argv: Optional[List[str]] = None) -> int:
         default=None,
         help="Write the full grid report as JSON to this path",
     )
+    parser.add_argument(
+        "--sweep-confidence",
+        type=float,
+        nargs="*",
+        default=None,
+        metavar="C",
+        help="Sweep MIN_DECISION_CONFIDENCE instead of signal weights. "
+        f"Pass candidate values, or no values for the default "
+        f"{DEFAULT_CONFIDENCE_CANDIDATES}",
+    )
+    parser.add_argument(
+        "--sweep-margin",
+        type=float,
+        nargs="*",
+        default=None,
+        metavar="M",
+        help="Sweep MIN_DECISION_MARGIN instead of signal weights. "
+        f"Pass candidate values, or no values for the default "
+        f"{DEFAULT_MARGIN_CANDIDATES}",
+    )
     args = parser.parse_args(argv)
 
     if not args.db_path.exists():
         print(f"Error: database not found at {args.db_path}")
         return EXIT_NO_DATA
 
-    report = run_grid(args.db_path, args.factors, limit=args.limit)
+    if args.sweep_confidence is not None:
+        candidates = args.sweep_confidence or list(DEFAULT_CONFIDENCE_CANDIDATES)
+        report = run_threshold_sweep(args.db_path, "confidence", candidates, limit=args.limit)
+    elif args.sweep_margin is not None:
+        candidates = args.sweep_margin or list(DEFAULT_MARGIN_CANDIDATES)
+        report = run_threshold_sweep(args.db_path, "margin", candidates, limit=args.limit)
+    else:
+        report = run_grid(args.db_path, args.factors, limit=args.limit)
 
     if args.output is not None:
         args.output.parent.mkdir(parents=True, exist_ok=True)

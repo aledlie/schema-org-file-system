@@ -417,6 +417,8 @@ def build_replay_scorer(
     classifier: Any,
     screenshot_text_by_path: Optional[Dict[str, str]] = None,
     weight_overrides: Optional[Dict[str, float]] = None,
+    min_decision_confidence: Optional[float] = None,
+    min_decision_margin: Optional[float] = None,
 ) -> Scorer:
     """The production registry wired for replay: no disk I/O, no models.
 
@@ -424,7 +426,9 @@ def build_replay_scorer(
     keyword signals, same classifier for screenshot sub-classification, no
     image analyzer) and swaps ``ScreenshotOcrSignal``'s disk OCR for the
     stored-text stub. ``weight_overrides`` maps signal names to replacement
-    priors (instance-level; ``src/scoring/weights.py`` is untouched).
+    priors; ``min_decision_confidence`` / ``min_decision_margin`` override
+    the commit thresholds (all instance-level; ``src/scoring/weights.py`` is
+    untouched).
     """
     screenshots_dict = build_screenshots_taxonomy()
     signals = build_default_signals(
@@ -451,7 +455,12 @@ def build_replay_scorer(
         override = (weight_overrides or {}).get(signal.name)
         if override is not None:
             signal.weight = override
-    return Scorer(signals)
+    threshold_kwargs: Dict[str, float] = {}
+    if min_decision_confidence is not None:
+        threshold_kwargs["min_decision_confidence"] = min_decision_confidence
+    if min_decision_margin is not None:
+        threshold_kwargs["min_decision_margin"] = min_decision_margin
+    return Scorer(signals, **threshold_kwargs)  # type: ignore[arg-type]
 
 
 def screenshot_text_lookup(rows: Sequence[ReplayRow]) -> Dict[str, str]:

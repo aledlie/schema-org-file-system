@@ -95,6 +95,31 @@ at a local optimum under the only available oracles (stored production
 decisions, non-media slice, golden corpus). This closes the final open item of
 `UNIFIED_SCORING_PLAN.md` — the plan is fully complete.
 
+## 3.1 Decision-threshold sweeps (addendum, same day)
+
+`weight_grid_search.py` gained `--sweep-confidence` / `--sweep-margin`
+(threshold overrides threaded through `build_replay_scorer`; weights shipped).
+
+- **`MIN_DECISION_CONFIDENCE` {0.30, 0.32, 0.38, 0.40}: zero flips at every
+  candidate.** Root cause: all 16 low_confidence fallback rows have aggregate
+  confidence **0.000** — no signal fired at all (text-less, cache-miss images).
+  No threshold value can rescue a row with no votes; the confidence gate is
+  not a live lever on this corpus.
+- **`MIN_DECISION_MARGIN` {0.04, 0.06, 0.08, 0.12}: the live gate.** Every
+  scored fallback row is margin-gated (conf 0.40–0.92, margins 0.00–0.076
+  vs the 0.10 gate). Results: 0.12 → −3 (3 breaks); 0.08 → no change;
+  **0.06 and 0.04 → +2 (2 fixes, 0 breaks, 2 neutral)**. The fixes are two
+  dashboard screenshots correctly scored `media/graphics_other` that the gate
+  had pushed to `uncategorized/other`; the neutral flips land on rows whose
+  *stored* labels are themselves wrong (e.g. the Texas license-back photo
+  stored as `game_assets/sprites`).
+- **Decision: keep `MIN_DECISION_MARGIN = 0.10`.** The evidence for 0.06 is
+  +2/0 on a 4-row flip set — directionally positive but too small to move a
+  safety gate whose purpose is refusing ambiguous ties. Revisit when the DB
+  oracle grows (the invariant `W_MIME < MIN_DECISION_CONFIDENCE +
+  MIN_DECISION_MARGIN` would still hold at 0.06: 0.40 < 0.41 — no slack, a
+  further reason to hold at 0.10).
+
 ## 4. Caveats & when to re-run
 
 - The stored-decision oracle is biased: it contains manual corrections and
