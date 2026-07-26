@@ -41,6 +41,7 @@ black src/ scripts/                            # format
 flake8 src/ scripts/                           # lint
 mypy src/ scripts/                             # type check
 npm run docs:api                               # regenerate pdoc3 API docs (docs/api submodule)
+make calibrate                                 # scoring calibration harness (backfill -> backtest -> grid -> sweeps -> goldens); stages: make clip-backfill|backtest|weight-grid|threshold-sweeps|golden
 ```
 
 **Profiling the classification hot path:** `scripts/profile_pipeline.py` cProfiles the unified scorer over a dir/file set and prints wall + per-file, a grouped hotspot summary (OCR-CNN / image-decode / face / CLIP), top-N functions, and OCR-invocation + gate-skip counts. Use it for before/after comparisons of any classification-cost change (OCR gating, signal reordering). Companion `scripts/eval_ocr_gate.py` evaluates the CLIP OCR gate (`--ocr-clip-topk`) on a folder-labeled corpus, sweeping top-k/margin for recall vs OCR-skip.

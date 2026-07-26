@@ -186,7 +186,9 @@ re-confirmed — now including the media priors.**
   registers, or (c) the DB grows past ~1k replayable rows. Command:
 
 ```bash
-PYTHONPATH=src:scripts:. python scripts/backtest_scoring.py --weights-sensitivity
-PYTHONPATH=src:scripts:. python scripts/weight_grid_search.py --output results/weight_grid.json
-python -m pytest tests/integration/test_unified_scoring_golden.py -q
+make calibrate     # backfill -> backtest+sensitivity -> grid -> threshold sweeps -> goldens
 ```
+
+Individual stages: `make clip-backfill | backtest | weight-grid |
+threshold-sweeps | golden` (see the repo `Makefile`); reports land in
+`results/*.json`.
