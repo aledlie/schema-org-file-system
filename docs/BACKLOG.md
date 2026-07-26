@@ -57,6 +57,46 @@ Profiling `organize-files content` (unified scorer, dry-run) on 2026-07-17 showe
 2. **P2 docTR-fallback gate — recall tradeoff to monitor.** The shipped gate (`extract_ocr_with_confidence`: skip the docTR fallback when easyocr cleanly finds no text) was eval'd over 7 text images at varying difficulty: **1/7 recall loss — very-low-contrast text** (easyocr's detector found nothing; docTR would have caught it). Clean, dark-mode, and rotated text were all gate-safe. So P2 trades a rare miss on near-invisible text for eliminating the docTR fallback. For a screenshot/photo-dominated 265k-file library this is very likely a net win, but it is a real behavior change — put it behind a config flag or revert if faint-text recall matters. **Config flag shipped 2026-07-25:** `--ocr-doctr-fallback` (store_true, default off = gate on; constant `OCR_FORCE_DOCTR_FALLBACK` in `src/scoring/weights.py`) forces the docTR pass after a clean easyocr negative. Plumbed `force_doctr_fallback` through `extract_ocr_with_confidence`, `TextExtractor`, `ContentOrganizer` (all 3 call sites incl. the FileContext `ocr_provider`), `ContentBasedFileOrganizer`, `ContentInputs`, and the CLI — same pattern as `--ocr-clip-topk`. 5 gate tests in `tests/unit/test_shared.py::TestDoctrFallbackGate`; CLI-inputs contract + integration suites pass.
 
 
+### `categories.name` UNIQUE silently drops category edges for 26% of files
+
+`categories.name` carries a **UNIQUE index** (`ix_categories_name`), but
+`CONTENT_CATEGORY_PATHS` reuses leaf names across parents — `other` appears under
+**15** different categories, plus `records` (3), `events`, `insurance`, `photos`,
+`clients`, `audio`, `web`, `meeting_notes` (2 each). Only the first row to claim a
+leaf name can exist; every later `(category, subcategory)` sharing that leaf hits
+an `IntegrityError` in `get_or_create_category`, whose handler rolls back and
+returns `session.query(...).filter(full_path == ...).first()` — **`None`**, because
+the row that owns the name has a *different* `full_path`. `add_file_to_category`
+then hits `if category is None: return False` (`graph_store.py:405`) and the caller
+in `_persist_to_graph_store` never checks the return value, so **the file is
+persisted with no category edge at all and nothing is logged**.
+
+Measured 2026-07-26: **125 of 488 file rows (26%) have zero category edges** while
+being physically organized correctly on disk. They are invisible to category
+queries, the dashboard category breakdown, category edges in the JSON-LD export,
+and the backtest oracle (`_stored_pair` returns `(None, None)`, so they are skipped
+from agreement entirely). 24 taxonomy pairs are currently unsatisfiable, including
+`medical/other`, `technical/other`, `personal/legal`, `personal/records`,
+`financial/insurance`, `education/research`, `media/photos`, and `zouk/events`.
+
+Two concrete instances already hit this session: `Burning_Flipside_Map.pdf`
+organized to `Events/Burning Flipside/` on disk but kept a stale
+`legal/real_estate` edge because `events/other` could not be created; and two
+bloodwork PDFs found with `cats: None` during the medical audit.
+
+**Fix direction (needs a decision, not yet chosen):** category identity should be
+`full_path`, not `name` — either drop `ix_categories_name` in favour of a UNIQUE
+index on `full_path` (matching `generate_canonical_id`, which already hashes
+`full_path` — see [[category-canonical-id-scheme]]), or store namespaced names.
+Either way `get_or_create_category` should stop swallowing the collision, and
+`_persist_to_graph_store` should treat a `False` return from
+`add_file_to_category` as an error rather than ignoring it. A re-categorization
+pass can then backfill the 125 orphaned rows without touching any file.
+
+**Status:** Open — diagnosed, not fixed. No file data is affected; only graph edges.
+**Priority:** P2 (silent data-integrity loss; recoverable by backfill once fixed)
+**Source:** `~/Desktop/Uncategorized` ingestion, 2026-07-26
+
 ### DB↔filesystem provenance drift (`original_path` / `current_path` integrity)
 
 A 2026-07-26 audit of `results/file_organization.db` (495 rows) found 50 rows whose
