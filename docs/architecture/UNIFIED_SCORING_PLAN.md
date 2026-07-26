@@ -2,7 +2,7 @@
 
 > Status: **COMPLETE (Phase 5 landed 2026-07-26)** · Owner: TBD · Last updated: 2026-07-26
 > All phases shipped: Phase 0–1 (2026-07-16), Phase 2–3 shadow + calibration (2026-07-17, PR #9), Phase 4 default flip (2026-07-17/18), Phase 5 legacy removal (2026-07-26): the tier orchestration (`_detect_file_category_legacy`), shadow mode, the `--scorer` CLI flag, and `scripts/analyze_scoring_disagreement.py` are deleted; `unified` is the only engine. The per-tier `classify_*` methods remain as directly-testable shims over their signals.
-> Remaining follow-up: non-provisional weight re-tune (the Phase-3 calibration report is provisional).
+> The non-provisional weight re-tune ran 2026-07-26 (`scoring-calibration-20260726.md`): shipped weights adopted unchanged — no open items remain.
 > Code references below are as of 2026-07-16 (`main` @ `feeccdc`) and describe the pre-removal state; they are historical.
 
 ### Changes from v1 (2026-05-16)
