@@ -11,7 +11,7 @@ import uuid
 from datetime import datetime
 from ._time import utcnow
 from pathlib import Path
-from typing import Dict, List, Optional, Any, Tuple, Union, cast
+from typing import Any, Dict, List, Mapping, Optional, Tuple, Union, cast
 from collections import defaultdict
 from contextlib import contextmanager
 
@@ -1600,14 +1600,17 @@ class GraphStore:
             return org_session
 
     def complete_session(
-        self, session_id: str, stats: Dict[str, int], db_session: Optional[Session] = None
+        self, session_id: str, stats: Mapping[str, float], db_session: Optional[Session] = None
     ) -> bool:
         """
         Mark a session as completed with statistics.
 
         Args:
             session_id: Session ID
-            stats: Dictionary with total_files, organized_count, etc.
+            stats: Counts plus the float-valued ``total_cost`` and
+                ``processing_time`` (the two Float columns below) — hence
+                ``float`` values, which also accept the int counts. A
+                ``Mapping`` so an all-int caller dict is still assignable.
             db_session: Optional existing session
 
         Returns:
@@ -1627,12 +1630,15 @@ class GraphStore:
                 return False
 
             org_session.completed_at = utcnow()
-            org_session.total_files = stats.get("total_files", 0)
-            org_session.organized_count = stats.get("organized", 0)
-            org_session.skipped_count = stats.get("skipped", 0)
-            org_session.error_count = stats.get("errors", 0)
-            org_session.total_cost = stats.get("total_cost", 0.0)
-            org_session.total_processing_time_sec = stats.get("processing_time", 0.0)
+            # Coerce per column type: the four counts are Integer, the last two
+            # are Float. `stats` is Mapping[str, float] so callers may pass
+            # either for any key.
+            org_session.total_files = int(stats.get("total_files", 0))
+            org_session.organized_count = int(stats.get("organized", 0))
+            org_session.skipped_count = int(stats.get("skipped", 0))
+            org_session.error_count = int(stats.get("errors", 0))
+            org_session.total_cost = float(stats.get("total_cost", 0.0))
+            org_session.total_processing_time_sec = float(stats.get("processing_time", 0.0))
 
             db_session.commit()
             return True

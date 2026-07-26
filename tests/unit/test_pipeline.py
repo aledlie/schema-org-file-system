@@ -565,7 +565,10 @@ class TestOrganizeFileAIPaths:
         result = fp.organize_file(src, dry_run=False)
 
         assert result["status"] == "organized"
-        fp.registry.register.assert_called_once()
+        # fp.registry is a MagicMock (see _make_fp); SchemaRegistry.register is
+        # a plain callable on the real type, so reach the mock through Any.
+        registry: Any = fp.registry
+        registry.register.assert_called_once()
         # File was moved
         assert dest.exists()
         assert not src.exists()

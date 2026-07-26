@@ -20,6 +20,14 @@ def kv(tmp_path: Path) -> KeyValueStorage:
     return KeyValueStorage(str(tmp_path / "kv.db"))
 
 
+def _ttl(kv: KeyValueStorage, key: str) -> int:
+    """``ttl()`` narrowed: it returns None for a missing key, but every caller
+    below just set an expiry, so None is a test failure rather than a case."""
+    remaining = kv.ttl(key)
+    assert remaining is not None
+    return remaining
+
+
 class TestBasicOperations:
     @pytest.mark.parametrize(
         "value",
@@ -81,7 +89,7 @@ class TestTTL:
 
     def test_ttl_remaining(self, kv: KeyValueStorage):
         kv.set("k", "v", ttl_seconds=60)
-        assert 55 <= kv.ttl("k") <= 60
+        assert 55 <= _ttl(kv, "k") <= 60
 
     def test_ttl_no_expiry_returns_minus_one(self, kv: KeyValueStorage):
         kv.set("k", "v")
@@ -97,7 +105,7 @@ class TestTTL:
     def test_expire_sets_ttl_on_permanent_key(self, kv: KeyValueStorage):
         kv.set("k", "v")
         assert kv.expire("k", 60) is True
-        assert 55 <= kv.ttl("k") <= 60
+        assert 55 <= _ttl(kv, "k") <= 60
 
     def test_expire_missing_key(self, kv: KeyValueStorage):
         assert kv.expire("nope", 60) is False
@@ -138,8 +146,8 @@ class TestBatchOperations:
 
     def test_mset_applies_ttl(self, kv: KeyValueStorage):
         kv.mset({"a": 1, "b": 2}, ttl_seconds=60)
-        assert 55 <= kv.ttl("a") <= 60
-        assert 55 <= kv.ttl("b") <= 60
+        assert 55 <= _ttl(kv, "a") <= 60
+        assert 55 <= _ttl(kv, "b") <= 60
 
 
 class TestCounters:

@@ -16,11 +16,9 @@ _SCRIPTS_DIR = Path(__file__).parent.parent.parent / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
-from shared import ocr_classifier as oc  # noqa: E402
+import shared.ocr_classifier as oc  # noqa: E402
 
-pytestmark = pytest.mark.skipif(
-    not oc._PREPROCESS_AVAILABLE, reason="PIL/numpy not available"
-)
+pytestmark = pytest.mark.skipif(not oc._PREPROCESS_AVAILABLE, reason="PIL/numpy not available")
 
 
 def _make_image(path: Path, color: tuple[int, int, int], size=(120, 60)) -> Path:

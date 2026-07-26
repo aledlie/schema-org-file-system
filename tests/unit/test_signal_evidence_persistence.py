@@ -67,7 +67,7 @@ def _add_file(store: GraphStore, path: str) -> str:
     session = store.get_session()
     try:
         file = store.add_file(original_path=path, filename=Path(path).name, session=session)
-        file_id = file.id
+        file_id = str(file.id)
         session.commit()
         return file_id
     finally:

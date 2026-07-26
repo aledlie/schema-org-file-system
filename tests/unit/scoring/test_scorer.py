@@ -37,7 +37,7 @@ class FakeSignal:
         self.run_count = 0
 
     def applies_to(self, ctx) -> bool:
-        return self._applies
+        return bool(self._applies)
 
     def run(self, ctx) -> List[CategoryScore]:
         self.run_count += 1

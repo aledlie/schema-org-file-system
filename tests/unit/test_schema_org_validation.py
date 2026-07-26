@@ -15,7 +15,7 @@ Coverage:
 import sys
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
+from typing import Any, Dict, Iterator
 
 import pytest
 from sqlalchemy import create_engine
@@ -144,7 +144,7 @@ _VALID_SCHEMA_ORG_TYPES = {
 
 
 @pytest.fixture(scope="module")
-def db_session() -> Session:
+def db_session() -> Iterator[Session]:
     """In-memory SQLite session with all tables created."""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
@@ -300,6 +300,7 @@ def city_location(db_session: Session) -> Location:
 def validate_jsonschema(instance: Dict[str, Any], schema: Dict[str, Any]) -> None:
     """Validate instance against schema using jsonschema."""
     import jsonschema
+
     jsonschema.validate(instance=instance, schema=schema)
 
 
@@ -526,6 +527,7 @@ class TestPropertyValueTypes:
                 assert isinstance(result[field], str)
                 # Verify it's a parseable date string
                 from datetime import date
+
                 value = result[field]
                 # Accept ISO 8601 date or datetime strings
                 assert len(value) >= 10

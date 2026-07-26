@@ -25,9 +25,7 @@ def _add_person_with_files(store: GraphStore, name: str, paths: list) -> list:
     session = store.get_session()
     file_ids = []
     for path in paths:
-        file = store.add_file(
-            original_path=path, filename=Path(path).name, session=session
-        )
+        file = store.add_file(original_path=path, filename=Path(path).name, session=session)
         file_ids.append(file.id)
         store.add_file_to_person(file.id, name, session=session)
     session.commit()
@@ -39,9 +37,7 @@ def _person(store: GraphStore, name: str):
     session = store.get_session()
     try:
         normalized = Person.normalize_name(name)
-        return session.query(Person).filter(
-            Person.normalized_name == normalized
-        ).first()
+        return session.query(Person).filter(Person.normalized_name == normalized).first()
     finally:
         session.close()
 
@@ -89,6 +85,7 @@ class TestRemovePersonEdge:
         (file_id,) = _add_person_with_files(store, "Jane Doe", ["/tmp/a.pdf"])
         session = store.get_session()
         person = session.query(Person).first()
+        assert person is not None
         person.file_count = 0
         session.commit()
         session.close()
@@ -99,17 +96,16 @@ class TestRemovePersonEdge:
 
 class TestPrunePerson:
     def test_deletes_person_and_edges_keeps_files(self, store: GraphStore) -> None:
-        file_ids = _add_person_with_files(
-            store, "Morning Train", ["/tmp/a.pdf", "/tmp/b.pdf"]
-        )
+        file_ids = _add_person_with_files(store, "Morning Train", ["/tmp/a.pdf", "/tmp/b.pdf"])
 
         summary = store.prune_person("Morning Train")
+        assert summary is not None
 
         assert summary == {
-            'name': "Morning Train",
-            'person_id': summary['person_id'],
-            'edges_removed': 2,
-            'paths': ["/tmp/a.pdf", "/tmp/b.pdf"],
+            "name": "Morning Train",
+            "person_id": summary["person_id"],
+            "edges_removed": 2,
+            "paths": ["/tmp/a.pdf", "/tmp/b.pdf"],
         }
         assert _person(store, "Morning Train") is None
         assert _edge_count(store) == 0
@@ -120,8 +116,9 @@ class TestPrunePerson:
         _add_person_with_files(store, "Morning Train", ["/tmp/a.pdf"])
 
         summary = store.prune_person("Morning Train", dry_run=True)
+        assert summary is not None
 
-        assert summary['edges_removed'] == 1
+        assert summary["edges_removed"] == 1
         assert _person(store, "Morning Train") is not None
         assert _edge_count(store) == 1
 
@@ -129,12 +126,11 @@ class TestPrunePerson:
         from src.storage.models import FileStatus
 
         (file_id,) = _add_person_with_files(store, "Jane Doe", ["/tmp/a.pdf"])
-        store.update_file_status(
-            file_id, FileStatus.ORGANIZED, destination="/docs/a.pdf"
-        )
+        store.update_file_status(file_id, FileStatus.ORGANIZED, destination="/docs/a.pdf")
 
         summary = store.prune_person("Jane Doe", dry_run=True)
-        assert summary['paths'] == ["/docs/a.pdf"]
+        assert summary is not None
+        assert summary["paths"] == ["/docs/a.pdf"]
 
     def test_returns_none_for_unknown_person(self, store: GraphStore) -> None:
         assert store.prune_person("Nobody") is None
@@ -144,7 +140,9 @@ class TestPrunePerson:
         _add_person_with_files(store, "Jane Doe", ["/tmp/a.pdf"])
         session = store.get_session()
         target = session.query(Person).first()
+        assert target is not None
         dependent = store.get_or_create_person("J. Doe", session=session)
+        assert dependent is not None
         dependent.merged_into_id = target.id
         dependent_id = dependent.id
         session.commit()
@@ -161,20 +159,16 @@ class TestPrunePerson:
 
 
 class TestPruneMissingPersonEdges:
-    def test_drops_only_dead_path_edges(
-        self, store: GraphStore, tmp_path: Path
-    ) -> None:
+    def test_drops_only_dead_path_edges(self, store: GraphStore, tmp_path: Path) -> None:
         real_file = tmp_path / "real.pdf"
         real_file.write_text("x")
-        _add_person_with_files(
-            store, "Jane Doe", [str(real_file), "/nonexistent/gone.pdf"]
-        )
+        _add_person_with_files(store, "Jane Doe", [str(real_file), "/nonexistent/gone.pdf"])
 
         result = store.prune_missing_person_edges()
 
-        assert result['edges_removed'] == 1
-        assert result['edges'][0]['path'] == "/nonexistent/gone.pdf"
-        assert result['edges'][0]['person'] == "Jane Doe"
+        assert result["edges_removed"] == 1
+        assert result["edges"][0]["path"] == "/nonexistent/gone.pdf"
+        assert result["edges"][0]["person"] == "Jane Doe"
         assert _edge_count(store) == 1
         person = _person(store, "Jane Doe")
         assert person is not None
@@ -189,21 +183,17 @@ class TestPruneMissingPersonEdges:
         assert _person(store, "Jane Doe") is not None
         assert _edge_count(store) == 0
 
-    def test_prefers_current_path_over_original(
-        self, store: GraphStore, tmp_path: Path
-    ) -> None:
+    def test_prefers_current_path_over_original(self, store: GraphStore, tmp_path: Path) -> None:
         from src.storage.models import FileStatus
 
         organized = tmp_path / "organized.pdf"
         organized.write_text("x")
         (file_id,) = _add_person_with_files(store, "Jane Doe", ["/nonexistent/orig.pdf"])
-        store.update_file_status(
-            file_id, FileStatus.ORGANIZED, destination=str(organized)
-        )
+        store.update_file_status(file_id, FileStatus.ORGANIZED, destination=str(organized))
 
         result = store.prune_missing_person_edges()
 
-        assert result['edges_removed'] == 0
+        assert result["edges_removed"] == 0
         assert _edge_count(store) == 1
 
     def test_dry_run_reports_without_deleting(self, store: GraphStore) -> None:
@@ -211,7 +201,7 @@ class TestPruneMissingPersonEdges:
 
         result = store.prune_missing_person_edges(dry_run=True)
 
-        assert result['edges_removed'] == 1
+        assert result["edges_removed"] == 1
         assert _edge_count(store) == 1
         assert _person(store, "Jane Doe").file_count == 1
 
@@ -224,10 +214,14 @@ class TestPruneMissingCliFlag:
 
         _add_person_with_files(store, "Jane Doe", ["/nonexistent/a.pdf"])
 
-        cmd_person_view(argparse.Namespace(
-            view_root=str(tmp_path / "view"), db_path=db_path,
-            apply=False, prune_missing=True,
-        ))
+        cmd_person_view(
+            argparse.Namespace(
+                view_root=str(tmp_path / "view"),
+                db_path=db_path,
+                apply=False,
+                prune_missing=True,
+            )
+        )
 
         out = capsys.readouterr().out
         assert "[DRY RUN] Dead-path person edges pruned: 1" in out
@@ -241,10 +235,14 @@ class TestPruneMissingCliFlag:
 
         _add_person_with_files(store, "Jane Doe", ["/nonexistent/a.pdf"])
 
-        cmd_person_view(argparse.Namespace(
-            view_root=str(tmp_path / "view"), db_path=db_path,
-            apply=True, prune_missing=True,
-        ))
+        cmd_person_view(
+            argparse.Namespace(
+                view_root=str(tmp_path / "view"),
+                db_path=db_path,
+                apply=True,
+                prune_missing=True,
+            )
+        )
 
         out = capsys.readouterr().out
         assert "[APPLIED] Dead-path person edges pruned: 1" in out
@@ -255,13 +253,9 @@ class TestPrunePersonCli:
     def _run(self, db_path: str, people: list, apply: bool) -> None:
         from src.cli import cmd_prune_person
 
-        cmd_prune_person(argparse.Namespace(
-            people=people, db_path=db_path, apply=apply
-        ))
+        cmd_prune_person(argparse.Namespace(people=people, db_path=db_path, apply=apply))
 
-    def test_dry_run_leaves_db_untouched(
-        self, store: GraphStore, db_path: str, capsys
-    ) -> None:
+    def test_dry_run_leaves_db_untouched(self, store: GraphStore, db_path: str, capsys) -> None:
         _add_person_with_files(store, "Morning Train", ["/tmp/a.pdf"])
 
         self._run(db_path, ["Morning Train"], apply=False)
@@ -270,9 +264,7 @@ class TestPrunePersonCli:
         assert "[DRY RUN] Morning Train" in out
         assert _person(store, "Morning Train") is not None
 
-    def test_apply_deletes_and_backs_up(
-        self, store: GraphStore, db_path: str, capsys
-    ) -> None:
+    def test_apply_deletes_and_backs_up(self, store: GraphStore, db_path: str, capsys) -> None:
         _add_person_with_files(store, "Morning Train", ["/tmp/a.pdf"])
 
         self._run(db_path, ["Morning Train"], apply=True)
@@ -284,9 +276,7 @@ class TestPrunePersonCli:
         backups = list(Path(db_path).parent.glob("graph.db.bak-*"))
         assert backups, "expected a timestamped .bak file next to the db"
 
-    def test_unknown_person_exits_nonzero(
-        self, store: GraphStore, db_path: str, capsys
-    ) -> None:
+    def test_unknown_person_exits_nonzero(self, store: GraphStore, db_path: str, capsys) -> None:
         with pytest.raises(SystemExit) as excinfo:
             self._run(db_path, ["Nobody"], apply=False)
         assert excinfo.value.code == 1

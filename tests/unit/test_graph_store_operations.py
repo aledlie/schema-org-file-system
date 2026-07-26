@@ -10,6 +10,7 @@ hand plain values (ids) back to the tests.
 
 from contextlib import contextmanager
 from pathlib import Path
+from typing import Optional, TypeVar
 
 import pytest
 
@@ -23,6 +24,19 @@ from src.storage.models import (
     OrganizationSession,
     RelationshipType,
 )
+
+_T = TypeVar("_T")
+
+
+def _require(value: Optional[_T]) -> _T:
+    """Narrow a store getter's Optional return that the test requires to hit.
+
+    ``get_file``/``get_or_create_*`` are Optional by contract (miss, or a lost
+    create race); every use below has just created the row, so a None here is a
+    test failure, not a branch to handle.
+    """
+    assert value is not None
+    return value
 
 
 @pytest.fixture
@@ -64,13 +78,13 @@ class TestFileOperations:
         second_id = _add_file(store, "/tmp/report.pdf", extracted_text="updated")
 
         assert second_id == first_id
-        assert store.get_file(file_id=first_id).extracted_text == "updated"
+        assert _require(store.get_file(file_id=first_id)).extracted_text == "updated"
 
     def test_get_file_by_id_and_by_path(self, store: GraphStore):
         file_id = _add_file(store, "/tmp/report.pdf")
 
-        assert store.get_file(file_id=file_id).id == file_id
-        assert store.get_file(path="/tmp/report.pdf").id == file_id
+        assert _require(store.get_file(file_id=file_id)).id == file_id
+        assert _require(store.get_file(path="/tmp/report.pdf")).id == file_id
         assert store.get_file(path="/tmp/missing.pdf") is None
         assert store.get_file() is None
 
@@ -96,11 +110,14 @@ class TestFileOperations:
     def test_update_file_status(self, store: GraphStore):
         file_id = _add_file(store, "/tmp/a.pdf")
 
-        assert store.update_file_status(
-            file_id, FileStatus.ORGANIZED, destination="/docs/a.pdf", reason="matched"
-        ) is True
+        assert (
+            store.update_file_status(
+                file_id, FileStatus.ORGANIZED, destination="/docs/a.pdf", reason="matched"
+            )
+            is True
+        )
 
-        updated = store.get_file(file_id=file_id)
+        updated = _require(store.get_file(file_id=file_id))
         assert updated.status == FileStatus.ORGANIZED
         assert updated.current_path == "/docs/a.pdf"
         assert updated.organization_reason == "matched"
@@ -113,8 +130,8 @@ class TestFileOperations:
 class TestCategoryOperations:
     def test_get_or_create_category_root_and_dedup(self, store: GraphStore):
         with session_scope(store) as session:
-            first = store.get_or_create_category("financial", session=session)
-            second = store.get_or_create_category("financial", session=session)
+            first = _require(store.get_or_create_category("financial", session=session))
+            second = _require(store.get_or_create_category("financial", session=session))
 
             assert first.id == second.id
             assert first.level == 0
@@ -123,7 +140,9 @@ class TestCategoryOperations:
     def test_subcategory_gets_parent_and_level(self, store: GraphStore):
         with session_scope(store) as session:
             store.get_or_create_category("financial", session=session)
-            sub = store.get_or_create_category("tax", parent_name="financial", session=session)
+            sub = _require(
+                store.get_or_create_category("tax", parent_name="financial", session=session)
+            )
 
             assert sub.full_path == "financial/tax"
             assert sub.level == 1
@@ -135,7 +154,7 @@ class TestCategoryOperations:
         assert store.add_file_to_category(file_id, "financial", "tax") is True
 
         with session_scope(store) as session:
-            refreshed = store.get_file(file_id=file_id, session=session)
+            refreshed = _require(store.get_file(file_id=file_id, session=session))
             assert {c.full_path for c in refreshed.categories} == {"financial/tax"}
             assert refreshed.categories[0].file_count == 1
 
@@ -145,7 +164,7 @@ class TestCategoryOperations:
         store.add_file_to_category(file_id, "financial")
 
         with session_scope(store) as session:
-            refreshed = store.get_file(file_id=file_id, session=session)
+            refreshed = _require(store.get_file(file_id=file_id, session=session))
             assert len(refreshed.categories) == 1
             assert refreshed.categories[0].file_count == 1
 
@@ -161,17 +180,17 @@ class TestCategoryOperations:
 
         tree = store.get_category_tree()
 
-        roots = {node['name']: node for node in tree}
+        roots = {node["name"]: node for node in tree}
         assert set(roots) == {"financial", "media"}
-        assert [sub['name'] for sub in roots['financial']['subcategories']] == ["tax"]
-        assert roots['media']['subcategories'] == []
+        assert [sub["name"] for sub in roots["financial"]["subcategories"]] == ["tax"]
+        assert roots["media"]["subcategories"] == []
 
 
 class TestCompanyOperations:
     def test_get_or_create_company_dedups_on_normalized_name(self, store: GraphStore):
         with session_scope(store) as session:
-            first = store.get_or_create_company("Acme Corp", session=session)
-            second = store.get_or_create_company("  ACME CORP ", session=session)
+            first = _require(store.get_or_create_company("Acme Corp", session=session))
+            second = _require(store.get_or_create_company("  ACME CORP ", session=session))
 
             assert first.id == second.id
             assert first.canonical_id
@@ -194,18 +213,22 @@ class TestCompanyOperations:
 class TestLocationOperations:
     def test_get_or_create_location_dedups_by_name(self, store: GraphStore):
         with session_scope(store) as session:
-            first = store.get_or_create_location("Austin", session=session)
-            second = store.get_or_create_location("Austin", session=session)
+            first = _require(store.get_or_create_location("Austin", session=session))
+            second = _require(store.get_or_create_location("Austin", session=session))
 
             assert first.id == second.id
 
     def test_get_or_create_location_dedups_by_nearby_coordinates(self, store: GraphStore):
         with session_scope(store) as session:
-            first = store.get_or_create_location(
-                "Austin", latitude=30.2672, longitude=-97.7431, session=session
+            first = _require(
+                store.get_or_create_location(
+                    "Austin", latitude=30.2672, longitude=-97.7431, session=session
+                )
             )
-            nearby = store.get_or_create_location(
-                "Austin Downtown", latitude=30.2673, longitude=-97.7430, session=session
+            nearby = _require(
+                store.get_or_create_location(
+                    "Austin Downtown", latitude=30.2673, longitude=-97.7430, session=session
+                )
             )
 
             assert nearby.id == first.id
@@ -218,13 +241,21 @@ class TestLocationOperations:
     def test_add_file_to_location(self, store: GraphStore):
         file_id = _add_file(store, "/tmp/photo.jpg")
 
-        assert store.add_file_to_location(
-            file_id, "Austin", location_type="captured_at",
-            latitude=30.2672, longitude=-97.7431, city="Austin", state="TX",
-        ) is True
+        assert (
+            store.add_file_to_location(
+                file_id,
+                "Austin",
+                location_type="captured_at",
+                latitude=30.2672,
+                longitude=-97.7431,
+                city="Austin",
+                state="TX",
+            )
+            is True
+        )
 
         with session_scope(store) as session:
-            refreshed = store.get_file(file_id=file_id, session=session)
+            refreshed = _require(store.get_file(file_id=file_id, session=session))
             assert [loc.name for loc in refreshed.locations] == ["Austin"]
             assert refreshed.locations[0].file_count == 1
 
@@ -232,8 +263,13 @@ class TestLocationOperations:
         assert store.add_file_to_location("no-such-id", "Austin") is False
 
 
-def _add_relationship(store: GraphStore, source_id: str, target_id: str,
-                      rel_type: RelationshipType, confidence: float = 1.0):
+def _add_relationship(
+    store: GraphStore,
+    source_id: str,
+    target_id: str,
+    rel_type: RelationshipType,
+    confidence: float = 1.0,
+):
     """Create a relationship and return (id, confidence) as plain values."""
     with session_scope(store) as session:
         rel = store.add_relationship(
@@ -269,8 +305,11 @@ class TestRelationshipOperations:
 
         with session_scope(store) as session:
             store.add_relationship(
-                a, b, RelationshipType.DERIVED,
-                extra_data={"tool": "ocr", "score": 0.7}, session=session,
+                a,
+                b,
+                RelationshipType.DERIVED,
+                extra_data={"tool": "ocr", "score": 0.7},
+                session=session,
             )
 
         with session_scope(store) as session:
@@ -283,11 +322,18 @@ class TestRelationshipOperations:
 
         with session_scope(store) as session:
             store.add_relationship(
-                a, b, RelationshipType.DERIVED,
-                extra_data={"tool": "ocr"}, session=session,
+                a,
+                b,
+                RelationshipType.DERIVED,
+                extra_data={"tool": "ocr"},
+                session=session,
             )
             store.add_relationship(
-                a, b, RelationshipType.DERIVED, confidence=0.9, session=session,
+                a,
+                b,
+                RelationshipType.DERIVED,
+                confidence=0.9,
+                session=session,
             )
 
         with session_scope(store) as session:
@@ -360,22 +406,37 @@ class TestSessionOperations:
     def test_create_and_complete_session(self, store: GraphStore):
         with session_scope(store) as session:
             org_session = store.create_session(
-                source_directories=["/tmp/in"], base_path="/tmp/out",
-                dry_run=True, file_limit=100, session=session,
+                source_directories=["/tmp/in"],
+                base_path="/tmp/out",
+                dry_run=True,
+                file_limit=100,
+                session=session,
             )
             session_id = org_session.id
             assert org_session.dry_run is True
         assert session_id
 
-        assert store.complete_session(session_id, {
-            'total_files': 10, 'organized': 7, 'skipped': 2,
-            'errors': 1, 'total_cost': 0.5, 'processing_time': 12.5,
-        }) is True
+        assert (
+            store.complete_session(
+                session_id,
+                {
+                    "total_files": 10,
+                    "organized": 7,
+                    "skipped": 2,
+                    "errors": 1,
+                    "total_cost": 0.5,
+                    "processing_time": 12.5,
+                },
+            )
+            is True
+        )
 
         with session_scope(store) as session:
-            row = session.query(OrganizationSession).filter(
-                OrganizationSession.id == session_id
-            ).one()
+            row = (
+                session.query(OrganizationSession)
+                .filter(OrganizationSession.id == session_id)
+                .one()
+            )
             assert row.completed_at is not None
             assert row.total_files == 10
             assert row.organized_count == 7
@@ -394,19 +455,17 @@ class TestStatistics:
         store.add_file_to_category(pdf_id, "financial")
         store.add_file_to_company(pdf_id, "Acme Corp")
         with session_scope(store) as session:
-            store.create_session(
-                source_directories=["/tmp"], base_path="/docs", session=session
-            )
+            store.create_session(source_directories=["/tmp"], base_path="/docs", session=session)
 
         stats = store.get_statistics()
 
-        assert stats['total_files'] == 2
-        assert stats['organized_files'] == 1
-        assert stats['total_categories'] == 1
-        assert stats['total_companies'] == 1
-        assert stats['total_sessions'] == 1
-        assert stats['categories'] == {"financial": 1}
-        assert stats['extensions'] == {".pdf": 1, ".png": 1}
+        assert stats["total_files"] == 2
+        assert stats["organized_files"] == 1
+        assert stats["total_categories"] == 1
+        assert stats["total_companies"] == 1
+        assert stats["total_sessions"] == 1
+        assert stats["categories"] == {"financial": 1}
+        assert stats["extensions"] == {".pdf": 1, ".png": 1}
 
     def test_get_cost_statistics_aggregates_by_feature(self, store: GraphStore):
         with session_scope(store) as session:
@@ -414,26 +473,43 @@ class TestStatistics:
                 source_directories=["/tmp"], base_path="/docs", session=session
             )
             session_id = org_session.id
-            session.add_all([
-                CostRecord(session_id=session_id, feature_name="ocr",
-                           processing_time_sec=1.0, cost=0.01, success=True),
-                CostRecord(session_id=session_id, feature_name="ocr",
-                           processing_time_sec=2.0, cost=0.02, success=False),
-                CostRecord(session_id=session_id, feature_name="clip",
-                           processing_time_sec=0.5, cost=0.005, success=True),
-            ])
+            session.add_all(
+                [
+                    CostRecord(
+                        session_id=session_id,
+                        feature_name="ocr",
+                        processing_time_sec=1.0,
+                        cost=0.01,
+                        success=True,
+                    ),
+                    CostRecord(
+                        session_id=session_id,
+                        feature_name="ocr",
+                        processing_time_sec=2.0,
+                        cost=0.02,
+                        success=False,
+                    ),
+                    CostRecord(
+                        session_id=session_id,
+                        feature_name="clip",
+                        processing_time_sec=0.5,
+                        cost=0.005,
+                        success=True,
+                    ),
+                ]
+            )
             session.commit()
 
         stats = store.get_cost_statistics()
-        assert stats['total_records'] == 3
-        assert stats['total_cost'] == pytest.approx(0.035)
-        assert stats['by_feature']['ocr']['invocations'] == 2
-        assert stats['by_feature']['ocr']['success_count'] == 1
-        assert stats['by_feature']['ocr']['error_count'] == 1
+        assert stats["total_records"] == 3
+        assert stats["total_cost"] == pytest.approx(0.035)
+        assert stats["by_feature"]["ocr"]["invocations"] == 2
+        assert stats["by_feature"]["ocr"]["success_count"] == 1
+        assert stats["by_feature"]["ocr"]["error_count"] == 1
 
         ocr_only = store.get_cost_statistics(feature_name="ocr")
-        assert ocr_only['total_records'] == 2
-        assert store.get_cost_statistics(session_id="no-such")['total_records'] == 0
+        assert ocr_only["total_records"] == 2
+        assert store.get_cost_statistics(session_id="no-such")["total_records"] == 0
 
 
 class TestSearch:
@@ -461,10 +537,8 @@ class TestSearch:
         assert len(store.search_files("tax", limit=2)) == 2
 
     def test_search_by_location_bounding_box(self, store: GraphStore):
-        near = _add_file(store, "/tmp/near.jpg",
-                         gps_latitude=30.2672, gps_longitude=-97.7431)
-        _add_file(store, "/tmp/far.jpg",
-                  gps_latitude=40.7128, gps_longitude=-74.0060)
+        near = _add_file(store, "/tmp/near.jpg", gps_latitude=30.2672, gps_longitude=-97.7431)
+        _add_file(store, "/tmp/far.jpg", gps_latitude=40.7128, gps_longitude=-74.0060)
         _add_file(store, "/tmp/no_gps.jpg")
 
         results = store.search_by_location(30.2672, -97.7431, radius_km=10)
@@ -475,10 +549,10 @@ class TestSearch:
         # ~5 km east of center at latitude 30 (1 deg lon ~ 96 km there).
         # Regression: the old formula divided by abs(latitude) instead of
         # cos(latitude), shrinking the longitude box ~35x and missing this.
-        east = _add_file(store, "/tmp/east.jpg",
-                         gps_latitude=30.0, gps_longitude=-97.95)
-        _add_file(store, "/tmp/too_far_east.jpg",
-                  gps_latitude=30.0, gps_longitude=-97.70)  # ~29 km east
+        east = _add_file(store, "/tmp/east.jpg", gps_latitude=30.0, gps_longitude=-97.95)
+        _add_file(
+            store, "/tmp/too_far_east.jpg", gps_latitude=30.0, gps_longitude=-97.70
+        )  # ~29 km east
 
         results = store.search_by_location(30.0, -98.0, radius_km=10)
 

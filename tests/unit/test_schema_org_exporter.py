@@ -11,6 +11,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from typing import Iterator
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -29,7 +31,7 @@ from storage.schema_org_exporter import SchemaOrgExporter, SCHEMA_ORG_CONTEXT
 
 
 @pytest.fixture
-def db_session() -> Session:
+def db_session() -> Iterator[Session]:
     """In-memory SQLite session, tables pre-created."""
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
@@ -126,7 +128,18 @@ class TestExportToFile:
         count = exporter.export_to_file(out, entity_classes=[File])
         assert count == 1
         records = json.loads(out.read_text())
-        assert all(rec["@type"] in ("DigitalDocument", "ImageObject", "VideoObject", "AudioObject", "WebPage", "SoftwareSourceCode") for rec in records)
+        assert all(
+            rec["@type"]
+            in (
+                "DigitalDocument",
+                "ImageObject",
+                "VideoObject",
+                "AudioObject",
+                "WebPage",
+                "SoftwareSourceCode",
+            )
+            for rec in records
+        )
 
     def test_returns_zero_for_empty_db(self, db_session: Session, tmp_path: Path):
         exporter = SchemaOrgExporter(db_session)

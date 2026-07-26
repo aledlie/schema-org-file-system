@@ -11,6 +11,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from typing import Iterator
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -32,7 +34,7 @@ SCHEMA_ORG_URL = "https://schema.org"
 
 
 @pytest.fixture
-def db_session() -> Session:
+def db_session() -> Iterator[Session]:
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
     SessionLocal = sessionmaker(bind=engine)
@@ -166,7 +168,9 @@ class TestJsonExportPipeline:
             assert rec["@context"] == SCHEMA_ORG_URL
             assert_jsonld_node(rec)
 
-    def test_file_with_pdf_mime_is_digital_document(self, exporter: SchemaOrgExporter, tmp_path: Path):
+    def test_file_with_pdf_mime_is_digital_document(
+        self, exporter: SchemaOrgExporter, tmp_path: Path
+    ):
         out = tmp_path / "files.json"
         exporter.export_to_file(out, entity_classes=[File])
         records = json.loads(out.read_text())
@@ -182,7 +186,9 @@ class TestJsonExportPipeline:
         assert img_rec["width"] == 1920
         assert img_rec["height"] == 1080
 
-    def test_file_with_relationships_has_mentions_and_about(self, exporter: SchemaOrgExporter, tmp_path: Path):
+    def test_file_with_relationships_has_mentions_and_about(
+        self, exporter: SchemaOrgExporter, tmp_path: Path
+    ):
         out = tmp_path / "files.json"
         exporter.export_to_file(out, entity_classes=[File])
         records = json.loads(out.read_text())
@@ -247,7 +253,9 @@ class TestNdjsonExportPipeline:
             obj = json.loads(line)
             assert isinstance(obj, dict)
 
-    def test_all_entities_have_required_jsonld_fields(self, exporter: SchemaOrgExporter, tmp_path: Path):
+    def test_all_entities_have_required_jsonld_fields(
+        self, exporter: SchemaOrgExporter, tmp_path: Path
+    ):
         out = tmp_path / "full.ndjson"
         exporter.export_to_ndjson(out)
         for line in out.read_text().splitlines():
@@ -275,7 +283,9 @@ class TestNdjsonExportPipeline:
 
 
 class TestGraphExportPipeline:
-    def test_graph_document_has_context_and_graph(self, exporter: SchemaOrgExporter, tmp_path: Path):
+    def test_graph_document_has_context_and_graph(
+        self, exporter: SchemaOrgExporter, tmp_path: Path
+    ):
         out = tmp_path / "graph.json"
         exporter.export_with_graph(out)
         doc = json.loads(out.read_text())
@@ -344,9 +354,7 @@ class TestFilteredExportPipeline:
         # Location type depends on address fields: Place, City, or Country
         assert types & {"Place", "City", "Country"}, "expected at least one location type"
 
-    def test_entity_ids_filter_returns_subset(
-        self, populated_session: Session, tmp_path: Path
-    ):
+    def test_entity_ids_filter_returns_subset(self, populated_session: Session, tmp_path: Path):
         exporter = SchemaOrgExporter(populated_session)
         # Get first company's pk
         company = populated_session.query(Company).first()

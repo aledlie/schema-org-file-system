@@ -10,6 +10,8 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
+from typing import Iterator
+
 import pytest
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
@@ -33,7 +35,7 @@ from storage.schema_org_variants import (
 
 
 @pytest.fixture
-def db_session() -> Session:
+def db_session() -> Iterator[Session]:
     engine = create_engine("sqlite:///:memory:")
     Base.metadata.create_all(engine)
     SessionLocal = sessionmaker(bind=engine)
@@ -478,7 +480,16 @@ class TestFileVariantsToCreativeWork:
             iri="urn:sha256:minimal",
             name="minimal.txt",
         )
-        for field in ("encodingFormat", "contentSize", "dateCreated", "dateModified", "url", "text", "about", "mentions"):
+        for field in (
+            "encodingFormat",
+            "contentSize",
+            "dateCreated",
+            "dateModified",
+            "url",
+            "text",
+            "about",
+            "mentions",
+        ):
             assert field not in variant
 
     def test_output_is_json_serializable(self):
@@ -549,7 +560,16 @@ class TestFileVariantsToMediaObject:
             name="bare.jpg",
             schema_type="ImageObject",
         )
-        for field in ("encodingFormat", "contentSize", "width", "height", "duration", "dateCreated", "url", "contentLocation"):
+        for field in (
+            "encodingFormat",
+            "contentSize",
+            "width",
+            "height",
+            "duration",
+            "dateCreated",
+            "url",
+            "contentLocation",
+        ):
             assert field not in variant
 
     def test_consistent_with_file_to_schema_org_image_type(self, db_session: Session):

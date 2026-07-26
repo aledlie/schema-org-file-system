@@ -19,7 +19,7 @@ import warnings
 
 import pytest
 
-from shared import ocr_easyocr
+import shared.ocr_easyocr as ocr_easyocr
 
 TORCH_DEPRECATION_MESSAGE = (
     "torch.quantize_per_tensor, torch.quantize_per_channel and other quantized "

@@ -24,6 +24,7 @@ def _create_person(store: GraphStore, name: str, **kwargs) -> Person:
     """Create a Person row (bypasses the validator via validate=False for seeding)."""
     session = store.get_session()
     person = store.get_or_create_person(name, session=session, validate=False)
+    assert person is not None, f"seeding {name!r} must create a Person row"
     for key, val in kwargs.items():
         setattr(person, key, val)
     session.commit()
@@ -127,6 +128,7 @@ class TestSetPersonReviewStatus:
     def test_accepts_integer_id(self, store: GraphStore) -> None:
         session = store.get_session()
         person = store.get_or_create_person("Alice Smith", session=session, validate=False)
+        assert person is not None
         session.commit()
         pid = person.id
         session.close()
@@ -137,8 +139,9 @@ class TestSetPersonReviewStatus:
 
 class TestRevalidatePeople:
     def test_dry_run_does_not_write(self, store: GraphStore) -> None:
-        _create_person(store, "Pending Person", review_status="pending_review",
-                       validation_scores={})
+        _create_person(
+            store, "Pending Person", review_status="pending_review", validation_scores={}
+        )
         rows = store.revalidate_people(apply=False)
         assert isinstance(rows, list)
         # status in DB unchanged (dry run)
@@ -146,10 +149,8 @@ class TestRevalidatePeople:
         assert len(db_rows) == 1
 
     def test_skips_confirmed_and_rejected(self, store: GraphStore) -> None:
-        _create_person(store, "Confirmed Person", review_status="confirmed",
-                       validation_scores={})
-        _create_person(store, "Rejected Name", review_status="rejected",
-                       validation_scores={})
+        _create_person(store, "Confirmed Person", review_status="confirmed", validation_scores={})
+        _create_person(store, "Rejected Name", review_status="rejected", validation_scores={})
         rows = store.revalidate_people(apply=True)
         # Neither row should be touched
         names = {r["name"] for r in rows}
@@ -157,8 +158,12 @@ class TestRevalidatePeople:
         assert "Rejected Name" not in names
 
     def test_skips_already_validated_auto_accepted(self, store: GraphStore) -> None:
-        _create_person(store, "Alice Smith", review_status="auto_accepted",
-                       validation_scores={"shape": 1.0, "gazetteer": 1.0})
+        _create_person(
+            store,
+            "Alice Smith",
+            review_status="auto_accepted",
+            validation_scores={"shape": 1.0, "gazetteer": 1.0},
+        )
         rows = store.revalidate_people(apply=True)
         # Has validation_scores, so not a legacy row — should be skipped
         names = {r["name"] for r in rows}
@@ -166,15 +171,15 @@ class TestRevalidatePeople:
 
     def test_rescores_legacy_auto_accepted(self, store: GraphStore) -> None:
         # A legacy row has empty validation_scores
-        _create_person(store, "Alice Smith", review_status="auto_accepted",
-                       validation_scores={})
+        _create_person(store, "Alice Smith", review_status="auto_accepted", validation_scores={})
         rows = store.revalidate_people(apply=True)
         names = {r["name"] for r in rows}
         assert "Alice Smith" in names
 
     def test_changed_flag_accurate(self, store: GraphStore) -> None:
-        _create_person(store, "Pending Person", review_status="pending_review",
-                       validation_scores={})
+        _create_person(
+            store, "Pending Person", review_status="pending_review", validation_scores={}
+        )
         rows = store.revalidate_people(apply=True)
         assert isinstance(rows, list)
         for row in rows:
@@ -208,6 +213,7 @@ class TestGetAllPeopleWithFilesNoDenylist:
         session = store.get_session()
         alice_norm = Person.normalize_name("Alice Smith")
         person = session.query(Person).filter(Person.normalized_name == alice_norm).first()
+        assert person is not None
         person.review_status = "auto_accepted"
         session.commit()
         session.close()
@@ -236,20 +242,18 @@ class TestReviewPeopleCli:
         out = capsys.readouterr().out
         assert "No people" in out or "pending_review" in out
 
-    def test_list_pending_shows_person(
-        self, store: GraphStore, db_path: str, capsys
-    ) -> None:
-        _create_person(store, "Pending Person", review_status="pending_review",
-                       detection_confidence=0.55)
+    def test_list_pending_shows_person(self, store: GraphStore, db_path: str, capsys) -> None:
+        _create_person(
+            store, "Pending Person", review_status="pending_review", detection_confidence=0.55
+        )
         self._run(db_path, status="pending_review")
         out = capsys.readouterr().out
         assert "Pending Person" in out
 
-    def test_revalidate_dry_run_no_writes(
-        self, store: GraphStore, db_path: str, capsys
-    ) -> None:
-        _create_person(store, "Pending Person", review_status="pending_review",
-                       validation_scores={})
+    def test_revalidate_dry_run_no_writes(self, store: GraphStore, db_path: str, capsys) -> None:
+        _create_person(
+            store, "Pending Person", review_status="pending_review", validation_scores={}
+        )
         self._run(db_path, revalidate=True, apply=False)
         out = capsys.readouterr().out
         assert "DRY RUN" in out
@@ -257,33 +261,25 @@ class TestReviewPeopleCli:
         rows = store.list_people_by_status(status="pending_review")
         assert len(rows) == 1
 
-    def test_accept_dry_run_no_writes(
-        self, store: GraphStore, db_path: str, capsys
-    ) -> None:
+    def test_accept_dry_run_no_writes(self, store: GraphStore, db_path: str, capsys) -> None:
         _create_person(store, "Pending Person", review_status="pending_review")
         self._run(db_path, accept=["Pending Person"], apply=False)
         # dry-run: status not changed
         rows = store.list_people_by_status(status="pending_review")
         assert len(rows) == 1
 
-    def test_reject_apply_sets_tombstone(
-        self, store: GraphStore, db_path: str, capsys
-    ) -> None:
+    def test_reject_apply_sets_tombstone(self, store: GraphStore, db_path: str, capsys) -> None:
         _create_person(store, "Bad Corp Inc", review_status="pending_review")
         self._run(db_path, reject=["Bad Corp Inc"], apply=True)
         rows = store.list_people_by_status(status="rejected")
         assert any(r["name"] == "Bad Corp Inc" for r in rows)
 
-    def test_unknown_status_exits(
-        self, store: GraphStore, db_path: str, capsys
-    ) -> None:
+    def test_unknown_status_exits(self, store: GraphStore, db_path: str, capsys) -> None:
         with pytest.raises(SystemExit) as excinfo:
             self._run(db_path, status="bogus_status")
         assert excinfo.value.code == 2
 
-    def test_apply_backs_up_on_accept(
-        self, store: GraphStore, db_path: str, capsys
-    ) -> None:
+    def test_apply_backs_up_on_accept(self, store: GraphStore, db_path: str, capsys) -> None:
         _create_person(store, "Pending Person", review_status="pending_review")
         self._run(db_path, accept=["Pending Person"], apply=True)
         out = capsys.readouterr().out
@@ -360,7 +356,7 @@ class TestBuildPersonJsonldAdditionalProperty:
             file_count = 1
             review_status = "auto_accepted"
             detection_confidence = None
-            validation_scores = {}
+            validation_scores: dict[str, float] = {}
 
         result = build_person_jsonld(PersonWithEmptyScores())
         # review_status present but no confidence or scores

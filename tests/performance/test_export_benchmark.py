@@ -25,6 +25,8 @@ import sys
 from pathlib import Path
 from uuid import uuid4
 
+from typing import Iterator
+
 import pytest
 from sqlalchemy import create_engine, text
 from sqlalchemy.orm import Session, sessionmaker
@@ -35,7 +37,6 @@ if str(_SRC_DIR) not in sys.path:
 
 from storage.models import Base, Category, File, file_categories
 from storage.schema_org_exporter import SchemaOrgExporter
-
 
 # ---------------------------------------------------------------------------
 # Seeding helpers
@@ -106,7 +107,7 @@ _SIZES = [
 
 
 @pytest.fixture(params=_SIZES)
-def seeded(request) -> tuple[Session, int]:
+def seeded(request) -> Iterator[tuple[Session, int]]:
     """Yields (session, n) for the given entity count."""
     n: int = request.param
     session = _seed_session(n)
@@ -185,7 +186,9 @@ def test_bench_export_with_graph(benchmark, seeded, tmp_path):
     session, n = seeded
     exporter = SchemaOrgExporter(session)
     out = tmp_path / "export_graph.json"
-    count = _bench_cold(benchmark, session, exporter.export_with_graph, out, [File, Category], False)
+    count = _bench_cold(
+        benchmark, session, exporter.export_with_graph, out, [File, Category], False
+    )
     assert count == n * 2
 
 
@@ -248,10 +251,11 @@ def _seed_session_with_relations(n: int) -> Session:
     session.bulk_save_objects(categories)
     session.commit()
 
-    cat_ids = [row[0] for row in session.execute(text("SELECT id FROM categories ORDER BY id")).fetchall()]
+    cat_ids = [
+        row[0] for row in session.execute(text("SELECT id FROM categories ORDER BY id")).fetchall()
+    ]
     associations = [
-        {"file_id": _hex64(i), "category_id": cat_ids[i % n], "confidence": 1.0}
-        for i in range(n)
+        {"file_id": _hex64(i), "category_id": cat_ids[i % n], "confidence": 1.0} for i in range(n)
     ]
     session.execute(file_categories.insert(), associations)
     session.commit()
@@ -259,7 +263,7 @@ def _seed_session_with_relations(n: int) -> Session:
 
 
 @pytest.fixture(params=_SIZES)
-def seeded_with_relations(request) -> tuple[Session, int]:
+def seeded_with_relations(request) -> Iterator[tuple[Session, int]]:
     """Yields (session, n) with file-category relationships populated."""
     n: int = request.param
     session = _seed_session_with_relations(n)
