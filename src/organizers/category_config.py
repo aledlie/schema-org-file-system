@@ -140,7 +140,7 @@ CONTENT_CATEGORY_PATHS: Dict[str, Any] = {
         "records": "Medical/Records",
         "bloodtest": "Medical/BloodTest",
         "pathologytest": "Medical/PathologyTest",
-        "orders": "Medical/Medical - Orders",
+        "orders": "Medical/Orders",
         "insurance": "Medical/Insurance",
         "prescriptions": "Medical/Prescriptions",
         "other": "Medical/Other",
