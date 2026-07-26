@@ -535,6 +535,28 @@ class PoliticalPartyEntity(OrganizationEntity):
     entity_type: ClassVar[str] = "PoliticalParty"
 
 
+class MedicalEntityEntity(SchemaOrgEntity):
+    """schema.org MedicalEntity (Thing subtype; root of the medical vocabulary).
+
+    The doubled name is the mechanical ``{TypeName}Entity`` naming convention
+    applied to a schema.org type literally named ``MedicalEntity``.
+    """
+
+    entity_type: ClassVar[str] = "MedicalEntity"
+
+
+class MedicalTestEntity(MedicalEntityEntity):
+    """schema.org MedicalTest (MedicalEntity subtype)."""
+
+    entity_type: ClassVar[str] = "MedicalTest"
+
+
+class BloodTestEntity(MedicalTestEntity):
+    """schema.org BloodTest (Thing > MedicalEntity > MedicalTest > BloodTest)."""
+
+    entity_type: ClassVar[str] = "BloodTest"
+
+
 class ImageObjectEntity(SchemaOrgEntity):
     """schema.org ImageObject."""
 

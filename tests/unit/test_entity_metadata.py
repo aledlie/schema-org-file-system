@@ -110,6 +110,40 @@ def test_local_business_subtypes():
         assert cls(f"biz-{type_name.lower()}").to_jsonld()["@type"] == type_name
 
 
+def test_medical_entity_hierarchy():
+    # Thing > MedicalEntity > MedicalTest > BloodTest
+    from src.storage.entity_metadata import (
+        BloodTestEntity,
+        MedicalEntityEntity,
+        MedicalTestEntity,
+        SchemaOrgEntity,
+    )
+
+    assert issubclass(MedicalEntityEntity, SchemaOrgEntity)
+    assert issubclass(MedicalTestEntity, MedicalEntityEntity)
+    assert issubclass(BloodTestEntity, MedicalTestEntity)
+    for cls, type_name in (
+        (MedicalEntityEntity, "MedicalEntity"),
+        (MedicalTestEntity, "MedicalTest"),
+        (BloodTestEntity, "BloodTest"),
+    ):
+        jsonld = cls(f"med-{type_name.lower()}", name=f"A {type_name}").to_jsonld()
+        assert jsonld["@type"] == type_name
+        assert jsonld["@context"] == "https://schema.org"
+
+
+def test_blood_test_round_trip(store: GraphStore):
+    from src.storage.entity_metadata import BloodTestEntity
+
+    test = BloodTestEntity("blood-test-cbc-2026", name="Complete Blood Count")
+    test.set_property("usedToDiagnose", {"@type": "MedicalCondition", "name": "Anemia"})
+    test.save(store)
+    loaded = BloodTestEntity.load(store, "blood-test-cbc-2026")
+    assert loaded is not None
+    assert loaded.to_jsonld()["@type"] == "BloodTest"
+    assert loaded.get_property("usedToDiagnose")["name"] == "Anemia"
+
+
 def test_from_jsonld_round_trip():
     original = _residence()
     rebuilt = ResidenceEntity.from_jsonld(original.to_jsonld())
