@@ -37,6 +37,7 @@ from typing import Any, Dict, List
 
 from shared.constants import CAMERA_VENDOR_PREFIX_PATTERNS
 from shared.filename_classifier import (
+    GAME_ASSET_STEM_KEYWORDS,
     RESEARCH_CATEGORY,
     SCHOLARLY_ARTICLE_SCHEMA_TYPE,
     classify_by_filename_patterns,
@@ -92,9 +93,7 @@ MEDIA_AUDIO_OTHER_RESULT = ("media", "audio_other")
 # wins as a fallback when no content signal fires. (Content-agnostic-filename
 # fix; pairs with a content interior signal — see docs/reviews/
 # INTERIOR_DETECTION_DURABLE_FIX_ANALYSIS.md.)
-SOURCE_PROVENANCE_RESULTS = frozenset(
-    {("media", "photos_chatgpt"), ("media", "photos_facebook")}
-)
+SOURCE_PROVENANCE_RESULTS = frozenset({("media", "photos_chatgpt"), ("media", "photos_facebook")})
 
 # Camera-roll / scanner stems are photos and scans, never game sprites. The
 # shared module already guards its numbered-sprite paths against the camera
@@ -112,6 +111,45 @@ def _is_camera_or_scan_stem(stem: str) -> bool:
     """True when ``stem`` (already case-folded) is a camera-roll or scanner
     name — the prefixes are lowercase anchored-start regexes."""
     return any(pattern.match(stem) for pattern in _CAMERA_OR_SCAN_STEM_PATTERNS)
+
+
+# Weak-shape sprite naming traps: the shared module's catch-all sprite rules
+# fire on ANY bare lowercase word ("Game asset (single word)": joke, silly,
+# apartment), word+trailing-number ("Sprite sequence"/"Numbered variant":
+# love10, ganesh5), two-letter stem ("Two-letter asset": aw), or hyphenated
+# name ("Hyphenated asset": blue-ai-digital-cube). The stem attests nothing
+# game-related — these shapes cover most human photo names — so the verdict
+# graduates to FILENAME_WEAK_CONFIDENCE and content evidence decides:
+# MediaHeuristicSignal/CLIP (and PhotoCompositionSignal live) outscore it on
+# real photos, while a genuine bare-named sprite in a game folder still wins
+# via FilepathSignal/GameAssetSignal corroboration. Measured on 13 misfiled
+# social photos (scoring-calibration-20260726 §3.2 oracle repair).
+_WEAK_SPRITE_STEM_PATTERNS = tuple(
+    re.compile(pattern)
+    for pattern in (
+        r"^[a-z]+$",  # single word (incl. two-letter)
+        r"^[a-z]+\d+(_\d+)?$",  # word + trailing number(s)
+        r"^[a-z]+(-[a-z]+)+(-copy)?$",  # hyphenated name
+    )
+)
+
+# Strong numbered stems excluded from the weak shapes: unicode/emoji sprite
+# sheets are hex codepoints (1f60a, face12 — the shared "Emoji/unicode asset"
+# rule), and the curated game vocabulary ("Game asset (dungeon2)" rule) is a
+# real content attestation.
+_HEX_STEM_PATTERN = re.compile(r"^[0-9a-f]{4,8}$")
+_TRAILING_NUMBER_PATTERN = re.compile(r"^([a-z]+)\d+(_\d+)?$")
+
+
+def _is_weak_sprite_stem(stem: str) -> bool:
+    """True when a ``game_assets/sprites`` verdict rests on a naming-trap
+    shape rather than a game-attesting stem (already case-folded)."""
+    if _HEX_STEM_PATTERN.match(stem):
+        return False
+    numbered = _TRAILING_NUMBER_PATTERN.match(stem)
+    if numbered and numbered.group(1) in GAME_ASSET_STEM_KEYWORDS:
+        return False
+    return any(pattern.match(stem) for pattern in _WEAK_SPRITE_STEM_PATTERNS)
 
 
 def graduated_filename_confidence(stem: str, category: str, subcategory: str, ext: str) -> float:
@@ -139,6 +177,10 @@ def graduated_filename_confidence(stem: str, category: str, subcategory: str, ex
         return FILENAME_WEAK_CONFIDENCE
     # Sprite verdict on a camera-roll / scanner stem: it is a photo or a scan.
     if result == GAME_SPRITES_RESULT and _is_camera_or_scan_stem(stem):
+        return FILENAME_WEAK_CONFIDENCE
+    # Sprite verdict from a weak-shape naming trap (bare word, word+number,
+    # hyphenated): the stem attests nothing — let content evidence decide.
+    if result == GAME_SPRITES_RESULT and _is_weak_sprite_stem(stem):
         return FILENAME_WEAK_CONFIDENCE
     # The generic "Audio file" catch-all (no music/podcast awareness) on an
     # extension MediaHeuristicSignal can refine to audio_podcasts/audio_music.

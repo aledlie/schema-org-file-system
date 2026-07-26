@@ -72,6 +72,39 @@ _RESEARCH_PREFIX_PATTERNS = (
 )
 
 
+# Curated game environment/effect/UI vocabulary for the "Game asset ({keyword})"
+# numbered rule (dungeon2, kitchen4, lightning1). Module-level so
+# FilenamePatternSignal can distinguish these keyword-attested numbered stems
+# from bare word+number naming traps (love10) when graduating confidence.
+GAME_ASSET_STEM_KEYWORDS = frozenset(
+    {
+        "dungeon",
+        "kitchen",
+        "lightning",
+        "interface",
+        "items",
+        "terinyo",
+        "castle",
+        "forest",
+        "cave",
+        "temple",
+        "tower",
+        "weapon",
+        "armor",
+        "potion",
+        "scroll",
+        "effect",
+        "particle",
+        "enemy",
+        "monster",
+        "creature",
+        "npc",
+        "player",
+        "character",
+    }
+)
+
+
 def _detect_research_publisher(filename_stem: str) -> Optional[Tuple[str, str, str, str]]:
     """Detect a scholarly publisher prefix in a filename stem.
 
@@ -554,9 +587,7 @@ def classify_by_filename_patterns(
             if pattern in filename_lower:
                 person_name = known_name
                 break
-        print(
-            "  ✓ Filename pattern: Cover letter" + (f" ({person_name})" if person_name else "")
-        )
+        print("  ✓ Filename pattern: Cover letter" + (f" ({person_name})" if person_name else ""))
         return ("personal", "contacts", None, [person_name] if person_name else [])
 
     # Check for known person names in filename (e.g., ledlie) - non-resume files
@@ -726,9 +757,7 @@ def classify_by_filename_patterns(
             if pattern in filename_lower:
                 person_name = known_name
                 break
-        print(
-            "  ✓ Filename pattern: Cover letter" + (f" ({person_name})" if person_name else "")
-        )
+        print("  ✓ Filename pattern: Cover letter" + (f" ({person_name})" if person_name else ""))
         return ("personal", "contacts", None, [person_name] if person_name else [])
 
     # =========================================================
@@ -1119,9 +1148,7 @@ def classify_by_filename_patterns(
                     kw in _stem_tokens
                     if "_" not in kw
                     else (
-                        kw.lstrip("_") in _stem_tokens
-                        if "_" not in kw.lstrip("_")
-                        else kw in stem
+                        kw.lstrip("_") in _stem_tokens if "_" not in kw.lstrip("_") else kw in stem
                     )
                 )
                 for kw in game_sprite_keywords
@@ -1261,32 +1288,7 @@ def classify_by_filename_patterns(
             return ("game_assets", "fonts", None, [])
         # Pattern: game asset keywords with numbers (dungeon2, kitchen4, lightning1, interface2)
         # These are common game environment/effect/UI asset names
-        game_asset_keywords = [
-            "dungeon",
-            "kitchen",
-            "lightning",
-            "interface",
-            "items",
-            "terinyo",
-            "castle",
-            "forest",
-            "cave",
-            "temple",
-            "tower",
-            "weapon",
-            "armor",
-            "potion",
-            "scroll",
-            "effect",
-            "particle",
-            "enemy",
-            "monster",
-            "creature",
-            "npc",
-            "player",
-            "character",
-        ]
-        for keyword in game_asset_keywords:
+        for keyword in GAME_ASSET_STEM_KEYWORDS:
             if stem.startswith(keyword) and re.match(rf"^{keyword}\d+$", stem):
                 print(f"  ✓ Filename pattern: Game asset ({keyword})")
                 return ("game_assets", "sprites", None, [])

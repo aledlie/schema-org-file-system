@@ -145,6 +145,36 @@ class TestGraduatedConfidence:
                 == FILENAME_MATCH_CONFIDENCE
             ), stem
 
+    def test_weak_shape_sprite_naming_traps_downgrade(self):
+        # Bare word / word+number / two-letter / hyphenated stems attest
+        # nothing game-related — measured on 13 misfiled social photos
+        # (scoring-calibration-20260726 §3.2). Content signals must be able
+        # to outscore the sprite verdict.
+        for stem in (
+            "joke",
+            "silly",
+            "apartment",
+            "brothers",
+            "aw",
+            "love10",
+            "love2",
+            "ganesh5",
+            "blue-ai-digital-cube",
+        ):
+            assert (
+                graduated_filename_confidence(stem, "game_assets", "sprites", ".jpg")
+                == FILENAME_WEAK_CONFIDENCE
+            ), stem
+
+    def test_attested_sprite_stems_stay_strong(self):
+        # Curated game vocabulary + number ("Game asset (dungeon)") and hex
+        # unicode/emoji sheet stems are real attestations — never downgraded.
+        for stem in ("dungeon2", "kitchen4", "npc7", "1f60a", "face12"):
+            assert (
+                graduated_filename_confidence(stem, "game_assets", "sprites", ".png")
+                == FILENAME_MATCH_CONFIDENCE
+            ), stem
+
     def test_bare_audio_extension_downgrades(self):
         # Generic "Audio file" rule → weak so MediaHeuristic can refine.
         for ext in (".mp3", ".m4a", ".aac", ".flac", ".wma"):
@@ -176,8 +206,7 @@ class TestGraduatedConfidence:
             ("media", "photos_facebook", "481566579_10162021550590804_5823185318886800843_n"),
         ):
             assert (
-                graduated_filename_confidence(stem, cat, sub, ".png")
-                == FILENAME_WEAK_CONFIDENCE
+                graduated_filename_confidence(stem, cat, sub, ".png") == FILENAME_WEAK_CONFIDENCE
             ), sub
 
 

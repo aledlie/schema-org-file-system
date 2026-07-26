@@ -742,6 +742,30 @@ GOLDEN_CASES = [
         expected=("game_assets", "sprites"),
     ),
     GoldenCase(
+        # Weak-shape sprite naming trap (2026-07-26 oracle repair): a bare
+        # word+number photo name attests nothing game-related, so the sprite
+        # verdict graduates to FILENAME_WEAK_CONFIDENCE and the media
+        # evidence (MediaHeuristicSignal + mime fallback on the same pair)
+        # outscores it. Measured on 13 misfiled social photos (love10.jpg
+        # et al.); GameAssetSignal emits nothing for these stems.
+        name="weak_word_number_photo_beats_sprite_trap",
+        filename="love10.jpg",
+        schema_type="ImageObject",
+        mime_type="image/jpeg",
+        expected=("media", "photos_other"),
+    ),
+    GoldenCase(
+        # Same trap, curated-vocabulary control: dungeon2 IS attested game
+        # vocabulary ("Game asset (dungeon)" rule) — stays at full filename
+        # confidence and files as a game asset, not media.
+        name="curated_keyword_number_stays_game",
+        filename="dungeon2.png",
+        schema_type="ImageObject",
+        mime_type="image/png",
+        expected=("game_assets", "sprites"),
+        min_margin=0.01,
+    ),
+    GoldenCase(
         # Hyphenated name: "IMG_2043" matches the sprite regex ^[a-z]+_\d+$
         # in BOTH engines (pre-existing legacy bug, see §1 naming
         # brittleness) — the GPS-travel routing under test needs a camera

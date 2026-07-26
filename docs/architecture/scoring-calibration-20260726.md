@@ -173,6 +173,40 @@ re-confirmed — now including the media priors.**
   +1/−1-non-media churn profile — still rejected.
 - No candidate improves both slices. **Weights and thresholds stay shipped.**
 
+## 3.4 Weak-shape sprite naming-trap fix (addendum, same day)
+
+The 13 repaired photos_social rows (§3.2) exposed a live classifier bug: the
+shared filename module's catch-all sprite rules ("Game asset (single word)",
+"Sprite sequence"/"Numbered variant", "Two-letter asset", "Hyphenated asset")
+commit ANY bare word / word+number / hyphenated image name to
+`game_assets/sprites` at full filename confidence (1.1 aggregate) — beating
+all content evidence. `GameAssetSignal` emits nothing for these stems; the
+vote was pure filename-shape.
+
+**Fix** (`filename_pattern.py`): `_is_weak_sprite_stem` — a sprites verdict on
+a weak shape graduates to `FILENAME_WEAK_CONFIDENCE` (0.4), excluding hex
+unicode-sheet stems and the curated `GAME_ASSET_STEM_KEYWORDS` vocabulary
+(hoisted to a module constant in `filename_classifier.py`; `dungeon2` stays
+strong). Content evidence now decides: MediaHeuristicSignal + mime fallback
+aggregate 0.92 on `media/photos_other` vs the trap's 0.44.
+
+**Verification**: live production run on 5 of the real photos (full CLIP +
+image analyzer): all commit `media/photos_other` (were `game_assets/sprites`).
+Golden corpus grew to 45 (trap case + curated-vocabulary control) — all pass;
+2,428-test suite green. Replay overall agreement moved 249 → 230, entirely
+because ~32 stored labels are themselves trap victims: the 13 repaired rows
+now differ only at subcategory (`photos_other` vs stored `photos_social` —
+the replay has no image analyzer), and 19 stored-sprite rows with weak-shape
+stems (`birthday.jpg`, `husband.jpg`, `beach.jpg`, `party5.jpg`…) are
+obviously misfiled photos whose files a manual cleanup already deleted —
+zero genuine sprites break. Those 19 gone rows are `reconcile
+--prune-missing` candidates; pruning them removes the false disagreements.
+
+Residual observation (not a bug fixed here): live, `media/photos_other`
+(media-heuristic 0.52 + mime 0.40) outscores `photos_social`
+(photo-composition ≈0.52 + CLIP ≈0.04) on people photos — subcategory-level
+calibration between those two media voters is untouched by this fix.
+
 ## 4. Caveats & when to re-run
 
 - The stored-decision oracle is biased: it contains manual corrections and
