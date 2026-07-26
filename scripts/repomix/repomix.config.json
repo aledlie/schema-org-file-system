@@ -45,7 +45,8 @@
       "bin/**",
       "schema_org_file_system.egg-info/**",
       "_site/**",
-      "docs/api/**"
+      "docs/api/**",
+      "src/classifiers/data/**"
     ]
   },
   "security": {
@@ -53,7 +54,11 @@
   },
   "diffSummary": {
     "ignore": [
-      "docs/**"
+      "docs/**",
+      "_site/**",
+      ".claude/**",
+      "results/**",
+      "src/classifiers/data/**"
     ]
   }
 }
