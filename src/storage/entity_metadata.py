@@ -557,6 +557,12 @@ class BloodTestEntity(MedicalTestEntity):
     entity_type: ClassVar[str] = "BloodTest"
 
 
+class PathologyTestEntity(MedicalTestEntity):
+    """schema.org PathologyTest (MedicalTest subtype, BloodTest sibling)."""
+
+    entity_type: ClassVar[str] = "PathologyTest"
+
+
 class ImageObjectEntity(SchemaOrgEntity):
     """schema.org ImageObject."""
 

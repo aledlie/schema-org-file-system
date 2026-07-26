@@ -119,13 +119,17 @@ def test_medical_entity_hierarchy():
         SchemaOrgEntity,
     )
 
+    from src.storage.entity_metadata import PathologyTestEntity
+
     assert issubclass(MedicalEntityEntity, SchemaOrgEntity)
     assert issubclass(MedicalTestEntity, MedicalEntityEntity)
     assert issubclass(BloodTestEntity, MedicalTestEntity)
+    assert issubclass(PathologyTestEntity, MedicalTestEntity)
     for cls, type_name in (
         (MedicalEntityEntity, "MedicalEntity"),
         (MedicalTestEntity, "MedicalTest"),
         (BloodTestEntity, "BloodTest"),
+        (PathologyTestEntity, "PathologyTest"),
     ):
         jsonld = cls(f"med-{type_name.lower()}", name=f"A {type_name}").to_jsonld()
         assert jsonld["@type"] == type_name

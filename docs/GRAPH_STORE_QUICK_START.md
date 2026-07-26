@@ -36,8 +36,8 @@ Available concrete types (all two-liner subclasses of `SchemaOrgEntity`):
   `PoliticalPartyEntity`, and `LocalBusinessEntity`
 - `LocalBusinessEntity` -> all 30 schema.org direct subtypes
   (`DentistEntity`, `FoodEstablishmentEntity`, `StoreEntity`, ...)
-- `MedicalEntityEntity` -> `MedicalTestEntity` -> `BloodTestEntity`
-  (Thing > MedicalEntity > MedicalTest > BloodTest)
+- `MedicalEntityEntity` -> `MedicalTestEntity` -> `BloodTestEntity`,
+  `PathologyTestEntity` (Thing > MedicalEntity > MedicalTest > ...)
 
 ## Create an entity
 
