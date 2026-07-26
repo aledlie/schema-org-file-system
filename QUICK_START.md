@@ -47,9 +47,10 @@ organize-files content --source ~/Desktop ~/Downloads --target ~/Documents
 # Save a JSON report of what was done
 organize-files content --source ~/Downloads --limit 500 --report results/run_report.json
 
-# Sensitive sources: OCR text is stored verbatim in files.extracted_text.
-# Use --no-db for health, genomics, or any source with personal data
-# (VINs, medical records, genomic reports) to skip all DB writes.
+# Sensitive sources: OCR text is stored verbatim in files.extracted_text
+# (medical-classified files are the exception: emails/digit-runs/detected
+# names are redacted before persistence). Use --no-db for genomics or any
+# source with personal data (VINs, genomic reports) to skip all DB writes.
 organize-files content --source ~/Downloads --dry-run --no-db --no-sentry --no-cost-tracking
 ```
 
@@ -158,7 +159,7 @@ python scripts/prototype_scene_probe.py train                 # -> results/scene
 
 ## Tips
 
-- **Sensitive/private sources:** OCR text and extracted metadata are stored verbatim in `results/file_organization.db` (`files.extracted_text`, `files.schema_data`). Pass `--no-db` to skip all DB writes when running on health records, genomics reports (SNPedia, Promethease), documents containing VINs, or any source with personal data. Alternatively, run `scripts/redact_pii.py` on files first to redact PII before organizing.
+- **Sensitive/private sources:** OCR text and extracted metadata are stored verbatim in `results/file_organization.db` (`files.extracted_text`, `files.schema_data`). Exception: files classified `medical` (the schema.org MedicalTest family — BloodTest/PathologyTest) persist **redacted** text — emails, digit runs (MRNs, DOBs, lab values), and detected person names are masked (`src/analyzers/text_redaction.py`). The redaction is best-effort (alphabetic PII outside detected names survives), so still pass `--no-db` for genomics reports (SNPedia, Promethease), documents containing VINs, or any source where no extracted text should be stored at all. Alternatively, run `scripts/redact_pii.py` on files first to redact PII before organizing.
 - Start every real run with `--dry-run --limit N` and read the classification output before applying.
 - `organize-files <command> --help` shows all flags for a subcommand.
 - Scripts in `scripts/` must run from the project root so `from shared.x import y` resolves; the `organize-files` CLI handles this automatically.

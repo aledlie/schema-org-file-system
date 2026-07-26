@@ -501,7 +501,8 @@ def add_content_arguments(parser: argparse.ArgumentParser) -> None:
         "--no-db",
         action="store_true",
         help="Disable database persistence (use for sensitive sources — OCR text is "
-        "stored verbatim in files.extracted_text; see QUICK_START.md § Tips)",
+        "stored verbatim in files.extracted_text except for medical-classified "
+        "files, which persist redacted text; see QUICK_START.md § Tips)",
     )
     parser.add_argument(
         "--run-migration",
