@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Reusable profiler for the content-classification hot path.
 
-Runs the unified (or legacy) scorer over a set of files under cProfile and
+Runs the unified scorer over a set of files under cProfile and
 reports wall-clock, per-file average, the top-N functions by self-time, a
 grouped hotspot summary (OCR CNN / image-decode / face-detect / CLIP / ...),
 and OCR-gate telemetry (how many images skipped OCR via ``--ocr-clip-topk``).
@@ -53,11 +53,34 @@ IMAGE_EXTS = {".png", ".jpg", ".jpeg", ".heic", ".webp", ".gif", ".bmp", ".tiff"
 # Substring buckets for the grouped hotspot summary. First match wins, so order
 # matters (specific before generic). Keyed by display name.
 _HOTSPOT_BUCKETS: List[tuple] = [
-    ("OCR: CNN/detect", ("conv2d", "batch_norm", "max_pool", "relu_", "lstm",
-                          "upsample", "craft", "getdetboxes", "doctr", "box_score",
-                          "normalizemeanvariance")),
-    ("Image decode", ("imread", "imagingdecoder", "heif", "thumbnail", "img.load",
-                      "_upsample_bilinear2d_aa", "decode")),
+    (
+        "OCR: CNN/detect",
+        (
+            "conv2d",
+            "batch_norm",
+            "max_pool",
+            "relu_",
+            "lstm",
+            "upsample",
+            "craft",
+            "getdetboxes",
+            "doctr",
+            "box_score",
+            "normalizemeanvariance",
+        ),
+    ),
+    (
+        "Image decode",
+        (
+            "imread",
+            "imagingdecoder",
+            "heif",
+            "thumbnail",
+            "img.load",
+            "_upsample_bilinear2d_aa",
+            "decode",
+        ),
+    ),
     ("Face/composition", ("detectmultiscale", "warpaffine", "cascadeclassifier")),
     ("CLIP", ("clip", "open_clip", "encode_image", "encode_text")),
     ("Tensor move", ("'to' of", "'cpu' of", "tensorbase")),
@@ -104,9 +127,7 @@ def _build_organizer(scorer: str, ocr_clip_topk: Optional[int]):
     )
 
 
-def _make_classify(
-    org, counters: Dict[str, int]
-) -> Callable[[Path], ClassificationDecision]:
+def _make_classify(org, counters: Dict[str, int]) -> Callable[[Path], ClassificationDecision]:
     """Return a per-file classify closure that records OCR telemetry.
 
     Wraps the organizer's own context build + scorer so the profile reflects
@@ -221,8 +242,10 @@ def print_report(res: ProfileResult) -> None:
     print("\n" + "=" * 64)
     print(f"PROFILE  scorer={res.scorer}  ocr_clip_topk={res.ocr_clip_topk}")
     print("=" * 64)
-    print(f"files={res.n_files} (images={res.n_images})  "
-          f"wall={res.wall_seconds}s  per_file={res.per_file_seconds}s")
+    print(
+        f"files={res.n_files} (images={res.n_images})  "
+        f"wall={res.wall_seconds}s  per_file={res.per_file_seconds}s"
+    )
     print(f"OCR invocations={res.ocr_invocations}  OCR gated (skipped)={res.ocr_gated}")
     if res.n_images:
         pct = 100.0 * res.ocr_gated / res.n_images
@@ -240,12 +263,22 @@ def print_report(res: ProfileResult) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Profile the content classification hot path.")
-    p.add_argument("--source", "--sources", nargs="+", dest="sources", required=True,
-                   help="Directories or files to profile")
+    p.add_argument(
+        "--source",
+        "--sources",
+        nargs="+",
+        dest="sources",
+        required=True,
+        help="Directories or files to profile",
+    )
     p.add_argument("--limit", type=int, help="Max files to profile")
-    p.add_argument("--scorer", default="unified", choices=["unified", "legacy", "shadow"])
-    p.add_argument("--ocr-clip-topk", type=int, default=None,
-                   help="Skip OCR unless a text-bearing label ranks in the top-K CLIP labels")
+    p.add_argument("--scorer", default="unified", choices=["unified"])
+    p.add_argument(
+        "--ocr-clip-topk",
+        type=int,
+        default=None,
+        help="Skip OCR unless a text-bearing label ranks in the top-K CLIP labels",
+    )
     p.add_argument("--top", type=int, default=20, help="Top-N functions to report")
     p.add_argument("--no-warmup", action="store_true", help="Skip the warmup file")
     p.add_argument("--json", dest="json_out", help="Write ProfileResult JSON to this path")

@@ -14,18 +14,12 @@ from typing import Any, Dict, List, Literal, Optional, Protocol, TYPE_CHECKING, 
 if TYPE_CHECKING:
     from .context import FileContext
 
-# Scorer modes accepted by ``organize-files content --scorer`` and
-# ``ContentOrganizer(scorer=...)``. ``legacy`` is the 10-tier priority chain;
-# ``unified`` is the weighted scorer; ``shadow`` runs both (legacy controls
-# placement, the unified decision is logged for disagreement analysis).
-# ``SCORER_DEFAULT`` is the default for the CLI, ``ContentBasedFileOrganizer``,
-# and now the base ``ContentOrganizer``; tests that exercise the legacy chain
-# pass ``scorer=SCORER_LEGACY`` explicitly (Phase-5 default flip).
-SCORER_LEGACY = "legacy"
+# Scorer modes accepted by ``ContentOrganizer(scorer=...)``. The legacy
+# 10-tier chain and shadow mode were removed in Phase 5 (UNIFIED_SCORING_PLAN
+# §6); ``unified`` — the weighted signal scorer — is the only engine.
 SCORER_UNIFIED = "unified"
-SCORER_SHADOW = "shadow"
-SCORER_MODES = (SCORER_LEGACY, SCORER_UNIFIED, SCORER_SHADOW)
-SCORER_DEFAULT = SCORER_UNIFIED  # default engine (was legacy before the unified rollout)
+SCORER_MODES = (SCORER_UNIFIED,)
+SCORER_DEFAULT = SCORER_UNIFIED
 
 CostTier = Literal["cheap", "mid", "heavy"]
 

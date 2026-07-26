@@ -38,8 +38,7 @@ from cli_inputs import (  # noqa: E402  (needs the src path insert above)
     UpdateSiteInputs,
 )
 from constants import DEFAULT_DB_PATH  # noqa: E402  (src on path via insert above)
-from scoring.types import SCORER_DEFAULT, SCORER_MODES  # noqa: E402  (src on path)
-from scoring.weights import OCR_CLIP_GATE_TOPK, OCR_FORCE_DOCTR_FALLBACK  # noqa: E402  (src on path)
+from scoring.weights import OCR_CLIP_GATE_TOPK, OCR_FORCE_DOCTR_FALLBACK  # noqa: E402
 
 # Shared option defaults, single-sourced for the parser definitions below.
 DEFAULT_SOURCES = ["~/Desktop", "~/Downloads"]
@@ -291,9 +290,7 @@ def cmd_reconcile(args: argparse.Namespace) -> None:
 
     if args.set_category:
         file_ref, category = args.set_category
-        summary = store.set_file_category(
-            file_ref, category, args.subcategory, dry_run=not apply
-        )
+        summary = store.set_file_category(file_ref, category, args.subcategory, dry_run=not apply)
         if summary is None:
             print(f"[{label}] set-category: no file matching {file_ref!r}")
             sys.exit(1)
@@ -396,15 +393,17 @@ def cmd_review_people(args: argparse.Namespace) -> None:
             f"choose one of {PERSON_REVIEW_STATUSES} or 'all'"
         )
         sys.exit(2)
-    rows = store.list_people_by_status(
-        status=None if status_filter == "all" else status_filter
-    )
+    rows = store.list_people_by_status(status=None if status_filter == "all" else status_filter)
     if not rows:
         print(f"No people with status={status_filter!r}")
         return
     print(f"People with status={status_filter!r} ({len(rows)}):")
     for row in rows:
-        score = f"{row['detection_confidence']:.2f}" if row["detection_confidence"] is not None else "n/a"
+        score = (
+            f"{row['detection_confidence']:.2f}"
+            if row["detection_confidence"] is not None
+            else "n/a"
+        )
         print(f"  [{row['review_status']}] {row['name']}  (id={row['person_id']}, score={score})")
         for path in row.get("paths", []):
             print(f"    {path}")
@@ -508,15 +507,6 @@ def add_content_arguments(parser: argparse.ArgumentParser) -> None:
         "--run-migration",
         action="store_true",
         help="Run database migration to add canonical_id columns " "to existing records",
-    )
-    parser.add_argument(
-        "--scorer",
-        choices=list(SCORER_MODES),
-        default=SCORER_DEFAULT,
-        help="Classification engine: legacy = 10-tier priority chain; "
-        "unified = weighted signal scorer; shadow = legacy placement "
-        "with unified decisions logged for disagreement analysis "
-        "(default: %(default)s)",
     )
     parser.add_argument(
         "--ocr-clip-topk",

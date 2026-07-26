@@ -18,9 +18,9 @@ from typing import List, Optional, Type, TypeVar
 # Bookkeeping attributes the organize-files subparser machinery adds
 # (dest='command', set_defaults(func=...)); never part of a command's
 # option contract and absent when a standalone script parses directly.
-_NAMESPACE_BOOKKEEPING = frozenset({'command', 'func'})
+_NAMESPACE_BOOKKEEPING = frozenset({"command", "func"})
 
-_T = TypeVar('_T', bound='CommandInputs')
+_T = TypeVar("_T", bound="CommandInputs")
 
 
 class CLIInputError(TypeError):
@@ -70,7 +70,6 @@ class ContentInputs(CommandInputs):
     db_path: str
     no_db: bool
     run_migration: bool
-    scorer: str
     ocr_clip_topk: Optional[int]
     ocr_doctr_fallback: bool
 

@@ -34,7 +34,9 @@ try:
     from PIL import Image  # noqa: F401 — availability probe
     from shared.file_ops import resolve_collision  # noqa: F401 — availability probe
     from shared.filename_utils import is_generic_filename  # noqa: F401 — availability probe
-    from shared.ocr_classifier import OCR_AVAILABLE  # shared module-level flag; avoids duplicate probe
+    from shared.ocr_classifier import (
+        OCR_AVAILABLE,
+    )  # shared module-level flag; avoids duplicate probe
     from shared.status import ProcessingStatus  # noqa: F401 — availability probe
 
     # HEIC support
@@ -90,6 +92,7 @@ from rename_images import PHOTO_PROFILE, ImageAnalyzer  # noqa: E402
 
 from analyzers.image_analyzer import ImageContentAnalyzer  # noqa: E402
 from enrichment import MetadataEnricher  # noqa: E402
+
 # src.integration (not bare `integration`): matches FileProcessor's import so
 # both see the same class object, and avoids the mypy namespace-package
 # collision with tests/integration/ when tests are in the checked set.
@@ -161,8 +164,8 @@ class ContentBasedFileOrganizer(ContentOrganizer):
             organize_by_location: If True, organize photos by location when GPS data available
             enable_cost_tracking: If True, track costs and ROI for all features
             db_path: Path to SQLite database for persistent storage
-            scorer: Classification engine — legacy | unified | shadow
-                (UNIFIED_SCORING_PLAN §6 Phase 0)
+            scorer: Classification engine (unified only; the legacy chain
+                and shadow mode were removed in UNIFIED_SCORING_PLAN Phase 5)
             ocr_clip_topk: Skip OCR on images unless a text-bearing CLIP label
                 ranks in the top-K labels. Defaults to OCR_CLIP_GATE_TOPK (3).
                 Pass 0 or None to disable. Fails open when CLIP is unavailable.
@@ -319,7 +322,11 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         return self._batch_processor.scan_directory(directory)
 
     def organize_directories(
-        self, source_dirs: List[str], dry_run: bool = False, limit: Optional[int] = None, force: bool = False
+        self,
+        source_dirs: List[str],
+        dry_run: bool = False,
+        limit: Optional[int] = None,
+        force: bool = False,
     ) -> Dict:
         """
         Organize files from multiple source directories.
@@ -421,7 +428,6 @@ def run(args: "ContentInputs") -> None:
         base_path=args.base_path,
         enable_cost_tracking=not args.no_cost_tracking,
         db_path=db_path,
-        scorer=args.scorer,
         ocr_clip_topk=args.ocr_clip_topk,
         force_doctr_fallback=args.ocr_doctr_fallback,
     )

@@ -2,16 +2,14 @@
 
 Replaces the first-match-wins tier chain in
 ``ContentOrganizer.detect_file_category`` with a weighted multi-signal
-scorer, behind ``organize-files content --scorer {legacy,unified,shadow}``.
+scorer. The legacy chain and shadow mode were removed in Phase 5.
 """
 
 from .context import FileContext
 from .scorer import Scorer
 from .types import (
     SCORER_DEFAULT,
-    SCORER_LEGACY,
     SCORER_MODES,
-    SCORER_SHADOW,
     SCORER_UNIFIED,
     CategoryScore,
     ClassificationDecision,
@@ -41,9 +39,7 @@ __all__ = [
     "ClassificationDecision",
     "FileContext",
     "SCORER_DEFAULT",
-    "SCORER_LEGACY",
     "SCORER_MODES",
-    "SCORER_SHADOW",
     "SCORER_UNIFIED",
     "Scorer",
     "Signal",

@@ -81,18 +81,9 @@ Full module map, data flow, and diagrams: [`docs/ARCHITECTURE.md`](docs/ARCHITEC
 
 **`scripts/shared/` import path:** run scripts from project root (or with `scripts/` on `sys.path`) so `from shared.x import y` resolves. The `organize-files` CLI handles this automatically.
 
-## Classification Priority
+## Unified Scoring
 
-Layered pipeline (see [`docs/FILE_ORGANIZATION.md`](docs/FILE_ORGANIZATION.md#4b-classification-priority-contentorganizerdetect_file_category-srcorganizerscontent_organizerpy)):
-
-**Default engine:** `organize-files content` now defaults to the **unified** weighted-signal scorer (`--scorer unified`; weights/signals in `src/scoring/`). The numbered chain below is the **legacy** engine — still selectable via `--scorer legacy` (also the base `ContentOrganizer` default, kept so Phase-0 unit tests pin the chain); `--scorer shadow` runs legacy placement while logging unified decisions for comparison.
-
-1. **Organization** — client/vendor/invoice/company names
-2. **Personal Documents** — resume/CV/vCard (`contacts`), employment, identification, certificates (OCR). Person attribution is a graph relationship (`GraphStore.add_file_to_person`), not a filing category — see `docs/changelog/2.1.0/PERSON_TAXONOMY_OPTION_C_PLAN.md`
-3. **Legal/Contract** — contracts, agreements, terms
-4. **Financial** — invoice/billing/statement/receipt filenames → `Financial/{Invoices,Statements,Other}`; checked before the event-date heuristic (events need month+day adjacency; a bare year does not qualify)
-5. **Research Paper** — arXiv/SSRN/DOI → `Research/{Publisher}/` (`schema_type=ScholarlyArticle`)
-6. **E-commerce** → 7. **Software UI** → 8. **Game Assets** (200+ patterns) → 9. **Filepath** (incl. `parent_folder=Games`) → 10. **Content Analysis** (OCR+CLIP) → 11. **MIME Type** fallback
+`organize-files content` classifies via the **unified weighted-signal scorer** (`src/scoring/`: 20 signal modules in `signals/`, weights in `weights.py`, orchestration in `scorer.py`). All applicable signals run in cost-tier waves (cheap → mid → heavy, with early exit); the highest aggregated `(category, subcategory)` wins, with margin/confidence thresholds routing weak decisions to `uncategorized`. The legacy 10-tier first-match-wins chain and shadow mode were **removed in Phase 5** (UNIFIED_SCORING_PLAN §6); the extracted per-tier `classify_*` methods remain on `ContentOrganizer` as directly-testable shims over their signals. Signal coverage includes: organization/person entity detection (person attribution is a graph relationship — `GraphStore.add_file_to_person` — not a filing category, see `docs/changelog/2.1.0/PERSON_TAXONOMY_OPTION_C_PLAN.md`), legal, financial (`Financial/{Invoices,Statements,Other}`), research publishers (arXiv/SSRN/DOI → `Research/{Publisher}/`, `ScholarlyArticle`), game assets, filepath, screenshot OCR, CLIP vision, scene probe, media heuristics, and a deliberately weak MIME fallback. See [`docs/FILE_ORGANIZATION.md`](docs/FILE_ORGANIZATION.md) and `docs/architecture/UNIFIED_SCORING_PLAN.md`.
 
 ## Output Folders
 

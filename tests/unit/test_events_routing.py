@@ -18,7 +18,6 @@ from src.scoring.signals.event_content import (
 )
 from src.scoring.types import (
     EVIDENCE_EVENT_NAME,
-    SCORER_LEGACY,
     CategoryScore,
     ClassificationDecision,
 )
@@ -30,7 +29,7 @@ def organizer(tmp_path: Path) -> ContentOrganizer:
     clf.extract_company_names.return_value = []
     clf.extract_people_names.return_value = []
     clf.sanitize_company_name.side_effect = lambda name: name
-    return ContentOrganizer(base_path=tmp_path, content_classifier=clf, scorer=SCORER_LEGACY)
+    return ContentOrganizer(base_path=tmp_path, content_classifier=clf)
 
 
 def make_events_decision(

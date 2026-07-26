@@ -14,7 +14,6 @@ import json
 import re
 from copy import deepcopy
 from dataclasses import replace
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, cast
 
@@ -29,7 +28,6 @@ from src.scoring.scorer import Scorer
 from src.scoring.types import EVIDENCE_EVENT_NAME, ClassificationDecision
 from src.scoring.signals.clip_vision import GEOGRAPHIC_LABELS, map_clip_label
 from src.scoring.signals.event_content import EVENT_SIGNAL_NAME, EVENTS_CATEGORY
-from src.scoring.signals.identity_document import ID_MIN_TEXT_CHARS, detect_identity_document
 from src.scoring.signals.scene import (
     EVIDENCE_SCENE_CLASS,
     EVIDENCE_SCENE_PROB,
@@ -54,12 +52,9 @@ from src.scoring.signals.mime_fallback import MIME_TO_CONTENT as _MIME_TO_CONTEN
 from src.scoring.signals.mime_fallback import (
     mime_result_to_content_category as _mime_result_to_content_category,
 )
-from src.scoring.signals.renamed_screenshot import match_renamed_screenshot
 from src.scoring.types import (
     SCORER_DEFAULT,
-    SCORER_LEGACY,
     SCORER_MODES,
-    SCORER_SHADOW,
     SCORER_UNIFIED,
 )
 from src.scoring.weights import OCR_CLIP_GATE_TOPK, OCR_FORCE_DOCTR_FALLBACK
@@ -95,7 +90,7 @@ from shared.constants import (
     GAME_SPRITE_KEYWORDS,
 )
 from shared.file_ops import resolve_collision, should_skip_file as _shared_should_skip_file
-from shared.filename_classifier import (
+from shared.filename_classifier import (  # noqa: F401 — re-exported for tests/script
     RESEARCH_CATEGORY,
     SCHOLARLY_ARTICLE_SCHEMA_TYPE,
 )
@@ -235,10 +230,6 @@ _DOCUMENT_CONTENT_CATEGORIES = frozenset(
     {"financial", "medical", "legal", "business", "personal", "technical", "research", "education"}
 )
 
-# Shadow-mode disagreement log (UNIFIED_SCORING_PLAN §6 Phase 2 / §7.1).
-# Relative to the working directory like the rest of the results/ artifacts.
-_SCORING_SHADOW_LOG = Path("results/scoring_shadow.jsonl")
-
 
 def _derive_schema_type(mime_type: Optional[str]) -> str:
     """Map a MIME type onto the coarse Schema.org type the pipeline uses."""
@@ -318,13 +309,8 @@ class ContentOrganizer(BaseOrganizer):
         # easyocr cleanly finds no text; True always runs it (faint-text
         # recall over cost). CLI: --ocr-doctr-fallback.
         self.force_doctr_fallback = force_doctr_fallback
-        # Shadow log is append-only per file; truncate once per run so a fresh
-        # run's disagreement report never inherits stale records from prior runs
-        # (e.g. leftover scratchpad paths from an earlier session).
-        if scorer == SCORER_SHADOW and _SCORING_SHADOW_LOG.exists():
-            _SCORING_SHADOW_LOG.unlink()
-        # Built lazily on first unified/shadow classification (registry deps
-        # need the fully constructed organizer).
+        # Built lazily on first classification (registry deps need the fully
+        # constructed organizer).
         self._unified_scorer: Optional[Scorer] = None
         self.classifier = content_classifier
         self.image_analyzer = image_analyzer
@@ -815,11 +801,10 @@ class ContentOrganizer(BaseOrganizer):
         """
         Detect file category based on content.
 
-        Dispatches on ``self.scorer_mode`` (UNIFIED_SCORING_PLAN §6 Phase 0):
-        ``legacy`` runs the 10-tier priority chain, ``unified`` runs the
-        weighted signal scorer, ``shadow`` runs both — legacy controls
-        placement while the unified decision is logged to
-        ``results/scoring_shadow.jsonl`` for disagreement analysis.
+        Runs the unified weighted signal scorer (UNIFIED_SCORING_PLAN §3).
+        The legacy 10-tier chain and shadow mode were removed in Phase 5;
+        the extracted per-tier ``classify_*`` helpers remain as directly
+        testable shims over their signals.
 
         Args:
             file_path: Physical path to the file on disk (used for content reading).
@@ -832,12 +817,7 @@ class ContentOrganizer(BaseOrganizer):
             Tuple of (main_category, subcategory, schema_type, extracted_text,
             company_name, people_names, image_metadata)
         """
-        if self.scorer_mode == SCORER_UNIFIED:
-            result = self._detect_file_category_unified(file_path, display_path)
-        else:
-            result = self._detect_file_category_legacy(file_path, display_path)
-            if self.scorer_mode == SCORER_SHADOW:
-                self._log_shadow_comparison(file_path, display_path, result)
+        result = self._detect_file_category_unified(file_path, display_path)
         # Category-independent enrichment (runs for both engines): derive a
         # file→location edge from a postal address in the extracted text when
         # the file has no image-GPS location. Never changes category/folder.
@@ -891,221 +871,8 @@ class ContentOrganizer(BaseOrganizer):
         image_metadata["location"] = location
         return (category, subcategory, schema_type, text, company, people, image_metadata)
 
-    def _detect_file_category_legacy(
-        self,
-        file_path: Path,
-        display_path: Path | None = None,
-    ) -> Tuple[str, str, str, str, Optional[str], List[str], Dict[str, Any]]:
-        """
-        Detect file category via the legacy first-match-wins tier chain.
-
-        Priority order (executed in this exact sequence; first match wins):
-        0a. Renamed-screenshot content routing (display_path vs file_path)
-        0b. Filename pattern detection (fastest - no content extraction needed)
-        1.  Organization / Person entity detection (document-type files)
-        3.  Game asset detection (audio, sprites, textures)
-        3.  Filepath-based classification (file extensions, filenames)
-        3.5 Identification-document detection via OCR (passport, ID, license)
-        4.  Media file classification (photos, videos, audio)
-        4.5 Screenshot sub-classification via OCR + CLIP
-        5.  Photo composition analysis (people / home interior)
-        6.  Regular text extraction and content/KIE classification
-
-        Returns:
-            Tuple of (main_category, subcategory, schema_type, extracted_text,
-            company_name, people_names, image_metadata)
-        """
-        self._last_file_ocr_confidence = None
-        self._last_file_detected_language = None
-        self._last_file_ocr_text = None
-        self._last_file_state.clear()
-        self._clip_enhance_cache.clear()
-
-        pattern_path = display_path or file_path
-
-        # Determine schema type and MIME type early (needed for multiple paths)
-        mime_type = (
-            self.enricher.detect_mime_type(str(file_path)) if self.enricher is not None else None
-        )
-        schema_type = _derive_schema_type(mime_type)
-
-        # PRIORITY 0a: Renamed screenshots → route to category sub-folder
-        # When the image renamer classified a screenshot (e.g. "Screenshot ..." →
-        # "20260320_terminal_session.png"), match the content label against
-        # _SCREENSHOT_KEYWORDS and ContentClassifier.patterns keys directly.
-        if display_path and display_path != file_path and "screenshot" in file_path.stem.lower():
-            renamed_stem = display_path.stem.lower()
-            screenshots_dict = self.category_paths["media"]["photos"]["screenshots"]
-            # Longest-key-first matching lives in src.scoring.signals.
-            # renamed_screenshot (RenamedScreenshotSignal extraction).
-            key = match_renamed_screenshot(renamed_stem, screenshots_dict)
-            if key is not None:
-                print(f"  ✓ Screenshot content: {key}")
-                return ("media", f"photos_screenshots_{key}", schema_type, "", None, [], {})
-
-        # PRIORITY 0b: Filename pattern detection (fastest - no content extraction needed)
-        # Handles: Google invoices, resumes, technical files, legal docs,
-        # business docs, entity files
-        filename_result = self.classify_by_filename_patterns(pattern_path)
-        if filename_result:
-            category, subcategory, company_name, people_names = filename_result
-            # Handle skip category for duplicates
-            if category == "skip":
-                return ("skip", subcategory, schema_type, "", None, [], {})
-            if category == RESEARCH_CATEGORY:
-                schema_type = SCHOLARLY_ARTICLE_SCHEMA_TYPE
-            # Point A: enhance weak photos_other from filename patterns for images
-            if subcategory == "photos_other" and schema_type == "ImageObject":
-                enhanced = self.enhance_weak_image_classification(file_path)
-                if enhanced:
-                    return (enhanced[0], enhanced[1], schema_type, "", None, [], {})
-            return (category, subcategory, schema_type, "", company_name, people_names, {})
-
-        # PRIORITY 1: Organization and Person detection for document-type files
-        # Only apply to document/PDF types (not images, audio, video)
-        if schema_type == "DigitalDocument" or mime_type == "application/pdf":
-            print("  Checking for Organization/Person entities...")
-            extracted_text = self.extract_text(file_path)
-
-            if extracted_text and len(extracted_text) >= 50:
-                # Try Organization detection first
-                org_result = self.classify_by_organization(extracted_text, file_path.name)
-                if org_result:
-                    category, subcategory, org_name = org_result
-                    print(f"  ✓ Organization detected: {org_name} ({subcategory})")
-                    return (category, subcategory, schema_type, extracted_text, org_name, [], {})
-
-                # Try Person detection second
-                person_result = self.classify_by_person(extracted_text, file_path.name)
-                if person_result:
-                    category, subcategory, people_names = person_result
-                    print(
-                        f"  ✓ Person detected: {', '.join(people_names[:3]) if people_names else 'Unknown'} ({subcategory})"  # noqa: E501
-                    )
-                    return (
-                        category,
-                        subcategory,
-                        schema_type,
-                        extracted_text,
-                        None,
-                        people_names,
-                        {},
-                    )
-
-        # PRIORITY 3: Check for game assets (before filepath patterns)
-        game_asset = self.classify_game_asset(file_path)
-        if game_asset:
-            category, subcategory = game_asset
-            # A game keyword can collide with a real word (e.g. "blood" in
-            # "bloodwork"). For the ambiguous "textures" bucket on images, let
-            # clean high-confidence OCR document text override the guess.
-            if subcategory == "textures" and schema_type == "ImageObject":
-                override = self._ocr_document_override(file_path)
-                if override:
-                    print(
-                        f"  ✓ OCR document override: {override[0]}/{override[1]} "
-                        f"(was game_assets/{subcategory})"
-                    )
-                    return (
-                        override[0],
-                        override[1],
-                        schema_type,
-                        self._last_file_ocr_text or "",
-                        None,
-                        [],
-                        {},
-                    )
-            print(f"  ✓ Game asset detected: {subcategory}")
-            return (category, subcategory, schema_type, "", None, [], {})
-
-        # PRIORITY 3: Check filepath patterns (most efficient and accurate for code files)
-        filepath_category = self.classify_by_filepath(file_path)
-        if filepath_category:
-            print(f"  ✓ Filepath match: {filepath_category}")
-            # Return filepath-based category as a special marker
-            # We'll handle this in get_destination_path
-            return ("filepath", filepath_category, schema_type, "", None, [], {})
-
-        # Extract metadata for images
-        image_metadata: Dict[str, Any] = {}
-        if (
-            schema_type == "ImageObject"
-            and self.metadata_parser is not None
-            and self.metadata_parser.metadata_available
-        ):
-            print("  Extracting image metadata...")
-            image_metadata = self.metadata_parser.get_metadata_summary(file_path)
-
-            if image_metadata.get("datetime"):
-                dt = image_metadata["datetime"]
-                print(f"  ✓ Photo taken: {dt.strftime('%Y-%m-%d %H:%M:%S')}")
-
-            if image_metadata.get("gps_coordinates"):
-                coords = image_metadata["gps_coordinates"]
-                print(f"  ✓ GPS: {coords[0]:.6f}, {coords[1]:.6f}")
-
-            if image_metadata.get("location_name"):
-                print(f"  ✓ Location: {image_metadata['location_name']}")
-
-        # PRIORITY 3.5: Check for identification documents in images (passport, ID, license)
-        # These should go to Personal/Identification, not Media/
-        id_result = self._classify_identification_document(
-            file_path,
-            schema_type,
-            image_metadata,
-        )
-        if id_result is not None:
-            return id_result
-
-        # PRIORITY 4: Check for media files (photos, videos, audio)
-        # This runs after metadata extraction so we can use GPS/datetime for classification
-        media_classification = self.classify_media_file(file_path, image_metadata)
-        if media_classification:
-            category, media_type, subcategory = media_classification
-            # Point B: enhance weak photos/other for images
-            if media_type == "photos" and subcategory == "other":
-                enhanced = self.enhance_weak_image_classification(file_path, image_metadata)
-                if enhanced:
-                    print(f"  ✓ Enhanced media: {enhanced[0]}/{enhanced[1]}")
-                    return (enhanced[0], enhanced[1], schema_type, "", None, [], image_metadata)
-            print(f"  ✓ Media file detected: {media_type}/{subcategory}")
-            return (
-                category,
-                f"{media_type}_{subcategory}",
-                schema_type,
-                "",
-                None,
-                [],
-                image_metadata,
-            )
-
-        # PRIORITY 4.5: Screenshot sub-classification via OCR + CLIP
-        screenshot_result = self._classify_screenshot_ocr(
-            file_path,
-            schema_type,
-            image_metadata,
-        )
-        if screenshot_result is not None:
-            return screenshot_result
-
-        # PRIORITY 5: Check for photos with people (social) / home interior
-        photo_result = self._classify_photo_composition(
-            file_path,
-            schema_type,
-            image_metadata,
-        )
-        if photo_result is not None:
-            return photo_result
-
-        # PRIORITY 6: Regular text extraction and classification
-        return self._classify_by_content_and_kie(
-            file_path,
-            schema_type,
-            image_metadata,
-        )
-
     # ------------------------------------------------------------------ #
-    # Unified scoring path (UNIFIED_SCORING_PLAN §3, behind --scorer)      #
+    # Unified scoring path (UNIFIED_SCORING_PLAN §3)                       #
     # ------------------------------------------------------------------ #
 
     def _get_unified_scorer(self) -> Scorer:
@@ -1367,105 +1134,6 @@ class ContentOrganizer(BaseOrganizer):
         # Round-trip through json to guarantee persistability (EXIF datetimes
         # and other rich objects inside evidence degrade to strings).
         return cast(Dict[str, Any], json.loads(json.dumps(snapshot, default=str)))
-
-    def _log_shadow_comparison(
-        self,
-        file_path: Path,
-        display_path: Optional[Path],
-        legacy_result: Tuple[str, str, str, str, Optional[str], List[str], Dict[str, Any]],
-    ) -> None:
-        """Run the unified scorer alongside legacy and append a JSONL record.
-
-        Never raises: shadow mode must not affect production placement.
-        Record shape per UNIFIED_SCORING_PLAN §7.1.
-        """
-        try:
-            ctx = self._build_file_context(file_path, display_path)
-            decision = self._get_unified_scorer().classify(ctx)
-            decision = self._reroute_screenshot_scene(ctx, decision)
-            # Persist the unified decision alongside legacy placement
-            # (plan §6 Phase 2: source tag 'shadow_unified').
-            snapshot = self._decision_snapshot(decision, scorer_label="shadow_unified")
-            self._last_file_state["scoring_decision"] = snapshot
-            record = {
-                "ts": datetime.now(timezone.utc).isoformat(),
-                "path": str(file_path),
-                "scorer": SCORER_SHADOW,
-                **{k: snapshot[k] for k in ("decision", "winning_signals", "all_scores")},
-                "legacy_decision": {
-                    "category": legacy_result[0],
-                    "subcategory": legacy_result[1],
-                    "schema_type": legacy_result[2],
-                },
-                "agrees": (decision.category, decision.subcategory)
-                == (legacy_result[0], legacy_result[1]),
-            }
-            _SCORING_SHADOW_LOG.parent.mkdir(parents=True, exist_ok=True)
-            with _SCORING_SHADOW_LOG.open("a", encoding="utf-8") as handle:
-                handle.write(json.dumps(record, default=str) + "\n")
-        except Exception as e:
-            print(f"  Shadow scorer error: {e}")
-
-    def _classify_identification_document(
-        self,
-        file_path: Path,
-        schema_type: str,
-        image_metadata: Dict[str, Any],
-    ) -> Optional[Tuple[str, str, str, str, Optional[str], List[str], Dict[str, Any]]]:
-        """PRIORITY 3.5: Detect identification documents in images (passport, ID, license).
-
-        These should go to Person/ folder, not Media/.  Always runs OCR + KIE side
-        effects (storing OCR confidence/language/text and any KIE result on self) so
-        that downstream tiers can reuse them; returns the person tuple on a match or
-        None to fall through.
-        """
-        if not (schema_type == "ImageObject" and self.ocr_available):
-            return None
-        # Extract text from image via OCR with confidence metadata.
-        # Low-confidence results (e.g. blurry photos) must not trigger ID detection.
-        _ocr_result = (
-            extract_ocr_with_confidence(
-                file_path, max_chars=0, force_doctr_fallback=self.force_doctr_fallback
-            )
-            if self.ocr_available
-            else None
-        )
-        ocr_text = _ocr_result.text if _ocr_result else ""
-        _ocr_conf = _ocr_result.confidence if _ocr_result else None
-        _ocr_lang = _ocr_result.language if _ocr_result else None
-        # Store for later persistence (consumed by _persist_to_graph_store).
-        self._last_file_ocr_confidence = _ocr_conf
-        self._last_file_detected_language = _ocr_lang
-        # Cache OCR text so extract_text_from_image can reuse it.
-        if ocr_text:
-            self._last_file_ocr_text = ocr_text
-        # Attempt KIE structured field extraction when OCR is reliable.
-        if KIE_AVAILABLE and _ocr_conf is not None and _ocr_conf >= _OCR_CONFIDENCE_THRESHOLD:
-            self._last_file_state["kie_result"] = extract_kie_fields(file_path)
-        _id_conf_ok = _ocr_conf is None or _ocr_conf >= _OCR_CONFIDENCE_THRESHOLD
-        if ocr_text and len(ocr_text) >= ID_MIN_TEXT_CHARS and _id_conf_ok:
-            # Keyword check + MRZ/name-field/extractor name parsing live in
-            # the pure detect_identity_document (src.scoring.signals.identity_document).
-            id_match = detect_identity_document(
-                ocr_text,
-                extract_people_names=self.classifier.extract_people_names,
-            )
-            if id_match is not None:
-                print("  ✓ Identification document detected via OCR")
-                people_names = id_match.people_names
-                if people_names:
-                    print(f"  ✓ Person identified: {people_names[0]}")
-                return (
-                    "personal",
-                    "identification",
-                    schema_type,
-                    ocr_text,
-                    None,
-                    people_names,
-                    image_metadata,
-                )
-
-        return None
 
     def _classify_screenshot_ocr(
         self,

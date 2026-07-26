@@ -23,7 +23,7 @@ from src.organizers.content_organizer import (
 from src.scoring.context import FileContext
 from src.scoring.scorer import Scorer
 from src.scoring.signals.scene import SCENE_CATEGORY, SCENE_DESCRIPTION_LABELS
-from src.scoring.types import SCORER_LEGACY, ClassificationDecision
+from src.scoring.types import ClassificationDecision
 
 MODULE = "src.organizers.content_organizer"
 
@@ -43,9 +43,7 @@ def organizer(tmp_path: Path, mock_classifier: MagicMock) -> ContentOrganizer:
     # Pin to legacy so Phase-0 tests keep exercising the 10-tier priority chain;
     # the base ContentOrganizer now defaults to SCORER_DEFAULT (unified) after the
     # Phase-5 default flip.
-    return ContentOrganizer(
-        base_path=tmp_path, content_classifier=mock_classifier, scorer=SCORER_LEGACY
-    )
+    return ContentOrganizer(base_path=tmp_path, content_classifier=mock_classifier)
 
 
 # ------------------------------------------------------------------ #
@@ -307,7 +305,6 @@ class TestGetDestinationPath:
             base_path=tmp_path,
             content_classifier=mock_classifier,
             organize_by_date=True,
-            scorer=SCORER_LEGACY,
         )
         result = org.get_destination_path(
             file_path=Path("/photos/img.jpg"),
@@ -452,142 +449,6 @@ class TestClassifyByFilenamePatterns:
 
 
 # ------------------------------------------------------------------ #
-# OCR confidence gating (production behavior)                          #
-# ------------------------------------------------------------------ #
-
-
-class TestOcrConfidenceGating:
-    """OCR confidence gating matches the production organizer.
-
-    detect_file_category routes document text through ``extract_text`` (the
-    old ``extract_rich`` hook with a PDF-wide low-confidence gate was a stale
-    src-only path). Confidence gating lives in the identification-document
-    tier: low-confidence OCR (e.g. a blurry photo) must not trigger
-    passport/ID detection. The game-asset OCR override gate is covered by
-    tests/unit/test_ocr_document_override.py.
-    """
-
-    def _make_organizer(self, tmp_path: Path, mock_classifier: MagicMock) -> "ContentOrganizer":
-        org = ContentOrganizer(
-            base_path=tmp_path, content_classifier=mock_classifier, scorer=SCORER_LEGACY
-        )
-        # Stub out all heavyweight dependencies used inside detect_file_category
-        org.enricher = MagicMock()
-        org.enricher.detect_mime_type.return_value = "application/pdf"
-        org.classify_by_filename_patterns = MagicMock(  # type: ignore[method-assign]
-            return_value=None
-        )
-        org.classify_by_organization = MagicMock(return_value=None)  # type: ignore[method-assign]
-        org.classify_by_person = MagicMock(return_value=None)  # type: ignore[method-assign]
-        org.classify_game_asset = MagicMock(return_value=None)  # type: ignore[method-assign]
-        org.classify_by_filepath = MagicMock(return_value=None)  # type: ignore[method-assign]
-        org.classify_media_file = MagicMock(return_value=None)  # type: ignore[method-assign]
-        org.image_analyzer = MagicMock()
-        org.image_analyzer.vision_available = False
-        return org
-
-    def _make_image_organizer(
-        self, tmp_path: Path, mock_classifier: MagicMock
-    ) -> "ContentOrganizer":
-        org = self._make_organizer(tmp_path, mock_classifier)
-        cast(MagicMock, org.enricher).detect_mime_type.return_value = "image/png"
-        org.ocr_available = True
-        org.extract_text = lambda file_path: ""  # type: ignore[method-assign]
-        return org
-
-    def test_extracted_text_reaches_classifier(
-        self, tmp_path: Path, mock_classifier: MagicMock
-    ) -> None:
-        org = self._make_organizer(tmp_path, mock_classifier)
-        mock_classifier.classify_content.return_value = ("legal", "contracts", None, [])
-
-        legal_text = "contract terms and conditions agreement"
-        org.extract_text = lambda file_path: legal_text  # type: ignore[method-assign]
-
-        fake_pdf = tmp_path / "doc.pdf"
-        fake_pdf.write_bytes(b"%PDF")
-
-        cat, subcat, *_ = org.detect_file_category(fake_pdf)
-
-        # classify_content called with the extracted text
-        mock_classifier.classify_content.assert_called_once()
-        args = mock_classifier.classify_content.call_args[0]
-        assert args[0] == legal_text
-        assert (cat, subcat) == ("legal", "contracts")
-
-    def test_no_text_falls_back_to_filename(
-        self, tmp_path: Path, mock_classifier: MagicMock
-    ) -> None:
-        org = self._make_organizer(tmp_path, mock_classifier)
-        mock_classifier.classify_content.return_value = ("financial", "invoices", None, [])
-
-        org.extract_text = lambda file_path: ""  # type: ignore[method-assign]
-
-        fake_pdf = tmp_path / "invoice.pdf"
-        fake_pdf.write_bytes(b"%PDF")
-
-        org.detect_file_category(fake_pdf)
-
-        # classify_content called with empty text so filename drives the result
-        mock_classifier.classify_content.assert_called_once()
-        args = mock_classifier.classify_content.call_args[0]
-        assert args[0] == ""
-        assert args[1] == "invoice.pdf"
-
-    def test_low_confidence_ocr_does_not_trigger_id_detection(
-        self, tmp_path: Path, mock_classifier: MagicMock
-    ) -> None:
-        org = self._make_image_organizer(tmp_path, mock_classifier)
-        mock_classifier.classify_content.return_value = ("uncategorized", "other", None, [])
-
-        fake_img = tmp_path / "blurry_photo.png"
-        fake_img.write_bytes(b"\x89PNG")
-
-        ocr = SimpleNamespace(
-            text="passport united states of america date of birth surname",
-            confidence=0.15,
-            language="en",
-        )
-        with (
-            patch(
-                "src.organizers.content_organizer.extract_ocr_with_confidence",
-                return_value=ocr,
-            ),
-            patch("src.organizers.content_organizer.KIE_AVAILABLE", False),
-        ):
-            cat, subcat, *_ = org.detect_file_category(fake_img)
-
-        assert (cat, subcat) != ("personal", "identification")
-
-    def test_high_confidence_ocr_triggers_id_detection(
-        self, tmp_path: Path, mock_classifier: MagicMock
-    ) -> None:
-        org = self._make_image_organizer(tmp_path, mock_classifier)
-
-        fake_img = tmp_path / "passport_scan.png"
-        fake_img.write_bytes(b"\x89PNG")
-
-        ocr = SimpleNamespace(
-            text="passport united states of america date of birth surname",
-            confidence=0.9,
-            language="en",
-        )
-        with (
-            patch(
-                "src.organizers.content_organizer.extract_ocr_with_confidence",
-                return_value=ocr,
-            ),
-            patch("src.organizers.content_organizer.KIE_AVAILABLE", False),
-        ):
-            cat, subcat, *_ = org.detect_file_category(fake_img)
-
-        assert (cat, subcat) == ("personal", "identification")
-        # OCR metadata cached for downstream persistence
-        assert org._last_file_ocr_confidence == 0.9
-        assert org._last_file_detected_language == "en"
-
-
-# ------------------------------------------------------------------ #
 # __init__ taxonomy wiring                                             #
 # ------------------------------------------------------------------ #
 
@@ -608,9 +469,7 @@ class TestInitTaxonomy:
         self, tmp_path: Path, mock_classifier: MagicMock
     ) -> None:
         mock_classifier.patterns = {"jira": ["board", "sprint"]}
-        org = ContentOrganizer(
-            base_path=tmp_path, content_classifier=mock_classifier, scorer=SCORER_LEGACY
-        )
+        org = ContentOrganizer(base_path=tmp_path, content_classifier=mock_classifier)
         screenshots = org.category_paths["media"]["photos"]["screenshots"]
         assert screenshots["jira"] == "Media/Photos/Screenshots/Jira"
 
@@ -1424,120 +1283,6 @@ class TestExtractTextDispatch:
 
 
 # ------------------------------------------------------------------ #
-# detect_file_category priority routing                                 #
-# ------------------------------------------------------------------ #
-
-
-class TestDetectFileCategoryPriorities:
-    def _stubbed_organizer(
-        self, tmp_path: Path, mock_classifier: MagicMock, mime: str | None
-    ) -> ContentOrganizer:
-        org = ContentOrganizer(
-            base_path=tmp_path, content_classifier=mock_classifier, scorer=SCORER_LEGACY
-        )
-        org.enricher = MagicMock()
-        org.enricher.detect_mime_type.return_value = mime
-        org.ocr_available = False
-        org.extract_text = MagicMock(return_value="")  # type: ignore[method-assign]
-        return org
-
-    def test_renamed_screenshot_routes_by_content_label(
-        self, tmp_path: Path, mock_classifier: MagicMock
-    ) -> None:
-        # Priority 0a: display_path carries the renamer's descriptive name;
-        # longest key wins so "terminal_session" beats "terminal".
-        org = self._stubbed_organizer(tmp_path, mock_classifier, "image/png")
-        result = org.detect_file_category(
-            Path("/pics/Screenshot 2026-03-20 at 10.00.png"),
-            display_path=Path("/pics/20260320_terminal_session_notes.png"),
-        )
-        assert result[0] == "media"
-        assert result[1] == "photos_screenshots_terminal_session"
-
-    def test_skip_category_short_circuits(self, tmp_path: Path, mock_classifier: MagicMock) -> None:
-        org = self._stubbed_organizer(tmp_path, mock_classifier, None)
-        org.classify_by_filename_patterns = MagicMock(  # type: ignore[method-assign]
-            return_value=("skip", "duplicate", None, [])
-        )
-        cat, subcat, *_ = org.detect_file_category(Path("/docs/report_20241201_123456.pdf"))
-        assert (cat, subcat) == ("skip", "duplicate")
-
-    def test_research_category_upgrades_schema_type(
-        self, tmp_path: Path, mock_classifier: MagicMock
-    ) -> None:
-        org = self._stubbed_organizer(tmp_path, mock_classifier, "application/pdf")
-        org.classify_by_filename_patterns = MagicMock(  # type: ignore[method-assign]
-            return_value=(RESEARCH_CATEGORY, "papers", None, [])
-        )
-        cat, _, schema_type, *_ = org.detect_file_category(Path("/docs/arxiv_2401.12345.pdf"))
-        assert cat == RESEARCH_CATEGORY
-        assert schema_type == SCHOLARLY_ARTICLE_SCHEMA_TYPE
-
-    def test_weak_filename_image_result_enhanced(
-        self, tmp_path: Path, mock_classifier: MagicMock
-    ) -> None:
-        # Point A: a filename-pattern photos_other on an image runs enhancement.
-        org = self._stubbed_organizer(tmp_path, mock_classifier, "image/jpeg")
-        org.classify_by_filename_patterns = MagicMock(  # type: ignore[method-assign]
-            return_value=("media", "photos_other", None, [])
-        )
-        org.enhance_weak_image_classification = MagicMock(  # type: ignore[method-assign]
-            return_value=("technical", "data_visualization")
-        )
-        cat, subcat, *_ = org.detect_file_category(Path("/pics/IMG_1234.jpg"))
-        assert (cat, subcat) == ("technical", "data_visualization")
-
-    def test_game_asset_wins_over_filepath(
-        self, tmp_path: Path, mock_classifier: MagicMock
-    ) -> None:
-        org = self._stubbed_organizer(tmp_path, mock_classifier, "audio/ogg")
-        # Bypass the filename-pattern tier — this test pins the game-asset vs
-        # filepath ordering below it.
-        org.classify_by_filename_patterns = MagicMock(  # type: ignore[method-assign]
-            return_value=None
-        )
-        org.classify_by_filepath = MagicMock(  # type: ignore[method-assign]
-            return_value="Technical/Whatever"
-        )
-        cat, subcat, *_ = org.detect_file_category(Path("dungeon.ogg"))
-        assert (cat, subcat) == ("game_assets", "music")
-        org.classify_by_filepath.assert_not_called()
-
-    def test_filepath_marker_returned(self, tmp_path: Path, mock_classifier: MagicMock) -> None:
-        org = self._stubbed_organizer(tmp_path, mock_classifier, None)
-        cat, subcat, *_ = org.detect_file_category(Path("notes.md"))
-        assert cat == "filepath"
-        assert subcat == "Technical/Documentation"
-
-    def test_media_subcategory_flattened(self, tmp_path: Path, mock_classifier: MagicMock) -> None:
-        # Priority 4 formats (media, type, subcat) as "type_subcat".
-        org = self._stubbed_organizer(tmp_path, mock_classifier, "audio/mp4")
-        # Bypass the filename-pattern tier so the media tier (Priority 4) runs.
-        org.classify_by_filename_patterns = MagicMock(  # type: ignore[method-assign]
-            return_value=None
-        )
-        cat, subcat, schema_type, *_ = org.detect_file_category(Path("album_01.m4a"))
-        assert (cat, subcat) == ("media", "audio_music")
-        assert schema_type == "AudioObject"
-
-    def test_uncategorized_image_falls_back_to_mime(
-        self, tmp_path: Path, mock_classifier: MagicMock
-    ) -> None:
-        # A .gif with no extractable text and no CLIP rescue reaches Priority 6
-        # uncategorized; the MIME fallback routes it to media/graphics_other
-        # instead of Uncategorized.
-        org = self._stubbed_organizer(tmp_path, mock_classifier, "image/gif")
-        org.classify_by_filename_patterns = MagicMock(  # type: ignore[method-assign]
-            return_value=None
-        )
-        org.enhance_weak_image_classification = MagicMock(  # type: ignore[method-assign]
-            return_value=None
-        )
-        cat, subcat, *_ = org.detect_file_category(Path("/pics/animation.gif"))
-        assert (cat, subcat) == ("media", "graphics_other")
-
-
-# ------------------------------------------------------------------ #
 # _mime_result_to_content_category (last-resort format translation)     #
 # ------------------------------------------------------------------ #
 
@@ -1578,9 +1323,7 @@ class TestMimeResultToContentCategory:
     ) -> None:
         # Every translated (category, subcategory) must produce a real path (not
         # the Uncategorized default) via get_destination_path.
-        org = ContentOrganizer(
-            base_path=tmp_path, content_classifier=mock_classifier, scorer=SCORER_LEGACY
-        )
+        org = ContentOrganizer(base_path=tmp_path, content_classifier=mock_classifier)
         for mime_result in [
             ("images", "graphics"),
             ("images", "photos"),
@@ -1828,7 +1571,6 @@ class TestGetDestinationPathNesting:
             base_path=tmp_path,
             content_classifier=mock_classifier,
             organize_by_location=True,
-            scorer=SCORER_LEGACY,
         )
         result = org.get_destination_path(
             file_path=Path("/pics/img.jpg"),

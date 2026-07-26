@@ -1,9 +1,9 @@
 # Unified Scoring Plan — File Classification Refactor
 
-> Status: Draft v2 · Owner: TBD · Last updated: 2026-07-16
-> Mode: Coexist behind `--scorer={legacy,unified,shadow}` flag · Default flips after shadow window proves parity
-> Code references are as of 2026-07-16 (`main` @ `feeccdc`), post thin-wrapper refactor.
-> Status: **implemented & coexisting** — `src/scoring/` ships the weighted scorer, registry, weights, context, and all signal modules, wired into the CLI behind `--scorer={legacy,unified,shadow}` (default flip to `unified` still pending calibration). The line refs below are the original pre-extraction anchors and may have drifted from current code.
+> Status: **COMPLETE (Phase 5 landed 2026-07-26)** · Owner: TBD · Last updated: 2026-07-26
+> All phases shipped: Phase 0–1 (2026-07-16), Phase 2–3 shadow + calibration (2026-07-17, PR #9), Phase 4 default flip (2026-07-17/18), Phase 5 legacy removal (2026-07-26): the tier orchestration (`_detect_file_category_legacy`), shadow mode, the `--scorer` CLI flag, and `scripts/analyze_scoring_disagreement.py` are deleted; `unified` is the only engine. The per-tier `classify_*` methods remain as directly-testable shims over their signals.
+> Remaining follow-up: non-provisional weight re-tune (the Phase-3 calibration report is provisional).
+> Code references below are as of 2026-07-16 (`main` @ `feeccdc`) and describe the pre-removal state; they are historical.
 
 ### Changes from v1 (2026-05-16)
 
