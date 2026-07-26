@@ -144,6 +144,35 @@ The remaining `game_assets/sprites → media/graphics_other` ×5 rows are
 screenshots whose stored label came from a live-CLIP production run — the
 replay-fidelity artifact, not an oracle error; they stay.
 
+## 3.3 CLIP backfill + scene-aware replay → v2 grid (addendum, same day)
+
+The §4 "media slice unmeasurable" caveat is now resolved:
+
+- `scripts/backfill_clip_scores.py` wrote `files.image_classification` for
+  301/386 image rows (the column the replay's ClipVisionSignal reads; nothing
+  in production had ever written it) and populated the embedding cache keyed
+  by current-path identity.
+- The replay got a `_ReplaySceneSignal` that resolves embeddings via a
+  context-path → `current_path` map (the replay classifies under
+  `original_path`, which no longer exists on disk — scene had voted on only
+  2 rows because of this).
+- **Replay agreement: 45.5% → 262/356 (73.6%)**; scene wins 116 rows; the
+  ×66 interiors artifact collapsed to 12 residual rows.
+
+**v2 directional grid over the repaired oracle (76 runs): shipped weights
+re-confirmed — now including the media priors.**
+
+- **`W_SCENE` (0.85) is pinned from both sides**: ×0.8 and ×1.2 each break 1
+  fix 0. First real measurement of this prior; 0.85 is correct.
+- `W_CLIP`, `W_GRAPHIC`, `W_PEOPLE_PHOTO`, `W_MEDIA`-down: neutral-only or
+  zero flips — genuinely wide margins, no longer unmeasured.
+- `W_MEDIA` ×1.2 cliff sharpened: −36 (was −32) — all breaks, no fixes.
+- `W_FILENAME` down remains catastrophic (−39/−43).
+- `W_MIME` ×1.2 flipped to net-negative (−2) on the better oracle,
+  retroactively strengthening its §3 rejection; ×1.1 keeps the same
+  +1/−1-non-media churn profile — still rejected.
+- No candidate improves both slices. **Weights and thresholds stay shipped.**
+
 ## 4. Caveats & when to re-run
 
 - The stored-decision oracle is biased: it contains manual corrections and
