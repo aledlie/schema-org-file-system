@@ -7,6 +7,10 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional, cast
 from urllib.parse import quote
 
+from src.analyzers.text_redaction import (
+    MEDICAL_TEXT_REDACTION_CATEGORIES,
+    redact_pii_text,
+)
 from src.generators import (
     AudioGenerator,
     CodeGenerator,
@@ -311,6 +315,17 @@ class FileProcessor:
             return
         try:
             session = self.graph_store.get_session()
+
+            # Medical files persist as MedicalTest-family entities
+            # (BloodTest/PathologyTest); their text must not be stored raw.
+            # Redact both persistence surfaces carrying it: extracted_text
+            # and the schema_data "text" property (a local copy — the
+            # caller's schema dict is not mutated).
+            if category in MEDICAL_TEXT_REDACTION_CATEGORIES and extracted_text:
+                extracted_text = redact_pii_text(extracted_text, people_names)
+                if schema.get("text"):
+                    schema = dict(schema)
+                    schema["text"] = redact_pii_text(schema["text"], people_names)
 
             # Get file stats
             stat = (
