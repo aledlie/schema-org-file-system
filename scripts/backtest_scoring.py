@@ -64,6 +64,7 @@ from src.organizers.category_config import CONTENT_CATEGORY_PATHS  # noqa: E402
 from src.scoring.context import FileContext  # noqa: E402
 from src.scoring.registry import build_default_signals  # noqa: E402
 from src.scoring.scorer import Scorer  # noqa: E402
+from src.scoring.signals.scene import SCENE_SIGNAL_NAME, SceneSignal  # noqa: E402
 from src.scoring.signals.screenshot_ocr import ScreenshotOcrSignal  # noqa: E402
 from src.scoring.weights import (  # noqa: E402
     W_CLIP,
@@ -413,12 +414,41 @@ def make_screenshot_ocr_stub(
     return _stub
 
 
+class _ReplaySceneSignal(SceneSignal):
+    """SceneSignal that resolves embeddings through the current on-disk path.
+
+    ``run`` only reads ``ctx.path``, so a shallow proxy context pointing at
+    the mapped path is sufficient; every other ctx field is untouched.
+    """
+
+    def __init__(self, path_by_context_path: Dict[str, str]) -> None:
+        super().__init__()
+        self._path_by_context_path = path_by_context_path
+
+    def run(self, ctx: Any) -> Any:
+        mapped = self._path_by_context_path.get(str(ctx.path))
+        if mapped and mapped != str(ctx.path) and Path(mapped).exists():
+            proxy = SimpleNamespace(path=Path(mapped), is_image=ctx.is_image)
+            return super().run(proxy)  # type: ignore[arg-type]
+        return super().run(ctx)
+
+
+def scene_path_lookup(rows: Sequence["ReplayRow"]) -> Dict[str, str]:
+    """context path -> current on-disk path, for _ReplaySceneSignal."""
+    lookup: Dict[str, str] = {}
+    for row in rows:
+        if row.current_path:
+            lookup[context_path(row)] = row.current_path
+    return lookup
+
+
 def build_replay_scorer(
     classifier: Any,
     screenshot_text_by_path: Optional[Dict[str, str]] = None,
     weight_overrides: Optional[Dict[str, float]] = None,
     min_decision_confidence: Optional[float] = None,
     min_decision_margin: Optional[float] = None,
+    scene_path_by_context_path: Optional[Dict[str, str]] = None,
 ) -> Scorer:
     """The production registry wired for replay: no disk I/O, no models.
 
@@ -428,7 +458,10 @@ def build_replay_scorer(
     stored-text stub. ``weight_overrides`` maps signal names to replacement
     priors; ``min_decision_confidence`` / ``min_decision_margin`` override
     the commit thresholds (all instance-level; ``src/scoring/weights.py`` is
-    untouched).
+    untouched). ``scene_path_by_context_path`` maps the replay context path
+    (original, pre-move) to the file's ``current_path`` so ``SceneSignal``
+    can resolve embeddings for moved files (the cache keys on the on-disk
+    file identity); without it scene votes only on files never moved.
     """
     screenshots_dict = build_screenshots_taxonomy()
     signals = build_default_signals(
@@ -451,6 +484,15 @@ def build_replay_scorer(
         )
         for signal in signals
     ]
+    if scene_path_by_context_path:
+        signals = [
+            (
+                _ReplaySceneSignal(scene_path_by_context_path)
+                if signal.name == SCENE_SIGNAL_NAME
+                else signal
+            )
+            for signal in signals
+        ]
     for signal in signals:
         override = (weight_overrides or {}).get(signal.name)
         if override is not None:
@@ -606,6 +648,7 @@ def weight_sensitivity(
     baseline_outcomes: Sequence[ReplayOutcome],
     weight_signals: Sequence[Tuple[str, float, str]] = tuple(WEIGHT_SIGNALS),
     delta_fraction: float = WEIGHT_DELTA_FRACTION,
+    scene_path_by_context_path: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     """Decision-flip count per weight at ±``delta_fraction`` (∂decisions/∂weight).
 
@@ -628,6 +671,7 @@ def weight_sensitivity(
                 classifier,
                 screenshot_text_by_path=screenshot_text_by_path,
                 weight_overrides={signal_name: base_value * factor},
+                scene_path_by_context_path=scene_path_by_context_path,
             )
             outcomes, _skipped = replay_rows(rows, scorer)
             flips = sum(
@@ -777,7 +821,12 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     classifier = ContentClassifier()
     text_by_path = screenshot_text_lookup(rows)
-    scorer = build_replay_scorer(classifier, screenshot_text_by_path=text_by_path)
+    scene_paths = scene_path_lookup(rows)
+    scorer = build_replay_scorer(
+        classifier,
+        screenshot_text_by_path=text_by_path,
+        scene_path_by_context_path=scene_paths,
+    )
 
     print(f"Replaying {len(rows)} stored rows from {args.db_path} ...")
     outcomes, skipped = replay_rows(rows, scorer)
@@ -788,7 +837,13 @@ def main(argv: Optional[List[str]] = None) -> int:
 
     if args.weights_sensitivity:
         print(f"Running weight sensitivity ({len(WEIGHT_SIGNALS)} weights × 2 runs) ...")
-        report["weight_sensitivity"] = weight_sensitivity(rows, classifier, text_by_path, outcomes)
+        report["weight_sensitivity"] = weight_sensitivity(
+            rows,
+            classifier,
+            text_by_path,
+            outcomes,
+            scene_path_by_context_path=scene_paths,
+        )
 
     print(format_report(report))
 

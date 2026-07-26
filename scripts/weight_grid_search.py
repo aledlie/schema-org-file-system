@@ -51,6 +51,7 @@ from backtest_scoring import (  # noqa: E402
     build_replay_scorer,
     load_replay_rows,
     replay_rows,
+    scene_path_lookup,
     screenshot_text_lookup,
 )
 from constants import DEFAULT_DB_PATH  # noqa: E402  (src on path)
@@ -136,8 +137,13 @@ def run_grid(
         raise SystemExit(f"no stored File rows to replay in {db_path}")
     classifier = ContentClassifier()
     text_by_path = screenshot_text_lookup(rows)
+    scene_paths = scene_path_lookup(rows)
 
-    base_scorer = build_replay_scorer(classifier, screenshot_text_by_path=text_by_path)
+    base_scorer = build_replay_scorer(
+        classifier,
+        screenshot_text_by_path=text_by_path,
+        scene_path_by_context_path=scene_paths,
+    )
     base_outcomes, _ = replay_rows(rows, base_scorer)
     total, agree, nm_total, nm_agree, base_by_id = agreement_stats(base_outcomes)
     print(
@@ -152,6 +158,7 @@ def run_grid(
                 classifier,
                 screenshot_text_by_path=text_by_path,
                 weight_overrides={signal_name: base_weight * factor},
+                scene_path_by_context_path=scene_paths,
             )
             outcomes, _ = replay_rows(rows, scorer)
             _, cand_agree, _, cand_nm_agree, cand_by_id = agreement_stats(outcomes)
@@ -218,8 +225,13 @@ def run_threshold_sweep(
         raise SystemExit(f"no stored File rows to replay in {db_path}")
     classifier = ContentClassifier()
     text_by_path = screenshot_text_lookup(rows)
+    scene_paths = scene_path_lookup(rows)
 
-    base_scorer = build_replay_scorer(classifier, screenshot_text_by_path=text_by_path)
+    base_scorer = build_replay_scorer(
+        classifier,
+        screenshot_text_by_path=text_by_path,
+        scene_path_by_context_path=scene_paths,
+    )
     base_outcomes, _ = replay_rows(rows, base_scorer)
     total, agree, nm_total, nm_agree, base_by_id = agreement_stats(base_outcomes)
     print(
@@ -235,6 +247,7 @@ def run_threshold_sweep(
             screenshot_text_by_path=text_by_path,
             min_decision_confidence=candidate if threshold == "confidence" else None,
             min_decision_margin=candidate if threshold == "margin" else None,
+            scene_path_by_context_path=scene_paths,
         )
         outcomes, _ = replay_rows(rows, scorer)
         _, cand_agree, _, cand_nm_agree, cand_by_id = agreement_stats(outcomes)
