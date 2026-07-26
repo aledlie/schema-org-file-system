@@ -198,9 +198,18 @@ because ~32 stored labels are themselves trap victims: the 13 repaired rows
 now differ only at subcategory (`photos_other` vs stored `photos_social` —
 the replay has no image analyzer), and 19 stored-sprite rows with weak-shape
 stems (`birthday.jpg`, `husband.jpg`, `beach.jpg`, `party5.jpg`…) are
-obviously misfiled photos whose files a manual cleanup already deleted —
-zero genuine sprites break. Those 19 gone rows are `reconcile
---prune-missing` candidates; pruning them removes the false disagreements.
+misfiled photos — zero genuine sprites break.
+
+> **Correction (2026-07-26, later audit).** This section first stated those 19
+> files had been "deleted by a manual cleanup" and were `reconcile
+> --prune-missing` candidates. Both claims were wrong. The files are intact at
+> `~/Desktop/Uncategorized/` — the 2026-06-27 organize run that filed them as
+> sprites was **reverted**, leaving rows whose `current_path` points at
+> Documents paths that never persisted. `prune_missing_files` deliberately
+> skips them (it requires *both* paths gone), so they are not prune candidates.
+> The substantive conclusion is unchanged: those stored sprite labels are
+> wrong and the fix broke no genuine sprites. See
+> [`docs/BACKLOG.md`](../BACKLOG.md) → "DB↔filesystem provenance drift".
 
 Residual observation — **fixed same day (§3.5)**: live, `media/photos_other`
 (media-heuristic 0.52 + mime 0.40) outscores `photos_social`

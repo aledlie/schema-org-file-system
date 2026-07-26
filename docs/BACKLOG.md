@@ -57,6 +57,47 @@ Profiling `organize-files content` (unified scorer, dry-run) on 2026-07-17 showe
 2. **P2 docTR-fallback gate — recall tradeoff to monitor.** The shipped gate (`extract_ocr_with_confidence`: skip the docTR fallback when easyocr cleanly finds no text) was eval'd over 7 text images at varying difficulty: **1/7 recall loss — very-low-contrast text** (easyocr's detector found nothing; docTR would have caught it). Clean, dark-mode, and rotated text were all gate-safe. So P2 trades a rare miss on near-invisible text for eliminating the docTR fallback. For a screenshot/photo-dominated 265k-file library this is very likely a net win, but it is a real behavior change — put it behind a config flag or revert if faint-text recall matters. **Config flag shipped 2026-07-25:** `--ocr-doctr-fallback` (store_true, default off = gate on; constant `OCR_FORCE_DOCTR_FALLBACK` in `src/scoring/weights.py`) forces the docTR pass after a clean easyocr negative. Plumbed `force_doctr_fallback` through `extract_ocr_with_confidence`, `TextExtractor`, `ContentOrganizer` (all 3 call sites incl. the FileContext `ocr_provider`), `ContentBasedFileOrganizer`, `ContentInputs`, and the CLI — same pattern as `--ocr-clip-topk`. 5 gate tests in `tests/unit/test_shared.py::TestDoctrFallbackGate`; CLI-inputs contract + integration suites pass.
 
 
+### DB↔filesystem provenance drift (`original_path` / `current_path` integrity)
+
+A 2026-07-26 audit of `results/file_organization.db` (495 rows) found 50 rows whose
+`current_path` no longer resolved on disk. Repairing them surfaced two distinct
+integrity problems, neither of which is data loss, and both of which mislead any
+future reader of the DB (including the calibration oracle in
+[`docs/architecture/scoring-calibration-20260726.md`](architecture/scoring-calibration-20260726.md)).
+
+**Status:** Open — 7 genuinely-dead rows pruned 2026-07-26 (`reconcile --prune-missing`);
+the 43-row reverted-run set and the 25-row staging-dir set are documented here, untouched.
+**Priority:** P3
+**Source:** DB path audit, 2026-07-26 (same session as the sprite naming-trap fix)
+
+1. **Reverted organize run leaves rows claiming destinations that never persisted (43 rows).**
+   A batch run on **2026-06-27 04:07:41** moved 43 files from `~/Desktop/Uncategorized`
+   (42) and `~/Desktop` (1) into `~/Documents/...`, persisted them with
+   `status=ORGANIZED`, and the moves were later **reverted** — the files are back at
+   their `original_path` and byte-size identical to their DB records (43/43 verified),
+   while every `current_path` points at a Documents path that does not exist.
+   Persistence is gated on `if not dry_run` (`file_processor.py`), so this is *not* a
+   dry-run artifact: the moves really happened and were undone afterwards.
+   `GraphStore.prune_missing_files` correctly refuses to touch these (it requires
+   *both* paths gone), so they survive every prune and permanently misreport where
+   those 43 files live. Options when someone picks this up: repair
+   `current_path` → `original_path` (record reality, and revisit `status`), or re-run
+   `organize-files content` over `~/Desktop/Uncategorized` so the rows become true.
+   The latter is attractive because these 43 are exactly the corpus that motivated the
+   weak-shape sprite fix — 19 of them are photos the DB still labels
+   `game_assets/sprites`, which the fixed classifier now routes to `media/photos_*`.
+2. **Agent temp-staging dirs must never be the organize source (25 rows).**
+   25 rows record `original_path` inside
+   `~/.claude/jobs/e184540b/tmp/interior_apply_stage/` — an agent job's temp staging
+   directory, which still exists but is empty. 23 of the 25 files are fine on disk;
+   2 were among 6 unrecoverable `Media/Interiors` renders pruned on 2026-07-26. For
+   all 25 the recorded provenance is an ephemeral path, and the true pre-staging
+   origin is unrecoverable, so there is no honest repair — only this rule: **an agent
+   run must not organize files out of a temp/staging dir into the production graph
+   store**, because `original_path` then permanently records a path that ceases to
+   exist and provenance is destroyed. Stage into a durable location, or organize from
+   the user's real source directory.
+
 ## Repo Snapshot — 2026-07-18
 
 Recorded from the `npm run repomix` regeneration (`docs/repomix/`, gitignored) and `git status` on the primary checkout. Everything under "Uncommitted working tree" below is **not yet committed** — reconcile the affected open items when that work lands.
