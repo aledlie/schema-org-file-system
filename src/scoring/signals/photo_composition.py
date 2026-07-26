@@ -28,6 +28,10 @@ from typing import Any, Dict, List
 from ..types import CategoryScore
 from ..weights import W_PEOPLE_PHOTO
 
+# Registry/signal name (referenced by the people-photo subcategory
+# refinement in ContentOrganizer, mirroring SCENE_SIGNAL_NAME).
+PHOTO_COMPOSITION_SIGNAL_NAME = "photo_composition"
+
 # Face/people detection is strong but not exact.
 PHOTO_PEOPLE_CONFIDENCE = 0.8
 
@@ -44,7 +48,7 @@ EVIDENCE_COMPOSITION_SCORES = "composition_scores"
 class PhotoCompositionSignal:
     """Votes ``media/photos_social`` from one composition analysis pass."""
 
-    name = "photo_composition"
+    name = PHOTO_COMPOSITION_SIGNAL_NAME
     weight = W_PEOPLE_PHOTO
     cost_tier = "heavy"
 

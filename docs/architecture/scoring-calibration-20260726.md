@@ -202,10 +202,29 @@ obviously misfiled photos whose files a manual cleanup already deleted —
 zero genuine sprites break. Those 19 gone rows are `reconcile
 --prune-missing` candidates; pruning them removes the false disagreements.
 
-Residual observation (not a bug fixed here): live, `media/photos_other`
+Residual observation — **fixed same day (§3.5)**: live, `media/photos_other`
 (media-heuristic 0.52 + mime 0.40) outscores `photos_social`
-(photo-composition ≈0.52 + CLIP ≈0.04) on people photos — subcategory-level
-calibration between those two media voters is untouched by this fix.
+(photo-composition ≈0.52 + CLIP ≈0.04) on people photos.
+
+## 3.5 People-photo subcategory refinement (addendum, same day)
+
+The extension-only voters' `photos_other` aggregate (0.92) structurally beats
+the people detector's `photos_social` (0.52), so people photos could never
+file as social. Fix: `ContentOrganizer._refine_people_photo_subcategory` —
+the same post-decision pattern as the scene reroute: when the winner is
+exactly the generic `(media, photos_other)` bucket AND
+`PhotoCompositionSignal`'s people vote is present in `all_scores`, the
+subcategory refines to `photos_social`. Specific winners (screenshots, scene
+classes) are never overridden, only the composition signal's vote counts
+(a CLIP flat-softmax social label alone does not refine), and weights stay
+untouched (the calibrated optimum is preserved; only within-media
+subcategory choice changes).
+
+**Live verification on the 13 repaired photos: 10/13 now commit
+`media/photos_social`** — exactly the ones with detectable people; the three
+remaining `photos_other` (two meme-style images, one AI graphic) have no
+people and are correctly generic. 6 new unit tests
+(`TestPeoplePhotoSubcategoryRefinement`); suite 2,434 green.
 
 ## 4. Caveats & when to re-run
 

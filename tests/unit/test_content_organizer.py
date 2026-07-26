@@ -14,8 +14,6 @@ from src.organizers.content_organizer import (
     _TEXT_LENGTH_FULL_CHARS,
     _TEXT_MIN_CHARS,
     _TEXT_SIGNAL_PRIOR,
-    RESEARCH_CATEGORY,
-    SCHOLARLY_ARTICLE_SCHEMA_TYPE,
     SCREENSHOT_SCENE_SUBCATEGORY,
     ContentOrganizer,
     _mime_result_to_content_category,
@@ -23,7 +21,7 @@ from src.organizers.content_organizer import (
 from src.scoring.context import FileContext
 from src.scoring.scorer import Scorer
 from src.scoring.signals.scene import SCENE_CATEGORY, SCENE_DESCRIPTION_LABELS
-from src.scoring.types import ClassificationDecision
+from src.scoring.types import CategoryScore, ClassificationDecision
 
 MODULE = "src.organizers.content_organizer"
 
@@ -1131,6 +1129,96 @@ class TestScreenshotSceneReroute:
         assert (result[0], result[1]) == ("media", "photos_screenshots_other")
         snapshot = org._last_file_state["scoring_decision"]
         assert snapshot["decision"]["subcategory"] == "photos_screenshots_other"
+
+
+class TestPeoplePhotoSubcategoryRefinement:
+    """Generic photos_other wins refine to photos_social when the composition
+    pass detected people (PhotoCompositionSignal's vote is in all_scores).
+    Specific winners are never overridden by people presence.
+    """
+
+    @staticmethod
+    def _people_score() -> CategoryScore:
+        return CategoryScore(
+            category="media",
+            subcategory="photos_social",
+            confidence=0.8,
+            signal_name="photo_composition",
+            evidence={},
+        )
+
+    @staticmethod
+    def _decision(
+        category: str = "media",
+        subcategory: str = "photos_other",
+        all_scores: "list[CategoryScore] | None" = None,
+    ) -> ClassificationDecision:
+        return ClassificationDecision(
+            category=category,
+            subcategory=subcategory,
+            schema_type="ImageObject",
+            confidence=0.92,
+            margin=0.4,
+            winning_signals=["media_heuristic", "mime_fallback"],
+            all_scores=all_scores or [],
+            company_name=None,
+            people_names=[],
+        )
+
+    def test_generic_photo_with_people_vote_refines_to_social(self) -> None:
+        decision = ContentOrganizer._refine_people_photo_subcategory(
+            self._decision(all_scores=[self._people_score()])
+        )
+        assert (decision.category, decision.subcategory) == ("media", "photos_social")
+
+    def test_generic_photo_without_people_vote_stays_other(self) -> None:
+        decision = ContentOrganizer._refine_people_photo_subcategory(self._decision())
+        assert decision.subcategory == "photos_other"
+
+    def test_specific_subcategory_not_overridden_by_people(self) -> None:
+        # People in a screenshot don't make it a social photo.
+        decision = ContentOrganizer._refine_people_photo_subcategory(
+            self._decision(
+                subcategory="photos_screenshots_terminal",
+                all_scores=[self._people_score()],
+            )
+        )
+        assert decision.subcategory == "photos_screenshots_terminal"
+
+    def test_non_media_winner_untouched(self) -> None:
+        decision = ContentOrganizer._refine_people_photo_subcategory(
+            self._decision(
+                category="personal", subcategory="contacts", all_scores=[self._people_score()]
+            )
+        )
+        assert (decision.category, decision.subcategory) == ("personal", "contacts")
+
+    def test_other_signals_social_vote_does_not_refine(self) -> None:
+        # Only the people detector's vote counts — a CLIP social label alone
+        # (flat-softmax noise) must not rewrite the generic bucket.
+        clip_social = CategoryScore(
+            category="media",
+            subcategory="photos_social",
+            confidence=0.05,
+            signal_name="clip_vision",
+            evidence={},
+        )
+        decision = ContentOrganizer._refine_people_photo_subcategory(
+            self._decision(all_scores=[clip_social])
+        )
+        assert decision.subcategory == "photos_other"
+
+    def test_applied_in_unified_flow(self, tmp_path: Path, mock_classifier: MagicMock) -> None:
+        org = ContentOrganizer(base_path=tmp_path, content_classifier=mock_classifier)
+        org.enricher = MagicMock()
+        org.enricher.detect_mime_type.return_value = "image/jpeg"
+        refined = self._decision(all_scores=[self._people_score()])
+        stub_scorer = SimpleNamespace(classify=lambda ctx: refined)
+        org._get_unified_scorer = lambda: cast(Scorer, stub_scorer)  # type: ignore[method-assign]
+        result = org._detect_file_category_unified(Path("/photos/love10.jpg"))
+        assert (result[0], result[1]) == ("media", "photos_social")
+        snapshot = org._last_file_state["scoring_decision"]
+        assert snapshot["decision"]["subcategory"] == "photos_social"
 
 
 # ------------------------------------------------------------------ #

@@ -28,6 +28,10 @@ from src.scoring.scorer import Scorer
 from src.scoring.types import EVIDENCE_EVENT_NAME, ClassificationDecision
 from src.scoring.signals.clip_vision import GEOGRAPHIC_LABELS, map_clip_label
 from src.scoring.signals.event_content import EVENT_SIGNAL_NAME, EVENTS_CATEGORY
+from src.scoring.signals.photo_composition import (
+    PEOPLE_PHOTO_CATEGORY,
+    PHOTO_COMPOSITION_SIGNAL_NAME,
+)
 from src.scoring.signals.scene import (
     EVIDENCE_SCENE_CLASS,
     EVIDENCE_SCENE_PROB,
@@ -181,6 +185,11 @@ _OCR_CONFIDENCE_THRESHOLD = 0.3
 # comment) to src/scoring/signals/screenshot_ocr.py; aliased for existing
 # importers (scripts/file_organizer_content_based.py re-exports it).
 _SCREENSHOT_OCR_KEYWORD_THRESHOLD = SCREENSHOT_OCR_KEYWORD_THRESHOLD
+
+# The extension-only voters' generic photo bucket (MediaHeuristicSignal +
+# MimeFallbackSignal both emit it); the people-photo refinement only ever
+# rewrites THIS subcategory (see _refine_people_photo_subcategory).
+_GENERIC_PHOTO_SUBCATEGORY = "photos_other"
 
 # Provenance reroute for scene-classified screenshots: when a scene-class
 # media subcategory wins on a screenshot-named file, refile it under
@@ -997,6 +1006,7 @@ class ContentOrganizer(BaseOrganizer):
         ctx = self._build_file_context(file_path, display_path)
         decision = self._get_unified_scorer().classify(ctx)
         decision = self._reroute_screenshot_scene(ctx, decision)
+        decision = self._refine_people_photo_subcategory(decision)
 
         if update_state:
             ocr = ctx.ocr_if_loaded
@@ -1052,6 +1062,41 @@ class ContentOrganizer(BaseOrganizer):
         if len(decision.winning_signals) == 1 and SCENE_SIGNAL_NAME in decision.winning_signals:
             return replace(decision, subcategory=SCREENSHOT_FALLBACK_SUBCATEGORY)
         return replace(decision, subcategory=rerouted)
+
+    @staticmethod
+    def _refine_people_photo_subcategory(
+        decision: ClassificationDecision,
+    ) -> ClassificationDecision:
+        """Prefer ``photos_social`` over the generic ``photos_other`` for
+        photos with people.
+
+        ``media/photos_other`` from the extension-only voters
+        (MediaHeuristicSignal + MimeFallbackSignal, ~0.92 aggregate)
+        structurally outscores ``photos_social`` from the people detector
+        (PhotoCompositionSignal, W_PEOPLE_PHOTO × 0.8 ≈ 0.52), so a people
+        photo lands in Photos/Other whenever no stronger evidence fires.
+        When the winner is exactly the generic bucket and the composition
+        pass detected people (its ``photos_social`` vote is in
+        ``all_scores``), refine the subcategory to ``photos_social``.
+        Specific winners (screenshots, scene classes, events) are never
+        overridden — people in a screenshot don't make it a social photo.
+        Like the scene reroute, only the subcategory changes; the raw votes
+        stay visible in ``all_scores`` for audit.
+        """
+        people_category, people_subcategory = PEOPLE_PHOTO_CATEGORY
+        if (decision.category, decision.subcategory) != (
+            people_category,
+            _GENERIC_PHOTO_SUBCATEGORY,
+        ):
+            return decision
+        people_vote = any(
+            score.signal_name == PHOTO_COMPOSITION_SIGNAL_NAME
+            and (score.category, score.subcategory) == PEOPLE_PHOTO_CATEGORY
+            for score in decision.all_scores
+        )
+        if not people_vote:
+            return decision
+        return replace(decision, subcategory=people_subcategory)
 
     def _stash_decision_state(self, decision: ClassificationDecision, *, scorer_label: str) -> None:
         """Populate ``_last_file_state`` from decision evidence.
