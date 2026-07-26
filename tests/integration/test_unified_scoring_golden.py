@@ -43,7 +43,7 @@ COMMITTED = "committed"
 
 def build_screenshots_dict() -> Dict[str, Any]:
     """Replicate ContentOrganizer.__init__'s screenshots-taxonomy extension."""
-    screenshots = deepcopy(CONTENT_CATEGORY_PATHS)["media"]["photos"]["screenshots"]
+    screenshots: Dict[str, Any] = deepcopy(CONTENT_CATEGORY_PATHS)["media"]["photos"]["screenshots"]
     for key in SCREENSHOT_KEYWORDS:
         if key not in screenshots:
             folder = key.replace("_", " ").title().replace(" ", "")
@@ -93,6 +93,11 @@ class GoldenCase:
                     for cls, entries in self.kie_fields.items()
                 }
             )
+        metadata = self.image_metadata
+        metadata_provider = None
+        if metadata is not None:
+            narrowed_metadata = metadata
+            metadata_provider = lambda _path: narrowed_metadata  # noqa: E731
         return FileContext(
             path=Path("/golden") / self.filename,
             schema_type=self.schema_type,
@@ -100,9 +105,7 @@ class GoldenCase:
             text_provider=(lambda _path: self.text or "") if self.text is not None else None,
             ocr_provider=(lambda _path: ocr) if ocr is not None else None,
             clip_provider=(lambda _path: self.clip) if self.clip is not None else None,
-            image_metadata_provider=(
-                (lambda _path: self.image_metadata) if self.image_metadata is not None else None
-            ),
+            image_metadata_provider=metadata_provider,
             kie_provider=(lambda _path: kie) if kie is not None else None,
         )
 
