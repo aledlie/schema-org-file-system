@@ -84,8 +84,10 @@ class TestRepeatedLeafNames:
                 store.get_or_create_category(parent, session=session)
                 category = store.get_or_create_category(leaf, parent, session=session)
                 assert category is not None
-                assert category.canonical_id == canonical_id_for(category.full_path)
-                ids[category.full_path] = category.canonical_id
+                full_path = category.full_path
+                assert full_path is not None, "identity column must be populated"
+                assert category.canonical_id == canonical_id_for(full_path)
+                ids[full_path] = category.canonical_id
             assert len(set(ids.values())) == len(COLLIDING_PAIRS), "canonical ids collided"
 
     def test_idempotent_lookup_returns_the_same_row(self, store: GraphStore) -> None:
