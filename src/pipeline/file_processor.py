@@ -371,14 +371,21 @@ class FileProcessor:
 
             file_id = file_record.id
 
-            # Add category relationship (with scoring evidence when present)
-            self.graph_store.add_file_to_category(
+            # Add category relationship (with scoring evidence when present).
+            # A False return means the edge was NOT created — the file would be
+            # persisted with no category at all, invisible to category queries,
+            # the dashboard, and JSON-LD category edges. Never ignore it.
+            if not self.graph_store.add_file_to_category(
                 file_id=file_id,
                 category_name=category,
                 subcategory_name=subcategory,
                 session=session,
                 signal_evidence=scoring_decision,
-            )
+            ):
+                print(
+                    f"  ⚠ Category edge NOT created for {file_path.name}: "
+                    f"{category}/{subcategory} — file persisted without a category"
+                )
 
             # Add company relationship if detected
             if company_name:

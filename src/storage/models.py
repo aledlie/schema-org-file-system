@@ -37,7 +37,14 @@ from sqlalchemy import (
     event,
     text,
 )
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship, Session, sessionmaker
+from sqlalchemy.orm import (
+    DeclarativeBase,
+    Mapped,
+    mapped_column,
+    relationship,
+    Session,
+    sessionmaker,
+)
 from sqlalchemy.ext.hybrid import hybrid_property
 import enum
 import hashlib
@@ -182,13 +189,17 @@ class File(Base, SchemaOrgSerializable):
     # File identification
     filename: Mapped[str] = mapped_column(String(MAX_STRING_LENGTH), nullable=False, index=True)
     original_path: Mapped[str] = mapped_column(Text, nullable=False)
-    current_path: Mapped[Optional[str]] = mapped_column(Text)  # Where it is now (after organization)
+    current_path: Mapped[Optional[str]] = mapped_column(
+        Text
+    )  # Where it is now (after organization)
     file_extension: Mapped[Optional[str]] = mapped_column(String(SHORT_FIELD_LENGTH), index=True)
     mime_type: Mapped[Optional[str]] = mapped_column(String(100))
 
     # File properties
     file_size: Mapped[Optional[int]] = mapped_column(Integer)
-    content_hash: Mapped[Optional[str]] = mapped_column(String(SHA256_HEX_LENGTH), index=True)  # SHA-256 of content
+    content_hash: Mapped[Optional[str]] = mapped_column(
+        String(SHA256_HEX_LENGTH), index=True
+    )  # SHA-256 of content
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     modified_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     organized_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
@@ -202,8 +213,12 @@ class File(Base, SchemaOrgSerializable):
     # Extracted content
     extracted_text: Mapped[Optional[str]] = mapped_column(Text)
     extracted_text_length: Mapped[Optional[int]] = mapped_column(Integer, default=0)
-    ocr_confidence: Mapped[Optional[float]] = mapped_column(Float)  # average OCR word confidence (0.0–1.0)
-    detected_language: Mapped[Optional[str]] = mapped_column(String(10))  # ISO 639-1 language code from OCR
+    ocr_confidence: Mapped[Optional[float]] = mapped_column(
+        Float
+    )  # average OCR word confidence (0.0–1.0)
+    detected_language: Mapped[Optional[str]] = mapped_column(
+        String(10)
+    )  # ISO 639-1 language code from OCR
 
     # Schema.org metadata (stored as JSON)
     schema_type: Mapped[Optional[str]] = mapped_column(
@@ -232,7 +247,9 @@ class File(Base, SchemaOrgSerializable):
 
     # Timestamps
     db_created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow)
-    db_updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+    db_updated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, default=utcnow, onupdate=utcnow
+    )
 
     # Relationships
     categories = relationship("Category", secondary=file_categories, back_populates="files")
@@ -380,8 +397,14 @@ class Category(Base, SchemaOrgSerializable):
 
     ID Strategy:
     - `id`: Auto-increment integer (internal, for DB performance)
-    - `canonical_id`: Deterministic UUID v5 from name (public, for JSON-LD @id)
+    - `canonical_id`: Deterministic UUID v5 from `full_path` (public, JSON-LD @id)
     - `source_ids`: Historical IDs from merges/imports (for deduplication)
+
+    Identity is `full_path`, not `name`: the taxonomy reuses leaf names across
+    parents (`media/other` and `legal/other` are distinct categories sharing the
+    name `other`), so only `full_path` distinguishes them; `name` carries a plain
+    index. A UNIQUE index on `name` silently broke category attachment for 26% of
+    files before 2026-07-26 — see `organize-files migrate-category-identity`.
     """
 
     __tablename__ = "categories"
@@ -389,7 +412,9 @@ class Category(Base, SchemaOrgSerializable):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     # Canonical UUID for JSON-LD @id (deterministic from name)
-    canonical_id: Mapped[Optional[str]] = mapped_column(String(UUID_STRING_LENGTH), unique=True, index=True)
+    canonical_id: Mapped[Optional[str]] = mapped_column(
+        String(UUID_STRING_LENGTH), unique=True, index=True
+    )
 
     # Historical IDs for merge tracking and deduplication
     source_ids: Mapped[Optional[Any]] = mapped_column(JSON, default=list)
@@ -397,22 +422,34 @@ class Category(Base, SchemaOrgSerializable):
     # Merge tracking: if this category was merged into another
     merged_into_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("categories.id"))
 
-    name: Mapped[str] = mapped_column(String(100), nullable=False, unique=True, index=True)
-    parent_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("categories.id"), index=True)
+    # NOT unique: leaf names repeat across parents (``other`` lives under 15
+    # categories, ``records`` under 3, ...). ``full_path`` is the identity —
+    # see the class docstring and ``generate_canonical_id``.
+    name: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    parent_id: Mapped[Optional[int]] = mapped_column(
+        Integer, ForeignKey("categories.id"), index=True
+    )
     description: Mapped[Optional[str]] = mapped_column(Text)
     icon: Mapped[Optional[str]] = mapped_column(String(SHORT_STRING_LENGTH))  # Emoji or icon name
     color: Mapped[Optional[str]] = mapped_column(String(SHORT_FIELD_LENGTH))  # Hex color
 
     # Hierarchy
-    level: Mapped[Optional[int]] = mapped_column(Integer, default=0)  # 0 = root, 1 = subcategory, etc.
-    full_path: Mapped[Optional[str]] = mapped_column(String(MAX_STRING_LENGTH), index=True)  # e.g., "Legal/Contracts"
+    level: Mapped[Optional[int]] = mapped_column(
+        Integer, default=0
+    )  # 0 = root, 1 = subcategory, etc.
+    # Category identity: unique, and the value ``generate_canonical_id`` hashes.
+    full_path: Mapped[Optional[str]] = mapped_column(
+        String(MAX_STRING_LENGTH), unique=True, index=True
+    )  # e.g., "Legal/Contracts"
 
     # Statistics
     file_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
 
     # Timestamps
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow)
-    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, default=utcnow, onupdate=utcnow
+    )
 
     # Relationships
     files = relationship("File", secondary=file_categories, back_populates="categories")
@@ -424,20 +461,24 @@ class Category(Base, SchemaOrgSerializable):
     merged_into = relationship("Category", remote_side=[id], foreign_keys=[merged_into_id])
 
     @staticmethod
-    def generate_canonical_id(name: str) -> str:
+    def generate_canonical_id(full_path: str) -> str:
         """
-        Generate deterministic UUID v5 from category name.
+        Generate deterministic UUID v5 from the category's ``full_path``.
 
-        Same name always produces the same canonical ID, enabling
+        ``full_path`` is the category identity (``"media/other"``), not the bare
+        ``name`` (``"other"``), which repeats across parents — hashing the name
+        would collide two distinct categories onto one canonical id. Same
+        ``full_path`` always produces the same canonical ID, enabling
         deduplication across systems.
 
         Args:
-            name: Category name
+            full_path: Category full path, e.g. ``"legal/contracts"``
+                (root categories pass their bare name, which *is* their path)
 
         Returns:
             UUID string (without urn:uuid: prefix)
         """
-        return str(uuid.uuid5(NAMESPACES["category"], name.lower().strip()))
+        return str(uuid.uuid5(NAMESPACES["category"], full_path.lower().strip()))
 
     def get_schema_type(self) -> str:
         """Return the schema.org @type for this category."""
@@ -480,7 +521,9 @@ class Company(Base, SchemaOrgSerializable):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     # Canonical UUID for JSON-LD @id (deterministic from normalized name)
-    canonical_id: Mapped[Optional[str]] = mapped_column(String(UUID_STRING_LENGTH), unique=True, index=True)
+    canonical_id: Mapped[Optional[str]] = mapped_column(
+        String(UUID_STRING_LENGTH), unique=True, index=True
+    )
 
     # Historical IDs for merge tracking and deduplication
     source_ids: Mapped[Optional[Any]] = mapped_column(JSON, default=list)
@@ -492,7 +535,9 @@ class Company(Base, SchemaOrgSerializable):
     normalized_name: Mapped[Optional[str]] = mapped_column(
         String(MAX_STRING_LENGTH), unique=True, index=True
     )  # Lowercase, trimmed
-    domain: Mapped[Optional[str]] = mapped_column(String(MAX_STRING_LENGTH))  # Company website domain
+    domain: Mapped[Optional[str]] = mapped_column(
+        String(MAX_STRING_LENGTH)
+    )  # Company website domain
     industry: Mapped[Optional[str]] = mapped_column(String(100))
 
     # Statistics
@@ -569,7 +614,9 @@ class Person(Base, SchemaOrgSerializable):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     # Canonical UUID for JSON-LD @id (deterministic from normalized name)
-    canonical_id: Mapped[Optional[str]] = mapped_column(String(UUID_STRING_LENGTH), unique=True, index=True)
+    canonical_id: Mapped[Optional[str]] = mapped_column(
+        String(UUID_STRING_LENGTH), unique=True, index=True
+    )
 
     # Historical IDs for merge tracking and deduplication
     source_ids: Mapped[Optional[Any]] = mapped_column(JSON, default=list)
@@ -578,7 +625,9 @@ class Person(Base, SchemaOrgSerializable):
     merged_into_id: Mapped[Optional[int]] = mapped_column(Integer, ForeignKey("people.id"))
 
     name: Mapped[str] = mapped_column(String(MAX_STRING_LENGTH), nullable=False, index=True)
-    normalized_name: Mapped[Optional[str]] = mapped_column(String(MAX_STRING_LENGTH), unique=True, index=True)
+    normalized_name: Mapped[Optional[str]] = mapped_column(
+        String(MAX_STRING_LENGTH), unique=True, index=True
+    )
     email: Mapped[Optional[str]] = mapped_column(String(MAX_STRING_LENGTH))
     role: Mapped[Optional[str]] = mapped_column(String(100))  # Default role
 
@@ -596,7 +645,9 @@ class Person(Base, SchemaOrgSerializable):
     review_status: Mapped[Optional[str]] = mapped_column(
         String(20), default="auto_accepted", server_default="auto_accepted", index=True
     )
-    detection_confidence: Mapped[Optional[float]] = mapped_column(Float)  # nullable; composite score
+    detection_confidence: Mapped[Optional[float]] = mapped_column(
+        Float
+    )  # nullable; composite score
     validation_scores: Mapped[Optional[Any]] = mapped_column(
         JSON, default=dict, server_default=text("'{}'")
     )  # per-layer breakdown
@@ -693,7 +744,9 @@ class Location(Base, SchemaOrgSerializable):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
 
     # Canonical UUID for JSON-LD @id (deterministic from name)
-    canonical_id: Mapped[Optional[str]] = mapped_column(String(UUID_STRING_LENGTH), unique=True, index=True)
+    canonical_id: Mapped[Optional[str]] = mapped_column(
+        String(UUID_STRING_LENGTH), unique=True, index=True
+    )
 
     # Historical IDs for merge tracking and deduplication
     source_ids: Mapped[Optional[Any]] = mapped_column(JSON, default=list)
@@ -997,11 +1050,25 @@ def build_person_jsonld(f) -> Dict[str, Any]:
     detection_confidence = getattr(f, "detection_confidence", None)
     validation_scores = getattr(f, "validation_scores", None)
     if review_status:
-        props.append({"@type": "PropertyValue", "propertyID": "ml:reviewStatus", "value": review_status})
+        props.append(
+            {"@type": "PropertyValue", "propertyID": "ml:reviewStatus", "value": review_status}
+        )
     if detection_confidence is not None:
-        props.append({"@type": "PropertyValue", "propertyID": "ml:detectionConfidence", "value": detection_confidence})
+        props.append(
+            {
+                "@type": "PropertyValue",
+                "propertyID": "ml:detectionConfidence",
+                "value": detection_confidence,
+            }
+        )
     if validation_scores:
-        props.append({"@type": "PropertyValue", "propertyID": "ml:validationScores", "value": json.dumps(validation_scores)})
+        props.append(
+            {
+                "@type": "PropertyValue",
+                "propertyID": "ml:validationScores",
+                "value": json.dumps(validation_scores),
+            }
+        )
     if props:
         result["additionalProperty"] = props
 
@@ -1151,9 +1218,13 @@ class CostRecord(Base):
     session_id: Mapped[Optional[str]] = mapped_column(
         String(SHA256_HEX_LENGTH), ForeignKey("organization_sessions.id"), index=True
     )
-    file_id: Mapped[Optional[str]] = mapped_column(String(SHA256_HEX_LENGTH), ForeignKey("files.id"), index=True)
+    file_id: Mapped[Optional[str]] = mapped_column(
+        String(SHA256_HEX_LENGTH), ForeignKey("files.id"), index=True
+    )
 
-    feature_name: Mapped[str] = mapped_column(String(SHORT_STRING_LENGTH), nullable=False, index=True)
+    feature_name: Mapped[str] = mapped_column(
+        String(SHORT_STRING_LENGTH), nullable=False, index=True
+    )
     processing_time_sec: Mapped[float] = mapped_column(Float, nullable=False)
     cost: Mapped[Optional[float]] = mapped_column(Float, default=0.0)
     success: Mapped[Optional[bool]] = mapped_column(Boolean, default=True)
@@ -1179,11 +1250,17 @@ class SchemaMetadata(Base):
     __tablename__ = "schema_metadata"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    file_id: Mapped[Optional[str]] = mapped_column(String(SHA256_HEX_LENGTH), ForeignKey("files.id"), unique=True, index=True)
+    file_id: Mapped[Optional[str]] = mapped_column(
+        String(SHA256_HEX_LENGTH), ForeignKey("files.id"), unique=True, index=True
+    )
 
     # Schema.org properties
-    schema_type: Mapped[Optional[str]] = mapped_column(String(SHORT_STRING_LENGTH), index=True)  # @type
-    schema_context: Mapped[Optional[str]] = mapped_column(String(MAX_STRING_LENGTH), default="https://schema.org")
+    schema_type: Mapped[Optional[str]] = mapped_column(
+        String(SHORT_STRING_LENGTH), index=True
+    )  # @type
+    schema_context: Mapped[Optional[str]] = mapped_column(
+        String(MAX_STRING_LENGTH), default="https://schema.org"
+    )
     schema_json: Mapped[Any] = mapped_column(JSON, nullable=False)  # Full JSON-LD
 
     # Validation
@@ -1192,7 +1269,9 @@ class SchemaMetadata(Base):
 
     # Timestamps
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow)
-    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, default=utcnow, onupdate=utcnow
+    )
 
     # Relationships
     file = relationship("File", back_populates="schema_metadata")
@@ -1214,17 +1293,23 @@ class KeyValueStore(Base):
     )  # e.g., 'config', 'cache', 'temp'
     key: Mapped[str] = mapped_column(String(MAX_STRING_LENGTH), nullable=False)
     value: Mapped[Optional[Any]] = mapped_column(JSON)
-    value_type: Mapped[Optional[str]] = mapped_column(String(SHORT_FIELD_LENGTH))  # 'string', 'int', 'float', 'json', 'binary'
+    value_type: Mapped[Optional[str]] = mapped_column(
+        String(SHORT_FIELD_LENGTH)
+    )  # 'string', 'int', 'float', 'json', 'binary'
 
     # Optional association with a file
-    file_id: Mapped[Optional[str]] = mapped_column(String(SHA256_HEX_LENGTH), ForeignKey("files.id"), index=True)
+    file_id: Mapped[Optional[str]] = mapped_column(
+        String(SHA256_HEX_LENGTH), ForeignKey("files.id"), index=True
+    )
 
     # TTL support
     expires_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
 
     # Timestamps
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow)
-    updated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
+    updated_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, default=utcnow, onupdate=utcnow
+    )
 
     __table_args__ = (
         UniqueConstraint("namespace", "key", name="uq_namespace_key"),
@@ -1262,14 +1347,18 @@ class MergeEvent(Base):
 
     __tablename__ = "merge_events"
 
-    id: Mapped[str] = mapped_column(String(UUID_STRING_LENGTH), primary_key=True, default=lambda: str(uuid.uuid4()))
+    id: Mapped[str] = mapped_column(
+        String(UUID_STRING_LENGTH), primary_key=True, default=lambda: str(uuid.uuid4())
+    )
 
     # Target entity (canonical/surviving)
     target_entity_type: Mapped[MergeEventType] = mapped_column(
         SQLEnum(MergeEventType), nullable=False
     )  # indexed via ix_merge_entity_type
     target_entity_id: Mapped[int] = mapped_column(Integer, nullable=False)  # Internal DB ID
-    target_canonical_id: Mapped[Optional[str]] = mapped_column(String(UUID_STRING_LENGTH))  # UUID for JSON-LD @id
+    target_canonical_id: Mapped[Optional[str]] = mapped_column(
+        String(UUID_STRING_LENGTH)
+    )  # UUID for JSON-LD @id
 
     # Source entities being merged (list of internal IDs)
     source_entity_ids: Mapped[Any] = mapped_column(JSON, nullable=False)
@@ -1281,7 +1370,9 @@ class MergeEvent(Base):
     merge_reason: Mapped[Optional[str]] = mapped_column(Text)  # Why these were merged
     confidence: Mapped[Optional[float]] = mapped_column(Float, default=1.0)  # 0.0-1.0
     performed_by: Mapped[Optional[str]] = mapped_column(String(100))  # user_id or 'system'
-    performed_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow)  # indexed via ix_merge_performed_at
+    performed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime, default=utcnow
+    )  # indexed via ix_merge_performed_at
 
     # JSON-LD representation (for export/API)
     jsonld: Mapped[Optional[Any]] = mapped_column(JSON)

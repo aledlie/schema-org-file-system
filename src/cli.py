@@ -105,6 +105,14 @@ def cmd_migrate_scoring(args: argparse.Namespace) -> None:
     run_scoring_migration_with_banner(db_path, dry_run=args.dry_run)
 
 
+def cmd_migrate_category_identity(args: argparse.Namespace) -> None:
+    """Make categories.full_path the unique identity (was: name)."""
+    from storage.category_migration import run_category_migration_with_banner
+
+    db_path = args.db_path or DEFAULT_DB_PATH
+    run_category_migration_with_banner(db_path, dry_run=args.dry_run)
+
+
 def cmd_migrate_wikidata(args: argparse.Namespace) -> None:
     """Run database migration adding companies.wikidata_qid column."""
     from storage.wikidata_migration import run_wikidata_migration_with_banner
@@ -256,18 +264,27 @@ def cmd_prune_person(args: argparse.Namespace) -> None:
 def cmd_reconcile(args: argparse.Namespace) -> None:
     """Reconcile the graph store after files are moved/deleted on disk.
 
-    Two independent operations (combine freely):
-      --set-category  retarget one file's category edge to match its new folder
-      --prune-missing remove File rows whose paths no longer exist on disk
+    Three independent operations (combine freely):
+      --set-category        retarget one file's category edge to match its folder
+      --prune-missing       remove File rows whose paths no longer exist on disk
+      --backfill-categories attach a category edge to rows that have none
     Dry-run by default; --apply backs up the database first, then writes.
     """
     import shutil
     from datetime import datetime
 
+    # --backfill-categories reaches src.organizers.category_config, whose package
+    # __init__ imports mime_classifier -> shared.constants; give it the same path
+    # setup the other organizer-touching subcommands use.
+    sys.path.insert(0, str(PROJECT_ROOT))
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
     from storage.graph_store import GraphStore
 
-    if not args.set_category and not args.prune_missing:
-        print("Nothing to do: pass --set-category and/or --prune-missing")
+    if not args.set_category and not args.prune_missing and not args.backfill_categories:
+        print(
+            "Nothing to do: pass --set-category, --prune-missing, " "and/or --backfill-categories"
+        )
         sys.exit(2)
     if args.subcategory and not args.set_category:
         print("--subcategory requires --set-category")
@@ -306,6 +323,18 @@ def cmd_reconcile(args: argparse.Namespace) -> None:
         print(f"[{label}] prune-missing: {result['removed']} stale file row(s)")
         for entry in result["files"]:
             print(f"    {entry['file_id'][:12]}… {entry['path']}")
+
+    if args.backfill_categories:
+        summary = store.backfill_missing_categories(
+            base_path=Path(args.base_path).expanduser(), dry_run=not apply
+        )
+        print(
+            f"[{label}] backfill-categories: {summary['attached']} edge(s) attached, "
+            f"{summary['unresolved']} unresolved of {summary['orphaned']} orphaned row(s)"
+        )
+        for entry in summary["files"]:
+            target = entry["category"] or "UNRESOLVED (folder not in taxonomy)"
+            print(f"    {entry['filename'][:44]:<46} {target}")
 
 
 def cmd_review_people(args: argparse.Namespace) -> None:
@@ -781,6 +810,23 @@ For more help on a specific command:
     )
     migrate_scoring_parser.set_defaults(func=cmd_migrate_scoring)
 
+    # Category identity migration (full_path replaces name as the unique key)
+    migrate_category_parser = subparsers.add_parser(
+        "migrate-category-identity",
+        help="Make categories.full_path the unique identity (was: name)",
+        description="Swap the categories indexes so full_path is UNIQUE and name is a "
+        "plain index, realign canonical_ids with uuid5(full_path), and report file rows "
+        "left without a category edge. Fixes silently-dropped category edges caused by "
+        "repeated leaf names (media/other vs legal/other).",
+    )
+    migrate_category_parser.add_argument(
+        "--db-path", default=DEFAULT_DB_PATH, help="Path to SQLite database"
+    )
+    migrate_category_parser.add_argument(
+        "--dry-run", action="store_true", help="Preview the migration without writing any changes"
+    )
+    migrate_category_parser.set_defaults(func=cmd_migrate_category_identity)
+
     # Person symlink view (derived from graph edges)
     person_view_parser = subparsers.add_parser(
         "person-view",
@@ -910,6 +956,18 @@ For more help on a specific command:
         "--prune-missing",
         action="store_true",
         help="Delete File rows whose paths no longer exist on disk",
+    )
+    reconcile_parser.add_argument(
+        "--backfill-categories",
+        action="store_true",
+        help="Attach a category edge to rows that have none, derived from the file's "
+        "on-disk folder (repairs edges dropped by the pre-2026-07-26 categories.name "
+        "UNIQUE bug; run migrate-category-identity first)",
+    )
+    reconcile_parser.add_argument(
+        "--base-path",
+        default=DEFAULT_TARGET,
+        help="Organized-files root used to resolve folders to categories " "(default: %(default)s)",
     )
     reconcile_parser.add_argument(
         "--db-path", default=DEFAULT_DB_PATH, help="Path to SQLite database"

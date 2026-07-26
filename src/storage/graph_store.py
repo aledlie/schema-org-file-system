@@ -178,7 +178,10 @@ class GraphStore:
             return file
 
     def get_file(
-        self, file_id: Optional[str] = None, path: Optional[str] = None, session: Optional[Session] = None
+        self,
+        file_id: Optional[str] = None,
+        path: Optional[str] = None,
+        session: Optional[Session] = None,
     ) -> Optional[File]:
         """
         Get a file by ID or path.
@@ -283,15 +286,26 @@ class GraphStore:
         self, name: str, parent_name: Optional[str] = None, session: Optional[Session] = None
     ) -> Optional[Category]:
         """
-        Get or create a category.
+        Get or create a category, keyed on ``full_path`` (the identity).
+
+        Lookups — existing row, parent resolution, and post-``IntegrityError``
+        recovery — all go through ``full_path``, never ``name``: leaf names
+        repeat across parents, so a name query can return a *different*
+        category (``legal/other`` when asked for ``media/other``).
 
         Args:
-            name: Category name
-            parent_name: Parent category name (for hierarchy)
+            name: Category leaf name
+            parent_name: Parent category full path (for hierarchy)
             session: Optional existing session
 
         Returns:
-            Category object or None if creation fails
+            Category object, or None only when the row genuinely cannot be
+            resolved after a concurrent-insert rollback.
+
+        Raises:
+            IntegrityError: when insertion fails for a reason other than the
+                row already existing — previously swallowed, which silently
+                dropped the caller's category edge.
         """
         close_session = session is None
         session = session or self.get_session()
@@ -303,16 +317,17 @@ class GraphStore:
             else:
                 full_path = name
 
-            # Check if exists
+            # Check if exists (identity = full_path)
             category = session.query(Category).filter(Category.full_path == full_path).first()
             if category:
                 return category
 
-            # Get parent if specified
+            # Get parent if specified (by full_path: a root parent's path is
+            # its name, and a name query could match an unrelated leaf)
             parent = None
             level = 0
             if parent_name:
-                parent = session.query(Category).filter(Category.name == parent_name).first()
+                parent = session.query(Category).filter(Category.full_path == parent_name).first()
                 if parent:
                     level = (parent.level or 0) + 1
 
@@ -334,8 +349,13 @@ class GraphStore:
 
         except IntegrityError:
             session.rollback()
-            # Race condition - return existing
-            return session.query(Category).filter(Category.full_path == full_path).first()
+            # Concurrent insert of the same full_path: adopt the winner. Any
+            # other integrity failure is a real error and must not be
+            # swallowed into a None that silently drops the category edge.
+            existing = session.query(Category).filter(Category.full_path == full_path).first()
+            if existing is not None:
+                return existing
+            raise
         finally:
             if close_session:
                 session.close()
@@ -402,7 +422,9 @@ class GraphStore:
             else:
                 category = self.get_or_create_category(category_name, session=session)
 
-            # Guard against None category
+            # Defensive: get_or_create_category now raises rather than
+            # returning None for a genuine failure, so this only trips on a
+            # lost concurrent-insert race.
             if category is None:
                 return False
 
@@ -465,7 +487,9 @@ class GraphStore:
     # Company Operations
     # =========================================================================
 
-    def get_or_create_company(self, name: str, session: Optional[Session] = None) -> Optional[Company]:
+    def get_or_create_company(
+        self, name: str, session: Optional[Session] = None
+    ) -> Optional[Company]:
         """Get or create a company by name."""
         close_session = session is None
         session = session or self.get_session()
@@ -710,7 +734,9 @@ class GraphStore:
 
             return results
 
-    def get_files_by_person(self, person_id_or_name, session: Optional[Session] = None) -> List[str]:
+    def get_files_by_person(
+        self, person_id_or_name, session: Optional[Session] = None
+    ) -> List[str]:
         """
         Get the current file paths associated with a single person.
 
@@ -906,7 +932,9 @@ class GraphStore:
 
             return results
 
-    def remove_person_edge(self, file_id: str, person_id_or_name, session: Optional[Session] = None) -> bool:
+    def remove_person_edge(
+        self, file_id: str, person_id_or_name, session: Optional[Session] = None
+    ) -> bool:
         """
         Remove a single file->person edge, keeping both rows.
 
@@ -1092,6 +1120,98 @@ class GraphStore:
                 session.commit()
             return summary
 
+    def backfill_missing_categories(
+        self,
+        base_path: Path,
+        dry_run: bool = False,
+        session: Optional[Session] = None,
+    ) -> Dict[str, Any]:
+        """Attach a category edge to File rows that have none.
+
+        Repairs edges dropped by the pre-2026-07-26 ``categories.name`` UNIQUE
+        bug (see ``category_migration``). The category is *derived*, not
+        re-classified: the file's on-disk folder relative to ``base_path`` is
+        looked up in the reversed taxonomy (``build_path_to_category_map``), so
+        the graph is made to agree with where the file actually sits. Re-running
+        ``organize-files content`` cannot do this — a correctly-placed file
+        short-circuits at ``already_organized`` before persistence.
+
+        Conservative by design: only an exact folder match counts. Entity-named
+        folders (``Organization/{Name}``, ``Events/{Name}``) have no unambiguous
+        subcategory, so they are reported unresolved and left untouched rather
+        than guessed.
+
+        Args:
+            base_path: Organized-files root (e.g. ``~/Documents``)
+            dry_run: When True, report what would be attached without writing
+            session: Optional existing session
+
+        Returns:
+            ``{'orphaned': N, 'attached': N, 'unresolved': N, 'files': [...]}``
+            where each file entry carries ``file_id``, ``filename`` and the
+            resolved ``category`` (``None`` when unresolved).
+        """
+        try:
+            from ..organizers.category_config import build_path_to_category_map
+        except ImportError:  # flat-module import path (scripts/ on sys.path)
+            from organizers.category_config import (  # type: ignore[no-redef]
+                build_path_to_category_map,
+            )
+
+        reverse = build_path_to_category_map()
+        entries: List[Dict[str, Any]] = []
+        attached = unresolved = 0
+
+        with self._session_scope(session) as (session, owned):
+            orphans = (
+                session.query(File)
+                .filter(~File.categories.any())
+                .filter(File.current_path.isnot(None))
+                .all()
+            )
+            for file in orphans:
+                if not file.current_path:  # narrows Optional[str] for the type checker
+                    continue
+                current = Path(file.current_path)
+                pair = None
+                try:
+                    folder = current.parent.relative_to(base_path).as_posix()
+                    pair = reverse.get(folder)
+                except ValueError:
+                    pair = None  # outside base_path
+                entry: Dict[str, Any] = {
+                    "file_id": file.id,
+                    "filename": file.filename,
+                    "category": None,
+                }
+                if pair is None:
+                    unresolved += 1
+                    entries.append(entry)
+                    continue
+                category_name, subcategory_name = pair
+                entry["category"] = (
+                    f"{category_name}/{subcategory_name}" if subcategory_name else category_name
+                )
+                if not dry_run:
+                    self.add_file_to_category(
+                        file_id=file.id,
+                        category_name=category_name,
+                        subcategory_name=subcategory_name,
+                        session=session,
+                    )
+                attached += 1
+                entries.append(entry)
+
+            if owned and not dry_run:
+                session.commit()
+
+        return {
+            "orphaned": len(entries),
+            "attached": attached,
+            "unresolved": unresolved,
+            "files": entries,
+        }
+
     def prune_missing_files(
         self,
         dry_run: bool = False,
@@ -1147,9 +1267,9 @@ class GraphStore:
                         FileRelationship.target_file_id == file.id,
                     )
                 ).delete(synchronize_session=False)
-                session.query(KeyValueStore).filter(
-                    KeyValueStore.file_id == file.id
-                ).delete(synchronize_session=False)
+                session.query(KeyValueStore).filter(KeyValueStore.file_id == file.id).delete(
+                    synchronize_session=False
+                )
 
                 session.delete(file)
 

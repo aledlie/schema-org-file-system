@@ -286,3 +286,34 @@ CONTENT_CATEGORY_PATHS: Dict[str, Any] = {
     },
     "uncategorized": "Uncategorized",
 }
+
+
+def build_path_to_category_map(
+    taxonomy: Dict[str, Any] = CONTENT_CATEGORY_PATHS,
+) -> Dict[str, tuple]:
+    """Reverse ``CONTENT_CATEGORY_PATHS``: destination path -> (category, subcategory).
+
+    Walks the nested taxonomy and maps every leaf destination string back to the
+    pair that produces it. Nested media forms collapse to the underscored
+    subcategory ``get_destination_path`` accepts (``photos`` + ``screenshots`` +
+    ``browser`` -> ``photos_screenshots_browser``), so a recovered pair can be
+    handed straight back to ``add_file_to_category``.
+
+    Two pairs can share a destination folder (``media/photos_other`` and the
+    generic ``media/other`` both live under ``Media/``-rooted paths only when the
+    taxonomy says so); first-registered wins, matching the declaration order
+    consumers already rely on.
+    """
+    reverse: Dict[str, tuple] = {}
+
+    def walk(node: Any, category: str, parts: list) -> None:
+        if isinstance(node, str):
+            reverse.setdefault(node, (category, "_".join(parts) if parts else None))
+            return
+        if isinstance(node, dict):
+            for key, child in node.items():
+                walk(child, category, [*parts, key])
+
+    for category, node in taxonomy.items():
+        walk(node, category, [])
+    return reverse

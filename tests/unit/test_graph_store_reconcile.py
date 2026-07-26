@@ -204,6 +204,8 @@ class TestReconcileCli:
             set_category=None,
             subcategory=None,
             prune_missing=False,
+            backfill_categories=False,
+            base_path="~/Documents",
             db_path=db_path,
             apply=False,
         )

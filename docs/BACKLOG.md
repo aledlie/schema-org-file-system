@@ -104,17 +104,37 @@ organized to `Events/Burning Flipside/` on disk but kept a stale
 `legal/real_estate` edge because `events/other` could not be created; and two
 bloodwork PDFs found with `cats: None` during the medical audit.
 
-**Fix direction (needs a decision, not yet chosen):** category identity should be
-`full_path`, not `name` — either drop `ix_categories_name` in favour of a UNIQUE
-index on `full_path` (matching `generate_canonical_id`, which already hashes
-`full_path` — see [[category-canonical-id-scheme]]), or store namespaced names.
-Either way `get_or_create_category` should stop swallowing the collision, and
-`_persist_to_graph_store` should treat a `False` return from
-`add_file_to_category` as an error rather than ignoring it. A re-categorization
-pass can then backfill the 125 orphaned rows without touching any file.
+**FIXED 2026-07-26.** Identity is now `full_path`, matching
+`Category.generate_canonical_id` (which already hashed `full_path`):
 
-**Status:** Open — diagnosed, not fixed. No file data is affected; only graph edges.
-**Priority:** P2 (silent data-integrity loss; recoverable by backfill once fixed)
+1. **Model** (`models.py`) — `name` lost `unique=True` (plain index), `full_path`
+   gained it; `generate_canonical_id`'s parameter renamed `name` → `full_path` so
+   the signature states what callers already passed.
+2. **Store** (`graph_store.py`) — every lookup in `get_or_create_category` now
+   keys on `full_path`: the existence check, the **parent resolution** (which
+   queried `Category.name == parent_name` and could adopt an unrelated leaf as
+   parent — a second latent bug), and the post-`IntegrityError` recovery. The
+   handler adopts a concurrent-insert winner but otherwise **re-raises** instead
+   of returning `None`.
+3. **Caller** (`file_processor.py`) — a `False` from `add_file_to_category` is
+   now reported instead of ignored.
+4. **Migration** — `organize-files migrate-category-identity` swaps the indexes,
+   realigns canonical ids, aborts (untouched) if duplicate `full_path` values
+   would block UNIQUE, and reports orphaned rows. Idempotent.
+5. **Backfill** — `organize-files reconcile --backfill-categories` attaches the
+   missing edge derived from each file's on-disk folder via
+   `build_path_to_category_map` (reversed taxonomy). Needed because a plain
+   `organize-files content` re-run *cannot* repair these: a correctly-placed file
+   short-circuits at `already_organized` before persistence. Entity-named folders
+   (`Organization/{Name}`, `Events/{Name}`) are reported unresolved, never guessed.
+
+Applied to the live database: all 91 taxonomy pairs now resolve (was 24 blocked),
+and orphaned rows went **125 → 3** (the 3 are `Events/Burning Flipside/*`,
+correctly left for manual assignment). 20 tests in
+`tests/unit/test_category_identity.py`.
+
+**Status:** Done — fixed, migrated, backfilled, tested.
+**Priority:** ~~P2~~ resolved
 **Source:** `~/Desktop/Uncategorized` ingestion, 2026-07-26
 
 ### DB↔filesystem provenance drift (`original_path` / `current_path` integrity)
