@@ -1,7 +1,7 @@
-"""PII redaction for persisted medical extracted text.
+"""PII redaction for persisted extracted text (medical and identity files).
 
 Covers the pure redactor (``src.analyzers.text_redaction``) and the
-``FileProcessor._persist_to_graph_store`` wiring: medical-category files
+``FileProcessor._persist_to_graph_store`` wiring: sensitive-category files
 store redacted ``extracted_text`` / ``schema_data["text"]``; other
 categories persist verbatim.
 """
@@ -15,7 +15,10 @@ from unittest.mock import MagicMock
 from src.analyzers.text_redaction import (
     MEDICAL_TEXT_REDACTION_CATEGORIES,
     REDACTION_CHAR,
+    TEXT_REDACTION_CATEGORIES,
+    TEXT_REDACTION_SUBCATEGORY_PAIRS,
     redact_pii_text,
+    should_redact_text,
 )
 from src.pipeline import FileProcessor
 
@@ -74,8 +77,37 @@ def _make_file_processor(base_path: Path, graph_store: Any) -> FileProcessor:
     return fp
 
 
+class TestShouldRedactText:
+    """should_redact_text covers both category-level and pair-level triggers."""
+
+    def test_medical_category_triggers(self):
+        assert should_redact_text("medical", "bloodtest") is True
+        assert should_redact_text("medical", "records") is True
+
+    def test_personal_identification_triggers(self):
+        assert ("personal", "identification") in TEXT_REDACTION_SUBCATEGORY_PAIRS
+        assert should_redact_text("personal", "identification") is True
+
+    def test_personal_records_triggers(self):
+        assert ("personal", "records") in TEXT_REDACTION_SUBCATEGORY_PAIRS
+        assert should_redact_text("personal", "records") is True
+
+    def test_personal_contacts_does_not_trigger(self):
+        # Contact records (resumes, vCards) are not a PII hazard category.
+        assert should_redact_text("personal", "contacts") is False
+
+    def test_technical_does_not_trigger(self):
+        assert should_redact_text("technical", "other") is False
+
+    def test_backward_compat_alias(self):
+        # MEDICAL_TEXT_REDACTION_CATEGORIES must remain equivalent to TEXT_REDACTION_CATEGORIES.
+        assert MEDICAL_TEXT_REDACTION_CATEGORIES == TEXT_REDACTION_CATEGORIES
+
+
 class TestMedicalPersistenceRedaction:
-    def _persist(self, tmp_path: Path, category: str) -> MagicMock:
+    def _persist(
+        self, tmp_path: Path, category: str, subcategory: str = "records"
+    ) -> MagicMock:
         graph_store = MagicMock()
         graph_store.add_file.return_value = MagicMock(id="file-1")
         fp = _make_file_processor(tmp_path, graph_store)
@@ -87,7 +119,7 @@ class TestMedicalPersistenceRedaction:
             file_path=src,
             dest_path=tmp_path / "dest" / "labs.pdf",
             category=category,
-            subcategory="records",
+            subcategory=subcategory,
             schema=schema,
             extracted_text=BLOODWORK_TEXT,
             company_name=None,
@@ -110,6 +142,24 @@ class TestMedicalPersistenceRedaction:
         kwargs = store.add_file.call_args.kwargs
         assert kwargs["extracted_text"] == BLOODWORK_TEXT
         assert kwargs["schema_data"]["text"] == BLOODWORK_TEXT[:50]
+
+    def test_identification_subcategory_persists_redacted(self, tmp_path: Path) -> None:
+        # personal/identification (driver's license) must redact the same as medical.
+        store = self._persist(tmp_path, "personal", subcategory="identification")
+        kwargs = store.add_file.call_args.kwargs
+        assert "Jane" not in kwargs["extracted_text"]
+        assert "55501234" not in kwargs["extracted_text"]
+
+    def test_personal_records_subcategory_persists_redacted(self, tmp_path: Path) -> None:
+        store = self._persist(tmp_path, "personal", subcategory="records")
+        kwargs = store.add_file.call_args.kwargs
+        assert "Jane" not in kwargs["extracted_text"]
+
+    def test_personal_contacts_subcategory_persists_verbatim(self, tmp_path: Path) -> None:
+        # Resumes/vCards are not a PII hazard subcategory.
+        store = self._persist(tmp_path, "personal", subcategory="contacts")
+        kwargs = store.add_file.call_args.kwargs
+        assert kwargs["extracted_text"] == BLOODWORK_TEXT
 
     def test_caller_schema_dict_not_mutated(self, tmp_path: Path) -> None:
         graph_store = MagicMock()

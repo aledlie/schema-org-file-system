@@ -10,6 +10,7 @@ from urllib.parse import quote
 from src.analyzers.text_redaction import (
     MEDICAL_TEXT_REDACTION_CATEGORIES,
     redact_pii_text,
+    should_redact_text,
 )
 from src.generators import (
     AudioGenerator,
@@ -316,12 +317,14 @@ class FileProcessor:
         try:
             session = self.graph_store.get_session()
 
-            # Medical files persist as MedicalTest-family entities
-            # (BloodTest/PathologyTest); their text must not be stored raw.
-            # Redact both persistence surfaces carrying it: extracted_text
-            # and the schema_data "text" property (a local copy — the
-            # caller's schema dict is not mutated).
-            if category in MEDICAL_TEXT_REDACTION_CATEGORIES and extracted_text:
+            # Redact PII from extracted text before persistence for sensitive
+            # categories (medical, personal/identification, personal/records).
+            # Covers both top-level category triggers (TEXT_REDACTION_CATEGORIES)
+            # and specific (category, subcategory) pairs (e.g. personal/identification
+            # for driver's licenses).  Redact both persistence surfaces: the
+            # extracted_text column and the schema_data["text"] property (a local
+            # copy — the caller's schema dict is not mutated).
+            if should_redact_text(category, subcategory) and extracted_text:
                 extracted_text = redact_pii_text(extracted_text, people_names)
                 if schema.get("text"):
                     schema = dict(schema)
@@ -370,6 +373,17 @@ class FileProcessor:
             )
 
             file_id = file_record.id
+
+            # Replace category edges on re-run: clear any stale edges from a
+            # previous classification before attaching the fresh result.  Without
+            # this, add_file_to_category only appends, leaving a file with both
+            # the old and new categories simultaneously — corrupting the
+            # calibration oracle (backtest_scoring reads categories[0]).
+            if file_record.categories:
+                for old_cat in list(file_record.categories):
+                    file_record.categories.remove(old_cat)
+                    old_cat.file_count = max((old_cat.file_count or 0) - 1, 0)
+                session.flush()
 
             # Add category relationship (with scoring evidence when present).
             # A False return means the edge was NOT created — the file would be
@@ -573,11 +587,36 @@ class FileProcessor:
                 result["category"] = category
                 result["subcategory"] = subcategory
                 organizer.stats["already_organized"] += 1
+                # Still reconcile graph edges even though the file isn't moving:
+                # a previous run may have left a stale category edge, or the
+                # file may have no DB row at all (filed manually / by the
+                # DB-free name/type organizers).  Skip during dry-run — no
+                # mutation intended.
+                if not dry_run and self.graph_store:
+                    self._persist_to_graph_store(
+                        file_path=file_path,
+                        dest_path=dest_path,
+                        category=category,
+                        subcategory=subcategory,
+                        schema=schema,
+                        extracted_text=extracted_text,
+                        company_name=company_name,
+                        people_names=people_names,
+                        image_metadata=image_metadata,
+                        ocr_confidence=organizer._last_file_ocr_confidence,
+                        detected_language=organizer._last_file_detected_language,
+                        kie_result=organizer._last_file_state.get("kie_result"),
+                        scoring_decision=organizer._last_file_state.get("scoring_decision"),
+                        session_id=session_id,
+                    )
                 return result
 
-            # Move file if not dry run
+            # Move file if not dry run; guard against same-source/dest (force=True
+            # on a file already at its destination should update the graph without
+            # attempting a no-op move that may fail on some filesystems).
             if not dry_run:
-                shutil.move(str(physical_path), str(dest_path))
+                if physical_path != dest_path:
+                    shutil.move(str(physical_path), str(dest_path))
 
                 # Register schema
                 schema["url"] = f"file://{dest_path.absolute()}"
