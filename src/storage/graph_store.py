@@ -1206,10 +1206,14 @@ class GraphStore:
         ``organize-files content`` cannot do this — a correctly-placed file
         short-circuits at ``already_organized`` before persistence.
 
-        Conservative by design: only an exact folder match counts. Entity-named
-        folders (``Organization/{Name}``, ``Events/{Name}``) have no unambiguous
-        subcategory, so they are reported unresolved and left untouched rather
-        than guessed.
+        Two-pass lookup: the file's immediate parent folder is tried first; if
+        no exact match, one path segment is stripped and the grandparent is
+        tried.  This handles entity-named subfolders such as
+        ``Events/{EventName}`` (parent ``Events`` → ``("events", None)``) and
+        ``Organization/Clients/{ClientName}`` (parent ``Organization/Clients``
+        → ``("organization", "clients")``).  Folders that still don't resolve
+        after stripping (e.g. paths entirely outside the taxonomy) are reported
+        unresolved and left untouched rather than guessed.
 
         Args:
             base_path: Organized-files root (e.g. ``~/Documents``)
@@ -1247,6 +1251,10 @@ class GraphStore:
                 try:
                     folder = current.parent.relative_to(base_path).as_posix()
                     pair = reverse.get(folder)
+                    if pair is None and "/" in folder:
+                        # Fallback: strip one path segment (entity-named folder).
+                        # E.g. "Events/Burning Flipside" → "Events" → ("events", None).
+                        pair = reverse.get(folder.rsplit("/", 1)[0])
                 except ValueError:
                     pair = None  # outside base_path
                 entry: Dict[str, Any] = {

@@ -274,9 +274,10 @@ class TestBackfillMissingCategories:
             assert file is not None
             assert file.categories == []
 
-    def test_entity_named_folder_is_unresolved_not_guessed(
+    def test_entity_named_folder_maps_to_parent_category(
         self, store: GraphStore, tmp_path: Path
     ) -> None:
+        """Events/{EventName}/file → parent 'Events' resolves to ("events", None)."""
         base = tmp_path / "Documents"
         dest = base / "Events" / "Burning Flipside"
         dest.mkdir(parents=True)
@@ -284,6 +285,26 @@ class TestBackfillMissingCategories:
         target.write_text("x")
         file_id = _add_file(store, str(target))
         store.add_file(original_path=str(target), filename="map.pdf", current_path=str(target))
+
+        summary = store.backfill_missing_categories(base_path=base, dry_run=False)
+        assert summary["attached"] == 1
+        assert summary["unresolved"] == 0
+        with session_scope(store) as session:
+            file = session.query(File).filter(File.id == file_id).first()
+            assert file is not None
+            assert [c.full_path for c in file.categories] == ["events"]
+
+    def test_path_outside_taxonomy_is_unresolved(
+        self, store: GraphStore, tmp_path: Path
+    ) -> None:
+        """A path with no taxonomy ancestor at either depth stays unresolved."""
+        base = tmp_path / "Documents"
+        dest = base / "Uncategorized-Unknown" / "SomeName"
+        dest.mkdir(parents=True)
+        target = dest / "file.txt"
+        target.write_text("x")
+        file_id = _add_file(store, str(target))
+        store.add_file(original_path=str(target), filename="file.txt", current_path=str(target))
 
         summary = store.backfill_missing_categories(base_path=base, dry_run=False)
         assert summary["unresolved"] == 1
