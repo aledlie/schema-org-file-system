@@ -203,6 +203,35 @@ Open: one straggler + the 25-row staging-dir provenance record (items 2–3).
      hand (`reconcile --set-category`) or teach the backfill to strip a trailing
      entity segment and map the parent (`Events/*` → `events/other`).
 
+### `file_count` caches drift silently and are exported
+
+`Category`, `Company`, `Person` and `Location` each cache a denormalized
+`file_count` that the edge-mutating methods increment and decrement by hand. Any write
+that bypasses those methods leaves the cache disagreeing with the association table, and
+the stale number is **exported**: it becomes `fileCount` / `mentionCount` in the JSON-LD
+(`build_*_jsonld` in `models.py`) and feeds the dashboard.
+
+Found 2026-07-26: 4 categories had drifted (`game_assets/textures` stored 4 with 0 real
+edges, `financial/invoices` 4 vs 6, `personal/identification` 3 vs 4, `medical/bloodtest`
+6 vs 8) — all caused by that session's own raw-SQL edge repairs (the loan-screenshot
+retarget and the orphan-bloodwork categorization), which inserted and deleted
+`file_categories` rows directly without touching the counters. Companies/people/locations
+were clean only because nothing had hand-edited their edges.
+
+**FIXED 2026-07-26** — `GraphStore.recount_entity_file_counts` recomputes every entity's
+count as the true `COUNT(association rows)` and reports each correction, surfaced as
+`organize-files reconcile --recount-file-counts` (dry-run default; `--apply` backs up the
+DB first). Applied to the live database: 4 of 188 corrected, drift now 0 across all four
+entity types. 6 tests in `tests/unit/test_graph_store_reconcile.py`.
+
+Residual: the counters are still maintained by hand on every edge write, so drift can
+recur — the recount is a repair tool, not a guard. A durable fix would make `file_count` a
+derived/computed value (or drop it and count on read), which is a schema decision.
+
+**Status:** Fixed — repair tool shipped and applied; the hand-maintained design remains.
+**Priority:** P3
+**Source:** verification of the 2026-07-26 agent commits
+
 ### Filename rules still route images by name when content disagrees
 
 `FilenamePatternSignal` graduates several naming traps so content evidence can outscore

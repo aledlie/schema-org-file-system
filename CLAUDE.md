@@ -29,6 +29,8 @@ organize-files health                    # Should report 11/11 features
 | `organize-files person-view` | Regenerate `Person/{Name}/` symlink view from graph edges (`--apply`; `--prune-missing`) |
 | `organize-files index-people` | Attach `person→file` edges for migrated files, no moves (`--apply`; `--prune-missing`) |
 | `organize-files prune-person <name-or-id>...` | Delete people + `file→person` edges, no moves (dry-run default; `--apply` backs up DB) |
+| `organize-files reconcile` | Resync the graph with disk, no file moves (dry-run default; `--apply` backs up DB): `--set-category FILE CAT` retarget one edge, `--prune-missing` drop rows whose paths are all gone, `--backfill-categories` attach edges to rows that have none, `--recount-file-counts` resync `file_count` caches |
+| `organize-files migrate-category-identity` | Make `categories.full_path` the unique identity (was `name`); realigns `canonical_id` |
 | `organize-files update-site` / `timeline` | Regenerate dashboard / timeline data |
 | `organize-files preprocess` | ML data preprocessing (`--input`, `--output`) |
 | `organize-files evaluate` | Evaluation metrics (`--test-data`, `--output`, `--classifier {baseline,content,unified}`, `--min-support`) |

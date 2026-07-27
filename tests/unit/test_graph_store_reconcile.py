@@ -205,6 +205,7 @@ class TestReconcileCli:
             subcategory=None,
             prune_missing=False,
             backfill_categories=False,
+            recount_file_counts=False,
             base_path="~/Documents",
             db_path=db_path,
             apply=False,
@@ -249,3 +250,101 @@ class TestReconcileCli:
         with pytest.raises(SystemExit) as excinfo:
             self._run(db_path, set_category=["no-such-file", "legal"])
         assert excinfo.value.code == 1
+
+
+class TestRecountEntityFileCounts:
+    """`file_count` is a denormalized cache the edge methods maintain by hand;
+    any write that bypasses them (raw SQL, interrupted prune) leaves it stale,
+    and the stale number is exported as fileCount/mentionCount in the JSON-LD.
+    """
+
+    @staticmethod
+    def _skew(store: GraphStore, category_name: str, value: int) -> None:
+        """Set a category's cached file_count directly, bypassing the counters."""
+        from src.storage.models import Category
+
+        session = store.get_session()
+        try:
+            category = session.query(Category).filter(Category.name == category_name).first()
+            assert category is not None
+            category.file_count = value
+            session.commit()
+        finally:
+            session.close()
+
+    @staticmethod
+    def _stored(store: GraphStore, category_name: str) -> int:
+        from src.storage.models import Category
+
+        session = store.get_session()
+        try:
+            category = session.query(Category).filter(Category.name == category_name).first()
+            assert category is not None
+            return int(category.file_count or 0)
+        finally:
+            session.close()
+
+    def test_clean_database_reports_no_corrections(self, store: GraphStore) -> None:
+        _add_file(store, "/tmp/a.pdf", "business", "clients")
+        summary = store.recount_entity_file_counts()
+        assert summary["corrected"] == 0
+        assert summary["checked"] > 0
+
+    def test_inflated_count_is_corrected(self, store: GraphStore) -> None:
+        _add_file(store, "/tmp/a.pdf", "business", "clients")
+        self._skew(store, "clients", 7)
+
+        summary = store.recount_entity_file_counts()
+
+        assert summary["corrected"] == 1
+        entry = summary["entities"][0]
+        assert (entry["type"], entry["stored"], entry["actual"]) == ("category", 7, 1)
+        assert self._stored(store, "clients") == 1
+
+    def test_orphaned_count_recounts_to_zero(self, store: GraphStore) -> None:
+        """A category whose edges were removed by raw SQL recounts to 0."""
+        file_id = _add_file(store, "/tmp/a.pdf", "business", "clients")
+        session = store.get_session()
+        try:
+            session.execute(file_categories.delete().where(file_categories.c.file_id == file_id))
+            session.commit()
+        finally:
+            session.close()
+
+        summary = store.recount_entity_file_counts()
+
+        assert any(e["actual"] == 0 and e["stored"] == 1 for e in summary["entities"])
+        assert self._stored(store, "clients") == 0
+
+    def test_dry_run_reports_without_writing(self, store: GraphStore) -> None:
+        _add_file(store, "/tmp/a.pdf", "business", "clients")
+        self._skew(store, "clients", 7)
+
+        summary = store.recount_entity_file_counts(dry_run=True)
+
+        assert summary["corrected"] == 1
+        assert self._stored(store, "clients") == 7, "dry run must not write"
+
+    def test_is_idempotent(self, store: GraphStore) -> None:
+        _add_file(store, "/tmp/a.pdf", "business", "clients")
+        self._skew(store, "clients", 7)
+        store.recount_entity_file_counts()
+        assert store.recount_entity_file_counts()["corrected"] == 0
+
+    def test_covers_people_edges(self, store: GraphStore) -> None:
+        """Not category-only: Person/Company/Location carry the same cache."""
+        file_id = _add_file(store, "/tmp/a.pdf", "business", "clients")
+        store.add_file_to_person(file_id, "Jane Doe", role="mentioned")
+        from src.storage.models import Person
+
+        session = store.get_session()
+        try:
+            person = session.query(Person).first()
+            assert person is not None
+            person.file_count = 99
+            session.commit()
+        finally:
+            session.close()
+
+        summary = store.recount_entity_file_counts()
+        assert any(e["type"] == "person" and e["actual"] == 1 for e in summary["entities"])

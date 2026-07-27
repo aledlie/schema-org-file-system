@@ -33,6 +33,9 @@ from .models import (
     KeyValueStore,
     RelationshipType,
     file_categories,
+    file_companies,
+    file_locations,
+    file_people,
 )
 
 try:
@@ -1119,6 +1122,73 @@ class GraphStore:
             if owned:
                 session.commit()
             return summary
+
+    def recount_entity_file_counts(
+        self,
+        dry_run: bool = False,
+        session: Optional[Session] = None,
+    ) -> Dict[str, Any]:
+        """Recompute every entity's denormalized ``file_count`` from its edges.
+
+        ``Category``/``Company``/``Person``/``Location`` each cache a
+        ``file_count`` that the edge-mutating methods increment and decrement by
+        hand. Any write that bypasses them — a raw-SQL repair, a partial failure,
+        an interrupted prune — leaves the cache disagreeing with the association
+        table, and the stale number is *exported*: it becomes ``fileCount`` /
+        ``mentionCount`` in the JSON-LD (`models.py` `build_*_jsonld`) and feeds
+        the dashboard. This recomputes each count as the true
+        ``COUNT(association rows)`` and reports every correction.
+
+        Args:
+            dry_run: When True, report the corrections without writing them
+            session: Optional existing session
+
+        Returns:
+            ``{'checked': N, 'corrected': N, 'entities': [{'type', 'name',
+            'stored', 'actual'}, ...]}``
+        """
+        # (label, model, association table, FK column). Heterogeneous models, so
+        # the entity type is Any — every one carries id/name/file_count, but
+        # their shared base does not declare them.
+        sources: Tuple[Tuple[str, Any, Any, str], ...] = (
+            ("category", Category, file_categories, "category_id"),
+            ("company", Company, file_companies, "company_id"),
+            ("person", Person, file_people, "person_id"),
+            ("location", Location, file_locations, "location_id"),
+        )
+        corrections: List[Dict[str, Any]] = []
+        checked = 0
+
+        with self._session_scope(session) as (session, owned):
+            for label, model, assoc, fk_column in sources:
+                # One grouped aggregate per entity type; entities with no edges
+                # are absent from the mapping and correctly recount to 0.
+                actual_by_id = dict(
+                    session.query(assoc.c[fk_column], func.count(assoc.c.file_id))
+                    .group_by(assoc.c[fk_column])
+                    .all()
+                )
+                for entity in session.query(model).all():
+                    checked += 1
+                    actual = int(actual_by_id.get(entity.id, 0))
+                    stored = int(entity.file_count or 0)
+                    if stored == actual:
+                        continue
+                    corrections.append(
+                        {
+                            "type": label,
+                            "name": getattr(entity, "full_path", None) or entity.name,
+                            "stored": stored,
+                            "actual": actual,
+                        }
+                    )
+                    if not dry_run:
+                        entity.file_count = actual
+
+            if owned and not dry_run:
+                session.commit()
+
+        return {"checked": checked, "corrected": len(corrections), "entities": corrections}
 
     def backfill_missing_categories(
         self,

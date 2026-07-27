@@ -264,10 +264,11 @@ def cmd_prune_person(args: argparse.Namespace) -> None:
 def cmd_reconcile(args: argparse.Namespace) -> None:
     """Reconcile the graph store after files are moved/deleted on disk.
 
-    Three independent operations (combine freely):
+    Four independent operations (combine freely):
       --set-category        retarget one file's category edge to match its folder
       --prune-missing       remove File rows whose paths no longer exist on disk
       --backfill-categories attach a category edge to rows that have none
+      --recount-file-counts resync entity file_count caches with their edges
     Dry-run by default; --apply backs up the database first, then writes.
     """
     import shutil
@@ -281,9 +282,15 @@ def cmd_reconcile(args: argparse.Namespace) -> None:
 
     from storage.graph_store import GraphStore
 
-    if not args.set_category and not args.prune_missing and not args.backfill_categories:
+    if not (
+        args.set_category
+        or args.prune_missing
+        or args.backfill_categories
+        or args.recount_file_counts
+    ):
         print(
-            "Nothing to do: pass --set-category, --prune-missing, " "and/or --backfill-categories"
+            "Nothing to do: pass --set-category, --prune-missing, "
+            "--backfill-categories, and/or --recount-file-counts"
         )
         sys.exit(2)
     if args.subcategory and not args.set_category:
@@ -335,6 +342,18 @@ def cmd_reconcile(args: argparse.Namespace) -> None:
         for entry in summary["files"]:
             target = entry["category"] or "UNRESOLVED (folder not in taxonomy)"
             print(f"    {entry['filename'][:44]:<46} {target}")
+
+    if args.recount_file_counts:
+        counts = store.recount_entity_file_counts(dry_run=not apply)
+        print(
+            f"[{label}] recount-file-counts: {counts['corrected']} of "
+            f"{counts['checked']} entity file_count value(s) corrected"
+        )
+        for entry in counts["entities"]:
+            print(
+                f"    {entry['type']:<9} {entry['name'][:38]:<40} "
+                f"{entry['stored']} -> {entry['actual']}"
+            )
 
 
 def cmd_review_people(args: argparse.Namespace) -> None:
@@ -963,6 +982,13 @@ For more help on a specific command:
         help="Attach a category edge to rows that have none, derived from the file's "
         "on-disk folder (repairs edges dropped by the pre-2026-07-26 categories.name "
         "UNIQUE bug; run migrate-category-identity first)",
+    )
+    reconcile_parser.add_argument(
+        "--recount-file-counts",
+        action="store_true",
+        help="Recompute each Category/Company/Person/Location file_count from its "
+        "association rows (the cached value is exported as fileCount/mentionCount, so "
+        "drift from a raw-SQL repair or interrupted prune leaks into the JSON-LD)",
     )
     reconcile_parser.add_argument(
         "--base-path",
