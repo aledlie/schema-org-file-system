@@ -73,8 +73,13 @@ copying `index.html` at all, regenerate it from the same source that produces th
 `_site` version, or make the copy additive. Until then, check
 `git diff _site/` after any content run.
 
-**Status:** Open — observed and reverted; root cause identified, not fixed.
-**Priority:** P3 (cosmetic/navigation; no data affected, caught by `git diff`)
+**FIXED 2026-07-26 (`1d3b262`).** `scripts/copy_to_site.sh` no longer copies
+`results/index.html` to `_site/`. The line that ran `cp results/index.html _site/`
+is replaced with an explanatory warning. `_site/index.html` stays the committed
+source; regenerate it with `organize-files update-site`.
+
+**Status:** Done — fixed in `1d3b262`.
+**Priority:** ~~P3~~ resolved
 **Source:** `~/Desktop/Uncategorized` ingestion, 2026-07-26
 
 ### `categories.name` UNIQUE silently drops category edges for 26% of files
@@ -224,9 +229,17 @@ ingestion:
    at least within `media/` — but the same "filename asserts the format, content never
    checked" shape.
 
-**Status:** Open — instances repaired by hand 2026-07-26; the classifier behaviour is
-unchanged. Reproduces on any new file with a curated person name in the stem.
-**Priority:** P2 for #1 (misfiles personal photos into a document folder), P3 for #2
+**FIXED 2026-07-26 (`1d3b262`).** Both traps are now graduated in
+`FilenamePatternSignal.run()`:
+
+1. `("personal", "contacts")` on `ctx.is_image` files → `FILENAME_WEAK_CONFIDENCE`
+   (document-typed resumes keep full confidence). 2 new tests.
+2. `game_assets/sprites` on `stock-vector-*` / `pngtree-*` stems → `("media",
+   "graphics_other")` at `FILENAME_WEAK_CONFIDENCE`. 2 new tests. Constant
+   `_STOCK_ASSET_STEM_PREFIXES` and helper `_is_stock_asset_stem` added.
+
+**Status:** Done — fixed in `1d3b262`; 4 new tests.
+**Priority:** ~~P2/P3~~ resolved
 **Source:** `~/Desktop/Uncategorized` ingestion, 2026-07-26
 
 ### Re-organizing a file does not reconcile its graph edges
@@ -259,7 +272,14 @@ the filesystem when a file is organized a second time. Both were hit during the
    needed the new `organize-files reconcile --backfill-categories` instead. `--force`
    is not a workaround: it proceeds into `shutil.move(x, x)`.
 
-**Status:** Open — instances repaired; both behaviours unchanged in the pipeline.
+**Status:** Fixed 2026-07-26 — both gaps closed in `src/pipeline/file_processor.py`:
+(1) `_persist_to_graph_store` now clears all existing `file.categories` edges before
+calling `add_file_to_category`, so a re-run always produces exactly one category edge;
+(2) the `already_organized` branch now calls `_persist_to_graph_store` when `not dry_run
+and self.graph_store`, reconciling the DB row and its edges without moving the file;
+(3) `shutil.move` is now guarded by `if physical_path != dest_path` so `force=True` on
+an already-placed file no longer attempts a same-source/dest move.
+Four new tests in `tests/unit/test_pipeline.py` cover all three behaviours.
 **Priority:** P2 (silently corrupts the calibration oracle via `categories[0]`)
 **Source:** `~/Desktop/Uncategorized` ingestion + category backfill, 2026-07-26
 
@@ -287,8 +307,19 @@ Also unquantified: **how many organized files are missing from the DB entirely.*
 `name`/`type` organizers, which persist nothing by design). No census was run over the
 rest of `~/Documents`, so the true coverage of the graph is unknown.
 
-**Status:** Open — known limits documented in the module docstring and QUICK_START; no
-code work started.
+**Partially fixed 2026-07-26 (`3b90a08`).** The category gate was widened:
+- `MEDICAL_TEXT_REDACTION_CATEGORIES` → `TEXT_REDACTION_CATEGORIES` (same value `{"medical"}`);
+  backward-compatible alias retained.
+- New `TEXT_REDACTION_SUBCATEGORY_PAIRS = {("personal", "identification"), ("personal", "records")}`.
+- New `should_redact_text(category, subcategory)` helper checks both sets.
+- `_persist_to_graph_store` now uses `should_redact_text` instead of the bare category check.
+- 12 tests (6 new) in `tests/unit/test_text_redaction.py`.
+
+**Still open:** content-based gating (a medical document misclassified as
+`uncategorized` still stores raw text); alphabetic PII (conditions, medications) is
+not masked; untracked-file census over `~/Documents` has not been run.
+
+**Status:** Partially fixed — category pairs extended; content-based gating and alphabetic PII remain.
 **Priority:** P3
 **Source:** medical text-redaction work + `Medical/` folder audit, 2026-07-26
 

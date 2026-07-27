@@ -8,7 +8,6 @@ from typing import Any, Dict, List, Optional, cast
 from urllib.parse import quote
 
 from src.analyzers.text_redaction import (
-    MEDICAL_TEXT_REDACTION_CATEGORIES,
     redact_pii_text,
     should_redact_text,
 )
