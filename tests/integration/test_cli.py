@@ -35,9 +35,12 @@ from src.cli import DEFAULT_COST_REPORT, main  # noqa: E402
 
 def run_cli(monkeypatch, *argv: str) -> None:
     """Run the CLI main() with the given argv (excluding the prog name)."""
-    # Python 3.14 argparse colorizes help/usage whenever FORCE_COLOR is set,
-    # even under pytest capture; NO_COLOR takes precedence and keeps captured
-    # output plain so substring assertions hold in any shell.
+    # Python 3.14 argparse colorizes help/usage text, which would break the
+    # plain-substring assertions below. NO_COLOR overrides every colour source
+    # (TTY detection, PYTHON_COLORS, FORCE_COLOR), so this holds in any shell
+    # regardless of which one is in play — cheap insurance, not a fix for a
+    # specific variable. (FORCE_COLOR is not set on this machine; verified
+    # 2026-07-27. See the shell-gotchas note in ~/.claude/CLAUDE.md.)
     monkeypatch.setenv("NO_COLOR", "1")
     monkeypatch.setattr(sys, "argv", ["organize-files", *argv])
     main()

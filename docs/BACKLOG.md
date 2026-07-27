@@ -218,18 +218,18 @@ retarget and the orphan-bloodwork categorization), which inserted and deleted
 `file_categories` rows directly without touching the counters. Companies/people/locations
 were clean only because nothing had hand-edited their edges.
 
-**FIXED 2026-07-26** — `GraphStore.recount_entity_file_counts` recomputes every entity's
-count as the true `COUNT(association rows)` and reports each correction, surfaced as
-`organize-files reconcile --recount-file-counts` (dry-run default; `--apply` backs up the
-DB first). Applied to the live database: 4 of 188 corrected, drift now 0 across all four
-entity types. 6 tests in `tests/unit/test_graph_store_reconcile.py`.
+**Repair tool shipped 2026-07-26** — `GraphStore.recount_entity_file_counts` recomputed
+every entity's count as the true `COUNT(association rows)`, surfaced as
+`organize-files reconcile --recount-file-counts`. Applied to the live database: 4 of 188
+corrected. That was a repair tool, not a guard: the counters were still maintained by hand
+on every edge write, so drift could recur.
 
-Residual: the counters are still maintained by hand on every edge write, so drift can
-recur — the recount is a repair tool, not a guard. See the next item for enforcing the
-increment at write time.
+**RESOLVED 2026-07-27 by deleting the cache** — see the next item for the decision. The
+recount tool and its CLI flag are gone with the column they repaired; nothing is cached,
+so nothing can drift.
 
-**Status:** Fixed — repair tool shipped and applied; the hand-maintained design remains.
-**Priority:** P3
+**Status:** Done — superseded by the derived count; the repair tool was retired with it.
+**Priority:** ~~P3~~ resolved
 **Source:** verification of the 2026-07-26 agent commits
 
 ### Enforce `file_count` maintenance at every edge write
@@ -282,9 +282,77 @@ delete*, `organize-files reconcile --recount-file-counts` reports 0 corrections.
 as a test alongside the existing 6 in `tests/unit/test_graph_store_reconcile.py`, and
 delete the hand-maintained call sites the chosen option makes redundant.
 
-**Status:** Open — not started; repair tool exists as the interim.
-**Priority:** P3 (correctness of exported counts; no file data at risk)
-**Source:** follow-up to the `file_count` drift fix, 2026-07-26
+**FIXED 2026-07-27 — option (3): the cache is gone.**
+
+Option (2) was implemented first (`68d8304`, eight relationship-level append/remove
+listeners, all 12 call sites deleted) and then superseded: its own acceptance test only
+exercised ORM operations, so it passed by construction while remaining blind to the
+raw-SQL writes that caused the drift. The listeners are removed.
+
+`file_count` is now a correlated `COUNT` over the entity's association table, evaluated by
+the database in the same SELECT that loads the entity
+(`models._edge_count_property`, applied to all four entities via `declared_attr`).
+Every read site is unchanged — `to_dict`, `build_*_jsonld`, the dashboard and the Pydantic
+API surface all still read `entity.file_count`, and `fileCount`/`mentionCount` stay in the
+JSON-LD. `correlate_except(assoc_table)` is required, or the subquery's FROM is correlated
+away when an entity is loaded *through* the association table.
+
+The read cost was measured, not assumed:
+
+| | plain SELECT | + derived count |
+|---|---|---|
+| live DB (129 categories / 496 edges) | 0.042 ms | 0.076 ms |
+| synthetic 265k target (2,000 / 265,000) **with** index | 0.633 ms | **7.2 ms** |
+| synthetic 265k target **without** index | 0.596 ms | **20,510 ms** |
+
+**The association index is load-bearing, not an optimization — 2,860× at target scale.**
+`ix_file_categories_category_id` and its three siblings were declared in `models.py` but
+absent from the live database, because `create_all` skips tables that already exist. So
+`organize-files migrate-file-counts` creates them *and* drops the four `file_count`
+columns (leaving them would keep serving stale numbers to anything reading the tables
+directly). Verified on a copy of the live DB: 188/188 entities derive exactly the values
+the cache held, all 185 exported counts match raw SQL, and the export path is 15.3 ms.
+`scripts/d1/schema.sql` was regenerated, which also picked up three earlier model changes
+nobody had regenerated (see the next item).
+
+The acceptance criterion above is satisfied structurally rather than by a recount: a
+raw-SQL insert and a raw-SQL delete are both reflected immediately, pinned by
+`TestDerivedFileCount` in `tests/unit/test_graph_store_reconcile.py` (8 tests) plus 8
+migration tests in `tests/unit/test_file_count_migration.py`.
+
+**Status:** Done — cache deleted, migration shipped and verified against the live DB.
+**Priority:** ~~P3~~ resolved
+**Source:** follow-up to the `file_count` drift fix, 2026-07-26; resolved 2026-07-27
+
+### `scripts/d1/schema.sql` silently drifts from the model
+
+`scripts/d1/schema.sql` is generated from `Base.metadata` by
+`scripts/d1/generate_schema.py`, and its own header says "the output file is the
+authoritative D1 schema — do not hand-edit it. Edit `src/storage/models.py` instead, then
+re-run this script." Nothing enforces the second half. Regenerating it on 2026-07-27 for
+the `file_count` removal revealed it had been stale across **three earlier model changes**
+that nobody regenerated:
+
+- `ix_categories_full_path` was still plain and `ix_categories_name` still UNIQUE — i.e.
+  the D1 schema still carried the exact index shape whose UNIQUE-on-`name` bug dropped
+  category edges for 26% of rows (fixed locally 2026-07-26, never regenerated).
+- `people` was missing `review_status`, `detection_confidence`, `validation_scores`,
+  `validated_at` and `ix_people_review_status` (the person-validation work).
+- `file_categories` was missing `signal_evidence` (UNIFIED_SCORING_PLAN §5.4).
+
+A D1 load against that schema would have failed on the missing columns or silently
+recreated the fixed UNIQUE bug in the mirror. Nothing consumes those columns today —
+`workers/file-org-api` has no reference to any of them — so no live breakage resulted, but
+the drift is unbounded and invisible until someone deploys.
+
+Options: a test that regenerates into a temp file and asserts it matches the committed
+copy (cheapest, catches it in CI); a pre-commit hook on `src/storage/models.py`; or
+generating it at deploy time and not committing it at all. The first is the obvious fit —
+the repo already has hand-rolled golden-file comparisons (`tests/unit/golden/`).
+
+**Status:** Open — regenerated 2026-07-27, but nothing prevents the next drift.
+**Priority:** P3 (no live consumer today; blocks or corrupts a future D1 deploy)
+**Source:** `file_count` cache removal, 2026-07-27
 
 ### Filename rules still route images by name when content disagrees
 
