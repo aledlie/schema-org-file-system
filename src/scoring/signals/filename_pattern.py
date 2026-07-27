@@ -95,6 +95,31 @@ MEDIA_AUDIO_OTHER_RESULT = ("media", "audio_other")
 # INTERIOR_DETECTION_DURABLE_FIX_ANALYSIS.md.)
 SOURCE_PROVENANCE_RESULTS = frozenset({("media", "photos_chatgpt"), ("media", "photos_facebook")})
 
+# Person-name filename rules (e.g. "sumedh_alyshia.jpg") route images to
+# personal/contacts at full strength — but contact records are vCards/resumes,
+# not photos of people. The rule is correct for document-typed files
+# (``Alyshia_Ledlie_Resume.pdf`` → personal/contacts is right); for images the
+# stem says who is depicted, not what format the file is. Graduate so that
+# PhotoCompositionSignal/MediaHeuristicSignal/CLIP can decide the real bucket.
+# Only applies when the file schema_type is ImageObject; all other types keep
+# full confidence. Handled in ``run()`` (needs the FileContext, not just the
+# stem) rather than in ``graduated_filename_confidence``.
+CONTACTS_RESULT = ("personal", "contacts")
+
+# Stock-asset stems explicitly assert the graphic format ("stock-vector-*",
+# "pngtree-*"). The shared rule module lands these on photos_other (already
+# weak via FILENAME_WEAK_RESULTS), but the stem says the file is a vector
+# illustration or graphic template — media/graphics_other is the right bucket.
+# Promote the subcategory while keeping weak confidence so CLIP /
+# GraphicDetectionSignal can confirm or override.
+_STOCK_ASSET_STEM_PREFIXES = ("stock-vector-", "pngtree-", "stock_vector_", "pngtree_")
+
+
+def _is_stock_asset_stem(stem: str) -> bool:
+    """True when ``stem`` (already case-folded) is a stock-asset naming pattern
+    that implies a vector illustration or graphic template."""
+    return any(stem.startswith(prefix) for prefix in _STOCK_ASSET_STEM_PREFIXES)
+
 # Camera-roll / scanner stems are photos and scans, never game sprites. The
 # shared module already guards its numbered-sprite paths against the camera
 # vendor prefixes, but not against scanner output (``scan_0023``), and offers
@@ -236,9 +261,28 @@ class FilenamePatternSignal:
             evidence[EVIDENCE_SCHEMA_TYPE] = SCHOLARLY_ARTICLE_SCHEMA_TYPE
             evidence[EVIDENCE_RESEARCH] = state.get(RESEARCH_STATE_KEY)
 
-        confidence = graduated_filename_confidence(
-            path.stem.lower(), category, subcategory, path.suffix.lower()
-        )
+        stem_lower = path.stem.lower()
+        confidence = graduated_filename_confidence(stem_lower, category, subcategory, path.suffix.lower())
+
+        # Person-name stems on images: the shared rule files images named after
+        # known people as personal/contacts at full strength, but contact records
+        # are vCards/resumes — not photographs. Graduate to weak confidence for
+        # ImageObject files so content signals (PhotoCompositionSignal,
+        # MediaHeuristicSignal, CLIP) can outscore and decide the real bucket.
+        # Document-typed resumes ("Alyshia_Ledlie_Resume.pdf") keep full confidence.
+        if (category, subcategory) == CONTACTS_RESULT and ctx.is_image:
+            confidence = FILENAME_WEAK_CONFIDENCE
+
+        # Stock-asset stems ("stock-vector-*", "pngtree-*"): the stem explicitly
+        # asserts vector illustration / graphic template format. The shared rule
+        # fires "Hyphenated asset" → game_assets/sprites (already downgraded to
+        # weak confidence by the sprite trap graduation). Promote to
+        # media/graphics_other to match the explicit format claim; confidence
+        # stays at FILENAME_WEAK_CONFIDENCE so CLIP/GraphicDetectionSignal can
+        # confirm or override.
+        if (category, subcategory) == GAME_SPRITES_RESULT and _is_stock_asset_stem(stem_lower):
+            category, subcategory = "media", "graphics_other"
+
         return [
             CategoryScore(
                 category=category,

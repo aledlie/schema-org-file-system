@@ -210,6 +210,57 @@ class TestGraduatedConfidence:
             ), sub
 
 
+class TestPersonNameImageGraduation:
+    """Person-name stems on images get weak confidence (contacts vs photos fix)."""
+
+    def test_person_name_image_emits_weak_confidence(self):
+        # An image named after a known person should let content signals decide
+        # the bucket — it is a photo of the person, not a contact record.
+        ctx = make_ctx("/photos/Alyshia_Ledlie.jpg", schema_type="ImageObject")
+        scores = make_signal().run(ctx)
+        assert len(scores) == 1
+        score = scores[0]
+        assert (score.category, score.subcategory) == ("personal", "contacts")
+        assert score.confidence == FILENAME_WEAK_CONFIDENCE
+
+    def test_person_name_document_keeps_full_confidence(self):
+        # A PDF resume named after a person correctly files to contacts at
+        # full strength — the graduation applies to images only.
+        ctx = make_ctx("/docs/Alyshia_Ledlie_Resume.pdf")  # default: DigitalDocument
+        scores = make_signal().run(ctx)
+        assert len(scores) == 1
+        score = scores[0]
+        assert (score.category, score.subcategory) == ("personal", "contacts")
+        assert score.confidence == FILENAME_MATCH_CONFIDENCE
+
+
+class TestStockAssetStemPromotion:
+    """stock-vector-* and pngtree-* stems route to graphics_other, not sprites."""
+
+    def test_stock_vector_stem_routes_to_graphics_other(self):
+        ctx = make_ctx("/tmp/stock-vector-modeling-blue-red.jpeg")
+        scores = make_signal().run(ctx)
+        assert len(scores) == 1
+        score = scores[0]
+        assert (score.category, score.subcategory) == ("media", "graphics_other")
+        assert score.confidence == FILENAME_WEAK_CONFIDENCE
+
+    def test_pngtree_stem_routes_to_graphics_other(self):
+        ctx = make_ctx("/tmp/pngtree-colorful-poster.png")
+        scores = make_signal().run(ctx)
+        assert len(scores) == 1
+        score = scores[0]
+        assert (score.category, score.subcategory) == ("media", "graphics_other")
+        assert score.confidence == FILENAME_WEAK_CONFIDENCE
+
+    def test_non_stock_hyphenated_sprite_keeps_sprites(self):
+        # A genuinely hyphenated non-stock stem stays as a (weak) sprite.
+        ctx = make_ctx("/tmp/blue-ai-digital-cube.png")
+        scores = make_signal().run(ctx)
+        assert len(scores) == 1
+        assert scores[0].category != "media"  # still sprite (or weak), not graphics
+
+
 class TestCameraScanSpriteDowngradeThroughSignal:
     def test_scan_prefixed_sprite_emits_weak_confidence(self):
         # Construct a scanner stem that the shared rule answers as a sprite by
