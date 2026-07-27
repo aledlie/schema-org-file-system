@@ -405,6 +405,111 @@ class TestPersistLocationEdge:
 
 
 # ---------------------------------------------------------------------------
+# _persist_to_graph_store — category edge replacement on re-run (Bug 1)
+# ---------------------------------------------------------------------------
+
+
+class TestPersistCategoryEdgeReplacement:
+    """_persist_to_graph_store must replace, not accumulate, category edges.
+
+    When the same file is processed a second time (different category or the
+    same category), the DB row must end up with exactly ONE category edge —
+    the one from the most recent run — not both the old and new.
+    """
+
+    def _persist(
+        self,
+        tmp_path: Path,
+        src: Path,
+        dest: Path,
+        category: str,
+        subcategory: str,
+        graph_store: Any,
+    ) -> None:
+        fp = _make_file_processor(tmp_path, graph_store=graph_store)
+        fp.validator = MagicMock()
+        fp.validator.validate.return_value.is_valid.return_value = True
+        fp.registry = MagicMock()
+        fp._persist_to_graph_store(
+            file_path=src,
+            dest_path=dest,
+            category=category,
+            subcategory=subcategory,
+            schema={"@type": "DigitalDocument", "encodingFormat": "application/pdf"},
+            extracted_text="",
+            company_name=None,
+            people_names=[],
+            image_metadata=None,
+        )
+
+    def test_re_run_replaces_old_category_edge(self, tmp_path: Path) -> None:
+        """Second persist replaces the first category edge, not stacks on it."""
+        # Use the flat import path (storage.*) so the FileStatus enum class
+        # matches what FileProcessor._persist_to_graph_store passes — both
+        # .  and src/ are on pytest's sys.path, making storage.* and
+        # src.storage.* distinct module objects despite being the same file.
+        from storage.graph_store import GraphStore  # noqa: PLC0415
+        from storage.models import File  # noqa: PLC0415
+
+        db_path = str(tmp_path / "graph.db")
+        store = GraphStore(db_path)
+
+        src = tmp_path / "invoice.pdf"
+        src.write_bytes(b"%PDF-1")
+        dest = tmp_path / "organized" / "invoice.pdf"
+        dest.parent.mkdir()
+        dest.write_bytes(b"%PDF-1")
+
+        # First run: classified as game_assets/sprites
+        self._persist(tmp_path, src, dest, "game_assets", "sprites", store)
+
+        session = store.get_session()
+        file_row = session.query(File).filter(File.original_path == str(src)).first()
+        assert file_row is not None
+        first_categories = [c.full_path for c in file_row.categories]
+        session.close()
+        assert first_categories == ["game_assets/sprites"]
+
+        # Second run: now classified as media/photos_other
+        self._persist(tmp_path, src, dest, "media", "photos_other", store)
+
+        session = store.get_session()
+        file_row = session.query(File).filter(File.original_path == str(src)).first()
+        assert file_row is not None
+        second_categories = [c.full_path for c in file_row.categories]
+        session.close()
+
+        # Must have exactly one edge — the new one
+        assert second_categories == ["media/photos_other"], (
+            f"Expected only media/photos_other but got {second_categories!r}; "
+            "stale game_assets/sprites edge was not removed"
+        )
+
+    def test_file_count_is_correct_after_replacement(self, tmp_path: Path) -> None:
+        """Category.file_count stays at 1 after a re-run, not 2."""
+        from storage.graph_store import GraphStore  # noqa: PLC0415
+        from storage.models import Category  # noqa: PLC0415
+
+        db_path = str(tmp_path / "graph.db")
+        store = GraphStore(db_path)
+
+        src = tmp_path / "doc.pdf"
+        src.write_bytes(b"%PDF")
+        dest = tmp_path / "dest" / "doc.pdf"
+        dest.parent.mkdir()
+        dest.write_bytes(b"%PDF")
+
+        self._persist(tmp_path, src, dest, "financial", "invoices", store)
+        self._persist(tmp_path, src, dest, "financial", "invoices", store)
+
+        session = store.get_session()
+        cat = session.query(Category).filter(Category.full_path == "financial/invoices").first()
+        count = cat.file_count if cat else None
+        session.close()
+        assert count == 1, f"Expected file_count=1 after idempotent re-run, got {count}"
+
+
+# ---------------------------------------------------------------------------
 # _content_description
 # ---------------------------------------------------------------------------
 
@@ -560,7 +665,7 @@ class TestOrganizeFileAIPaths:
         dest = dest_dir / "real_file.txt"
 
         fp = self._make_fp(tmp_path)
-        org = self._attach_organizer(fp, dest)
+        self._attach_organizer(fp, dest)
 
         result = fp.organize_file(src, dry_run=False)
 
@@ -584,7 +689,7 @@ class TestOrganizeFileAIPaths:
         graph_store = MagicMock()
         graph_store.add_file.return_value = MagicMock(id="file-42")
         fp = self._make_fp(tmp_path, graph_store=graph_store)
-        org = self._attach_organizer(fp, dest)
+        self._attach_organizer(fp, dest)
 
         result = fp.organize_file(src, dry_run=False)
 
@@ -593,6 +698,55 @@ class TestOrganizeFileAIPaths:
         call_kwargs = graph_store.add_file.call_args.kwargs
         assert call_kwargs["filename"] == "graphed.txt"
         assert call_kwargs["current_path"] == str(dest)
+
+    def test_already_organized_reconciles_graph_when_not_dry_run(self, tmp_path: Path) -> None:
+        """already_organized path calls _persist_to_graph_store to reconcile edges."""
+        from storage.graph_store import GraphStore  # noqa: PLC0415
+        from storage.models import File  # noqa: PLC0415
+
+        db_path = str(tmp_path / "graph.db")
+        src = tmp_path / "in_place.txt"
+        src.write_text("already here")
+        # dest == src so the already-organized branch fires
+        dest = src
+
+        graph_store = GraphStore(db_path)
+        fp = self._make_fp(tmp_path, graph_store=graph_store)
+        org = self._attach_organizer(fp, dest)
+        org.detect_file_category.return_value = (
+            "financial",
+            "invoices",
+            "DigitalDocument",
+            "",
+            None,
+            [],
+            {},
+        )
+
+        result = fp.organize_file(src, dry_run=False, force=False)
+
+        assert result["status"] == "already_organized"
+        # Graph row must exist after the non-dry-run reconcile
+        session = graph_store.get_session()
+        file_row = session.query(File).filter(File.original_path == str(src)).first()
+        assert file_row is not None, "DB row was not created for already_organized file"
+        category_paths = [c.full_path for c in file_row.categories]
+        session.close()
+        assert "financial/invoices" in category_paths
+
+    def test_already_organized_dry_run_does_not_write_graph(self, tmp_path: Path) -> None:
+        """already_organized + dry_run must NOT touch the graph store."""
+        graph_store = MagicMock()
+        src = tmp_path / "in_place.txt"
+        src.write_text("x")
+
+        fp = self._make_fp(tmp_path, graph_store=graph_store)
+        self._attach_organizer(fp, src)  # dest == src
+
+        result = fp.organize_file(src, dry_run=True, force=False)
+
+        assert result["status"] == "already_organized"
+        graph_store.add_file.assert_not_called()
 
     def test_non_file_path_is_skipped(self, tmp_path: Path) -> None:
         """Passing a directory path returns skipped / not_file."""

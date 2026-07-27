@@ -11,10 +11,17 @@ Redaction is triggered by:
 - Any file in a top-level ``TEXT_REDACTION_CATEGORIES`` category (e.g.
   ``medical`` → BloodTest/PathologyTest family).
 - Files whose ``(category, subcategory)`` pair is in
-  ``TEXT_REDACTION_SUBCATEGORY_PAIRS`` (e.g. ``personal/identification`` for
+  ``TEXT_REDACTION_SUBCATEGORY_PAIRS`` (``personal/identification`` for
   driver's licenses and passports, ``personal/records`` for general personal
-  records) — because a medical document misclassified as ``personal/contacts``
-  or ``uncategorized`` must still be redacted.
+  records), which are sensitive in their own right even though ``personal`` as
+  a whole is not redacted.
+
+Note what this deliberately does **not** cover: a sensitive document the scorer
+files as ``personal/contacts`` or ``uncategorized`` is still stored raw. That is
+not hypothetical — during the 2026-07-26 medical ingestion the scorer wanted
+``personal/contacts`` for 5 of 11 lab documents, and only a folder-truth
+category override kept them inside the gate. Closing that needs a
+content-based trigger (medical vocabulary / KIE field classes), not more pairs.
 
 Text analog of ``scripts/redact_pii.py``'s raster token policy (digits,
 emails, detected person names). Masks preserve token length with a block
@@ -62,10 +69,15 @@ def should_redact_text(category: str, subcategory: str) -> bool:
     Covers both category-level triggers (``TEXT_REDACTION_CATEGORIES``) and
     specific (category, subcategory) pairs (``TEXT_REDACTION_SUBCATEGORY_PAIRS``).
     """
-    return category in TEXT_REDACTION_CATEGORIES or (
-        category,
-        subcategory,
-    ) in TEXT_REDACTION_SUBCATEGORY_PAIRS
+    return (
+        category in TEXT_REDACTION_CATEGORIES
+        or (
+            category,
+            subcategory,
+        )
+        in TEXT_REDACTION_SUBCATEGORY_PAIRS
+    )
+
 
 # Mask character (mirrors the raster redactor's black boxes).
 REDACTION_CHAR = "█"

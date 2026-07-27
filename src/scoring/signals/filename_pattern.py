@@ -120,6 +120,7 @@ def _is_stock_asset_stem(stem: str) -> bool:
     that implies a vector illustration or graphic template."""
     return any(stem.startswith(prefix) for prefix in _STOCK_ASSET_STEM_PREFIXES)
 
+
 # Camera-roll / scanner stems are photos and scans, never game sprites. The
 # shared module already guards its numbered-sprite paths against the camera
 # vendor prefixes, but not against scanner output (``scan_0023``), and offers
@@ -262,7 +263,9 @@ class FilenamePatternSignal:
             evidence[EVIDENCE_RESEARCH] = state.get(RESEARCH_STATE_KEY)
 
         stem_lower = path.stem.lower()
-        confidence = graduated_filename_confidence(stem_lower, category, subcategory, path.suffix.lower())
+        confidence = graduated_filename_confidence(
+            stem_lower, category, subcategory, path.suffix.lower()
+        )
 
         # Person-name stems on images: the shared rule files images named after
         # known people as personal/contacts at full strength, but contact records
