@@ -35,11 +35,15 @@ from sqlalchemy import (
     Enum as SQLEnum,
     create_engine,
     event,
+    func,
+    select,
     text,
 )
 from sqlalchemy.orm import (
     DeclarativeBase,
     Mapped,
+    column_property,
+    declared_attr,
     mapped_column,
     relationship,
     Session,
@@ -161,6 +165,43 @@ file_locations = Table(
     Column("created_at", DateTime, default=utcnow),
 )
 Index("ix_file_locations_location_id", file_locations.c.location_id)
+
+
+def _edge_count_property(assoc_table: Table, fk_column: str) -> Any:
+    """Build an entity's derived ``file_count`` attribute.
+
+    ``file_count`` is **not stored**.  It is a correlated ``COUNT`` over the
+    entity's association table, evaluated by the database in the same SELECT
+    that loads the entity, so it cannot disagree with the edges it counts.
+    The ``ix_file_*_{entity}_id`` indexes above make each count an index
+    lookup rather than a table scan.
+
+    It was previously an ``Integer`` column incremented and decremented by
+    hand at 12 call sites across three modules.  Any write that bypassed those
+    sites left the cache wrong, and the stale value was exported as
+    ``fileCount``/``mentionCount`` (see ``build_*_jsonld``) — raw-SQL repairs
+    drifted four category counts on 2026-07-26.  Deriving the value removes
+    the failure mode instead of policing it; see ``docs/BACKLOG.md``.
+
+    ``correlate_except`` is required: without it the subquery's own FROM is
+    correlated away when the entity is loaded *through* the association table
+    (e.g. a lazy-load of ``File.categories``), raising ``InvalidRequestError``.
+
+    Assigning to the attribute is a silent no-op — it sets an instance value
+    that is discarded on the next expire and never reaches the database. The
+    derived count stays correct regardless, so a stray write cannot corrupt it.
+    """
+
+    def _file_count(cls: Any) -> Any:
+        fk = assoc_table.c[fk_column]
+        return column_property(
+            select(func.count(fk))
+            .where(fk == cls.id)
+            .correlate_except(assoc_table)
+            .scalar_subquery()
+        )
+
+    return declared_attr(_file_count)
 
 
 class File(Base, SchemaOrgSerializable):
@@ -442,8 +483,8 @@ class Category(Base, SchemaOrgSerializable):
         String(MAX_STRING_LENGTH), unique=True, index=True
     )  # e.g., "Legal/Contracts"
 
-    # Statistics
-    file_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    # Statistics — derived, never stored (see _edge_count_property).
+    file_count = _edge_count_property(file_categories, "category_id")
 
     # Timestamps
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow)
@@ -540,8 +581,8 @@ class Company(Base, SchemaOrgSerializable):
     )  # Company website domain
     industry: Mapped[Optional[str]] = mapped_column(String(100))
 
-    # Statistics
-    file_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    # Statistics — derived, never stored (see _edge_count_property).
+    file_count = _edge_count_property(file_companies, "company_id")
     first_seen: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow)
     last_seen: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow)
 
@@ -653,8 +694,8 @@ class Person(Base, SchemaOrgSerializable):
     )  # per-layer breakdown
     validated_at: Mapped[Optional[datetime]] = mapped_column(DateTime)  # tz-naive; utcnow()
 
-    # Statistics
-    file_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    # Statistics — derived, never stored (see _edge_count_property).
+    file_count = _edge_count_property(file_people, "person_id")
     first_seen: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow)
     last_seen: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow)
 
@@ -764,8 +805,8 @@ class Location(Base, SchemaOrgSerializable):
     # Geohash for efficient spatial queries
     geohash: Mapped[Optional[str]] = mapped_column(String(GEOHASH_MAX_LENGTH), index=True)
 
-    # Statistics
-    file_count: Mapped[Optional[int]] = mapped_column(Integer, default=0)
+    # Statistics — derived, never stored (see _edge_count_property).
+    file_count = _edge_count_property(file_locations, "location_id")
 
     # Timestamps
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow)
@@ -1429,54 +1470,6 @@ class MergeEvent(Base):
             "performed_at": self.performed_at.isoformat() if self.performed_at else None,
             "is_rolled_back": self.is_rolled_back,
         }
-
-
-# ---------------------------------------------------------------------------
-# Relationship-level ORM events: maintain the denormalized file_count cache
-# automatically for every append/remove via the ORM.  Raw-SQL writes still
-# bypass these listeners; use `GraphStore.recount_entity_file_counts` to
-# repair any drift after such writes.
-# ---------------------------------------------------------------------------
-
-
-@event.listens_for(File.categories, "append")
-def _on_category_append(target: "File", value: "Category", initiator: object) -> None:
-    value.file_count = (value.file_count or 0) + 1
-
-
-@event.listens_for(File.categories, "remove")
-def _on_category_remove(target: "File", value: "Category", initiator: object) -> None:
-    value.file_count = max((value.file_count or 0) - 1, 0)
-
-
-@event.listens_for(File.companies, "append")
-def _on_company_append(target: "File", value: "Company", initiator: object) -> None:
-    value.file_count = (value.file_count or 0) + 1
-
-
-@event.listens_for(File.companies, "remove")
-def _on_company_remove(target: "File", value: "Company", initiator: object) -> None:
-    value.file_count = max((value.file_count or 0) - 1, 0)
-
-
-@event.listens_for(File.people, "append")
-def _on_person_append(target: "File", value: "Person", initiator: object) -> None:
-    value.file_count = (value.file_count or 0) + 1
-
-
-@event.listens_for(File.people, "remove")
-def _on_person_remove(target: "File", value: "Person", initiator: object) -> None:
-    value.file_count = max((value.file_count or 0) - 1, 0)
-
-
-@event.listens_for(File.locations, "append")
-def _on_location_append(target: "File", value: "Location", initiator: object) -> None:
-    value.file_count = (value.file_count or 0) + 1
-
-
-@event.listens_for(File.locations, "remove")
-def _on_location_remove(target: "File", value: "Location", initiator: object) -> None:
-    value.file_count = max((value.file_count or 0) - 1, 0)
 
 
 def init_db(db_path: str = "file_organization.db") -> Session:

@@ -19,7 +19,6 @@ CREATE TABLE IF NOT EXISTS categories (
   color VARCHAR(20), 
   level INTEGER, 
   full_path VARCHAR(255), 
-  file_count INTEGER, 
   created_at DATETIME, 
   updated_at DATETIME, 
   PRIMARY KEY (id), 
@@ -27,8 +26,8 @@ CREATE TABLE IF NOT EXISTS categories (
   FOREIGN KEY(parent_id) REFERENCES categories (id)
 );
 CREATE UNIQUE INDEX IF NOT EXISTS ix_categories_canonical_id ON categories (canonical_id);
-CREATE INDEX IF NOT EXISTS ix_categories_full_path ON categories (full_path);
-CREATE UNIQUE INDEX IF NOT EXISTS ix_categories_name ON categories (name);
+CREATE UNIQUE INDEX IF NOT EXISTS ix_categories_full_path ON categories (full_path);
+CREATE INDEX IF NOT EXISTS ix_categories_name ON categories (name);
 CREATE INDEX IF NOT EXISTS ix_categories_parent_id ON categories (parent_id);
 
 -- companies
@@ -42,7 +41,6 @@ CREATE TABLE IF NOT EXISTS companies (
   normalized_name VARCHAR(255), 
   domain VARCHAR(255), 
   industry VARCHAR(100), 
-  file_count INTEGER, 
   first_seen DATETIME, 
   last_seen DATETIME, 
   PRIMARY KEY (id), 
@@ -66,7 +64,6 @@ CREATE TABLE IF NOT EXISTS locations (
   latitude FLOAT, 
   longitude FLOAT, 
   geohash VARCHAR(12), 
-  file_count INTEGER, 
   created_at DATETIME, 
   PRIMARY KEY (id), 
   FOREIGN KEY(merged_into_id) REFERENCES locations (id)
@@ -130,7 +127,10 @@ CREATE TABLE IF NOT EXISTS people (
   normalized_name VARCHAR(255), 
   email VARCHAR(255), 
   role VARCHAR(100), 
-  file_count INTEGER, 
+  review_status VARCHAR(20) DEFAULT 'auto_accepted', 
+  detection_confidence FLOAT, 
+  validation_scores JSON DEFAULT '{}', 
+  validated_at DATETIME, 
   first_seen DATETIME, 
   last_seen DATETIME, 
   PRIMARY KEY (id), 
@@ -139,6 +139,7 @@ CREATE TABLE IF NOT EXISTS people (
 CREATE UNIQUE INDEX IF NOT EXISTS ix_people_canonical_id ON people (canonical_id);
 CREATE INDEX IF NOT EXISTS ix_people_name ON people (name);
 CREATE UNIQUE INDEX IF NOT EXISTS ix_people_normalized_name ON people (normalized_name);
+CREATE INDEX IF NOT EXISTS ix_people_review_status ON people (review_status);
 
 -- files
 
@@ -216,6 +217,7 @@ CREATE TABLE IF NOT EXISTS file_categories (
   file_id VARCHAR(64) NOT NULL, 
   category_id INTEGER NOT NULL, 
   confidence FLOAT, 
+  signal_evidence JSON, 
   created_at DATETIME, 
   PRIMARY KEY (file_id, category_id), 
   FOREIGN KEY(file_id) REFERENCES files (id), 

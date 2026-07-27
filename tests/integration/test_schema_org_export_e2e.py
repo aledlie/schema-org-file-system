@@ -79,7 +79,6 @@ def _seed_db(session: Session) -> dict:
         normalized_name="globalcorp",
         domain="globalcorp.com",
         industry="Consulting",
-        file_count=5,
         first_seen=datetime(2024, 1, 1),
         last_seen=datetime(2024, 6, 1),
     )
@@ -89,7 +88,6 @@ def _seed_db(session: Session) -> dict:
         normalized_name="eve tester",
         email="eve@example.com",
         role="QA Engineer",
-        file_count=3,
     )
     location = Location(
         name="Berlin Office",

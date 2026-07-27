@@ -175,13 +175,12 @@ class TestCategoryModel:
             canonical_id=Category.generate_canonical_id("Documents"),
             full_path="Documents",
             level=0,
-            file_count=10
         )
 
         data = category.to_dict()
 
         assert data['name'] == 'Documents'
-        assert data['file_count'] == 10
+        assert 'file_count' in data  # derived from edges; see TestDerivedFileCount
         assert '@id' in data
 
 
@@ -222,7 +221,6 @@ class TestCompanyModel:
             normalized_name="acme corp",
             canonical_id=Company.generate_canonical_id("Acme Corp"),
             domain="acme.com",
-            file_count=5
         )
 
         data = company.to_dict()
@@ -254,7 +252,6 @@ class TestPersonModel:
             normalized_name="john doe",
             canonical_id=Person.generate_canonical_id("John Doe"),
             email="john@example.com",
-            file_count=3
         )
 
         data = person.to_dict()
@@ -284,7 +281,6 @@ class TestLocationModel:
             country="USA",
             latitude=37.7749,
             longitude=-122.4194,
-            file_count=10
         )
 
         data = location.to_dict()

@@ -96,9 +96,8 @@ def rich_session():
         industry="Software",
         first_seen=datetime(2020, 1, 2, 3, 4, 5),
         last_seen=datetime(2021, 6, 7, 8, 9, 10),
-        file_count=3,
     )
-    globex = _company("Globex", domain="https://globex.io", file_count=1)
+    globex = _company("Globex", domain="https://globex.io")
 
     # People: one full, one minimal
     ada = _person(
@@ -106,7 +105,6 @@ def rich_session():
         email="ada@x.com",
         role="Engineer",
         first_seen=datetime(2019, 5, 5),
-        file_count=2,
     )
     bob = _person("Bob")
 
@@ -120,7 +118,6 @@ def rich_session():
         longitude=-97.74,
         geohash="9v6m",
         created_at=datetime(2022, 2, 2),
-        file_count=5,
     )
     france = _location("France", country="France")
     us2 = _location("US2", city="NYC", country="US")  # 2-char country stays as-is

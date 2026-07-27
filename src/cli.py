@@ -113,6 +113,14 @@ def cmd_migrate_category_identity(args: argparse.Namespace) -> None:
     run_category_migration_with_banner(db_path, dry_run=args.dry_run)
 
 
+def cmd_migrate_file_counts(args: argparse.Namespace) -> None:
+    """Drop the file_count cache columns; add the association indexes."""
+    from storage.file_count_migration import run_file_count_migration_with_banner
+
+    db_path = args.db_path or DEFAULT_DB_PATH
+    run_file_count_migration_with_banner(db_path, dry_run=args.dry_run)
+
+
 def cmd_migrate_wikidata(args: argparse.Namespace) -> None:
     """Run database migration adding companies.wikidata_qid column."""
     from storage.wikidata_migration import run_wikidata_migration_with_banner
@@ -264,11 +272,10 @@ def cmd_prune_person(args: argparse.Namespace) -> None:
 def cmd_reconcile(args: argparse.Namespace) -> None:
     """Reconcile the graph store after files are moved/deleted on disk.
 
-    Four independent operations (combine freely):
+    Three independent operations (combine freely):
       --set-category        retarget one file's category edge to match its folder
       --prune-missing       remove File rows whose paths no longer exist on disk
       --backfill-categories attach a category edge to rows that have none
-      --recount-file-counts resync entity file_count caches with their edges
     Dry-run by default; --apply backs up the database first, then writes.
     """
     import shutil
@@ -282,16 +289,8 @@ def cmd_reconcile(args: argparse.Namespace) -> None:
 
     from storage.graph_store import GraphStore
 
-    if not (
-        args.set_category
-        or args.prune_missing
-        or args.backfill_categories
-        or args.recount_file_counts
-    ):
-        print(
-            "Nothing to do: pass --set-category, --prune-missing, "
-            "--backfill-categories, and/or --recount-file-counts"
-        )
+    if not (args.set_category or args.prune_missing or args.backfill_categories):
+        print("Nothing to do: pass --set-category, --prune-missing, and/or --backfill-categories")
         sys.exit(2)
     if args.subcategory and not args.set_category:
         print("--subcategory requires --set-category")
@@ -342,18 +341,6 @@ def cmd_reconcile(args: argparse.Namespace) -> None:
         for entry in summary["files"]:
             target = entry["category"] or "UNRESOLVED (folder not in taxonomy)"
             print(f"    {entry['filename'][:44]:<46} {target}")
-
-    if args.recount_file_counts:
-        counts = store.recount_entity_file_counts(dry_run=not apply)
-        print(
-            f"[{label}] recount-file-counts: {counts['corrected']} of "
-            f"{counts['checked']} entity file_count value(s) corrected"
-        )
-        for entry in counts["entities"]:
-            print(
-                f"    {entry['type']:<9} {entry['name'][:38]:<40} "
-                f"{entry['stored']} -> {entry['actual']}"
-            )
 
 
 def cmd_review_people(args: argparse.Namespace) -> None:
@@ -846,6 +833,24 @@ For more help on a specific command:
     )
     migrate_category_parser.set_defaults(func=cmd_migrate_category_identity)
 
+    # file_count cache removal (the count is now derived from association rows)
+    migrate_file_counts_parser = subparsers.add_parser(
+        "migrate-file-counts",
+        help="Drop the denormalized file_count columns (the count is now derived)",
+        description="Create the four file_* association indexes the derived count needs "
+        "(declared in the model, but create_all skips existing tables), report any cached "
+        "count that had already drifted, then drop the file_count columns from categories, "
+        "companies, people and locations. Leaving them would keep serving stale numbers to "
+        "anything reading the tables directly.",
+    )
+    migrate_file_counts_parser.add_argument(
+        "--db-path", default=DEFAULT_DB_PATH, help="Path to SQLite database"
+    )
+    migrate_file_counts_parser.add_argument(
+        "--dry-run", action="store_true", help="Preview the migration without writing any changes"
+    )
+    migrate_file_counts_parser.set_defaults(func=cmd_migrate_file_counts)
+
     # Person symlink view (derived from graph edges)
     person_view_parser = subparsers.add_parser(
         "person-view",
@@ -982,13 +987,6 @@ For more help on a specific command:
         help="Attach a category edge to rows that have none, derived from the file's "
         "on-disk folder (repairs edges dropped by the pre-2026-07-26 categories.name "
         "UNIQUE bug; run migrate-category-identity first)",
-    )
-    reconcile_parser.add_argument(
-        "--recount-file-counts",
-        action="store_true",
-        help="Recompute each Category/Company/Person/Location file_count from its "
-        "association rows (the cached value is exported as fileCount/mentionCount, so "
-        "drift from a raw-SQL repair or interrupted prune leaks into the JSON-LD)",
     )
     reconcile_parser.add_argument(
         "--base-path",

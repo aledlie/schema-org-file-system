@@ -252,57 +252,53 @@ class TestReconcileCli:
         assert excinfo.value.code == 1
 
 
-class TestRecountEntityFileCounts:
-    """`file_count` is a denormalized cache the edge methods maintain by hand;
-    any write that bypasses them (raw SQL, interrupted prune) leaves it stale,
-    and the stale number is exported as fileCount/mentionCount in the JSON-LD.
+class TestDerivedFileCount:
+    """``file_count`` is derived, not cached.
+
+    It was an Integer column maintained by hand at 12 call sites; raw-SQL edge
+    repairs drifted four category counts on 2026-07-26, and the stale value was
+    exported as fileCount/mentionCount. It is now a correlated COUNT over the
+    association table (``models._edge_count_property``), so there is no cached
+    value that can disagree with the edges — the class of bug is gone rather
+    than repaired. These tests pin that: notably the raw-SQL cases, which every
+    call-site and ORM-listener approach failed.
     """
 
     @staticmethod
-    def _skew(store: GraphStore, category_name: str, value: int) -> None:
-        """Set a category's cached file_count directly, bypassing the counters."""
+    def _insert_edge_raw_sql(store: GraphStore, file_id: str, full_path: str) -> None:
+        """Attach an edge with no ORM involvement at all."""
         from src.storage.models import Category
 
         session = store.get_session()
         try:
-            category = session.query(Category).filter(Category.name == category_name).first()
-            assert category is not None
-            category.file_count = value
+            cat = session.query(Category).filter(Category.full_path == full_path).first()
+            assert cat is not None
+            session.execute(file_categories.insert().values(file_id=file_id, category_id=cat.id))
             session.commit()
         finally:
             session.close()
 
-    @staticmethod
-    def _stored(store: GraphStore, category_name: str) -> int:
-        from src.storage.models import Category
-
-        session = store.get_session()
-        try:
-            category = session.query(Category).filter(Category.name == category_name).first()
-            assert category is not None
-            return int(category.file_count or 0)
-        finally:
-            session.close()
-
-    def test_clean_database_reports_no_corrections(self, store: GraphStore) -> None:
+    def test_counts_edges_with_no_repair_step(self, store: GraphStore) -> None:
         _add_file(store, "/tmp/a.pdf", "business", "clients")
-        summary = store.recount_entity_file_counts()
-        assert summary["corrected"] == 0
-        assert summary["checked"] > 0
+        _add_file(store, "/tmp/b.pdf", "business", "clients")
+        assert _file_count(store, "business/clients") == 2
 
-    def test_inflated_count_is_corrected(self, store: GraphStore) -> None:
+    def test_zero_when_no_edges(self, store: GraphStore) -> None:
         _add_file(store, "/tmp/a.pdf", "business", "clients")
-        self._skew(store, "clients", 7)
+        assert _file_count(store, "legal/contracts") == 0
 
-        summary = store.recount_entity_file_counts()
+    def test_raw_sql_insert_is_reflected(self, store: GraphStore) -> None:
+        """The BACKLOG acceptance criterion: a raw-SQL insert needs no recount."""
+        _add_file(store, "/tmp/a.pdf", "business", "clients")
+        second = _add_file(store, "/tmp/b.pdf", "legal", "contracts")
+        assert _file_count(store, "business/clients") == 1
 
-        assert summary["corrected"] == 1
-        entry = summary["entities"][0]
-        assert (entry["type"], entry["stored"], entry["actual"]) == ("category", 7, 1)
-        assert self._stored(store, "clients") == 1
+        self._insert_edge_raw_sql(store, second, "business/clients")
 
-    def test_orphaned_count_recounts_to_zero(self, store: GraphStore) -> None:
-        """A category whose edges were removed by raw SQL recounts to 0."""
+        assert _file_count(store, "business/clients") == 2
+
+    def test_raw_sql_delete_is_reflected(self, store: GraphStore) -> None:
+        """The other half of the acceptance criterion."""
         file_id = _add_file(store, "/tmp/a.pdf", "business", "clients")
         session = store.get_session()
         try:
@@ -311,55 +307,59 @@ class TestRecountEntityFileCounts:
         finally:
             session.close()
 
-        summary = store.recount_entity_file_counts()
+        assert _file_count(store, "business/clients") == 0
 
-        assert any(e["actual"] == 0 and e["stored"] == 1 for e in summary["entities"])
-        assert self._stored(store, "clients") == 0
+    def test_reflects_edge_replacement(self, store: GraphStore) -> None:
+        file_id = _add_file(store, "/tmp/a.pdf", "business", "clients")
+        store.set_file_category(file_id, "legal", "contracts")
 
-    def test_dry_run_reports_without_writing(self, store: GraphStore) -> None:
-        _add_file(store, "/tmp/a.pdf", "business", "clients")
-        self._skew(store, "clients", 7)
+        assert _file_count(store, "business/clients") == 0
+        assert _file_count(store, "legal/contracts") == 1
 
-        summary = store.recount_entity_file_counts(dry_run=True)
+    def test_covers_person_company_and_location(self, store: GraphStore) -> None:
+        """Not category-only: all four entity types derive the same way."""
+        from src.storage.models import Company, Location, Person
 
-        assert summary["corrected"] == 1
-        assert self._stored(store, "clients") == 7, "dry run must not write"
-
-    def test_is_idempotent(self, store: GraphStore) -> None:
-        _add_file(store, "/tmp/a.pdf", "business", "clients")
-        self._skew(store, "clients", 7)
-        store.recount_entity_file_counts()
-        assert store.recount_entity_file_counts()["corrected"] == 0
-
-    def test_covers_people_edges(self, store: GraphStore) -> None:
-        """Not category-only: Person/Company/Location carry the same cache."""
         file_id = _add_file(store, "/tmp/a.pdf", "business", "clients")
         store.add_file_to_person(file_id, "Jane Doe", role="mentioned")
-        from src.storage.models import Person
+        store.add_file_to_company(file_id, "Acme Corp")
+        store.add_file_to_location(file_id, "Austin")
 
         session = store.get_session()
         try:
-            person = session.query(Person).first()
-            assert person is not None
-            person.file_count = 99
-            session.commit()
+            assert session.query(Person).one().file_count == 1
+            assert session.query(Company).one().file_count == 1
+            assert session.query(Location).one().file_count == 1
         finally:
             session.close()
 
-        summary = store.recount_entity_file_counts()
-        assert any(e["type"] == "person" and e["actual"] == 1 for e in summary["entities"])
+        store.remove_person_edge(file_id, "Jane Doe")
+        session = store.get_session()
+        try:
+            assert session.query(Person).one().file_count == 0
+        finally:
+            session.close()
 
-    def test_orm_operations_produce_no_drift(self, store: GraphStore) -> None:
-        """ORM-path append/remove keep file_count accurate; recount detects no drift."""
-        file_id = _add_file(store, "/tmp/a.pdf", "business", "clients")
-        # Replace the category edge: remove one, add another.
-        store.set_file_category(file_id, "legal", "contracts")
-        # Add a person edge then remove it.
-        store.add_file_to_person(file_id, "Alice Smith", role="mentioned")
-        store.remove_person_edge(file_id, "Alice Smith")
+    def test_no_cached_column_exists_to_go_stale(self, store: GraphStore) -> None:
+        """The physical cache column is gone, so raw SQL cannot write a wrong one."""
+        from sqlalchemy import inspect
 
-        summary = store.recount_entity_file_counts()
-        assert summary["corrected"] == 0, (
-            f"Expected 0 drift after ORM operations; got {summary['corrected']} corrections: "
-            f"{summary['entities']}"
-        )
+        inspector = inspect(store.engine)
+        for table in ("categories", "companies", "people", "locations"):
+            columns = {c["name"] for c in inspector.get_columns(table)}
+            assert "file_count" not in columns, f"{table} still has a cached file_count"
+
+    def test_assignment_cannot_corrupt_the_derived_value(self, store: GraphStore) -> None:
+        """A stray write is a no-op discarded on expire, not silent corruption."""
+        from src.storage.models import Category
+
+        _add_file(store, "/tmp/a.pdf", "business", "clients")
+        session = store.get_session()
+        try:
+            cat = session.query(Category).filter(Category.full_path == "business/clients").one()
+            cat.file_count = 99
+            session.commit()
+            session.expire_all()
+            assert cat.file_count == 1
+        finally:
+            session.close()

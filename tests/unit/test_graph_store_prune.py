@@ -81,14 +81,11 @@ class TestRemovePersonEdge:
         assert store.remove_person_edge(file_id, "No Such Person") is False
         assert _edge_count(store) == 1
 
-    def test_file_count_never_goes_negative(self, store: GraphStore) -> None:
+    def test_removing_the_last_edge_leaves_zero(self, store: GraphStore) -> None:
+        """Previously guarded a ``max(x - 1, 0)`` clamp on the hand-maintained
+        counter. ``file_count`` is now a derived COUNT, so a negative value is
+        structurally impossible — this only pins the zero case."""
         (file_id,) = _add_person_with_files(store, "Jane Doe", ["/tmp/a.pdf"])
-        session = store.get_session()
-        person = session.query(Person).first()
-        assert person is not None
-        person.file_count = 0
-        session.commit()
-        session.close()
 
         assert store.remove_person_edge(file_id, "Jane Doe") is True
         assert _person(store, "Jane Doe").file_count == 0
