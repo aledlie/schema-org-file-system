@@ -225,12 +225,66 @@ DB first). Applied to the live database: 4 of 188 corrected, drift now 0 across 
 entity types. 6 tests in `tests/unit/test_graph_store_reconcile.py`.
 
 Residual: the counters are still maintained by hand on every edge write, so drift can
-recur — the recount is a repair tool, not a guard. A durable fix would make `file_count` a
-derived/computed value (or drop it and count on read), which is a schema decision.
+recur — the recount is a repair tool, not a guard. See the next item for enforcing the
+increment at write time.
 
 **Status:** Fixed — repair tool shipped and applied; the hand-maintained design remains.
 **Priority:** P3
 **Source:** verification of the 2026-07-26 agent commits
+
+### Enforce `file_count` maintenance at every edge write
+
+`reconcile --recount-file-counts` (previous item) repairs drift after the fact. The drift
+should not be possible in the first place. Today every increment/decrement is written by
+hand at the call site — **12 sites across 3 modules**, with no mechanism that fails when a
+new edge-writing path forgets:
+
+- `src/storage/graph_store.py` — 9 sites: `add_file_to_category` (+1),
+  `add_file_to_company` (+1), `add_file_to_person` (+1), `add_file_to_location` (+1),
+  `remove_person_edge` (−1), `prune_missing_person_edges` (−1), `set_file_category` (−1),
+  and `prune_missing_files` (−1 for both category and person edges).
+- `src/pipeline/file_processor.py` — 1 site: the category-replacement loop in
+  `_persist_to_graph_store`.
+- `src/storage/migration.py` — 2 sites: the person and location backfills.
+
+That `file_processor.py` site was added on 2026-07-26 by the edge-replacement fix, which
+is the point: a brand-new edge-writing path had to remember the decrement, and nothing
+would have caught it if it hadn't. The 4 drifted counts found that day came from raw-SQL
+repairs, which no amount of call-site discipline can cover.
+
+Options, roughly in order of how much they actually guarantee:
+
+1. **SQLite triggers on the association tables** — `AFTER INSERT`/`AFTER DELETE` on
+   `file_categories`/`file_companies`/`file_people`/`file_locations` adjusting the parent's
+   `file_count`. The only option that also covers **raw-SQL writes**, i.e. the observed
+   cause. Costs: DDL must be attached for fresh databases (`event.listens_for(table,
+   "after_create")` so `Base.metadata.create_all` installs them) *and* shipped as a
+   migration for existing ones, in the established hand-rolled pattern
+   (cf. `category_migration.py`); SQLite-specific, so it would need revisiting if the
+   store ever moves to another backend (the D1 export already targets one — see
+   `scripts/d1/schema.sql`).
+2. **SQLAlchemy `after_insert`/`after_delete` events** on the association tables — removes
+   all 12 call sites, portable across backends, no migration. But it is blind to writes
+   that bypass the ORM, so it would *not* have prevented the drift actually observed.
+   Reasonable as defence-in-depth, not as the guarantee.
+3. **Drop the cache; count on read** — strictly correct and deletes the whole failure
+   mode. Costs a `COUNT` per read in `build_*_jsonld`, the dashboard, and
+   `get_category_tree`; note `get_category_tree` was already optimized once for N+1
+   queries (`f410177`), so this needs a benchmark before adopting, and `file_count` is
+   part of the exported JSON-LD contract (`fileCount`/`mentionCount`).
+
+Recommendation: (1) for the guarantee, with (3) considered first if the read cost measures
+as negligible on the 265k-file target — fewer moving parts beats a trigger that has to be
+migrated into every existing database.
+
+**Acceptance:** after an arbitrary edge-mutating workload *including a raw-SQL insert and
+delete*, `organize-files reconcile --recount-file-counts` reports 0 corrections. Add that
+as a test alongside the existing 6 in `tests/unit/test_graph_store_reconcile.py`, and
+delete the hand-maintained call sites the chosen option makes redundant.
+
+**Status:** Open — not started; repair tool exists as the interim.
+**Priority:** P3 (correctness of exported counts; no file data at risk)
+**Source:** follow-up to the `file_count` drift fix, 2026-07-26
 
 ### Filename rules still route images by name when content disagrees
 
