@@ -145,8 +145,9 @@ integrity problems, neither of which is data loss, and both of which mislead any
 future reader of the DB (including the calibration oracle in
 [`docs/architecture/scoring-calibration-20260726.md`](architecture/scoring-calibration-20260726.md)).
 
-**Status:** Open — 7 genuinely-dead rows pruned 2026-07-26 (`reconcile --prune-missing`);
-the 43-row reverted-run set and the 25-row staging-dir set are documented here, untouched.
+**Status:** Mostly resolved 2026-07-26 — 7 dead rows pruned (`reconcile
+--prune-missing`), 42 of the 43 reverted-run rows re-organized and healed (item 1).
+Open: one straggler + the 25-row staging-dir provenance record (items 2–3).
 **Priority:** P3
 **Source:** DB path audit, 2026-07-26 (same session as the sprite naming-trap fix)
 
@@ -166,6 +167,13 @@ the 43-row reverted-run set and the 25-row staging-dir set are documented here, 
    The latter is attractive because these 43 are exactly the corpus that motivated the
    weak-shape sprite fix — 19 of them are photos the DB still labels
    `game_assets/sprites`, which the fixed classifier now routes to `media/photos_*`.
+   **RESOLVED 2026-07-26** by taking that option: `organize-files content --source
+   ~/Desktop/Uncategorized` re-organized 42 of the 43 (the 43rd is item 3 below).
+   Because `add_file` keys on `generate_id(original_path)` and the files were back at
+   their original paths, all 42 rows **updated in place** — no duplicates. The sprite
+   fix held: zero files routed to `game_assets/sprites`; 36 photos went to
+   `media/photos_{social,other}`, the logos to `Organization/Integrity Studio`, and
+   `Burning_Flipside_Map.pdf` to `Events/Burning Flipside/`.
 2. **Agent temp-staging dirs must never be the organize source (25 rows).**
    25 rows record `original_path` inside
    `~/.claude/jobs/e184540b/tmp/interior_apply_stage/` — an agent job's temp staging
@@ -177,6 +185,143 @@ the 43-row reverted-run set and the 25-row staging-dir set are documented here, 
    store**, because `original_path` then permanently records a path that ceases to
    exist and provenance is destroyed. Stage into a durable location, or organize from
    the user's real source directory.
+3. **Residual rows the 2026-07-26 sweep deliberately left (4 rows).**
+   - `flutter_auth.txt` — the 43rd reverted-run file, sitting at `~/Desktop` **root**
+     rather than `~/Desktop/Uncategorized`, so it was outside the source the re-organize
+     covered. Its `current_path` still claims `Documents/Business/Planning/`. One
+     `organize-files content --source ~/Desktop --limit 1`-style pass (or a `reconcile`
+     path repair) closes it.
+   - 3 rows under `Events/Burning Flipside/` have **no category edge**:
+     `reconcile --backfill-categories` resolves a category from the file's folder, and
+     entity-named folders (`Events/{Name}`, `Organization/{Name}`) carry no unambiguous
+     subcategory, so it reports them unresolved rather than guessing. Either assign by
+     hand (`reconcile --set-category`) or teach the backfill to strip a trailing
+     entity segment and map the parent (`Events/*` → `events/other`).
+
+### Filename rules still route images by name when content disagrees
+
+`FilenamePatternSignal` graduates several naming traps so content evidence can outscore
+them (weak-shape sprite stems, source-provenance stems, camera/scanner stems — see
+`graduated_filename_confidence`). Two more traps of the same family are **not** graduated
+and were observed misfiling real files during the 2026-07-26 `~/Desktop/Uncategorized`
+ingestion:
+
+1. **Person-name stems send photos to `personal/contacts`.** Four couple photos
+   (`sumedh_alyshia*.jpg`) matched the shared module's "Person (Alyshia Ledlie)" rule and
+   filed as `Personal/Contacts` — a folder for vCards, resumes and address records, not
+   pictures of people. Visually confirmed (photobooth couple shots) and re-filed by hand
+   to `media/photos_social` with their `file→person` edges kept (Option C keeps person
+   attribution independent of the filing category). The classifier is unchanged, so the
+   next such filename repeats it. Fix shape is known and proven: add the
+   `personal/contacts` result on an **image** `schema_type` to the graduation table so
+   `PhotoCompositionSignal`/`MediaHeuristicSignal`/CLIP decide, while leaving
+   document-typed resumes at full confidence. Note the sibling stems that behaved
+   correctly (`sumedh_teresa.jpg`, `love_sumedh.jpg`) only did so because they miss the
+   curated known-person pattern — i.e. the trap fires precisely on *known* people.
+2. **`stock-vector-*` / `pngtree-*` stock-asset stems.** `stock-vector-modeling-blue-red-
+   four-color-minimal-icon-set.jpeg` filed as `media/photos_other` although the stem says
+   it is a vector icon set (`media/graphics_*`). Lower impact than #1 — the destination is
+   at least within `media/` — but the same "filename asserts the format, content never
+   checked" shape.
+
+**Status:** Open — instances repaired by hand 2026-07-26; the classifier behaviour is
+unchanged. Reproduces on any new file with a curated person name in the stem.
+**Priority:** P2 for #1 (misfiles personal photos into a document folder), P3 for #2
+**Source:** `~/Desktop/Uncategorized` ingestion, 2026-07-26
+
+### Re-organizing a file does not reconcile its graph edges
+
+Two independent gaps in `FileProcessor.organize_file` mean the graph does not converge on
+the filesystem when a file is organized a second time. Both were hit during the
+2026-07-26 ingestion and worked around by hand or by new tooling.
+
+1. **`add_file_to_category` appends; it never replaces.** Re-organizing a file adds the
+   new `(category, subcategory)` edge alongside every historical one, so a file can claim
+   two contradictory categories at once. After the ingestion, 21 of the 43 re-organized
+   rows carried both a stale June `game_assets/sprites` edge and the correct new
+   `media/photos_*` edge; they were collapsed by hand via `GraphStore.set_file_category`
+   (which *does* replace) using the run's own report as the authority. This matters beyond
+   tidiness: `backtest_scoring._stored_pair` reads `record.categories[0]`, so a stale
+   first edge silently becomes "the" stored label in the calibration oracle. **11
+   multi-edge rows outside that batch remain** (verified 2026-07-26), e.g. 8 screenshots
+   holding
+   `game_assets/sprites` + `media/graphics_other`, the Texas license back holding
+   `game_assets/sprites` + `personal/identification`, and `HOOKS_ARCHITECTURE.md` holding
+   `filepath/Technical/Documentation/alyshialedlie` + `technical/architecture`. Decide
+   whether a content run should replace the category edge (probably yes, with the old
+   edge preserved in `signal_evidence`) or whether multi-category is legitimate and the
+   oracle should stop trusting `categories[0]`.
+2. **`already_organized` short-circuits before persistence.** When `physical_path ==
+   dest_path` and `force` is False, `organize_file` returns at `file_processor.py:569`
+   *before* `_persist_to_graph_store`, so a file that is already in the right place can
+   never gain a DB row, a category edge, or updated `signal_evidence` from a re-run. That
+   is why the 125 category-less rows could not be repaired by re-running the organizer and
+   needed the new `organize-files reconcile --backfill-categories` instead. `--force`
+   is not a workaround: it proceeds into `shutil.move(x, x)`.
+
+**Status:** Open — instances repaired; both behaviours unchanged in the pipeline.
+**Priority:** P2 (silently corrupts the calibration oracle via `categories[0]`)
+**Source:** `~/Desktop/Uncategorized` ingestion + category backfill, 2026-07-26
+
+### Persisted-text PII redaction is medical-only and best-effort
+
+`organize-files content` redacts `files.extracted_text` and `schema_data["text"]` for
+files classified `medical` (`src/analyzers/text_redaction.py`, added 2026-07-26). Two
+deliberate limits are worth revisiting rather than forgetting:
+
+1. **Category-gated, not content-gated.** `MEDICAL_TEXT_REDACTION_CATEGORIES` is
+   `{"medical"}`, so a health document the scorer files elsewhere stores raw text. This
+   is not hypothetical: during the medical ingestion the scorer wanted
+   `personal/contacts` for 5 of the 11 files and `uncategorized` for another — only the
+   folder-truth category override kept them inside the redaction gate. Consider gating on
+   *detected content* (medical vocabulary / KIE field classes) rather than the winning
+   category, and extending to the other sensitive categories the QUICK_START tips call out.
+2. **Only numeric/email/known-name PII is masked.** Emails, digit runs of 2+, and the
+   decision's detected person names are masked; alphabetic PII outside that set —
+   conditions, medications, third-party names the entity detector missed — survives
+   verbatim. Same known limitation as `scripts/redact_pii.py`'s raster path, and the
+   reason `--no-db` remains the guidance for genomics and similar.
+
+Also unquantified: **how many organized files are missing from the DB entirely.** The
+`Medical/` audit found 12 of 17 on-disk files untracked (filed manually or by the DB-free
+`name`/`type` organizers, which persist nothing by design). No census was run over the
+rest of `~/Documents`, so the true coverage of the graph is unknown.
+
+**Status:** Open — known limits documented in the module docstring and QUICK_START; no
+code work started.
+**Priority:** P3
+**Source:** medical text-redaction work + `Medical/` folder audit, 2026-07-26
+
+### Lint debt: pre-existing flake8 findings
+
+`mypy` is clean repo-wide as of 2026-07-26 (`2dbc148`), but `flake8 src/ scripts/ tests/`
+reports **540 findings** across the tree (config: `.flake8`, max-line-length 100,
+extend-ignore E203/W503). Every finding encountered during the type pass was verified
+pre-existing (checked against `git stash`), so this is long-standing debt, not new.
+
+By code: `E111` indentation-not-a-multiple-of-four (249), `E501` long lines (151),
+`F401` unused imports (44), `E402` module-import-not-at-top (21), `E128`/`E131`
+continuation-line indent (22), `F841` unused locals (15), `E114`/`E302`/`W293` (23),
+plus a scatter including `E741 ambiguous variable name 'l'`
+(`tests/integration/test_schema_org_export_e2e.py`).
+
+By file, the debt is concentrated — five files hold ~55% of it:
+`src/api/schema_org_models.py` (162), `scripts/d1/export_to_d1.py` (49),
+`src/cost_roi_calculator.py` (30), `tests/unit/test_image_metadata.py` (28),
+`scripts/image_content_analyzer.py` (26).
+
+The `E111`/`E114` bulk is 2-space-indented code that predates the project's 4-space
+convention, so `black` would fix most of it mechanically — but reformatting
+`schema_org_models.py` (the Pydantic API surface) and `export_to_d1.py` in one sweep is a
+large diff that should land on its own, not mixed with behaviour changes. Suggested order:
+run `black` over the five concentrated files, then clear `F401`/`F841` (safe deletions),
+then hand-wrap the residual `E501`s. `E402` in `scripts/profile_pipeline.py` and
+`file_organizer_content_based.py` is deliberate (sys.path setup precedes imports) and
+should get `# noqa: E402` rather than reordering.
+
+**Status:** Open — never started; enumerated here so the next pass has a worklist.
+**Priority:** P3 (no behaviour at stake; mechanical but a large diff)
+**Source:** mypy cleanup pass, 2026-07-26
 
 ## Repo Snapshot — 2026-07-18
 
