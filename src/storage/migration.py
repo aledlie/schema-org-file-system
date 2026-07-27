@@ -335,7 +335,7 @@ class JSONMigrator:
         file = db_session.query(File).filter(File.id == file_id).first()
         if file and person and person not in file.people:
             file.people.append(person)
-            person.file_count = (person.file_count or 0) + 1
+            # ORM append event maintains person.file_count.
 
     def _add_location_to_file(
         self,
@@ -366,7 +366,7 @@ class JSONMigrator:
         file = db_session.query(File).filter(File.id == file_id).first()
         if file and location not in file.locations:
             file.locations.append(location)
-            location.file_count = (location.file_count or 0) + 1
+            # ORM append event maintains location.file_count.
 
     def _migrate_cost_report(self, file_path: Path, verbose: bool = True):
         """

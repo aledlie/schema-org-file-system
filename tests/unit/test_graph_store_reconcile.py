@@ -348,3 +348,18 @@ class TestRecountEntityFileCounts:
 
         summary = store.recount_entity_file_counts()
         assert any(e["type"] == "person" and e["actual"] == 1 for e in summary["entities"])
+
+    def test_orm_operations_produce_no_drift(self, store: GraphStore) -> None:
+        """ORM-path append/remove keep file_count accurate; recount detects no drift."""
+        file_id = _add_file(store, "/tmp/a.pdf", "business", "clients")
+        # Replace the category edge: remove one, add another.
+        store.set_file_category(file_id, "legal", "contracts")
+        # Add a person edge then remove it.
+        store.add_file_to_person(file_id, "Alice Smith", role="mentioned")
+        store.remove_person_edge(file_id, "Alice Smith")
+
+        summary = store.recount_entity_file_counts()
+        assert summary["corrected"] == 0, (
+            f"Expected 0 drift after ORM operations; got {summary['corrected']} corrections: "
+            f"{summary['entities']}"
+        )

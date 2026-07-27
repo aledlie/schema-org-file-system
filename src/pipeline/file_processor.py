@@ -381,7 +381,7 @@ class FileProcessor:
             if file_record.categories:
                 for old_cat in list(file_record.categories):
                     file_record.categories.remove(old_cat)
-                    old_cat.file_count = max((old_cat.file_count or 0) - 1, 0)
+                    # ORM remove event maintains old_cat.file_count.
                 session.flush()
 
             # Add category relationship (with scoring evidence when present).

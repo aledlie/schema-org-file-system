@@ -1431,6 +1431,54 @@ class MergeEvent(Base):
         }
 
 
+# ---------------------------------------------------------------------------
+# Relationship-level ORM events: maintain the denormalized file_count cache
+# automatically for every append/remove via the ORM.  Raw-SQL writes still
+# bypass these listeners; use `GraphStore.recount_entity_file_counts` to
+# repair any drift after such writes.
+# ---------------------------------------------------------------------------
+
+
+@event.listens_for(File.categories, "append")
+def _on_category_append(target: "File", value: "Category", initiator: object) -> None:
+    value.file_count = (value.file_count or 0) + 1
+
+
+@event.listens_for(File.categories, "remove")
+def _on_category_remove(target: "File", value: "Category", initiator: object) -> None:
+    value.file_count = max((value.file_count or 0) - 1, 0)
+
+
+@event.listens_for(File.companies, "append")
+def _on_company_append(target: "File", value: "Company", initiator: object) -> None:
+    value.file_count = (value.file_count or 0) + 1
+
+
+@event.listens_for(File.companies, "remove")
+def _on_company_remove(target: "File", value: "Company", initiator: object) -> None:
+    value.file_count = max((value.file_count or 0) - 1, 0)
+
+
+@event.listens_for(File.people, "append")
+def _on_person_append(target: "File", value: "Person", initiator: object) -> None:
+    value.file_count = (value.file_count or 0) + 1
+
+
+@event.listens_for(File.people, "remove")
+def _on_person_remove(target: "File", value: "Person", initiator: object) -> None:
+    value.file_count = max((value.file_count or 0) - 1, 0)
+
+
+@event.listens_for(File.locations, "append")
+def _on_location_append(target: "File", value: "Location", initiator: object) -> None:
+    value.file_count = (value.file_count or 0) + 1
+
+
+@event.listens_for(File.locations, "remove")
+def _on_location_remove(target: "File", value: "Location", initiator: object) -> None:
+    value.file_count = max((value.file_count or 0) - 1, 0)
+
+
 def init_db(db_path: str = "file_organization.db") -> Session:
     """
     Initialize the database and return a session.

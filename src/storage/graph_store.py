@@ -431,11 +431,10 @@ class GraphStore:
             if category is None:
                 return False
 
-            # Add relationship if not exists
+            # Add relationship if not exists (ORM append event maintains file_count).
             changed = False
             if category not in file.categories:
                 file.categories.append(category)
-                category.file_count = (category.file_count or 0) + 1
                 changed = True
 
             # Persist scoring evidence on the association row (nullable,
@@ -545,7 +544,7 @@ class GraphStore:
 
             if company not in file.companies:
                 file.companies.append(company)
-                company.file_count = (company.file_count or 0) + 1
+                # ORM append event maintains company.file_count.
                 company.last_seen = utcnow()
                 # Only commit if we own the session
                 if owned:
@@ -691,7 +690,7 @@ class GraphStore:
 
             if person not in file.people:
                 file.people.append(person)
-                person.file_count = (person.file_count or 0) + 1
+                # ORM append event maintains person.file_count.
                 person.last_seen = utcnow()
                 if owned:
                     session.commit()
@@ -957,7 +956,7 @@ class GraphStore:
                 return False
 
             file.people.remove(person)
-            person.file_count = max((person.file_count or 0) - 1, 0)
+            # ORM remove event maintains person.file_count.
             if owned:
                 session.commit()
             return True
@@ -1042,7 +1041,7 @@ class GraphStore:
                     )
                     if not dry_run:
                         person.files.remove(file)
-                        person.file_count = max((person.file_count or 0) - 1, 0)
+                        # ORM remove event maintains person.file_count.
 
             if not dry_run and owned:
                 session.commit()
@@ -1115,7 +1114,7 @@ class GraphStore:
 
             for category in list(file.categories):
                 file.categories.remove(category)
-                category.file_count = max((category.file_count or 0) - 1, 0)
+                # ORM remove event maintains category.file_count.
 
             self.add_file_to_category(file.id, category_name, subcategory_name, session=session)
 
@@ -1328,10 +1327,10 @@ class GraphStore:
 
                 for category in list(file.categories):
                     file.categories.remove(category)
-                    category.file_count = max((category.file_count or 0) - 1, 0)
+                    # ORM remove event maintains category.file_count.
                 for person in list(file.people):
                     file.people.remove(person)
-                    person.file_count = max((person.file_count or 0) - 1, 0)
+                    # ORM remove event maintains person.file_count.
                 file.companies.clear()
                 file.locations.clear()
 
@@ -1453,7 +1452,7 @@ class GraphStore:
 
             if location not in file.locations:
                 file.locations.append(location)
-                location.file_count = (location.file_count or 0) + 1
+                # ORM append event maintains location.file_count.
                 if owned:
                     session.commit()
 
