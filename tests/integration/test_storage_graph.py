@@ -4,11 +4,6 @@ Integration tests for GraphStore.
 Tests database operations with real SQLite database.
 """
 
-import pytest
-from datetime import datetime
-from pathlib import Path
-
-from src.storage.graph_store import GraphStore
 from src.storage.models import FileStatus, RelationshipType
 
 

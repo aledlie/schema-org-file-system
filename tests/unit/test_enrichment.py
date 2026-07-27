@@ -16,10 +16,7 @@ Tests metadata enrichment from various sources including:
 
 import json
 import tempfile
-import uuid
-from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict
 
 import pytest
 

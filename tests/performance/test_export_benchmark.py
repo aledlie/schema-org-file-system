@@ -23,7 +23,6 @@ Benchmark output files are stored under .benchmarks/ (add to .gitignore if desir
 
 import sys
 from pathlib import Path
-from uuid import uuid4
 
 from typing import Iterator
 

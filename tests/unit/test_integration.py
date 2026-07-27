@@ -1,8 +1,6 @@
 """Unit tests for src.integration — SchemaIntegration and SchemaRegistry."""
 
 import json
-import os
-import tempfile
 from pathlib import Path
 from typing import Any, Dict
 

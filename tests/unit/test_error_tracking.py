@@ -1,6 +1,5 @@
 """Unit tests for src.error_tracking (non-Sentry paths)."""
 
-from typing import Any
 from unittest.mock import patch, MagicMock
 
 import pytest

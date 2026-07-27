@@ -14,10 +14,7 @@ CLIP model are needed.  Covers:
 - score_raster_graphic pure helper (unit-testable without signal)
 """
 
-import io
 from pathlib import Path
-from typing import Optional
-from unittest.mock import MagicMock, patch
 
 import pytest
 

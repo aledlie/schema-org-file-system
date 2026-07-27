@@ -16,10 +16,8 @@ Tests cost tracking, ROI calculation, and reporting including:
 import json
 import tempfile
 import time
-from dataclasses import asdict
 from datetime import datetime
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
@@ -556,7 +554,7 @@ class TestCostTracker:
         """Should record successful usage on normal exit."""
         calc = CostROICalculator()
 
-        with CostTracker(calc, 'clip_vision', files_processed=1) as tracker:
+        with CostTracker(calc, 'clip_vision', files_processed=1):
             time.sleep(0.01)  # Simulate some work
 
         assert len(calc.usage_records) == 1
@@ -568,7 +566,7 @@ class TestCostTracker:
         calc = CostROICalculator()
 
         try:
-            with CostTracker(calc, 'tesseract_ocr', files_processed=1) as tracker:
+            with CostTracker(calc, 'tesseract_ocr', files_processed=1):
                 raise ValueError('Test error')
         except ValueError:
             pass

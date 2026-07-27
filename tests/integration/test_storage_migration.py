@@ -16,9 +16,7 @@ import os
 import sqlite3
 import tempfile
 import uuid
-from datetime import datetime
 from pathlib import Path
-from typing import Dict, Any, List
 from unittest.mock import patch, MagicMock
 
 import pytest
@@ -230,16 +228,14 @@ class TestRunMigration:
         """Should not modify database in dry run mode."""
         # Get initial state
         conn = sqlite3.connect(initialized_db)
-        initial_tables = conn.execute(
-            "SELECT name FROM sqlite_master WHERE type='table'"
-        ).fetchall()
+        conn.execute("SELECT name FROM sqlite_master WHERE type='table'").fetchall()
         conn.close()
 
         # Run dry migration - note: dry_run has a bug where it tries to query
         # columns that don't exist yet. The test verifies that schema
         # modifications are not applied in dry run mode.
         try:
-            stats = run_migration(initialized_db, dry_run=True)
+            run_migration(initialized_db, dry_run=True)
         except sqlite3.OperationalError:
             # Expected in dry_run when columns don't exist yet
             # The important thing is the schema changes were not committed
@@ -258,7 +254,7 @@ class TestRunMigration:
 
     def test_run_migration_adds_canonical_id_columns(self, initialized_db):
         """Should add canonical_id column to entity tables."""
-        stats = run_migration(initialized_db, dry_run=False)
+        run_migration(initialized_db, dry_run=False)
 
         conn = sqlite3.connect(initialized_db)
 
@@ -307,7 +303,7 @@ class TestRunMigration:
         conn.close()
 
         # Run migration
-        stats = run_migration(initialized_db, dry_run=False)
+        run_migration(initialized_db, dry_run=False)
 
         # Verify backfill
         conn = sqlite3.connect(initialized_db)
@@ -347,7 +343,7 @@ class TestRunMigration:
     def test_run_migration_idempotent(self, initialized_db):
         """Running migration twice should be safe."""
         # First run
-        stats1 = run_migration(initialized_db, dry_run=False)
+        run_migration(initialized_db, dry_run=False)
 
         # Second run
         stats2 = run_migration(initialized_db, dry_run=False)
@@ -425,7 +421,7 @@ class TestJSONMigratorMigrateAll:
                 db_path=temp_db,
                 results_dir=str(temp_results_dir)
             )
-            stats = migrator.migrate_all(verbose=True)
+            migrator.migrate_all(verbose=True)
 
             captured = capsys.readouterr()
 
@@ -464,7 +460,7 @@ class TestMigrateCostReport:
 
     def test_migrate_cost_report_stores_summary(self, temp_results_dir, temp_db):
         """Should store cost summary in key-value store."""
-        with patch('src.storage.migration.GraphStore') as mock_graph, \
+        with patch('src.storage.migration.GraphStore'), \
              patch('src.storage.migration.KeyValueStorage') as mock_kv:
 
             mock_kv_instance = MagicMock()
@@ -495,7 +491,7 @@ class TestMigrateGenericJSON:
 
     def test_store_generic_json(self, temp_results_dir, temp_db):
         """Should store generic JSON in key-value store."""
-        with patch('src.storage.migration.GraphStore') as mock_graph, \
+        with patch('src.storage.migration.GraphStore'), \
              patch('src.storage.migration.KeyValueStorage') as mock_kv:
 
             mock_kv_instance = MagicMock()
@@ -524,7 +520,7 @@ class TestVerifyMigration:
     def test_verify_migration_returns_stats(self, temp_results_dir, temp_db):
         """Should return verification statistics."""
         with patch('src.storage.migration.GraphStore') as mock_graph, \
-             patch('src.storage.migration.KeyValueStorage') as mock_kv:
+             patch('src.storage.migration.KeyValueStorage'):
 
             mock_graph_instance = MagicMock()
             mock_graph_instance.get_statistics.return_value = {

@@ -12,7 +12,6 @@ import json
 import pytest
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from datetime import datetime
 from typing import Generator
 
 
@@ -127,7 +126,7 @@ def mock_cost_calculator():
 @pytest.fixture
 def mock_sentry():
     """Mock Sentry for testing."""
-    from unittest.mock import MagicMock, patch
+    from unittest.mock import patch
     with patch('src.error_tracking.capture_error') as mock:
         yield mock
 

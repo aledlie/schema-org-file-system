@@ -79,7 +79,7 @@ def build_given_names() -> list[str]:
             parts = line.split()
             if len(parts) < 4:
                 continue
-            name, _freq, _cum, rank = parts[0], parts[1], parts[2], parts[3]
+            name, _, _, rank = parts[0], parts[1], parts[2], parts[3]
             try:
                 if int(rank) > GIVEN_NAME_TOP_N:
                     continue

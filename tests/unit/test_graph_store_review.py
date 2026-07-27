@@ -2,12 +2,11 @@
 
 import argparse
 from pathlib import Path
-from unittest.mock import patch
 
 import pytest
 
-from src.storage.graph_store import GraphStore, PERSON_REVIEW_STATUSES
-from src.storage.models import Person, file_people
+from src.storage.graph_store import GraphStore
+from src.storage.models import Person
 
 
 @pytest.fixture
