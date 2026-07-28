@@ -5,3 +5,9 @@ interior/
 exterior/
 place/
 neither/
+# graphic/ is tracked (own images, committed 6f61449) EXCEPT third-party pulls:
+# Crello/VistaCreate forbids redistributing the source templates, so the
+# generated previews stay local. Regenerate with
+# scripts/download_crello_graphics.py.
+graphic/crello_*
+graphic/crello_manifest.csv

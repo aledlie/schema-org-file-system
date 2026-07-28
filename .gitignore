@@ -46,6 +46,11 @@ results/*.bak-*
 results/*.txt
 results/*.jsonl
 results/ml_data*/
+# Derived scene-probe corpus: encoding-normalized copies of the class dirs
+# (scripts/normalize_scene_corpus.py) plus its gather manifest. Regenerable,
+# and it carries the same personal/third-party images as the source tree.
+results/scene_labels_norm/
+results/scene_labels_norm.csv
 
 # Corrections data (user-specific)
 corrections.json
