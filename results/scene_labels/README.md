@@ -3,8 +3,10 @@
 Hand-labeled images for the scene probe (`scripts/prototype_scene_probe.py`),
 consumed by the `SceneSignal`. Full design: [`docs/plans/MEDIA_EXTERIORS_PLAN.md`](../../docs/plans/MEDIA_EXTERIORS_PLAN.md).
 
-Drop images (copies or symlinks) into the class dir that matches. The image
-contents are git-ignored (see `.gitignore` here) — only this README is tracked.
+Drop images (copies or symlinks) into the class dir that matches. `interior/`,
+`exterior/`, `place/` and `neither/` are git-ignored (personal images); `graphic/`
+is tracked **except** third-party pulls matching `crello_*` — see
+[Sourcing `graphic/`](#sourcing-graphic) below.
 
 | Dir | Scene class | Routes to | schema.org @type | What belongs here |
 |-----|-------------|-----------|------------------|-------------------|
@@ -38,6 +40,31 @@ Aim for **150–300 per positive class** for a reliable probe; a few hundred eas
 > external roots) and `src/scoring/signals/scene.py` maps it to
 > `("media", "graphics_other")` / `ImageObject`. Corpus volume is what remains —
 > see the graphic-probe item in [`docs/BACKLOG.md`](../../docs/BACKLOG.md).
+
+## Sourcing `graphic/`
+
+Local sources of *pure* graphics are tapped out, so the bulk of this class comes
+from the **Crello** template dataset (`cyberagent/crello`):
+
+```bash
+python scripts/download_crello_graphics.py     # -> graphic/crello_*.jpg
+```
+
+The script selects on Crello's own `format` label (Logo, Poster, Infographic,
+Web Banner, Flyer, ad creatives…), drops any template containing an
+`ImageElement` (those embed photographs and belong nearer `neither/`), and takes
+one template per `cluster_index` so near-duplicate variants can't leak across CV
+folds. Previews are re-encoded to JPEG at 512px rather than kept as native PNG —
+`place/` is 100% JPEG at ~256px and the hand-collected `graphic/` images are
+mostly PNG at ~1536px, so unfiltered PNG imports would deepen an
+encoding-correlates-with-class shortcut.
+
+**These images are git-ignored and must not be committed.** CyberAgent does not
+own the templates; the dataset is CDLA-Permissive-2.0 but conditioned on the
+VistaCreate license agreements, and the curators do not redistribute source
+files. Local training is fine, redistribution is not — the script is how a fresh
+clone reproduces the corpus, the same arrangement as
+`scripts/download_census_names.py` and the gitignored surname gazetteer.
 
 Then:
 

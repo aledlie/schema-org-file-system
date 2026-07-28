@@ -32,7 +32,9 @@ Last updated: 2026-07-25 (migrated 3 Done items to `docs/changelog/2.2.0/CHANGEL
 
 The durable fix mirrors the interior-detection precedent (`docs/reviews/INTERIOR_DETECTION_DURABLE_FIX_ANALYSIS.md`): replace/augment the pixel heuristics with a **trained linear probe over the frozen `ViT-B-32` embeddings the pipeline already caches** — a `graphic` (or binary graphic-vs-photograph) class — exactly as `InteriorSignal` (`src/scoring/signals/interior.py`, `results/interior_probe.joblib`) did for the zero-shot interior gate. CLIP embeddings *do* separate graphics from photographs even though CLIP zero-shot labels don't (the whole reason `GraphicDetectionSignal` avoided CLIP). Landing chosen and shipped: a dedicated `graphic` class (index 4) in the scene probe (`scripts/prototype_scene_probe.py`, corpus `results/scene_labels/`) — see the runtime bullet below; the logo + poster above are ideal `graphic/` positives (boundary rules: `results/scene_labels/README.md`, graphic-vs-photograph split added `38ddfd5`).
 
-**Status:** Open — code path complete (`c327877`, 2026-07-18): `graphic` is wired end-to-end as the 5th scene-probe class, inert until a 5-class `scene_probe.joblib` is trained and committed. Remaining work is data-only (corpus labeling + retrain). Cheap gate stays as a fast-path for true icon assets.
+**Status:** Open — narrowed 2026-07-27. Corpus expanded 34 → 307 via Crello; real-world
+graphic recall 0.67 → 0.76. The residual error is now a single identified subtype
+(data-viz/dashboards), not general volume. See the 2026-07-27 entry at the end of this item.
 **Priority:** P3
 **Source:** ChatGPT shadow-scorer investigation, 2026-07-18 (`results/scoring_shadow.jsonl`; agreement-set manual review)
 
@@ -43,6 +45,50 @@ The durable fix mirrors the interior-detection precedent (`docs/reviews/INTERIOR
 - **First eval baseline (2026-07-18, `gather --label-dirs` + `eval`, 3-fold CV, n=122).** Corpus at eval time: neither 42, interior 44, exterior 21, place 3, **graphic 12**. Graphic class: **precision 1.00 / recall 0.42 / F1 0.59** — confusion row `graphic → [7 neither, 0, 0, 0, 5 graphic]` (7/12 graphics still fall back to `neither` → leak to `photos_*`, the original bug). Classic starved-minority signature: **high precision, low recall — corpus volume is the fix, not tuning.** Deploy-safety confirmed: at the default `SCENE_MIN_PROB=0.5` graphic precision holds at **1.00** across the 0.5→0.7 sweep, so a live 5-class probe would add no photo→graphics false positives (safe-but-partial: misses ~60% of graphics, no regression on them). **Headline metrics are inflated** (macro ROC-AUC 0.993 / acc 0.918): `place` n=3 is meaningless and near-duplicate images (two coffee-station photos, multiple Integrity banners) leak across CV folds — do not read as deployment-ready. **Decision: do not `train`/commit a `.joblib` yet** — an artifact activates the registry swap, and graphic recall 0.42 isn't worth shipping. Hold until `graphic/`≈150 and `place/` is real.
 - **Runtime landing path — code steps done (`c327877`, 2026-07-18).** `SceneSignal` (`src/scoring/signals/scene.py`) + the artifact-gated registry swap landed in `5f6db5b`; `c327877` wired the 5th class end-to-end: `"graphic": 4` in `SCENE_CLASSES` + `_POSITIVE_NAMES` (so `gather` picks up `results/scene_labels/graphic/`), runtime mapping `SCENE_CATEGORY["graphic"] → ("media", "graphics_other")` (resolves to `Media/Graphics/Other`, the same target `GraphicDetectionSignal` emits), `SCENE_SCHEMA["graphic"] → ImageObject`, `_INT_CLASS_NAMES[4]`. Back-compat: a pre-graphic 4-class artifact still loads — `SceneSignal` ignores classes absent from `SCENE_CATEGORY`, so nothing misroutes before retraining. 16/16 scene tests pass (new test pins graphic-argmax → `media/graphics_other`).
 - **Trained and shipped (2026-07-18, supersedes the "do not train yet" hold above).** Corpus was expanded the same day (Places365 sampling for place/exterior/interior + Business-folder graphics + Media-filtered `--db-neither`) to 835 rows — neither 118, interior 178, exterior 158, place 347, graphic 33 — clearing the hold's `place`-is-fake blocker. Final 5-fold eval: accuracy 0.92; graphic **P 0.73–0.82 / R 0.60–0.67 / F1 ~0.70**. User decision: **train now, accept conservative graphic recall** — the miss mode is benign (a missed graphic gets no scene vote and falls through to `GraphicDetectionSignal` + other signals, i.e. today's behavior). `scene_probe.joblib` trained + committed (`6f61449`); swap completion followed (interior.py deleted, `photo_composition` interior vote retired, `scene_probe` health feature, W_SCENE backtest: −20% flips 4 / +20% flips 0 on the 202-row replay). **Still open here: graphic recall.** Corpus volume from *pure* graphics (logos, posters, flat illustrations — local sources are tapped out; a public logo/infographic dataset is the realistic path), and a labeling-policy call on promo-panels-with-embedded-UI (semantically graphics, visually half-screenshot — currently the main graphic↔neither confusion).
+
+- **Corpus expanded from Crello, 2026-07-27 — and the headline number is misleading.**
+  `scripts/download_crello_graphics.py` pulled **273** flat-design previews from
+  `cyberagent/crello` across 14 `format` subtypes (logo, poster, flyer, ad creative,
+  certificate, coupon…), filtered to templates with no `ImageElement` (those embed
+  photographs) and one per `cluster_index` (near-duplicate variants would leak across CV
+  folds). Class went **34 → 307**, inside the 150–300 target band. Aggregate 5-fold CV:
+  graphic **P 0.73 → 0.97, R 0.67 → 0.96, F1 0.70 → 0.97**; overall accuracy 0.90 → 0.93.
+  **Do not read that as a 0.97.** Per-source recall: **Crello 272/273 = 0.996**,
+  **hand-collected 25/33 = 0.758**. Crello templates are near-trivially separable, so
+  they inflate the aggregate; the honest real-world gain is **0.67 → 0.76**.
+  Images are gitignored (`graphic/crello_*`) — CyberAgent conditions use on the
+  VistaCreate ToS and does not redistribute source files, so the script is the
+  reproduction path (same arrangement as `download_census_names.py`).
+- **The residual error is one coherent subtype, not general scarcity.** 7 of the 8 missed
+  hand-collected graphics are `biz_dashboard_*` images and the 8th is an
+  "AI Market Map" infographic — all flat-design **data-viz**, all routed to `neither`.
+  Visually confirmed: these are non-photographic flat vector charts, so `graphic` is the
+  correct label and the probe is genuinely wrong. Crello supplies posters/logos/ads and
+  almost no data-viz, which is exactly why it didn't fix them. **Next increment should
+  target dashboards/infographics/charts, not more posters.** InfographicVQA is the ideal
+  content match but is research/education-only (blocked — see
+  `~/.claude/.../memory/dataset-license-constraints.md`); **DomainNet `infograph`**
+  (51,605 images, one-line TFDS pull) is the license-viable candidate, pending
+  verification of DomainNet's terms at ai.bu.edu.
+- **This also sharpens the promo-panel labeling call.** The dashboards are the hybrid case
+  in concrete form: flat data-viz rendered inside product UI. The README's boundary rules
+  currently point both ways — "data-viz → `graphic`" and "UI screenshots → `neither`".
+  Enrico's published precedent (no promotional category; onboarding/value-prop panels
+  labeled as functional UI) argues for `neither`; the graphic class's *purpose* — stop
+  non-photographic imagery leaking to `photos_*` — argues for `graphic`. Decide and write
+  it into the boundary rules, because 8 of the corpus's hardest images turn on it.
+- **Encoding confound found and fixed (`scripts/normalize_scene_corpus.py`).** The corpus
+  had class partly recoverable from file metadata alone: `place/` was 100% JPEG at 256px
+  (Places365), hand-collected `graphic/` mostly PNG at ~1536px. A logistic regression on
+  encoding metadata *only* (format, dimensions, aspect, size, bytes-per-pixel — no pixels)
+  scored **0.561 vs a 0.327 majority baseline, lift +0.234**. Normalizing every class
+  through one encoder (JPEG q90, longest side 256 — above CLIP's 224 input, so nothing the
+  model sees is lost) cuts it to **0.411, lift +0.084**. Ablation shows the remainder is
+  aspect ratio (+0.139 alone) and compressibility (+0.072); **aspect cannot reach the probe
+  because CLIP center-crops to square**, and compressibility is genuine content signal
+  (flat design compresses better than photographs). Re-eval on the normalized tree holds
+  graphic recall at 297/306, confirming the Crello gain is content, not encoding artifact.
+  Output tree is gitignored and regenerable.
 
 ### Content pipeline is OCR-bound (gate OCR on text-likelihood)
 
@@ -150,9 +196,11 @@ integrity problems, neither of which is data loss, and both of which mislead any
 future reader of the DB (including the calibration oracle in
 [`docs/architecture/scoring-calibration-20260726.md`](architecture/scoring-calibration-20260726.md)).
 
-**Status:** Mostly resolved 2026-07-26 — 7 dead rows pruned (`reconcile
---prune-missing`), 42 of the 43 reverted-run rows re-organized and healed (item 1).
-Open: one straggler + the 25-row staging-dir provenance record (items 2–3).
+**Status:** Mostly resolved — 7 dead rows pruned (`reconcile --prune-missing`), 42 of
+the 43 reverted-run rows re-organized and healed (item 1), and the 3 category-less
+`Events/Burning Flipside/` rows now resolve via the looped entity-segment strip
+(item 3, 2026-07-27). Open: the `flutter_auth.txt` straggler + the 25-row staging-dir
+provenance record (items 2–3).
 **Priority:** P3
 **Source:** DB path audit, 2026-07-26 (same session as the sprite naming-trap fix)
 
@@ -196,12 +244,28 @@ Open: one straggler + the 25-row staging-dir provenance record (items 2–3).
      covered. Its `current_path` still claims `Documents/Business/Planning/`. One
      `organize-files content --source ~/Desktop --limit 1`-style pass (or a `reconcile`
      path repair) closes it.
-   - 3 rows under `Events/Burning Flipside/` have **no category edge**:
-     `reconcile --backfill-categories` resolves a category from the file's folder, and
-     entity-named folders (`Events/{Name}`, `Organization/{Name}`) carry no unambiguous
-     subcategory, so it reports them unresolved rather than guessing. Either assign by
-     hand (`reconcile --set-category`) or teach the backfill to strip a trailing
-     entity segment and map the parent (`Events/*` → `events/other`).
+   - ~~3 rows under `Events/Burning Flipside/` have **no category edge**~~
+     **FIXED 2026-07-27.** Folder lookup moved to `resolve_taxonomy_folder`
+     (`graph_store.py`): exact match first, then trailing segments stripped **in a
+     loop** until an ancestor is in the taxonomy, so entity-named folders resolve at
+     any depth (`Events/{Name}/2026/maps` → `Events`, `Media/Interiors/{Prop}/{Room}`
+     → `Media/Interiors`). A parent reached *by stripping* that declares no
+     subcategory is filed under the generic bucket — `Events/*` → `events/other` —
+     while an exact match keeps the bare category, so a file sitting directly in
+     `Events/` still reads `events`. Live dry-run: the 3 Burning Flipside rows now
+     resolve `events/other`, **0 unresolved of 3 orphaned** (was 3 unresolved).
+     3 new tests in `tests/unit/test_category_identity.py` (deep nesting, exact-match
+     preservation) + the existing entity test updated; 224 storage/pipeline tests pass.
+     **Applied to the live DB 2026-07-27** (backup `…bak-20260727_192729`): 3 edges
+     attached, **category-less rows 0 of 488** — closing the orphan count 125 → 3 → 0.
+     *As-intended consequence, documented in CLAUDE.md and the method docstring:* the
+     pair follows the folder and nothing else, so two copies of one document in two trees
+     get two individually-correct edges (`Documents/Events/Burning Flipside/…` →
+     `events/other`; `Documents/Personal/Events/…_300dpi.png` → `personal/events`), and a
+     category query returns a subset of the document family. That is filing, not drift —
+     the backfill must not infer which copy is canonical. Likewise
+     `Organization/{Name}` → `organization/vendors` follows the taxonomy's declaration of
+     that folder as the vendor/partner root.
 
 ### `file_count` caches drift silently and are exported
 
