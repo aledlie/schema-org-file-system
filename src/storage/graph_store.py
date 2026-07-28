@@ -65,6 +65,48 @@ _DECISION_TO_STATUS = {
     "reject": "rejected",
 }
 
+# Subcategory used when an entity-named folder resolves to a parent that the
+# taxonomy declares without one (``Events`` → ``("events", None)``).
+_ENTITY_FALLBACK_SUBCATEGORY = "other"
+
+
+def resolve_taxonomy_folder(
+    reverse: Mapping[str, tuple], folder: str
+) -> Optional[Tuple[str, Optional[str]]]:
+    """Map an on-disk folder to a ``(category, subcategory)`` taxonomy pair.
+
+    Exact match wins. Failing that, trailing path segments are stripped one at a
+    time: an entity-named folder has no taxonomy entry of its own, so
+    ``Events/Burning Flipside`` resolves via ``Events`` and
+    ``Media/Interiors/{Property}/{Room}`` via ``Media/Interiors``. The strip
+    loops rather than trying a single parent, so arbitrarily deep entity nesting
+    still lands.
+
+    A parent reached *by stripping* is standing in for a child the taxonomy does
+    not name, so a pair carrying no subcategory is filed under the generic
+    ``other`` bucket — ``Events/*`` → ``events/other``, not a bare ``events``.
+    The bare category stays reserved for files sitting directly in that folder,
+    which an exact match still returns unchanged.
+
+    Args:
+        reverse: Destination-path → ``(category, subcategory)`` map from
+            ``build_path_to_category_map``
+        folder: Folder path relative to the organized root, POSIX-separated
+
+    Returns:
+        The resolved pair, or ``None`` when no ancestor is in the taxonomy.
+    """
+    exact = reverse.get(folder)
+    if exact is not None:
+        return cast(Tuple[str, Optional[str]], exact)
+    while "/" in folder:
+        folder = folder.rsplit("/", 1)[0]
+        pair = reverse.get(folder)
+        if pair is not None:
+            category, subcategory = pair
+            return (category, subcategory or _ENTITY_FALLBACK_SUBCATEGORY)
+    return None
+
 
 class GraphStore:
     """
@@ -1135,14 +1177,31 @@ class GraphStore:
         ``organize-files content`` cannot do this — a correctly-placed file
         short-circuits at ``already_organized`` before persistence.
 
-        Two-pass lookup: the file's immediate parent folder is tried first; if
-        no exact match, one path segment is stripped and the grandparent is
-        tried.  This handles entity-named subfolders such as
-        ``Events/{EventName}`` (parent ``Events`` → ``("events", None)``) and
-        ``Organization/Clients/{ClientName}`` (parent ``Organization/Clients``
-        → ``("organization", "clients")``).  Folders that still don't resolve
-        after stripping (e.g. paths entirely outside the taxonomy) are reported
-        unresolved and left untouched rather than guessed.
+        Folder lookup is ``resolve_taxonomy_folder``: exact match first, then
+        trailing segments stripped one at a time until an ancestor is in the
+        taxonomy.  That resolves entity-named subfolders such as
+        ``Events/{EventName}`` (→ ``events/other``),
+        ``Media/Interiors/{Property}`` (→ ``media/interiors_other``) and
+        ``Organization/Clients/{ClientName}`` (→ ``organization/clients``), at
+        any nesting depth.  A parent reached by stripping that declares no
+        subcategory is filed under ``other`` rather than the bare category.
+        Folders with no taxonomy ancestor at all are reported unresolved and
+        left untouched rather than guessed.
+
+        **Duplicate documents split across categories — by design.** Because the
+        pair follows the folder and nothing else, two copies of one document
+        living in two trees get two different, individually-correct edges::
+
+            Documents/Events/Burning Flipside/PlacementMap.pdf   -> events/other
+            Documents/Personal/Events/PlacementMap_300dpi.png    -> personal/events
+
+        A category query therefore returns a subset of the logical document
+        family.  That is a filing outcome, not drift, and it must not be
+        "repaired" here by inferring which copy is canonical: this method's
+        contract is that the graph agrees with the filesystem.  Merge the two by
+        moving the file and re-running, or leave them split.  The same reasoning
+        makes ``Organization/{Name}`` resolve to ``organization/vendors`` — the
+        taxonomy declares that folder the vendor/partner root.
 
         Args:
             base_path: Organized-files root (e.g. ``~/Documents``)
@@ -1179,11 +1238,7 @@ class GraphStore:
                 pair = None
                 try:
                     folder = current.parent.relative_to(base_path).as_posix()
-                    pair = reverse.get(folder)
-                    if pair is None and "/" in folder:
-                        # Fallback: strip one path segment (entity-named folder).
-                        # E.g. "Events/Burning Flipside" → "Events" → ("events", None).
-                        pair = reverse.get(folder.rsplit("/", 1)[0])
+                    pair = resolve_taxonomy_folder(reverse, folder)
                 except ValueError:
                     pair = None  # outside base_path
                 entry: Dict[str, Any] = {

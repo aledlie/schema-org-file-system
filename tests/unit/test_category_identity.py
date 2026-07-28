@@ -274,10 +274,10 @@ class TestBackfillMissingCategories:
             assert file is not None
             assert file.categories == []
 
-    def test_entity_named_folder_maps_to_parent_category(
+    def test_entity_named_folder_maps_to_parent_other_bucket(
         self, store: GraphStore, tmp_path: Path
     ) -> None:
-        """Events/{EventName}/file → parent 'Events' resolves to ("events", None)."""
+        """Events/{EventName}/file → 'Events' has no subcategory, so → events/other."""
         base = tmp_path / "Documents"
         dest = base / "Events" / "Burning Flipside"
         dest.mkdir(parents=True)
@@ -292,11 +292,45 @@ class TestBackfillMissingCategories:
         with session_scope(store) as session:
             file = session.query(File).filter(File.id == file_id).first()
             assert file is not None
-            assert [c.full_path for c in file.categories] == ["events"]
+            assert [c.full_path for c in file.categories] == ["events/other"]
 
-    def test_path_outside_taxonomy_is_unresolved(
+    def test_deeply_nested_entity_folder_resolves(self, store: GraphStore, tmp_path: Path) -> None:
+        """Stripping loops, so nesting deeper than one entity segment still lands."""
+        base = tmp_path / "Documents"
+        dest = base / "Media" / "Interiors" / "123 Main St" / "Kitchen"
+        dest.mkdir(parents=True)
+        target = dest / "sink.jpg"
+        target.write_text("x")
+        file_id = _add_file(store, str(target))
+        store.add_file(original_path=str(target), filename="sink.jpg", current_path=str(target))
+
+        summary = store.backfill_missing_categories(base_path=base, dry_run=False)
+        assert summary["attached"] == 1
+        with session_scope(store) as session:
+            file = session.query(File).filter(File.id == file_id).first()
+            assert file is not None
+            assert [c.full_path for c in file.categories] == ["media/interiors_other"]
+
+    def test_exact_folder_match_keeps_the_bare_category(
         self, store: GraphStore, tmp_path: Path
     ) -> None:
+        """A file sitting directly in Events/ is unambiguous — no 'other' bucket."""
+        base = tmp_path / "Documents"
+        dest = base / "Events"
+        dest.mkdir(parents=True)
+        target = dest / "schedule.pdf"
+        target.write_text("x")
+        file_id = _add_file(store, str(target))
+        store.add_file(original_path=str(target), filename="schedule.pdf", current_path=str(target))
+
+        summary = store.backfill_missing_categories(base_path=base, dry_run=False)
+        assert summary["attached"] == 1
+        with session_scope(store) as session:
+            file = session.query(File).filter(File.id == file_id).first()
+            assert file is not None
+            assert [c.full_path for c in file.categories] == ["events"]
+
+    def test_path_outside_taxonomy_is_unresolved(self, store: GraphStore, tmp_path: Path) -> None:
         """A path with no taxonomy ancestor at either depth stays unresolved."""
         base = tmp_path / "Documents"
         dest = base / "Uncategorized-Unknown" / "SomeName"
