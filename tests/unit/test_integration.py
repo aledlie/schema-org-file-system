@@ -304,7 +304,9 @@ class TestSchemaIntegrationGetApiResponse:
         si.add_schema(IMAGE_SCHEMA)
         resp = si.get_api_response(schema_id="some-id")
         assert resp["success"] is True
-        assert resp["data"]["@type"] == "ImageObject"
+        data = resp["data"]
+        assert isinstance(data, dict)
+        assert data["@type"] == "ImageObject"
 
 
 class TestSchemaIntegrationExportBulk:

@@ -5,7 +5,16 @@ Provides multiple output formats (JSON-LD, microdata, RDFa),
 API endpoints, and bulk export functionality.
 """
 
-from typing import Any, Dict, List, Optional, TYPE_CHECKING, Union
+from typing import (
+    Any,
+    Dict,
+    List,
+    NotRequired,
+    Optional,
+    TYPE_CHECKING,
+    TypedDict,
+    Union,
+)
 from enum import Enum
 from html import escape
 import json
@@ -20,6 +29,30 @@ class OutputFormat(Enum):
     MICRODATA = "microdata"
     RDFA = "rdfa"
     JSON = "json"
+
+
+class ApiResponse(TypedDict):
+    """API envelope for one schema or the full collection.
+
+    ``count`` is present only on collection responses.
+    """
+    success: bool
+    data: Union[Dict[str, Any], List[Dict[str, Any]]]
+    format: str
+    count: NotRequired[int]
+
+
+class RegistryEntry(TypedDict):
+    """One registered schema with its metadata."""
+    schema: Dict[str, Any]
+    metadata: Dict[str, Any]
+    registered_at: str
+
+
+class RegistryStatistics(TypedDict):
+    """Aggregate counts for a SchemaRegistry."""
+    total_schemas: int
+    types: Dict[str, int]
 
 
 class SchemaIntegration:
@@ -267,7 +300,7 @@ class SchemaIntegration:
 </html>"""
         return html
 
-    def get_api_response(self, schema_id: Optional[str] = None) -> Dict[str, Any]:
+    def get_api_response(self, schema_id: Optional[str] = None) -> ApiResponse:
         """
         Get API-ready response.
 
@@ -328,7 +361,7 @@ class SchemaRegistry:
 
     def __init__(self) -> None:
         """Initialize registry."""
-        self.registry: Dict[str, Dict[str, Any]] = {}
+        self.registry: Dict[str, RegistryEntry] = {}
 
     def register(self, schema_id: str, schema: Dict[str, Any],
                 metadata: Optional[Dict[str, Any]] = None) -> None:
@@ -407,7 +440,7 @@ class SchemaRegistry:
         """Export all schemas."""
         return [entry["schema"] for entry in self.registry.values()]
 
-    def get_statistics(self) -> Dict[str, Any]:
+    def get_statistics(self) -> RegistryStatistics:
         """Get registry statistics."""
         type_counts: Dict[str, int] = {}
         for entry in self.registry.values():
