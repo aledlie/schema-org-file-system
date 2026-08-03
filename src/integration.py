@@ -9,10 +9,8 @@ from typing import (
     Any,
     Dict,
     List,
-    Mapping,
     NotRequired,
     Optional,
-    Sequence,
     TYPE_CHECKING,
     TypedDict,
     Union,
@@ -22,7 +20,7 @@ from enum import Enum
 from html import escape
 import json
 
-from pydantic import JsonValue
+from .schema_types import SchemaMapping
 
 if TYPE_CHECKING:
     from .base import SchemaOrgBase
@@ -34,16 +32,6 @@ class OutputFormat(Enum):
     MICRODATA = "microdata"
     RDFA = "rdfa"
     JSON = "json"
-
-
-# Schema.org JSON-LD document typing: pydantic's JsonValue supplies the
-# recursive leaf union; the aggregate is hand-rolled with covariant
-# Mapping/Sequence so schema collections nest (e.g. {"@graph": [...]}) and
-# narrow caller dicts are accepted without invariance false-positives.
-# Values extracted back out of JsonValue are Dict[str, JsonValue], so
-# schema-walking code must accept SchemaMapping, never a concrete Dict.
-SchemaValue = Union[JsonValue, "SchemaMapping", Sequence["SchemaValue"]]
-SchemaMapping = Mapping[str, SchemaValue]
 
 
 class ApiResponse(TypedDict):
