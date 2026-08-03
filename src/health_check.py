@@ -6,7 +6,7 @@ Validates dependencies and reports feature availability at startup.
 
 import sys
 from dataclasses import dataclass
-from typing import Optional
+from typing import Dict, Optional, TypedDict
 
 try:
     from .constants import SEPARATOR_WIDTH_MEDIUM
@@ -23,6 +23,15 @@ class FeatureStatus:
     version: Optional[str] = None
     error: Optional[str] = None
     impact: str = ""
+
+
+class FeatureStatusDict(TypedDict):
+    """One feature's status as exported by SystemHealthChecker.to_dict."""
+
+    available: bool
+    version: Optional[str]
+    error: Optional[str]
+    impact: str
 
 
 class SystemHealthChecker:
@@ -404,7 +413,7 @@ class SystemHealthChecker:
 
         print("=" * SEPARATOR_WIDTH_MEDIUM + "\n")
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> Dict[str, FeatureStatusDict]:
         """Export status as dictionary."""
         if not self._checked:
             self.run_all_checks()
