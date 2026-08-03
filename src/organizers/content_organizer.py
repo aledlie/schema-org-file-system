@@ -108,6 +108,7 @@ from shared.filename_classifier import (  # noqa: F401 — re-exported for tests
     SCHOLARLY_ARTICLE_SCHEMA_TYPE,
 )
 from shared.filename_classifier import (
+    FilenameClassification,
     classify_by_filename_patterns as _classify_by_filename_patterns,
 )
 
@@ -536,7 +537,7 @@ class ContentOrganizer(BaseOrganizer):
 
     def classify_by_filename_patterns(
         self, file_path: Path
-    ) -> Optional[Tuple[str, str, Optional[str], List[str]]]:
+    ) -> Optional[FilenameClassification]:
         """
         Classify file based on filename patterns before content extraction.
 
@@ -544,13 +545,10 @@ class ContentOrganizer(BaseOrganizer):
         single-homed with ``scripts/file_organizer_content_based.py``. Returns
         ``(category, subcategory, company_name, people_names)`` or ``None``.
         """
-        return cast(
-            Optional[Tuple[str, str, Optional[str], List[str]]],
-            _classify_by_filename_patterns(
-                file_path,
-                game_sprite_keywords=self.game_sprite_keywords,
-                last_file_state=self._last_file_state,
-            ),
+        return _classify_by_filename_patterns(
+            file_path,
+            game_sprite_keywords=self.game_sprite_keywords,
+            last_file_state=self._last_file_state,
         )
 
     # ------------------------------------------------------------------ #

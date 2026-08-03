@@ -33,6 +33,12 @@ from shared.constants import (
     SOFTWARE_PACKAGE_EXTENSIONS,
 )
 
+# (category, subcategory, company_name, people_names) — the classification
+# contract shared with ContentOrganizer.classify_by_filename_patterns.
+# Import this alias rather than restating the tuple so the two sides
+# cannot drift.
+FilenameClassification = Tuple[str, str, Optional[str], List[str]]
+
 # Research category key and Schema.org type for scholarly articles.
 # See: https://schema.org/ScholarlyArticle
 RESEARCH_CATEGORY = "research"
@@ -129,7 +135,7 @@ def classify_by_filename_patterns(
     *,
     game_sprite_keywords: List[str],
     last_file_state: Optional[Dict] = None,
-) -> Optional[Tuple[str, str, Optional[str], List[str]]]:
+) -> Optional[FilenameClassification]:
     """Classify a file from its name/extension before content extraction.
 
     Handles common patterns identifiable by filename alone, avoiding expensive
