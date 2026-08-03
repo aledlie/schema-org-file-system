@@ -9,7 +9,17 @@ function over a :class:`~src.scoring.context.FileContext`; the
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Literal, Optional, Protocol, TYPE_CHECKING, runtime_checkable
+from typing import (
+    Any,
+    Dict,
+    List,
+    Literal,
+    Optional,
+    Protocol,
+    TYPE_CHECKING,
+    TypedDict,
+    runtime_checkable,
+)
 
 if TYPE_CHECKING:
     from .context import FileContext
@@ -106,3 +116,33 @@ class ClassificationDecision:
     company_name: Optional[str]
     people_names: List[str]
     decision_state: str = "committed"
+
+
+class SnapshotDecision(TypedDict):
+    """Decision core inside a :class:`DecisionSnapshot`."""
+
+    category: str
+    subcategory: str
+    schema_type: str
+    confidence: float
+    margin: float
+    decision_state: str
+
+
+class SnapshotScore(TypedDict):
+    """One CategoryScore row inside a :class:`DecisionSnapshot`."""
+
+    signal: str
+    cat: str
+    sub: Optional[str]
+    conf: float
+    evidence: Dict[str, Any]
+
+
+class DecisionSnapshot(TypedDict):
+    """JSON-safe :class:`ClassificationDecision` snapshot (§7.1 record core)."""
+
+    scorer: str
+    decision: SnapshotDecision
+    winning_signals: List[str]
+    all_scores: List[SnapshotScore]

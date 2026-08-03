@@ -15,7 +15,12 @@ import re
 from copy import deepcopy
 from dataclasses import replace
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple, cast
+from typing import TYPE_CHECKING, Any, Dict, List, Mapping, Optional, Tuple, cast
+
+if TYPE_CHECKING:
+    from src.analyzers.image_analyzer import ImageContentAnalyzer
+    from src.analyzers.image_metadata import ImageMetadataParser
+    from src.analyzers.text_extractor import TextExtractor
 
 from src.classifiers.entity_detector import _has_human_name_signal
 from src.enrichment import MetadataEnricher
@@ -25,7 +30,11 @@ from src.organizers.mime_classifier import classify_by_mime
 from src.scoring.context import FileContext
 from src.scoring.registry import build_default_signals
 from src.scoring.scorer import Scorer
-from src.scoring.types import EVIDENCE_EVENT_NAME, ClassificationDecision
+from src.scoring.types import (
+    EVIDENCE_EVENT_NAME,
+    ClassificationDecision,
+    DecisionSnapshot,
+)
 from src.scoring.signals.clip_vision import GEOGRAPHIC_LABELS, map_clip_label
 from src.scoring.signals.event_content import EVENT_SIGNAL_NAME, EVENTS_CATEGORY
 from src.scoring.signals.photo_composition import (
@@ -288,9 +297,9 @@ class ContentOrganizer(BaseOrganizer):
         enable_cost_tracking: bool = False,
         db_path: str | None = None,
         *,
-        image_analyzer: Any = None,
-        metadata_parser: Any = None,
-        text_extractor: Any = None,
+        image_analyzer: Optional["ImageContentAnalyzer"] = None,
+        metadata_parser: Optional["ImageMetadataParser"] = None,
+        text_extractor: Optional["TextExtractor"] = None,
         enricher: Optional[MetadataEnricher] = None,
         screenshot_content_classifier: Any = None,
         ocr_available: Optional[bool] = None,
@@ -564,25 +573,25 @@ class ContentOrganizer(BaseOrganizer):
 
         if self.text_extractor is None:
             return ""
-        return cast(str, self.text_extractor.extract_text_from_image(image_path))
+        return self.text_extractor.extract_text_from_image(image_path)
 
     def extract_text_from_pdf(self, pdf_path: Path) -> str:
         """Extract text from PDF (searchable or scanned)."""
         if not self.ocr_available or self.text_extractor is None:
             return ""
-        return cast(str, self.text_extractor.extract_text_from_pdf(pdf_path))
+        return self.text_extractor.extract_text_from_pdf(pdf_path)
 
     def extract_text_from_docx(self, docx_path: Path) -> str:
         """Extract text from Word document."""
         if self.text_extractor is None:
             return ""
-        return cast(str, self.text_extractor.extract_text_from_docx(docx_path))
+        return self.text_extractor.extract_text_from_docx(docx_path)
 
     def extract_text_from_xlsx(self, xlsx_path: Path) -> str:
         """Extract text from Excel spreadsheet."""
         if self.text_extractor is None:
             return ""
-        return cast(str, self.text_extractor.extract_text_from_xlsx(xlsx_path))
+        return self.text_extractor.extract_text_from_xlsx(xlsx_path)
 
     def extract_text(self, file_path: Path) -> str:
         """Extract text from various file types.
@@ -608,7 +617,7 @@ class ContentOrganizer(BaseOrganizer):
         # Text files and unknown types: pure extraction, no organizer state.
         if self.text_extractor is None:
             return ""
-        return cast(str, self.text_extractor.extract_text(file_path, mime_type))
+        return self.text_extractor.extract_text(file_path, mime_type)
 
     # ------------------------------------------------------------------ #
     # CLIP / unified-scoring signals                                       #
@@ -861,10 +870,11 @@ class ContentOrganizer(BaseOrganizer):
         if not address:
             return result
 
-        geo: Dict[str, Any] = {}
-        if self.metadata_parser is not None:
+        geo: Mapping[str, object] = {}
+        raw_address = address.get("raw")
+        if self.metadata_parser is not None and raw_address:
             try:
-                geo = self.metadata_parser.geocode_address(address["raw"]) or {}
+                geo = self.metadata_parser.geocode_address(raw_address) or {}
             except Exception:
                 geo = {}
 
@@ -911,12 +921,12 @@ class ContentOrganizer(BaseOrganizer):
         if mime_type == "application/pdf" or file_ext == ".pdf":
             if not self.ocr_available:
                 return ""
-            return cast(str, self.text_extractor.extract_text_from_pdf(file_path))
+            return self.text_extractor.extract_text_from_pdf(file_path)
         if file_ext in [".docx", ".doc"]:
-            return cast(str, self.text_extractor.extract_text_from_docx(file_path))
+            return self.text_extractor.extract_text_from_docx(file_path)
         if file_ext in [".xlsx", ".xls"]:
-            return cast(str, self.text_extractor.extract_text_from_xlsx(file_path))
-        return cast(str, self.text_extractor.extract_text(file_path, mime_type))
+            return self.text_extractor.extract_text_from_xlsx(file_path)
+        return self.text_extractor.extract_text(file_path, mime_type)
 
     def _clip_scores_for_context(self, file_path: Path) -> Optional[Dict[str, float]]:
         """Full CLIP label→score mapping for the unified path (cache-backed).
@@ -1152,7 +1162,7 @@ class ContentOrganizer(BaseOrganizer):
     @staticmethod
     def _decision_snapshot(
         decision: ClassificationDecision, *, scorer_label: str
-    ) -> Dict[str, Any]:
+    ) -> DecisionSnapshot:
         """JSON-safe snapshot of a ClassificationDecision (§7.1 record core)."""
         snapshot = {
             "scorer": scorer_label,
@@ -1178,7 +1188,7 @@ class ContentOrganizer(BaseOrganizer):
         }
         # Round-trip through json to guarantee persistability (EXIF datetimes
         # and other rich objects inside evidence degrade to strings).
-        return cast(Dict[str, Any], json.loads(json.dumps(snapshot, default=str)))
+        return cast(DecisionSnapshot, json.loads(json.dumps(snapshot, default=str)))
 
     def _classify_screenshot_ocr(
         self,
@@ -1410,9 +1420,9 @@ class ContentOrganizer(BaseOrganizer):
             Destination path for the file
         """
         # Special handling for filepath-based classification
-        # Values are pulled from the untyped self.category_paths config, so the
-        # variable is annotated Any (nested lookups yield Any | None).
-        relative_path: Any
+        # Values come from the untyped category_paths taxonomy; a missed
+        # lookup can yield None (the terminal str() guards the path join).
+        relative_path: Optional[str]
         if category == "filepath":
             # subcategory contains the full path (e.g., "Technical/Python/MyProject")
             relative_path = subcategory

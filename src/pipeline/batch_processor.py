@@ -2,7 +2,10 @@
 
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from .file_processor import FileProcessor
 
 _SEPARATOR = "=" * 60
 
@@ -43,7 +46,7 @@ class BatchProcessor:
         file_processor: Injected FileProcessor (or compatible organizer) instance.
     """
 
-    def __init__(self, file_processor: Any) -> None:
+    def __init__(self, file_processor: "FileProcessor") -> None:
         self.file_processor = file_processor
 
     @property

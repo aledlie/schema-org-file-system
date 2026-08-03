@@ -4,7 +4,10 @@ import json
 import shutil
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, cast
+from typing import Any, Dict, List, Optional, TYPE_CHECKING, cast
+
+if TYPE_CHECKING:
+    from src.cost_roi_calculator import CostReport, CostROICalculator
 from urllib.parse import quote
 
 from src.analyzers.text_redaction import (
@@ -116,7 +119,7 @@ class FileProcessor:
         base_path: Path,
         dry_run: bool = False,
         db_path: Optional[str] = None,
-        cost_calculator: Optional[Any] = None,
+        cost_calculator: Optional["CostROICalculator"] = None,
         graph_store: Optional["GraphStore"] = None,
         enricher: Optional[MetadataEnricher] = None,
         validator: Optional[SchemaValidator] = None,
@@ -272,7 +275,7 @@ class FileProcessor:
         except Exception:
             pass
 
-        return cast(Dict[str, Any], generator.to_dict())
+        return generator.to_dict()
 
     def _persist_to_graph_store(
         self,
@@ -715,7 +718,7 @@ class FileProcessor:
             for rec in critical_recs[:3]:
                 print(f"   • {rec['message']}")
 
-    def get_cost_report(self) -> Optional[Dict[str, Any]]:
+    def get_cost_report(self) -> Optional["CostReport"]:
         """
         Get the full cost and ROI report.
 
@@ -724,7 +727,7 @@ class FileProcessor:
         """
         if not self.cost_calculator:
             return None
-        return cast(Optional[Dict[str, Any]], self.cost_calculator.generate_report())
+        return self.cost_calculator.generate_report()
 
     def save_cost_report(self, output_path: Optional[str] = None) -> None:
         """

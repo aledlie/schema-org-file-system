@@ -1312,6 +1312,11 @@ class TestEnhanceWeakImageClassification:
 # ------------------------------------------------------------------ #
 
 
+def _extractor_mock(org: ContentOrganizer) -> MagicMock:
+    """The wired-in text_extractor, typed as the MagicMock it is."""
+    return cast(MagicMock, org.text_extractor)
+
+
 class TestExtractTextDispatch:
     def _wired_organizer(self, organizer: ContentOrganizer, mime: str | None) -> ContentOrganizer:
         organizer.enricher = MagicMock()
@@ -1324,22 +1329,22 @@ class TestExtractTextDispatch:
         org = self._wired_organizer(organizer, "image/png")
         org._last_file_ocr_text = "cached ocr text"
         assert org.extract_text(Path("/pics/img.png")) == "cached ocr text"
-        org.text_extractor.extract_text_from_image.assert_not_called()
+        _extractor_mock(org).extract_text_from_image.assert_not_called()
 
     def test_image_without_cache_calls_extractor(self, organizer: ContentOrganizer) -> None:
         org = self._wired_organizer(organizer, "image/png")
-        org.text_extractor.extract_text_from_image.return_value = "fresh"
+        _extractor_mock(org).extract_text_from_image.return_value = "fresh"
         assert org.extract_text(Path("/pics/img.png")) == "fresh"
 
     def test_image_without_ocr_returns_empty(self, organizer: ContentOrganizer) -> None:
         org = self._wired_organizer(organizer, "image/png")
         org.ocr_available = False
         assert org.extract_text(Path("/pics/img.png")) == ""
-        org.text_extractor.extract_text_from_image.assert_not_called()
+        _extractor_mock(org).extract_text_from_image.assert_not_called()
 
     def test_pdf_routes_to_pdf_extractor(self, organizer: ContentOrganizer) -> None:
         org = self._wired_organizer(organizer, "application/pdf")
-        org.text_extractor.extract_text_from_pdf.return_value = "pdf text"
+        _extractor_mock(org).extract_text_from_pdf.return_value = "pdf text"
         assert org.extract_text(Path("/docs/report.pdf")) == "pdf text"
 
     def test_pdf_without_ocr_returns_empty(self, organizer: ContentOrganizer) -> None:
@@ -1349,20 +1354,20 @@ class TestExtractTextDispatch:
 
     def test_docx_routes_by_extension(self, organizer: ContentOrganizer) -> None:
         org = self._wired_organizer(organizer, None)
-        org.text_extractor.extract_text_from_docx.return_value = "docx text"
+        _extractor_mock(org).extract_text_from_docx.return_value = "docx text"
         assert org.extract_text(Path("/docs/letter.docx")) == "docx text"
 
     def test_xlsx_routes_by_extension(self, organizer: ContentOrganizer) -> None:
         org = self._wired_organizer(organizer, None)
-        org.text_extractor.extract_text_from_xlsx.return_value = "sheet text"
+        _extractor_mock(org).extract_text_from_xlsx.return_value = "sheet text"
         assert org.extract_text(Path("/docs/budget.xlsx")) == "sheet text"
 
     def test_other_types_use_generic_extractor(self, organizer: ContentOrganizer) -> None:
         org = self._wired_organizer(organizer, "text/plain")
-        org.text_extractor.extract_text.return_value = "plain text"
+        _extractor_mock(org).extract_text.return_value = "plain text"
         path = Path("/docs/notes.txt")
         assert org.extract_text(path) == "plain text"
-        org.text_extractor.extract_text.assert_called_once_with(path, "text/plain")
+        _extractor_mock(org).extract_text.assert_called_once_with(path, "text/plain")
 
     def test_no_extractor_returns_empty(self, organizer: ContentOrganizer) -> None:
         org = self._wired_organizer(organizer, "text/plain")

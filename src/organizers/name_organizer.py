@@ -7,22 +7,64 @@ No content analysis, OCR, or AI vision processing.
 
 import sys
 import re
+import json
 import shutil
 import argparse
 from pathlib import Path
 from datetime import datetime
-from typing import Optional
+from typing import TYPE_CHECKING, Dict, List, Optional, Tuple, TypedDict
 
 # shared/ lives in scripts/ — add to path so shared.file_ops resolves.
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 
 from shared.constants import CAMERA_VENDOR_PREFIX_PATTERNS  # noqa: E402
 from shared.file_ops import resolve_collision  # noqa: E402
-import json
-from typing import TYPE_CHECKING, Any, Dict, Optional, Tuple
 
 if TYPE_CHECKING:
     from src.cli_inputs import NameInputs
+
+
+class NameOrganizerStats(TypedDict):
+    """``NameBasedOrganizer.stats`` counters."""
+    total_files: int
+    moved_files: int
+    skipped_files: int
+    errors: int
+    by_category: Dict[str, int]
+
+
+class GameAssetPatterns(TypedDict):
+    """Regex buckets for the game-asset sub-classifier."""
+    sprites: List[str]
+    textures: List[str]
+    ui: List[str]
+    fonts: List[str]
+    items: List[str]
+
+
+class FilenamePatterns(TypedDict):
+    """``NameBasedOrganizer.filename_patterns`` shape (regex lists per
+    category; ``game_assets`` is the one nested bucket)."""
+    artifacts_trash: List[str]
+    technical_build: List[str]
+    license_files: List[str]
+    readme_files: List[str]
+    technical_docs: List[str]
+    log_files: List[str]
+    ai_generated: List[str]
+    screenshots: List[str]
+    whatsapp: List[str]
+    camera_photos: List[str]
+    social_media: List[str]
+    web_templates: List[str]
+    game_assets: GameAssetPatterns
+    location_data: List[str]
+    numbered_generic: List[str]
+    logos: List[str]
+    icons: List[str]
+    calendar: List[str]
+    medical: List[str]
+    emoji: List[str]
 
 
 class FileNameOrganizer:
@@ -31,7 +73,7 @@ class FileNameOrganizer:
     def __init__(self, base_path: str, dry_run: bool = False):
         self.base_path = Path(base_path).expanduser()
         self.dry_run = dry_run
-        self.stats: Dict[str, Any] = {
+        self.stats: NameOrganizerStats = {
             'total_files': 0,
             'moved_files': 0,
             'skipped_files': 0,
@@ -107,7 +149,7 @@ class FileNameOrganizer:
         }
 
         # Filename pattern categories
-        self.filename_patterns: Dict[str, Any] = {
+        self.filename_patterns: FilenamePatterns = {
             # Artifact/build files (to be trashed)
             'artifacts_trash': [
                 r'\.pyc$',

@@ -12,7 +12,14 @@ before mutating (the content-based script extends the screenshots sub-dict
 per instance).
 """
 
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+# Recursive taxonomy node: a destination string, or a nested mapping of
+# subcategory -> node (max observed depth is 3). CONTENT_CATEGORY_PATHS
+# itself stays Dict[str, Any]: consumers (tests, backtest replay) index
+# and mutate nested nodes without isinstance guards, which the union
+# would reject at every site.
+CategoryNode = Union[str, Dict[str, "CategoryNode"]]
 
 # Single source for the GameAssets subcategory→folder map, shared by both
 # taxonomies below (previously duplicated verbatim in each). Consumers that
@@ -290,7 +297,7 @@ CONTENT_CATEGORY_PATHS: Dict[str, Any] = {
 
 def build_path_to_category_map(
     taxonomy: Dict[str, Any] = CONTENT_CATEGORY_PATHS,
-) -> Dict[str, tuple]:
+) -> Dict[str, Tuple[str, Optional[str]]]:
     """Reverse ``CONTENT_CATEGORY_PATHS``: destination path -> (category, subcategory).
 
     Walks the nested taxonomy and maps every leaf destination string back to the
@@ -304,9 +311,9 @@ def build_path_to_category_map(
     taxonomy says so); first-registered wins, matching the declaration order
     consumers already rely on.
     """
-    reverse: Dict[str, tuple] = {}
+    reverse: Dict[str, Tuple[str, Optional[str]]] = {}
 
-    def walk(node: Any, category: str, parts: list) -> None:
+    def walk(node: CategoryNode, category: str, parts: List[str]) -> None:
         if isinstance(node, str):
             reverse.setdefault(node, (category, "_".join(parts) if parts else None))
             return

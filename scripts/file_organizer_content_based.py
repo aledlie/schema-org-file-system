@@ -10,10 +10,11 @@ import os
 import sys
 from collections import defaultdict
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Dict, List, Optional
 
 if TYPE_CHECKING:
     from src.cli_inputs import ContentInputs
+    from src.cost_roi_calculator import CostReport
 
 # Shared filename-pattern classifier (single source of truth, lives in
 # shared.filename_classifier and is consumed via ContentOrganizer). Re-export
@@ -352,7 +353,7 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         """Print cost and ROI summary from the cost calculator."""
         self._file_processor._print_cost_summary()
 
-    def get_cost_report(self) -> Optional[Dict[str, Any]]:
+    def get_cost_report(self) -> Optional["CostReport"]:
         """
         Get the full cost and ROI report.
 
