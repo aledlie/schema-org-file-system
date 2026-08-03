@@ -18,7 +18,11 @@ Key-Value Storage:
 
 from ._time import utcnow
 from datetime import datetime
-from typing import Optional, Dict, Any, TYPE_CHECKING
+from typing import List, Optional, Dict, Any, TYPE_CHECKING, TypedDict
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine.interfaces import DBAPIConnection
+    from sqlalchemy.pool import ConnectionPoolEntry
 from sqlalchemy import (
     Column,
     Integer,
@@ -167,7 +171,7 @@ file_locations = Table(
 Index("ix_file_locations_location_id", file_locations.c.location_id)
 
 
-def _edge_count_property(assoc_table: Table, fk_column: str) -> Any:
+def _edge_count_property(assoc_table: Table, fk_column: str) -> "declared_attr[int]":
     """Build an entity's derived ``file_count`` attribute.
 
     ``file_count`` is **not stored**.  It is a correlated ``COUNT`` over the
@@ -192,7 +196,7 @@ def _edge_count_property(assoc_table: Table, fk_column: str) -> Any:
     derived count stays correct regardless, so a stray write cannot corrupt it.
     """
 
-    def _file_count(cls: Any) -> Any:
+    def _file_count(cls: Any) -> Mapped[int]:
         fk = assoc_table.c[fk_column]
         return column_property(
             select(func.count(fk))
@@ -202,6 +206,101 @@ def _edge_count_property(assoc_table: Table, fk_column: str) -> Any:
         )
 
     return declared_attr(_file_count)
+
+
+# ---------------------------------------------------------------------------
+# to_dict() shapes. Functional TypedDict syntax throughout: "@id" is not a
+# valid identifier.
+# ---------------------------------------------------------------------------
+
+FileDict = TypedDict(
+    "FileDict",
+    {
+        "id": str,
+        "@id": str,
+        "canonical_id": Optional[str],
+        "filename": str,
+        "original_path": str,
+        "current_path": Optional[str],
+        "file_extension": Optional[str],
+        "mime_type": Optional[str],
+        "file_size": Optional[int],
+        "status": Optional[str],
+        "categories": List[str],
+        "companies": List[str],
+        "people": List[str],
+        "schema_type": Optional[str],
+        "organized_at": Optional[str],
+    },
+)
+
+CompanyDict = TypedDict(
+    "CompanyDict",
+    {
+        "id": int,
+        "@id": Optional[str],
+        "canonical_id": Optional[str],
+        "name": str,
+        "domain": Optional[str],
+        "file_count": int,
+    },
+)
+
+PersonDict = TypedDict(
+    "PersonDict",
+    {
+        "id": int,
+        "@id": Optional[str],
+        "canonical_id": Optional[str],
+        "name": str,
+        "email": Optional[str],
+        "file_count": int,
+    },
+)
+
+LocationDict = TypedDict(
+    "LocationDict",
+    {
+        "id": int,
+        "@id": Optional[str],
+        "canonical_id": Optional[str],
+        "name": str,
+        "city": Optional[str],
+        "state": Optional[str],
+        "country": Optional[str],
+        "latitude": Optional[float],
+        "longitude": Optional[float],
+        "file_count": int,
+    },
+)
+
+
+class OrganizationSessionDict(TypedDict):
+    """``OrganizationSession.to_dict()`` shape."""
+
+    id: str
+    started_at: Optional[str]
+    completed_at: Optional[str]
+    dry_run: Optional[bool]
+    total_files: Optional[int]
+    organized_count: Optional[int]
+    total_cost: Optional[float]
+
+
+class MergeEventDict(TypedDict):
+    """``MergeEvent.to_dict()`` shape."""
+
+    id: str
+    target_entity_type: Optional[str]
+    target_entity_id: int
+    target_canonical_id: Optional[str]
+    source_entity_ids: List[int]
+    source_canonical_ids: Optional[List[str]]
+    merge_reason: Optional[str]
+    confidence: Optional[float]
+    performed_by: Optional[str]
+    performed_at: Optional[str]
+    is_rolled_back: Optional[bool]
 
 
 class File(Base, SchemaOrgSerializable):
@@ -265,15 +364,18 @@ class File(Base, SchemaOrgSerializable):
     schema_type: Mapped[Optional[str]] = mapped_column(
         String(SHORT_STRING_LENGTH)
     )  # ImageObject, Document, etc.
-    schema_data: Mapped[Optional[Any]] = mapped_column(JSON)
-    kie_fields: Mapped[Optional[Any]] = mapped_column(JSON)  # KIE-extracted structured fields (raw)
+    schema_data: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
+    # KIE-extracted structured fields (raw): {field_class: [{value, confidence}]}
+    kie_fields: Mapped[Optional[Dict[str, List[Dict[str, Any]]]]] = mapped_column(JSON)
 
     # Image-specific metadata
     image_width: Mapped[Optional[int]] = mapped_column(Integer)
     image_height: Mapped[Optional[int]] = mapped_column(Integer)
     has_faces: Mapped[Optional[bool]] = mapped_column(Boolean)
     face_count: Mapped[Optional[int]] = mapped_column(Integer)
-    image_classification: Mapped[Optional[Any]] = mapped_column(JSON)  # CLIP classification scores
+    image_classification: Mapped[Optional[Dict[str, float]]] = mapped_column(
+        JSON
+    )  # CLIP classification scores
 
     # EXIF metadata
     exif_datetime: Mapped[Optional[datetime]] = mapped_column(DateTime)
@@ -409,7 +511,7 @@ class File(Base, SchemaOrgSerializable):
     def is_organized(self) -> bool:
         return self.status == FileStatus.ORGANIZED
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> FileDict:
         """Convert to dictionary for JSON serialization."""
         return {
             "id": self.id,
@@ -627,7 +729,7 @@ class Company(Base, SchemaOrgSerializable):
         """Convert Company to schema.org JSON-LD (delegates to build_company_jsonld)."""
         return build_company_jsonld(self)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> CompanyDict:
         return {
             "id": self.id,
             "@id": self.get_iri() if self.canonical_id else None,
@@ -689,7 +791,7 @@ class Person(Base, SchemaOrgSerializable):
     detection_confidence: Mapped[Optional[float]] = mapped_column(
         Float
     )  # nullable; composite score
-    validation_scores: Mapped[Optional[Any]] = mapped_column(
+    validation_scores: Mapped[Optional[Dict[str, Optional[float]]]] = mapped_column(
         JSON, default=dict, server_default=text("'{}'")
     )  # per-layer breakdown
     validated_at: Mapped[Optional[datetime]] = mapped_column(DateTime)  # tz-naive; utcnow()
@@ -757,7 +859,7 @@ class Person(Base, SchemaOrgSerializable):
 
         return result
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> PersonDict:
         return {
             "id": self.id,
             "@id": self.get_iri() if self.canonical_id else None,
@@ -845,7 +947,7 @@ class Location(Base, SchemaOrgSerializable):
         """Convert Location to schema.org JSON-LD (delegates to build_location_jsonld)."""
         return build_location_jsonld(self)
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> LocationDict:
         return {
             "id": self.id,
             "@id": self.get_iri() if self.canonical_id else None,
@@ -905,7 +1007,7 @@ def build_file_relationships(categories, companies, people, locations) -> Dict[s
             ]
 
     # Companies + people -> mentions
-    mentions: list[Dict[str, Any]] = []
+    mentions: list[Dict[str, str]] = []
     if companies:
         mentions.extend(
             {"@type": "Organization", "@id": comp.get_iri(), "name": comp.name}
@@ -1184,7 +1286,9 @@ class FileRelationship(Base):
 
     # Relationship metadata
     confidence: Mapped[Optional[float]] = mapped_column(Float, default=1.0)
-    extra_data: Mapped[Optional[Any]] = mapped_column(JSON)  # Additional relationship-specific data
+    extra_data: Mapped[Optional[Dict[str, Any]]] = mapped_column(
+        JSON
+    )  # Additional relationship-specific data
 
     # Timestamps
     created_at: Mapped[Optional[datetime]] = mapped_column(DateTime, default=utcnow)
@@ -1216,7 +1320,9 @@ class OrganizationSession(Base):
     dry_run: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
 
     # Session parameters
-    source_directories: Mapped[Optional[Any]] = mapped_column(JSON)  # List of source paths
+    source_directories: Mapped[Optional[List[str]]] = mapped_column(
+        JSON
+    )  # List of source paths
     base_path: Mapped[Optional[str]] = mapped_column(String(BASE_PATH_MAX_LENGTH))
     file_limit: Mapped[Optional[int]] = mapped_column(Integer)
 
@@ -1234,7 +1340,7 @@ class OrganizationSession(Base):
     files = relationship("File", back_populates="session")
     cost_records = relationship("CostRecord", back_populates="session")
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> OrganizationSessionDict:
         return {
             "id": self.id,
             "started_at": self.started_at.isoformat() if self.started_at else None,
@@ -1302,7 +1408,7 @@ class SchemaMetadata(Base):
     schema_context: Mapped[Optional[str]] = mapped_column(
         String(MAX_STRING_LENGTH), default="https://schema.org"
     )
-    schema_json: Mapped[Any] = mapped_column(JSON, nullable=False)  # Full JSON-LD
+    schema_json: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False)  # Full JSON-LD
 
     # Validation
     is_valid: Mapped[Optional[bool]] = mapped_column(Boolean, default=True)
@@ -1402,7 +1508,7 @@ class MergeEvent(Base):
     )  # UUID for JSON-LD @id
 
     # Source entities being merged (list of internal IDs)
-    source_entity_ids: Mapped[Any] = mapped_column(JSON, nullable=False)
+    source_entity_ids: Mapped[List[int]] = mapped_column(JSON, nullable=False)
 
     # Source canonical IDs (for JSON-LD owl:sameAs)
     source_canonical_ids: Mapped[Optional[list[str]]] = mapped_column(JSON)
@@ -1416,7 +1522,7 @@ class MergeEvent(Base):
     )  # indexed via ix_merge_performed_at
 
     # JSON-LD representation (for export/API)
-    jsonld: Mapped[Optional[Any]] = mapped_column(JSON)
+    jsonld: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
 
     # Rollback support
     is_rolled_back: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
@@ -1454,7 +1560,7 @@ class MergeEvent(Base):
             "startTime": self.performed_at.isoformat() if self.performed_at else None,
         }
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> MergeEventDict:
         return {
             "id": self.id,
             "target_entity_type": (
@@ -1486,7 +1592,10 @@ def init_db(db_path: str = "file_organization.db") -> Session:
 
     # Enable foreign keys for SQLite
     @event.listens_for(engine, "connect")
-    def set_sqlite_pragma(dbapi_connection: Any, connection_record: Any) -> None:
+    def set_sqlite_pragma(
+        dbapi_connection: "DBAPIConnection",
+        connection_record: "ConnectionPoolEntry",
+    ) -> None:
         cursor = dbapi_connection.cursor()
         cursor.execute("PRAGMA foreign_keys=ON")
         cursor.execute("PRAGMA journal_mode=WAL")  # Better concurrency

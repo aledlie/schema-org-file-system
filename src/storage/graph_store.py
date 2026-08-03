@@ -11,7 +11,22 @@ import uuid
 from datetime import datetime
 from ._time import utcnow
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, Optional, Tuple, Union, cast
+from typing import (
+    Any,
+    Dict,
+    List,
+    Mapping,
+    Optional,
+    TYPE_CHECKING,
+    Tuple,
+    TypedDict,
+    Union,
+    cast,
+)
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine.interfaces import DBAPIConnection
+    from sqlalchemy.pool import ConnectionPoolEntry
 from collections import defaultdict
 from contextlib import contextmanager
 
@@ -108,6 +123,126 @@ def resolve_taxonomy_folder(
     return None
 
 
+class PersonSummary(TypedDict):
+    """``_person_summary()`` row for the review-queue CLI."""
+
+    person_id: int
+    name: str
+    review_status: Optional[str]
+    detection_confidence: Optional[float]
+    validation_scores: Dict[str, Optional[float]]
+    file_count: int
+    paths: List[str]
+
+
+class ReviewStatusChange(TypedDict):
+    """``set_person_review_status()`` result."""
+
+    person_id: int
+    name: str
+    old_status: Optional[str]
+    new_status: str
+
+
+class RevalidationResult(TypedDict):
+    """One ``revalidate_people()`` candidate row."""
+
+    person_id: int
+    name: str
+    old_status: Optional[str]
+    new_status: str
+    score: float
+    layer_scores: Dict[str, Optional[float]]
+    changed: bool
+
+
+class PrunePersonSummary(TypedDict):
+    """``prune_person()`` result."""
+
+    name: str
+    person_id: int
+    edges_removed: int
+    paths: List[str]
+
+
+class PersonEdgeEntry(TypedDict):
+    """One stale file->person edge."""
+
+    person: str
+    file_id: str
+    path: str
+
+
+class PruneEdgesResult(TypedDict):
+    """``prune_missing_person_edges()`` result."""
+
+    edges_removed: int
+    edges: List[PersonEdgeEntry]
+
+
+class CategoryChange(TypedDict):
+    """``set_file_category()`` result."""
+
+    file_id: str
+    path: str
+    old_categories: List[str]
+    new_category: str
+
+
+class BackfillFileEntry(TypedDict):
+    """One orphaned file row from ``backfill_missing_categories()``."""
+
+    file_id: str
+    filename: str
+    category: Optional[str]
+
+
+class BackfillResult(TypedDict):
+    """``backfill_missing_categories()`` result."""
+
+    orphaned: int
+    attached: int
+    unresolved: int
+    files: List[BackfillFileEntry]
+
+
+class PrunedFileEntry(TypedDict):
+    """One deleted File row from ``prune_missing_files()``."""
+
+    file_id: str
+    path: str
+
+
+class PruneFilesResult(TypedDict):
+    """``prune_missing_files()`` result."""
+
+    removed: int
+    files: List[PrunedFileEntry]
+
+
+class GraphStatistics(TypedDict):
+    """``get_statistics()`` shape."""
+
+    total_files: int
+    organized_files: int
+    total_categories: int
+    total_companies: int
+    total_locations: int
+    total_relationships: int
+    total_sessions: int
+    categories: Dict[str, int]
+    extensions: Dict[str, int]
+
+
+class CostStatistics(TypedDict):
+    """``get_cost_statistics()`` shape."""
+
+    total_records: int
+    total_cost: float
+    total_time: float
+    by_feature: Dict[str, Dict[str, float]]
+
+
 class GraphStore:
     """
     High-level interface for graph-based file storage.
@@ -131,7 +266,10 @@ class GraphStore:
 
         # Enable SQLite optimizations
         @event.listens_for(self.engine, "connect")
-        def set_sqlite_pragma(dbapi_connection: Any, connection_record: Any) -> None:
+        def set_sqlite_pragma(
+            dbapi_connection: "DBAPIConnection",
+            connection_record: "ConnectionPoolEntry",
+        ) -> None:
             cursor = dbapi_connection.cursor()
             cursor.execute("PRAGMA foreign_keys=ON")
             cursor.execute("PRAGMA journal_mode=WAL")
@@ -639,7 +777,7 @@ class GraphStore:
             # nothing — PERSON_NAME_VALIDATION_PLAN).
             review_status = "confirmed"
             detection_confidence = None
-            validation_scores: Dict[str, Any] = {}
+            validation_scores: Dict[str, Optional[float]] = {}
             if validate:
                 result = self._validate_person_name(name)
                 if result is None:
@@ -811,7 +949,7 @@ class GraphStore:
         return session.query(Person).filter(Person.normalized_name == normalized).first()
 
     @staticmethod
-    def _person_summary(person: Person) -> Dict[str, Any]:
+    def _person_summary(person: Person) -> PersonSummary:
         """Compact person record for the review-queue CLI (no lazy loads beyond files)."""
         return {
             "person_id": person.id,
@@ -825,7 +963,7 @@ class GraphStore:
 
     def list_people_by_status(
         self, status: Optional[str] = None, session: Optional[Session] = None
-    ) -> List[Dict[str, Any]]:
+    ) -> List[PersonSummary]:
         """List people filtered by ``review_status`` (the review-queue read side).
 
         Args:
@@ -856,7 +994,7 @@ class GraphStore:
 
     def set_person_review_status(
         self, person_id_or_name, status: str, session: Optional[Session] = None
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[ReviewStatusChange]:
         """Set a human review decision on a person (accept / reject / requeue).
 
         This is the write side of the review queue: ``--accept`` sets
@@ -902,7 +1040,7 @@ class GraphStore:
 
     def revalidate_people(
         self, apply: bool = False, session: Optional[Session] = None
-    ) -> List[Dict[str, Any]]:
+    ) -> List[RevalidationResult]:
         """Re-run the person-name gate over legacy and pending rows.
 
         Targets rows the validator has never scored well:
@@ -935,7 +1073,7 @@ class GraphStore:
                 .all()
             )
 
-            results: List[Dict[str, Any]] = []
+            results: List[RevalidationResult] = []
             for person in candidates:
                 # Skip already-validated auto_accepted rows; only legacy ones
                 # (empty validation_scores) are re-scored alongside every pending.
@@ -1002,7 +1140,7 @@ class GraphStore:
 
     def prune_person(
         self, person_id_or_name, dry_run: bool = False, session: Optional[Session] = None
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[PrunePersonSummary]:
         """
         Delete a person and all of its file->person edges.
 
@@ -1025,7 +1163,7 @@ class GraphStore:
             if not person:
                 return None
 
-            summary = {
+            summary: PrunePersonSummary = {
                 "name": person.name,
                 "person_id": person.id,
                 "edges_removed": len(person.files),
@@ -1045,7 +1183,7 @@ class GraphStore:
 
     def prune_missing_person_edges(
         self, dry_run: bool = False, session: Optional[Session] = None
-    ) -> Dict[str, Any]:
+    ) -> PruneEdgesResult:
         """
         Drop file->person edges whose file no longer exists on disk.
 
@@ -1063,7 +1201,7 @@ class GraphStore:
              'edges': [{'person': name, 'file_id': id, 'path': path}, ...]}
         """
         with self._session_scope(session) as (session, owned):
-            removed: List[Dict[str, Any]] = []
+            removed: List[PersonEdgeEntry] = []
             people = session.query(Person).options(selectinload(Person.files)).all()
 
             for person in people:
@@ -1114,7 +1252,7 @@ class GraphStore:
         subcategory_name: Optional[str] = None,
         dry_run: bool = False,
         session: Optional[Session] = None,
-    ) -> Optional[Dict[str, Any]]:
+    ) -> Optional[CategoryChange]:
         """
         Replace a file's category edge(s) with a single category/subcategory.
 
@@ -1142,7 +1280,7 @@ class GraphStore:
                 return None
 
             new_path = f"{category_name}/{subcategory_name}" if subcategory_name else category_name
-            summary = {
+            summary: CategoryChange = {
                 "file_id": file.id,
                 "path": file.current_path or file.original_path,
                 "old_categories": [c.full_path for c in file.categories],
@@ -1166,7 +1304,7 @@ class GraphStore:
         base_path: Path,
         dry_run: bool = False,
         session: Optional[Session] = None,
-    ) -> Dict[str, Any]:
+    ) -> BackfillResult:
         """Attach a category edge to File rows that have none.
 
         Repairs edges dropped by the pre-2026-07-26 ``categories.name`` UNIQUE
@@ -1221,7 +1359,7 @@ class GraphStore:
             )
 
         reverse = build_path_to_category_map()
-        entries: List[Dict[str, Any]] = []
+        entries: List[BackfillFileEntry] = []
         attached = unresolved = 0
 
         with self._session_scope(session) as (session, owned):
@@ -1241,7 +1379,7 @@ class GraphStore:
                     pair = resolve_taxonomy_folder(reverse, folder)
                 except ValueError:
                     pair = None  # outside base_path
-                entry: Dict[str, Any] = {
+                entry: BackfillFileEntry = {
                     "file_id": file.id,
                     "filename": file.filename,
                     "category": None,
@@ -1278,7 +1416,7 @@ class GraphStore:
         self,
         dry_run: bool = False,
         session: Optional[Session] = None,
-    ) -> Dict[str, Any]:
+    ) -> PruneFilesResult:
         """
         Delete File rows whose current_path and original_path are both gone.
 
@@ -1297,7 +1435,7 @@ class GraphStore:
             {'removed': N, 'files': [{'file_id': id, 'path': path}, ...]}
         """
         with self._session_scope(session) as (session, owned):
-            removed: List[Dict[str, Any]] = []
+            removed: List[PrunedFileEntry] = []
             for file in session.query(File).all():
                 current, original = file.current_path, file.original_path
                 on_disk = (current and Path(current).exists()) or (
@@ -1716,7 +1854,7 @@ class GraphStore:
     # Statistics and Aggregations
     # =========================================================================
 
-    def get_statistics(self, session: Optional[Session] = None) -> Dict[str, Any]:
+    def get_statistics(self, session: Optional[Session] = None) -> GraphStatistics:
         """
         Get overall statistics.
 
@@ -1724,18 +1862,6 @@ class GraphStore:
             Dictionary with counts and aggregations
         """
         with self._session_scope(session) as (session, owned):
-            stats = {
-                "total_files": session.query(func.count(File.id)).scalar(),
-                "organized_files": session.query(func.count(File.id))
-                .filter(File.status == FileStatus.ORGANIZED)
-                .scalar(),
-                "total_categories": session.query(func.count(Category.id)).scalar(),
-                "total_companies": session.query(func.count(Company.id)).scalar(),
-                "total_locations": session.query(func.count(Location.id)).scalar(),
-                "total_relationships": session.query(func.count(FileRelationship.id)).scalar(),
-                "total_sessions": session.query(func.count(OrganizationSession.id)).scalar(),
-            }
-
             # Category breakdown
             category_counts = (
                 session.query(Category.name, func.count(file_categories.c.file_id))
@@ -1743,8 +1869,6 @@ class GraphStore:
                 .group_by(Category.name)
                 .all()
             )
-
-            stats["categories"] = {name: count for name, count in category_counts}
 
             # Extension breakdown
             extension_counts = (
@@ -1755,9 +1879,19 @@ class GraphStore:
                 .all()
             )
 
-            stats["extensions"] = {ext or "none": count for ext, count in extension_counts}
-
-            return stats
+            return {
+                "total_files": session.query(func.count(File.id)).scalar(),
+                "organized_files": session.query(func.count(File.id))
+                .filter(File.status == FileStatus.ORGANIZED)
+                .scalar(),
+                "total_categories": session.query(func.count(Category.id)).scalar(),
+                "total_companies": session.query(func.count(Company.id)).scalar(),
+                "total_locations": session.query(func.count(Location.id)).scalar(),
+                "total_relationships": session.query(func.count(FileRelationship.id)).scalar(),
+                "total_sessions": session.query(func.count(OrganizationSession.id)).scalar(),
+                "categories": {name: count for name, count in category_counts},
+                "extensions": {ext or "none": count for ext, count in extension_counts},
+            }
 
     def get_cost_statistics(
         self,
@@ -1766,7 +1900,7 @@ class GraphStore:
         start_date: Optional[datetime] = None,
         end_date: Optional[datetime] = None,
         session: Optional[Session] = None,
-    ) -> Dict[str, Any]:
+    ) -> CostStatistics:
         """
         Get cost statistics with optional filters.
 
@@ -1817,8 +1951,8 @@ class GraphStore:
 
             return {
                 "total_records": len(records),
-                "total_cost": sum(r.cost for r in records),
-                "total_time": sum(r.processing_time_sec for r in records),
+                "total_cost": sum(r.cost or 0.0 for r in records),
+                "total_time": sum(r.processing_time_sec or 0.0 for r in records),
                 "by_feature": dict(feature_stats),
             }
 

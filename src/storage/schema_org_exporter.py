@@ -9,7 +9,20 @@ Supports three output formats:
 
 import json
 from pathlib import Path
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Type, Union, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Iterable,
+    Iterator,
+    List,
+    Optional,
+    Sequence,
+    Type,
+    TypedDict,
+    Union,
+    cast,
+)
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session, selectinload, joinedload
@@ -17,6 +30,11 @@ from sqlalchemy.orm import Session, selectinload, joinedload
 from .schema_org_base import SchemaOrgSerializable
 
 SCHEMA_ORG_CONTEXT = "https://schema.org"
+
+# JSON-LD @graph envelope (functional syntax: @-prefixed keys).
+GraphDocument = TypedDict(
+    "GraphDocument", {"@context": str, "@graph": List[Dict[str, Any]]}
+)
 
 # Row-fetch batch size for streaming File exports (caps peak memory).
 _STREAM_BATCH = 2000
@@ -161,7 +179,7 @@ class SchemaOrgExporter:
     def get_graph_document(
         self,
         entity_classes: Optional[List[Type[SchemaOrgSerializable]]] = None,
-    ) -> Dict[str, Any]:
+    ) -> GraphDocument:
         """Return a JSON-LD @graph document as a Python dict (no I/O).
 
         Useful for in-memory use, REST API responses, etc.
@@ -187,7 +205,7 @@ class SchemaOrgExporter:
         self,
         output_path: Union[str, Path],
         entity_class: Type[SchemaOrgSerializable],
-        entity_ids: Sequence[Any],
+        entity_ids: Sequence[Union[str, int]],
         pretty: bool = True,
     ) -> int:
         """Export a filtered subset of entities by primary key.
@@ -308,7 +326,9 @@ class SchemaOrgExporter:
         """
         from . import models as m
 
-        iterators = {
+        iterators: Dict[
+            Type[SchemaOrgSerializable], Callable[[], Iterator[Dict[str, Any]]]
+        ] = {
             m.File: lambda: self._iter_core_file_records(),
             m.Category: lambda: self._iter_core_category_records(),
             m.Company: lambda: self._iter_core_simple_records(m.Company, m.build_company_jsonld),
@@ -316,7 +336,7 @@ class SchemaOrgExporter:
             m.Location: lambda: self._iter_core_simple_records(m.Location, m.build_location_jsonld),
         }
         for cls in entity_classes:
-            it = iterators.get(cast(Any, cls))
+            it = iterators.get(cls)
             if it is not None:
                 yield from it()
             else:  # unknown type: fall back to ORM serialization
@@ -326,7 +346,7 @@ class SchemaOrgExporter:
     def _iter_filtered_records(
         self,
         entity_class: Type[SchemaOrgSerializable],
-        entity_ids: Sequence[Any],
+        entity_ids: Sequence[Union[str, int]],
     ) -> Iterator[Dict[str, Any]]:
         """Yield records for a subset of one entity class, by primary key.
 
@@ -352,7 +372,7 @@ class SchemaOrgExporter:
                 yield row.to_schema_org()
 
     def _iter_core_simple_records(
-        self, cls, build_fn, pk_ids: Optional[Sequence[Any]] = None
+        self, cls, build_fn, pk_ids: Optional[Sequence[Union[str, int]]] = None
     ) -> Iterator[Dict[str, Any]]:
         """Yield records for an entity whose serialization reads no relationships.
 
@@ -419,7 +439,7 @@ class SchemaOrgExporter:
         ).scalars())
         ref = {r.id: _EntityRef(f"urn:uuid:{r.canonical_id}", r.name) for r in rows}
 
-        children: Dict[Any, list] = {}
+        children: Dict[int, List[_EntityRef]] = {}
         for r in rows:
             if r.parent_id is not None:
                 children.setdefault(r.parent_id, []).append(ref[r.id])
@@ -430,7 +450,7 @@ class SchemaOrgExporter:
 
     def _load_file_refs(
         self, target_id_col, target_cls, file_ids: Optional[set] = None
-    ) -> Dict[Any, list]:
+    ) -> Dict[str, List[_EntityRef]]:
         """Map file_id -> ordered list of _EntityRef for one association table.
 
         Association rows are read in natural (insertion) order to match the order
@@ -458,7 +478,7 @@ class SchemaOrgExporter:
             tid: _EntityRef(f"urn:uuid:{canon}", name)
             for tid, canon, name in self._session.execute(ref_stmt)
         }
-        result: Dict[Any, list] = {}
+        result: Dict[str, List[_EntityRef]] = {}
         for file_id, target_id in pairs:
             result.setdefault(file_id, []).append(refs[target_id])
         return result
@@ -467,7 +487,7 @@ class SchemaOrgExporter:
     # Context document helpers (S8)
     # ------------------------------------------------------------------
 
-    def get_context_document(self) -> Dict[str, Any]:
+    def get_context_document(self) -> Dict[str, Dict[str, str]]:
         """Return the JSON-LD @context document as a Python dict.
 
         Delegates to :mod:`storage.schema_org_context`.
