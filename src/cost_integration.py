@@ -8,7 +8,18 @@ file organization system with minimal code changes required.
 
 import time
 from functools import wraps
-from typing import Callable, Optional, Dict, Any, Generator, cast
+from typing import (
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    ParamSpec,
+    TYPE_CHECKING,
+    TypedDict,
+    TypeVar,
+    cast,
+)
 from pathlib import Path
 from contextlib import contextmanager
 from cost_roi_calculator import CostROICalculator, CostTracker
@@ -18,6 +29,14 @@ try:
 except ImportError:
     from constants import SEPARATOR_WIDTH_LARGE  # type: ignore[no-redef]
     from enrichment import cached_stat  # type: ignore[no-redef]
+
+if TYPE_CHECKING:
+    # The bare cost_roi_calculator import above is Any to mypy; the
+    # src.-prefixed form is the one that resolves.
+    from src.cost_roi_calculator import CostEstimate, CostReport
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 
 # Global calculator instance for easy integration
@@ -38,7 +57,9 @@ def reset_calculator() -> None:
     _global_calculator = None
 
 
-def track_cost(feature_name: str, files_processed: int = 1) -> Callable:
+def track_cost(
+    feature_name: str, files_processed: int = 1
+) -> Callable[[Callable[P, R]], Callable[P, R]]:
     """
     Decorator to track costs for a function.
 
@@ -52,9 +73,9 @@ def track_cost(feature_name: str, files_processed: int = 1) -> Callable:
         feature_name: Name of the feature being tracked
         files_processed: Number of files processed per call
     """
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[P, R]) -> Callable[P, R]:
         @wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             calculator = get_calculator()
             with CostTracker(calculator, feature_name, files_processed):
                 return func(*args, **kwargs)
@@ -123,9 +144,9 @@ def record_feature_usage(
     )
 
 
-def get_cost_report() -> Dict[str, Any]:
+def get_cost_report() -> "CostReport":
     """Get the current cost report."""
-    return cast(Dict[str, Any], get_calculator().generate_report())
+    return cast("CostReport", get_calculator().generate_report())
 
 
 def print_cost_summary() -> None:
@@ -140,8 +161,8 @@ def save_cost_report(output_path: str) -> None:
 
 def estimate_processing_cost(
     file_count: int,
-    features: Optional[list] = None
-) -> Dict[str, Any]:
+    features: Optional[List[str]] = None
+) -> "CostEstimate":
     """
     Estimate cost for processing a number of files.
 
@@ -152,7 +173,17 @@ def estimate_processing_cost(
     Returns:
         Cost estimate dictionary
     """
-    return cast(Dict[str, Any], get_calculator().estimate_cost_for_files(file_count, features))
+    return cast(
+        "CostEstimate", get_calculator().estimate_cost_for_files(file_count, features)
+    )
+
+
+class TrackerSummary(TypedDict):
+    """``FeatureTracker.summary()`` shape."""
+    timings: Dict[str, float]
+    successes: Dict[str, int]
+    errors: Dict[str, str]
+    total_time: float
 
 
 class FeatureTracker:
@@ -174,10 +205,10 @@ class FeatureTracker:
         print(tracker.summary())
     """
 
-    def __init__(self):
-        self.timings = {}
-        self.successes = {}
-        self.errors = {}
+    def __init__(self) -> None:
+        self.timings: Dict[str, float] = {}
+        self.successes: Dict[str, int] = {}
+        self.errors: Dict[str, str] = {}
 
     @contextmanager
     def track(self, feature_name: str, files: int = 1) -> Generator[None, None, None]:
@@ -208,7 +239,7 @@ class FeatureTracker:
                 error_message=error_msg
             )
 
-    def summary(self) -> Dict[str, Any]:
+    def summary(self) -> TrackerSummary:
         """Get tracking summary."""
         return {
             'timings': self.timings,

@@ -6,7 +6,7 @@ checks required properties, verifies data types, and generates
 comprehensive validation reports.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TypedDict
 from enum import Enum
 from datetime import datetime
 import re
@@ -42,7 +42,7 @@ class ValidationMessage:
         self.suggestion = suggestion
         self.timestamp = datetime.now()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> Dict[str, str]:
         """Convert to dictionary."""
         result = {
             "level": self.level.value,
@@ -60,6 +60,27 @@ class ValidationMessage:
         prefix = f"[{self.level.value.upper()}]"
         prop = f" ({self.property_name})" if self.property_name else ""
         return f"{prefix}{prop}: {self.message}"
+
+
+class ReportDict(TypedDict):
+    """``ValidationReport.to_dict()`` shape."""
+    schema_type: str
+    valid: bool
+    statistics: Dict[str, int]
+    duration: float
+    messages: List[Dict[str, str]]
+    timestamp: str
+
+
+class SummaryReport(TypedDict):
+    """``SchemaValidator.generate_summary_report()`` shape."""
+    total_schemas: int
+    valid_schemas: int
+    invalid_schemas: int
+    success_rate: float
+    total_errors: int
+    total_warnings: int
+    reports: List[ReportDict]
 
 
 class ValidationReport:
@@ -153,7 +174,7 @@ class ValidationReport:
             return (self.end_time - self.start_time).total_seconds()
         return (datetime.now() - self.start_time).total_seconds()
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> ReportDict:
         """Convert to dictionary."""
         return {
             "schema_type": self.schema_type,
@@ -447,7 +468,7 @@ class SchemaValidator:
         """
         return [self.validate(schema) for schema in schemas]
 
-    def generate_summary_report(self, reports: List[ValidationReport]) -> Dict[str, Any]:
+    def generate_summary_report(self, reports: List[ValidationReport]) -> SummaryReport:
         """
         Generate summary report for batch validation.
 

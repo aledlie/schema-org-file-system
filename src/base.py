@@ -23,7 +23,7 @@ class SchemaContext:
     }
 
     @classmethod
-    def get_context(cls, additional_contexts: Optional[Dict[str, str]] = None) -> Dict[str, Any]:
+    def get_context(cls, additional_contexts: Optional[Dict[str, str]] = None) -> Dict[str, str]:
         """
         Get Schema.org context with optional additional contexts.
 

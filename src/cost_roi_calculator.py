@@ -14,7 +14,7 @@ from datetime import datetime
 from types import TracebackType
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Literal, Optional, Any
+from typing import Any, Dict, List, Literal, NotRequired, Optional, TypedDict, cast
 
 import pandas as pd
 
@@ -79,6 +79,95 @@ class ROIMetrics:
     cost_per_file: float
     value_per_file: float
     break_even_files: int | float  # Files needed to break even (inf if never)
+
+
+class CostSummaryDict(TypedDict):
+    """``asdict(CostSummary)`` mirror."""
+    feature_name: str
+    total_invocations: int
+    total_processing_time_sec: float
+    total_cost: float
+    avg_cost_per_file: float
+    success_rate: float
+    total_files_processed: int
+
+
+class ROIMetricsDict(TypedDict):
+    """``asdict(ROIMetrics)`` mirror; ``break_even_files`` may be inf."""
+    feature_name: str
+    total_cost: float
+    total_value: float
+    roi_percentage: float
+    manual_hours_saved: float
+    cost_per_file: float
+    value_per_file: float
+    break_even_files: float
+
+
+class TotalCostReport(TypedDict):
+    """``calculate_total_cost()`` shape."""
+    total_cost: float
+    total_files_processed: int
+    total_processing_time_sec: float
+    avg_cost_per_file: float
+    feature_breakdown: Dict[str, CostSummaryDict]
+
+
+class TotalROIReport(TypedDict):
+    """``calculate_total_roi()`` shape."""
+    total_cost: float
+    total_value: float
+    overall_roi_percentage: float
+    total_manual_hours_saved: float
+    hourly_rate_used: float
+    feature_breakdown: Dict[str, ROIMetricsDict]
+
+
+class Recommendation(TypedDict):
+    """One cost-optimization recommendation."""
+    feature: str
+    type: str
+    severity: str
+    message: str
+    potential_savings: float
+
+
+class FeatureEstimate(TypedDict):
+    """Per-feature slice of ``estimate_cost_for_files()``."""
+    estimated_cost: float
+    estimated_time_sec: float
+    estimated_time_human: str
+    estimated_value: float
+    estimated_roi: float
+
+
+class CostEstimate(TypedDict):
+    """``estimate_cost_for_files()`` shape."""
+    file_count: int
+    total_estimated_cost: float
+    total_estimated_time_sec: float
+    total_estimated_time_human: str
+    total_estimated_value: float
+    estimated_roi: float
+    feature_estimates: Dict[str, FeatureEstimate]
+
+
+class ReportMetadata(TypedDict):
+    """``generate_report()['metadata']`` shape."""
+    generated_at: str
+    session_start: str
+    session_duration_sec: float
+    total_usage_records: int
+
+
+class CostReport(TypedDict):
+    """``generate_report()`` shape; projections are added post-literal."""
+    metadata: ReportMetadata
+    cost_summary: TotalCostReport
+    roi_summary: TotalROIReport
+    recommendations: List[Recommendation]
+    model_configs: Dict[str, Dict[str, Any]]
+    projections: NotRequired[Dict[str, CostEstimate]]
 
 
 class CostROICalculator:
@@ -457,7 +546,7 @@ class CostROICalculator:
             break_even_files=break_even_files
         )
 
-    def calculate_total_cost(self) -> Dict[str, Any]:
+    def calculate_total_cost(self) -> TotalCostReport:
         """
         Calculate total cost across all features.
 
@@ -481,7 +570,7 @@ class CostROICalculator:
             success_rate=("success", "mean"),
         )
 
-        feature_costs: Dict[str, Any] = {}
+        feature_costs: Dict[str, CostSummaryDict] = {}
         total_cost = 0.0
         total_files = 0
         total_time = 0.0
@@ -503,7 +592,7 @@ class CostROICalculator:
                 success_rate=float(row["success_rate"]),
                 total_files_processed=files,
             )
-            feature_costs[feature_name] = asdict(summary)
+            feature_costs[feature_name] = cast(CostSummaryDict, asdict(summary))
             total_cost += feat_cost
             total_files += files
             total_time += proc_time
@@ -516,7 +605,7 @@ class CostROICalculator:
             'feature_breakdown': feature_costs
         }
 
-    def calculate_total_roi(self) -> Dict[str, Any]:
+    def calculate_total_roi(self) -> TotalROIReport:
         """
         Calculate total ROI across all features.
 
@@ -526,7 +615,7 @@ class CostROICalculator:
         df = self._records_df()
         feature_names = list(self.cost_configs.keys()) if df.empty else list(df["feature_name"].unique())
 
-        feature_rois: Dict[str, Any] = {}
+        feature_rois: Dict[str, ROIMetricsDict] = {}
         total_cost = 0.0
         total_value = 0.0
         total_hours_saved = 0.0
@@ -534,7 +623,7 @@ class CostROICalculator:
         for feature_name in feature_names:
             roi = self.calculate_roi(feature_name)
             if roi.total_cost > 0 or roi.total_value > 0:
-                feature_rois[feature_name] = asdict(roi)
+                feature_rois[feature_name] = cast(ROIMetricsDict, asdict(roi))
                 total_cost += roi.total_cost
                 total_value += roi.total_value
                 total_hours_saved += roi.manual_hours_saved
@@ -550,14 +639,14 @@ class CostROICalculator:
             'feature_breakdown': feature_rois
         }
 
-    def get_optimization_recommendations(self) -> List[Dict[str, Any]]:
+    def get_optimization_recommendations(self) -> List[Recommendation]:
         """
         Analyze usage and provide cost optimization recommendations.
 
         Returns:
             List of recommendations
         """
-        recommendations: List[Dict[str, Any]] = []
+        recommendations: List[Recommendation] = []
 
         for feature_name in self.cost_configs.keys():
             summary = self.calculate_feature_cost(feature_name)
@@ -620,7 +709,9 @@ class CostROICalculator:
 
         return recommendations
 
-    def estimate_cost_for_files(self, file_count: int, features: Optional[List[str]] = None) -> Dict[str, Any]:
+    def estimate_cost_for_files(
+        self, file_count: int, features: Optional[List[str]] = None
+    ) -> CostEstimate:
         """
         Estimate cost for processing a given number of files.
 
@@ -632,7 +723,7 @@ class CostROICalculator:
             Cost estimate breakdown
         """
         features = features or list(self.cost_configs.keys())
-        estimates = {}
+        estimates: Dict[str, FeatureEstimate] = {}
         total_cost = 0.0
         total_time = 0.0
         total_value = 0.0
@@ -681,7 +772,7 @@ class CostROICalculator:
         else:
             return f"{seconds/3600:.1f} hours"
 
-    def generate_report(self, output_path: Optional[str] = None) -> Dict[str, Any]:
+    def generate_report(self, output_path: Optional[str] = None) -> CostReport:
         """
         Generate a comprehensive cost and ROI report.
 
@@ -691,7 +782,7 @@ class CostROICalculator:
         Returns:
             Complete report dictionary
         """
-        report = {
+        report: CostReport = {
             'metadata': {
                 'generated_at': datetime.now().isoformat(),
                 'session_start': self.session_start.isoformat(),

@@ -5,7 +5,7 @@ Extracts and enriches file metadata from various sources including
 EXIF, document properties, NLP results, and embeddings.
 """
 
-from typing import Any, Callable, Dict, Union, cast
+from typing import Any, Callable, Dict, TypedDict, Union, cast
 
 from src.base import SchemaOrgBase
 from datetime import datetime
@@ -31,6 +31,23 @@ try:
     from .constants import SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 except ImportError:
     from constants import SECONDS_PER_HOUR, SECONDS_PER_MINUTE  # type: ignore[no-redef]
+
+
+# Functional syntax for the @-prefixed key; total=False covers the empty
+# return for missing files.
+FileStatsMetadata = TypedDict(
+    "FileStatsMetadata",
+    {
+        "@id": str,
+        "name": str,
+        "url": str,
+        "encodingFormat": str,
+        "contentSize": int,
+        "dateCreated": datetime,
+        "dateModified": datetime,
+    },
+    total=False,
+)
 
 
 class MetadataEnricher:
@@ -118,7 +135,7 @@ class MetadataEnricher:
         mime_type = self.detect_mime_type(file_path)
         return cast(str, self.mime_to_format.get(mime_type, mime_type))
 
-    def enrich_from_file_stats(self, file_path: str) -> Dict[str, Any]:
+    def enrich_from_file_stats(self, file_path: str) -> FileStatsMetadata:
         """
         Extract metadata from file system stats.
 
