@@ -8,7 +8,45 @@ everything they need from a single place.
 import time
 from contextlib import contextmanager
 from types import TracebackType
-from typing import Any, Callable, Dict, Generator, Literal, Optional
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Literal,
+    Optional,
+    ParamSpec,
+    TYPE_CHECKING,
+    TypedDict,
+    TypeVar,
+)
+
+if TYPE_CHECKING:
+    from sentry_sdk.tracing import Span
+
+P = ParamSpec("P")
+R = TypeVar("R")
+
+
+class FileErrorInfo(TypedDict):
+    """One failed file's error record (structural mirror of
+    src.error_tracking.FileErrorInfo, usable when that import fails)."""
+    file_path: str
+    error_type: str
+    error_message: str
+    category: Optional[str]
+
+
+class ProcessingStats(TypedDict):
+    """Aggregate counters (structural mirror of
+    src.error_tracking.ProcessingStats)."""
+    processed: int
+    succeeded: int
+    failed: int
+    success_rate: float
+    errors: List[FileErrorInfo]
+
 
 try:
     from src.error_tracking import (
@@ -54,17 +92,17 @@ except ImportError:
     @contextmanager
     def track_operation(
         operation_name: str, op_type: str = "task", **attributes: Any
-    ) -> Generator[None, None, None]:
+    ) -> Generator[Optional["Span"], None, None]:
         """Stub: no-op context manager."""
-        yield
+        yield None
 
     def track_error(
         operation: Optional[str] = None,
         level: str = ErrorLevel.ERROR,
         reraise: bool = True,
-    ) -> Callable:
+    ) -> Callable[[Callable[P, R]], Callable[P, Optional[R]]]:
         """Stub: identity decorator."""
-        def decorator(func: Any) -> Any:
+        def decorator(func: Callable[P, R]) -> Callable[P, Optional[R]]:
             return func
         return decorator
 
@@ -84,7 +122,7 @@ except ImportError:
             self.processed: int = 0
             self.succeeded: int = 0
             self.failed: int = 0
-            self.errors: list[Dict[str, Any]] = []
+            self.errors: list[FileErrorInfo] = []
 
         @contextmanager
         def track_file(
@@ -106,7 +144,7 @@ except ImportError:
                     }
                 )
 
-        def get_stats(self) -> Dict[str, Any]:
+        def get_stats(self) -> ProcessingStats:
             """Return processing statistics."""
             return {
                 "processed": self.processed,

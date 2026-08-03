@@ -24,8 +24,25 @@ Usage:
 import os
 import sys
 import functools
-from typing import Optional, Dict, Any, Callable, Generator
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    ParamSpec,
+    TYPE_CHECKING,
+    TypedDict,
+    TypeVar,
+)
 from contextlib import contextmanager
+
+if TYPE_CHECKING:
+    from sentry_sdk.tracing import Span
+
+P = ParamSpec("P")
+R = TypeVar("R")
 
 try:
     from .constants import DEFAULT_TRACES_SAMPLE_RATE, DEFAULT_PROFILES_SAMPLE_RATE
@@ -185,7 +202,7 @@ def track_operation(
     operation_name: str,
     op_type: str = 'task',
     **attributes: Any
-) -> Generator[Any, None, None]:
+) -> Generator[Optional["Span"], None, None]:
     """
     Context manager for tracking operation performance.
 
@@ -199,7 +216,7 @@ def track_operation(
         **attributes: Additional attributes to attach
     """
     if not SENTRY_AVAILABLE:
-        yield
+        yield None
         return
 
     with sentry_sdk.start_span(op=op_type, name=operation_name) as span:
@@ -217,7 +234,7 @@ def track_error(
     operation: Optional[str] = None,
     level: str = ErrorLevel.ERROR,
     reraise: bool = True
-) -> Callable:
+) -> Callable[[Callable[P, R]], Callable[P, Optional[R]]]:
     """
     Decorator for automatic error tracking.
 
@@ -230,9 +247,9 @@ def track_error(
         def classify(image):
             # Errors are captured but not re-raised
     """
-    def decorator(func: Callable) -> Callable:
+    def decorator(func: Callable[P, R]) -> Callable[P, Optional[R]]:
         @functools.wraps(func)
-        def wrapper(*args: Any, **kwargs: Any) -> Any:
+        def wrapper(*args: P.args, **kwargs: P.kwargs) -> Optional[R]:
             op_name = operation or func.__name__
             try:
                 with track_operation(op_name, op_type='function'):
@@ -254,6 +271,23 @@ def track_error(
     return decorator
 
 
+class FileErrorInfo(TypedDict):
+    """One failed file's error record (mirrored in src/utils/tracking.py)."""
+    file_path: str
+    error_type: str
+    error_message: str
+    category: Optional[str]
+
+
+class ProcessingStats(TypedDict):
+    """Aggregate counters for a file-processing run."""
+    processed: int
+    succeeded: int
+    failed: int
+    success_rate: float
+    errors: List[FileErrorInfo]
+
+
 class FileProcessingErrorTracker:
     """
     Specialized error tracker for file processing operations.
@@ -272,7 +306,7 @@ class FileProcessingErrorTracker:
         self.processed = 0
         self.succeeded = 0
         self.failed = 0
-        self.errors: list[Dict[str, Any]] = []
+        self.errors: list[FileErrorInfo] = []
 
     @contextmanager
     def track_file(self, file_path: str, category: Optional[str] = None) -> Generator[None, None, None]:
@@ -290,7 +324,7 @@ class FileProcessingErrorTracker:
             self.succeeded += 1
         except Exception as e:
             self.failed += 1
-            error_info = {
+            error_info: FileErrorInfo = {
                 'file_path': file_path,
                 'error_type': type(e).__name__,
                 'error_message': str(e),
@@ -324,7 +358,7 @@ class FileProcessingErrorTracker:
             for error_type, count in sorted(error_types.items(), key=lambda x: -x[1]):
                 print(f"  {error_type}: {count}")
 
-    def get_stats(self) -> Dict[str, Any]:
+    def get_stats(self) -> ProcessingStats:
         """Get processing statistics as dict."""
         return {
             'processed': self.processed,
