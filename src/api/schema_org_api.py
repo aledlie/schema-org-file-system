@@ -6,11 +6,13 @@ Provides JSON-LD representations of entities in schema.org format.
 Supports single entity retrieval and bulk export with filtering.
 """
 
-from typing import Dict, Any, Iterator, List, TypedDict, cast
+from typing import Dict, Any, Iterator, cast
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session, selectinload, joinedload
 
-from src.schema_types import SchemaMapping, SchemaValue
+# Routes keep an explicit response_model=Dict[str, Any]; deleting it would
+# make these return annotations the OpenAPI/serialization schema.
+from src.schema_types import GraphDocument, SchemaMapping
 
 from storage.models import (
     File, Category, Company, Person, Location
@@ -22,14 +24,6 @@ from api.schema_org_models import (
     FileFilterParams, CategoryFilterParams, CompanyFilterParams,
     PersonFilterParams, LocationFilterParams, BulkExportParams,
     ErrorResponse
-)
-
-
-# JSON-LD @graph envelope for the bulk/export/graph routes. Routes keep an
-# explicit response_model=Dict[str, Any]; deleting it would make these
-# return annotations the OpenAPI/serialization schema.
-GraphDocument = TypedDict(
-    "GraphDocument", {"@context": SchemaValue, "@graph": List[SchemaMapping]}
 )
 
 

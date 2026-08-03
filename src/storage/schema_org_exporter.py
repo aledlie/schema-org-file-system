@@ -19,7 +19,6 @@ from typing import (
     Optional,
     Sequence,
     Type,
-    TypedDict,
     Union,
     cast,
 )
@@ -29,12 +28,12 @@ from sqlalchemy.orm import Session, selectinload, joinedload
 
 from .schema_org_base import SchemaOrgSerializable
 
-SCHEMA_ORG_CONTEXT = "https://schema.org"
+try:
+    from ..schema_types import GraphDocument, SchemaMapping
+except ImportError:  # flat-module import path (src on sys.path)
+    from schema_types import GraphDocument, SchemaMapping  # type: ignore[no-redef]
 
-# JSON-LD @graph envelope (functional syntax: @-prefixed keys).
-GraphDocument = TypedDict(
-    "GraphDocument", {"@context": str, "@graph": List[Dict[str, Any]]}
-)
+SCHEMA_ORG_CONTEXT = "https://schema.org"
 
 # Row-fetch batch size for streaming File exports (caps peak memory).
 _STREAM_BATCH = 2000
@@ -191,7 +190,9 @@ class SchemaOrgExporter:
             Dict with "@context" and "@graph" keys.
         """
         records = self._collect_records(entity_classes)
-        graph_nodes = [{k: v for k, v in rec.items() if k != "@context"} for rec in records]
+        graph_nodes: List[SchemaMapping] = [
+            {k: v for k, v in rec.items() if k != "@context"} for rec in records
+        ]
         return {
             "@context": SCHEMA_ORG_CONTEXT,
             "@graph": graph_nodes,
