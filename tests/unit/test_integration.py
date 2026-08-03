@@ -6,7 +6,12 @@ from typing import Any, Dict
 
 import pytest
 
-from src.integration import OutputFormat, SchemaIntegration, SchemaRegistry
+from src.integration import (
+    OutputFormat,
+    SchemaIntegration,
+    SchemaMapping,
+    SchemaRegistry,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -157,7 +162,9 @@ class TestSchemaIntegrationMicrodata:
         assert "keywords" in html
 
     def test_list_of_dicts_recursed(self) -> None:
-        schema = {
+        # Annotated: an inferred join of str and list-of-dict values is too
+        # lossy (Collection[str]) for the SchemaMapping contextual check.
+        schema: SchemaMapping = {
             "@type": "ItemList",
             "itemListElement": [{"@type": "ListItem", "position": 1}],
         }
@@ -198,7 +205,7 @@ class TestSchemaIntegrationRdfa:
         assert "PostalAddress" in html
 
     def test_list_values_with_dict(self) -> None:
-        schema = {
+        schema: SchemaMapping = {
             "@type": "ItemList",
             "itemListElement": [{"@type": "ListItem", "position": 1}],
         }

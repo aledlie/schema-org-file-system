@@ -9,15 +9,20 @@ from typing import (
     Any,
     Dict,
     List,
+    Mapping,
     NotRequired,
     Optional,
+    Sequence,
     TYPE_CHECKING,
     TypedDict,
     Union,
+    cast,
 )
 from enum import Enum
 from html import escape
 import json
+
+from pydantic import JsonValue
 
 if TYPE_CHECKING:
     from .base import SchemaOrgBase
@@ -31,20 +36,30 @@ class OutputFormat(Enum):
     JSON = "json"
 
 
+# Schema.org JSON-LD document typing: pydantic's JsonValue supplies the
+# recursive leaf union; the aggregate is hand-rolled with covariant
+# Mapping/Sequence so schema collections nest (e.g. {"@graph": [...]}) and
+# narrow caller dicts are accepted without invariance false-positives.
+# Values extracted back out of JsonValue are Dict[str, JsonValue], so
+# schema-walking code must accept SchemaMapping, never a concrete Dict.
+SchemaValue = Union[JsonValue, "SchemaMapping", Sequence["SchemaValue"]]
+SchemaMapping = Mapping[str, SchemaValue]
+
+
 class ApiResponse(TypedDict):
     """API envelope for one schema or the full collection.
 
     ``count`` is present only on collection responses.
     """
     success: bool
-    data: Union[Dict[str, Any], List[Dict[str, Any]]]
+    data: Union[SchemaMapping, List[SchemaMapping]]
     format: str
     count: NotRequired[int]
 
 
 class RegistryEntry(TypedDict):
     """One registered schema with its metadata."""
-    schema: Dict[str, Any]
+    schema: SchemaMapping
     metadata: Dict[str, Any]
     registered_at: str
 
@@ -65,9 +80,9 @@ class SchemaIntegration:
 
     def __init__(self) -> None:
         """Initialize integration layer."""
-        self.schemas: List[Dict[str, Any]] = []
+        self.schemas: List[SchemaMapping] = []
 
-    def add_schema(self, schema: Union[Dict[str, Any], 'SchemaOrgBase']) -> 'SchemaIntegration':
+    def add_schema(self, schema: Union[SchemaMapping, 'SchemaOrgBase']) -> 'SchemaIntegration':
         """
         Add schema to collection.
 
@@ -78,11 +93,13 @@ class SchemaIntegration:
             Self for method chaining
         """
         if hasattr(schema, 'to_dict'):
-            schema = schema.to_dict()
+            # mypy can't intersect Mapping with a to_dict protocol; the
+            # duck-typed branch is only reachable for SchemaOrgBase-likes.
+            schema = cast('SchemaOrgBase', schema).to_dict()
         self.schemas.append(schema)
         return self
 
-    def to_json_ld(self, schema: Optional[Dict[str, Any]] = None,
+    def to_json_ld(self, schema: Optional[SchemaMapping] = None,
                    indent: int = 2) -> str:
         """
         Convert to JSON-LD format.
@@ -104,7 +121,7 @@ class SchemaIntegration:
 
         return json.dumps(data, indent=indent, ensure_ascii=False)
 
-    def to_json_ld_script(self, schema: Optional[Dict[str, Any]] = None,
+    def to_json_ld_script(self, schema: Optional[SchemaMapping] = None,
                          indent: int = 2) -> str:
         """
         Convert to JSON-LD script tag for HTML.
@@ -119,7 +136,7 @@ class SchemaIntegration:
         json_ld = self.to_json_ld(schema, indent)
         return f'<script type="application/ld+json">\n{json_ld}\n</script>'
 
-    def to_microdata(self, schema: Dict[str, Any],
+    def to_microdata(self, schema: SchemaMapping,
                      tag: str = "div") -> str:
         """
         Convert to HTML5 microdata format.
@@ -168,7 +185,7 @@ class SchemaIntegration:
         html_parts.append(f'</{tag}>')
         return '\n'.join(html_parts)
 
-    def to_rdfa(self, schema: Dict[str, Any],
+    def to_rdfa(self, schema: SchemaMapping,
                 tag: str = "div") -> str:
         """
         Convert to RDFa format.
@@ -221,7 +238,7 @@ class SchemaIntegration:
         return '\n'.join(html_parts)
 
     def export_format(self, format: OutputFormat,
-                     schema: Optional[Dict[str, Any]] = None) -> str:
+                     schema: Optional[SchemaMapping] = None) -> str:
         """
         Export in specified format.
 
@@ -312,7 +329,7 @@ class SchemaIntegration:
         """
         if schema_id is not None:
             # In real implementation, look up by ID
-            schema = self.schemas[0] if self.schemas else {}
+            schema: SchemaMapping = self.schemas[0] if self.schemas else {}
             return {
                 "success": True,
                 "data": schema,
@@ -363,7 +380,7 @@ class SchemaRegistry:
         """Initialize registry."""
         self.registry: Dict[str, RegistryEntry] = {}
 
-    def register(self, schema_id: str, schema: Dict[str, Any],
+    def register(self, schema_id: str, schema: SchemaMapping,
                 metadata: Optional[Dict[str, Any]] = None) -> None:
         """
         Register a schema.
@@ -379,12 +396,12 @@ class SchemaRegistry:
             "registered_at": str(json.dumps({"timestamp": "now"}))
         }
 
-    def get(self, schema_id: str) -> Optional[Dict[str, Any]]:
+    def get(self, schema_id: str) -> Optional[SchemaMapping]:
         """Get schema by ID."""
         entry = self.registry.get(schema_id)
         return entry["schema"] if entry else None
 
-    def get_by_type(self, schema_type: str) -> List[Dict[str, Any]]:
+    def get_by_type(self, schema_type: str) -> List[SchemaMapping]:
         """Get all schemas of specific type."""
         results = []
         for entry in self.registry.values():
@@ -393,7 +410,7 @@ class SchemaRegistry:
                 results.append(schema)
         return results
 
-    def search(self, query: str) -> List[Dict[str, Any]]:
+    def search(self, query: str) -> List[SchemaMapping]:
         """
         Search schemas by text.
 
@@ -436,7 +453,7 @@ class SchemaRegistry:
             return True
         return False
 
-    def export_all(self) -> List[Dict[str, Any]]:
+    def export_all(self) -> List[SchemaMapping]:
         """Export all schemas."""
         return [entry["schema"] for entry in self.registry.values()]
 
@@ -444,7 +461,7 @@ class SchemaRegistry:
         """Get registry statistics."""
         type_counts: Dict[str, int] = {}
         for entry in self.registry.values():
-            schema_type = entry["schema"].get("@type", "Unknown")
+            schema_type = str(entry["schema"].get("@type", "Unknown"))
             type_counts[schema_type] = type_counts.get(schema_type, 0) + 1
 
         return {
