@@ -21,6 +21,8 @@ from typing import (
     runtime_checkable,
 )
 
+from pydantic import JsonValue
+
 if TYPE_CHECKING:
     from .context import FileContext
 
@@ -136,7 +138,9 @@ class SnapshotScore(TypedDict):
     cat: str
     sub: Optional[str]
     conf: float
-    evidence: Dict[str, Any]
+    # Provably JSON: the snapshot's sole producer round-trips through
+    # json.dumps(default=str)/loads, degrading rich evidence values.
+    evidence: Dict[str, JsonValue]
 
 
 class DecisionSnapshot(TypedDict):
