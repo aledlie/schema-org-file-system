@@ -268,7 +268,7 @@ class FileProcessingErrorTracker:
         tracker.print_summary()
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.processed = 0
         self.succeeded = 0
         self.failed = 0

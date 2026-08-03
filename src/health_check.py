@@ -39,7 +39,7 @@ class SystemHealthChecker:
             # Use CLIP model
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.features: dict[str, FeatureStatus] = {}
         self._checked = False
 

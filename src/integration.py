@@ -30,7 +30,7 @@ class SchemaIntegration:
     and provides API-ready output.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize integration layer."""
         self.schemas: List[Dict[str, Any]] = []
 
@@ -326,7 +326,7 @@ class SchemaRegistry:
     Provides indexing, search, and retrieval capabilities.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """Initialize registry."""
         self.registry: Dict[str, Dict[str, Any]] = {}
 
