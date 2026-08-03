@@ -14,7 +14,7 @@ import json
 import sqlite3
 from contextlib import contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, Iterator
+from typing import TYPE_CHECKING, Any, Iterator, TypedDict
 
 if TYPE_CHECKING:
     from src.cli_inputs import TimelineInputs
@@ -24,6 +24,25 @@ from src.storage._time import utcnow
 
 DB_PATH = DEFAULT_DB_PATH
 OUTPUT_PATH = Path(__file__).resolve().parents[2] / "_site" / "timeline_data.json"
+
+
+class SessionChanges(TypedDict, total=False):
+    """Deltas vs the preceding session; only the first three keys when
+    there is no predecessor (``is_first`` is True)."""
+    is_first: bool
+    files_delta: int
+    organized_delta: int
+    success_rate_delta: float
+    cost_delta: float
+    time_delta: float
+
+
+class TimelineDocument(TypedDict):
+    """Complete timeline document written to ``_site/timeline_data.json``."""
+    generated_at: str
+    cumulative: dict[str, Any]
+    sessions: list[dict[str, Any]]
+    session_count: int
 
 
 class TimelineAPI:
@@ -197,7 +216,7 @@ class TimelineAPI:
     @staticmethod
     def calculate_session_changes(
         current: dict, previous: dict | None
-    ) -> dict[str, Any]:
+    ) -> SessionChanges:
         """Calculate what changed between two consecutive sessions."""
         if previous is None:
             return {
@@ -257,7 +276,7 @@ class TimelineAPI:
 
         return stats
 
-    def generate_document(self) -> dict[str, Any]:
+    def generate_document(self) -> TimelineDocument:
         """Assemble the complete timeline document.
 
         Each session is enriched with its category / schema-type / extension
@@ -290,7 +309,7 @@ class TimelineAPI:
 
     def export_to_json(
         self, output_path: Path | str = OUTPUT_PATH
-    ) -> dict[str, Any]:
+    ) -> TimelineDocument:
         """Generate the timeline document and write it to ``output_path``.
 
         Returns the generated document so callers can report counts without
@@ -306,7 +325,7 @@ class TimelineAPI:
         return data
 
 
-def generate_timeline_data(db_path: Path | str | None = None) -> dict[str, Any]:
+def generate_timeline_data(db_path: Path | str | None = None) -> TimelineDocument:
     """Module-level convenience: build the full timeline document for ``db_path``."""
     return TimelineAPI(db_path).generate_document()
 

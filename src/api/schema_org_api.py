@@ -6,9 +6,11 @@ Provides JSON-LD representations of entities in schema.org format.
 Supports single entity retrieval and bulk export with filtering.
 """
 
-from typing import Dict, Any, Iterator, cast
+from typing import Dict, Any, Iterator, List, TypedDict, cast
 from fastapi import FastAPI, HTTPException, Depends
 from sqlalchemy.orm import Session, selectinload, joinedload
+
+from src.schema_types import SchemaMapping, SchemaValue
 
 from storage.models import (
     File, Category, Company, Person, Location
@@ -20,6 +22,14 @@ from api.schema_org_models import (
     FileFilterParams, CategoryFilterParams, CompanyFilterParams,
     PersonFilterParams, LocationFilterParams, BulkExportParams,
     ErrorResponse
+)
+
+
+# JSON-LD @graph envelope for the bulk/export/graph routes. Routes keep an
+# explicit response_model=Dict[str, Any]; deleting it would make these
+# return annotations the OpenAPI/serialization schema.
+GraphDocument = TypedDict(
+    "GraphDocument", {"@context": SchemaValue, "@graph": List[SchemaMapping]}
 )
 
 
@@ -50,7 +60,7 @@ def get_db() -> Iterator[Session]:
 async def get_file_schema_org(
     file_id: str,
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> SchemaMapping:
     """
     Get File as schema.org JSON-LD.
 
@@ -61,14 +71,14 @@ async def get_file_schema_org(
     if not file:
         raise HTTPException(status_code=404, detail=f"File {file_id} not found")
 
-    return cast(Dict[str, Any], file.to_schema_org())
+    return cast(SchemaMapping, file.to_schema_org())
 
 
 @app.get("/api/files/schema-org/bulk", response_model=Dict[str, Any])
 async def get_files_schema_org_bulk(
     params: FileFilterParams = Depends(),
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> GraphDocument:
     """
     Get multiple Files as schema.org JSON-LD.
 
@@ -100,7 +110,7 @@ async def get_files_schema_org_bulk(
 async def get_category_schema_org(
     category_id: int,
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> SchemaMapping:
     """
     Get Category as schema.org JSON-LD (DefinedTerm).
 
@@ -111,14 +121,14 @@ async def get_category_schema_org(
     if not category:
         raise HTTPException(status_code=404, detail=f"Category {category_id} not found")
 
-    return cast(Dict[str, Any], category.to_schema_org())
+    return cast(SchemaMapping, category.to_schema_org())
 
 
 @app.get("/api/categories/schema-org/bulk", response_model=Dict[str, Any])
 async def get_categories_schema_org_bulk(
     params: CategoryFilterParams = Depends(),
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> GraphDocument:
     """
     Get multiple Categories as schema.org JSON-LD.
 
@@ -149,7 +159,7 @@ async def get_categories_schema_org_bulk(
 async def get_company_schema_org(
     company_id: int,
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> SchemaMapping:
     """
     Get Company as schema.org JSON-LD (Organization).
 
@@ -160,14 +170,14 @@ async def get_company_schema_org(
     if not company:
         raise HTTPException(status_code=404, detail=f"Company {company_id} not found")
 
-    return cast(Dict[str, Any], company.to_schema_org())
+    return cast(SchemaMapping, company.to_schema_org())
 
 
 @app.get("/api/companies/schema-org/by-name/{name}", response_model=Dict[str, Any])
 async def get_company_by_name_schema_org(
     name: str,
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> SchemaMapping:
     """
     Get Company by name as schema.org JSON-LD.
 
@@ -181,14 +191,14 @@ async def get_company_by_name_schema_org(
     if not company:
         raise HTTPException(status_code=404, detail=f"Company '{name}' not found")
 
-    return cast(Dict[str, Any], company.to_schema_org())
+    return cast(SchemaMapping, company.to_schema_org())
 
 
 @app.get("/api/companies/schema-org/bulk", response_model=Dict[str, Any])
 async def get_companies_schema_org_bulk(
     params: CompanyFilterParams = Depends(),
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> GraphDocument:
     """
     Get multiple Companies as schema.org JSON-LD.
 
@@ -217,7 +227,7 @@ async def get_companies_schema_org_bulk(
 async def get_person_schema_org(
     person_id: int,
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> SchemaMapping:
     """
     Get Person as schema.org JSON-LD.
 
@@ -228,14 +238,14 @@ async def get_person_schema_org(
     if not person:
         raise HTTPException(status_code=404, detail=f"Person {person_id} not found")
 
-    return cast(Dict[str, Any], person.to_schema_org())
+    return cast(SchemaMapping, person.to_schema_org())
 
 
 @app.get("/api/people/schema-org/by-name/{name}", response_model=Dict[str, Any])
 async def get_person_by_name_schema_org(
     name: str,
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> SchemaMapping:
     """
     Get Person by name as schema.org JSON-LD.
 
@@ -249,14 +259,14 @@ async def get_person_by_name_schema_org(
     if not person:
         raise HTTPException(status_code=404, detail=f"Person '{name}' not found")
 
-    return cast(Dict[str, Any], person.to_schema_org())
+    return cast(SchemaMapping, person.to_schema_org())
 
 
 @app.get("/api/people/schema-org/bulk", response_model=Dict[str, Any])
 async def get_people_schema_org_bulk(
     params: PersonFilterParams = Depends(),
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> GraphDocument:
     """
     Get multiple People as schema.org JSON-LD.
 
@@ -285,7 +295,7 @@ async def get_people_schema_org_bulk(
 async def get_location_schema_org(
     location_id: int,
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> SchemaMapping:
     """
     Get Location as schema.org JSON-LD (Place).
 
@@ -296,14 +306,14 @@ async def get_location_schema_org(
     if not location:
         raise HTTPException(status_code=404, detail=f"Location {location_id} not found")
 
-    return cast(Dict[str, Any], location.to_schema_org())
+    return cast(SchemaMapping, location.to_schema_org())
 
 
 @app.get("/api/locations/schema-org/by-name/{name}", response_model=Dict[str, Any])
 async def get_location_by_name_schema_org(
     name: str,
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> SchemaMapping:
     """
     Get Location by name as schema.org JSON-LD.
 
@@ -317,14 +327,14 @@ async def get_location_by_name_schema_org(
     if not location:
         raise HTTPException(status_code=404, detail=f"Location '{name}' not found")
 
-    return cast(Dict[str, Any], location.to_schema_org())
+    return cast(SchemaMapping, location.to_schema_org())
 
 
 @app.get("/api/locations/schema-org/bulk", response_model=Dict[str, Any])
 async def get_locations_schema_org_bulk(
     params: LocationFilterParams = Depends(),
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> GraphDocument:
     """
     Get multiple Locations as schema.org JSON-LD.
 
@@ -353,7 +363,7 @@ async def get_locations_schema_org_bulk(
 async def export_all_entities_schema_org(
     params: BulkExportParams = Depends(),
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> GraphDocument:
     """
     Export all entities as schema.org JSON-LD @graph document.
 
@@ -378,14 +388,14 @@ async def export_all_entities_schema_org(
         entity_classes.append(Location)
 
     exporter = SchemaOrgExporter(db)
-    return cast(Dict[str, Any], exporter.get_graph_document(entity_classes=entity_classes or None))
+    return cast(GraphDocument, exporter.get_graph_document(entity_classes=entity_classes or None))
 
 
 # Graph Export Endpoint
 @app.get("/api/schema-org/graph", response_model=Dict[str, Any])
 async def get_full_graph_document(
     db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+) -> GraphDocument:
     """
     Return a full JSON-LD @graph document for all entity types.
 
@@ -393,19 +403,19 @@ async def get_full_graph_document(
         JSON-LD document with @context and @graph containing all entities
     """
     exporter = SchemaOrgExporter(db)
-    return cast(Dict[str, Any], exporter.get_graph_document())
+    return cast(GraphDocument, exporter.get_graph_document())
 
 
 # Context Endpoint
 @app.get("/schema/context", response_model=Dict[str, Any])
-async def get_schema_context() -> Dict[str, Any]:
+async def get_schema_context() -> SchemaMapping:
     """
     Return the JSON-LD @context document for this API.
 
     Returns:
         Standalone JSON-LD context document mapping all schema.org and custom terms
     """
-    return cast(Dict[str, Any], get_context_document())
+    return cast(SchemaMapping, get_context_document())
 
 
 # Health Check

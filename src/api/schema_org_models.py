@@ -5,7 +5,7 @@ Pydantic models for schema.org API request/response types.
 Defines types for JSON-LD entities, builder results, and API operations.
 """
 
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Union
 from datetime import datetime
 from pydantic import BaseModel, Field, HttpUrl
 
@@ -88,6 +88,16 @@ class DefinedTermSchema(BaseModel):
     populate_by_name = True
 
 
+class DefinedTermSetSchema(BaseModel):
+  """DefinedTermSet schema.org type (category taxonomy container)."""
+  type: str = Field("DefinedTermSet", alias="@type")
+  id: Optional[str] = Field(None, alias="@id")
+  name: str
+
+  class Config:
+    populate_by_name = True
+
+
 # ============================================================================
 # File Entity Response
 # ============================================================================
@@ -112,8 +122,10 @@ class FileSchemaOrg(BaseModel):
   content_location: Optional[PlaceSchema] = Field(None, alias="contentLocation")
   # Relationships
   about: Optional[List[DefinedTermSchema]] = None
-  mentions: Optional[List[Dict[str, Any]]] = None
-  spatial_coverage: Optional[Any] = Field(None, alias="spatialCoverage")
+  mentions: Optional[List["EntityReference"]] = None
+  spatial_coverage: Optional[Union[PlaceSchema, List[PlaceSchema]]] = Field(
+    None, alias="spatialCoverage"
+  )
 
   class Config:
     populate_by_name = True
@@ -131,7 +143,7 @@ class CategorySchemaOrg(BaseModel):
   name: str
   identifier: Optional[str] = None
   definition: Optional[str] = None
-  in_defined_term_set: Dict[str, Any] = Field(alias="inDefinedTermSet")
+  in_defined_term_set: DefinedTermSetSchema = Field(alias="inDefinedTermSet")
   broader: Optional[DefinedTermSchema] = None
   narrower: Optional[List[DefinedTermSchema]] = None
   file_count: int = Field(alias="fileCount")
