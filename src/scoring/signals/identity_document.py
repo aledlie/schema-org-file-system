@@ -23,10 +23,17 @@ if TYPE_CHECKING:
     from ..context import FileContext
 
 import re
-from typing import Any, Callable, List, NamedTuple, Optional
+from typing import Callable, List, NamedTuple, Optional, Protocol
 
 from ..types import EVIDENCE_PEOPLE, CategoryScore
 from ..weights import OCR_CONFIDENCE_GATE, W_ID
+
+
+class _PeopleExtractor(Protocol):
+    """The ContentClassifier slice this signal uses."""
+
+    def extract_people_names(self, text: str) -> List[str]: ...
+
 
 # Minimum OCR text length before identity detection is attempted (mirrors the
 # legacy tier-3.5 gate, which now imports this constant).
@@ -156,7 +163,7 @@ class IdentityDocumentSignal:
     weight = W_ID
     cost_tier = "heavy"
 
-    def __init__(self, classifier: Any) -> None:
+    def __init__(self, classifier: _PeopleExtractor) -> None:
         self._classifier = classifier
 
     def applies_to(self, ctx: FileContext) -> bool:

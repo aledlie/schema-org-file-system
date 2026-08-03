@@ -16,9 +16,43 @@ returns its empty value. The context never imports OCR/CLIP/KIE modules.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable, Dict, FrozenSet, Optional, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    FrozenSet,
+    Mapping,
+    Optional,
+    Protocol,
+    Sequence,
+    cast,
+)
 
 from .weights import OCR_CONFIDENCE_GATE
+
+
+class OcrResultLike(Protocol):
+    """Structural shape of ``shared.ocr_classifier.OCRResult``.
+
+    ``shared.*`` is unresolvable to mypy (no mypy_path), so providers stay
+    duck-typed against this Protocol instead of a nominal import.
+    """
+
+    text: str
+    confidence: float
+    language: Optional[str]
+
+
+class KieResultLike(Protocol):
+    """Structural shape of ``shared.kie_utils.KIEResult``.
+
+    ``fields`` is a read-only property so the real class's narrower
+    ``dict[str, list[KIEField]]`` satisfies it covariantly.
+    """
+
+    @property
+    def fields(self) -> Mapping[str, Sequence[object]]: ...
+
 
 # Sentinel distinguishing "never computed" from a computed None/empty result.
 _UNSET = object()
@@ -39,10 +73,10 @@ class FileContext:
         display_path: Optional[Path] = None,
         *,
         text_provider: Optional[Callable[[Path], str]] = None,
-        ocr_provider: Optional[Callable[[Path], Any]] = None,
+        ocr_provider: Optional[Callable[[Path], Optional[OcrResultLike]]] = None,
         clip_provider: Optional[Callable[[Path], Optional[Dict[str, float]]]] = None,
         image_metadata_provider: Optional[Callable[[Path], Dict[str, Any]]] = None,
-        kie_provider: Optional[Callable[[Path], Any]] = None,
+        kie_provider: Optional[Callable[[Path], Optional[KieResultLike]]] = None,
         ocr_confidence_gate: float = OCR_CONFIDENCE_GATE,
         ocr_clip_topk: Optional[int] = None,
         clip_text_labels: FrozenSet[str] = frozenset(),
@@ -115,7 +149,7 @@ class FileContext:
     def text_length(self) -> int:
         return len(self.ensure_text())
 
-    def ensure_ocr(self) -> Any:
+    def ensure_ocr(self) -> Optional[OcrResultLike]:
         """OCR result (``shared.ocr_classifier.OCRResult``-shaped) or None.
 
         The provider is *image* OCR (easyocr → docTR image readers), so
@@ -138,7 +172,7 @@ class FileContext:
                 self._ocr = None
             else:
                 self._ocr = self._ocr_provider(self.path)
-        return self._ocr
+        return cast(Optional[OcrResultLike], self._ocr)
 
     def _skip_ocr_by_clip_gate(self) -> bool:
         """True when the CLIP gate is enabled and votes 'text-free photo'.
@@ -193,7 +227,7 @@ class FileContext:
             self._image_metadata = metadata or {}
         return cast(Dict[str, Any], self._image_metadata)
 
-    def ensure_kie(self) -> Any:
+    def ensure_kie(self) -> Optional[KieResultLike]:
         """KIE result, gated on reliable OCR (conf ≥ gate), or None.
 
         Encodes the legacy tier-3.5 dependency explicitly: KIE extraction only
@@ -208,7 +242,7 @@ class FileContext:
                 confidence = ocr.confidence if ocr is not None else None
                 if confidence is not None and confidence >= self._ocr_confidence_gate:
                     self._kie = self._kie_provider(self.path)
-        return self._kie
+        return cast(Optional[KieResultLike], self._kie)
 
     # ------------------------------------------------------------------ #
     # Non-forcing accessors (telemetry/persistence must not trigger        #
@@ -220,8 +254,10 @@ class FileContext:
         return None if self._text is _UNSET else self._text
 
     @property
-    def ocr_if_loaded(self) -> Any:
-        return None if self._ocr is _UNSET else self._ocr
+    def ocr_if_loaded(self) -> Optional[OcrResultLike]:
+        return None if self._ocr is _UNSET else cast(
+            Optional[OcrResultLike], self._ocr
+        )
 
     @property
     def clip_if_loaded(self) -> Optional[Dict[str, float]]:
@@ -232,5 +268,7 @@ class FileContext:
         return None if self._image_metadata is _UNSET else self._image_metadata
 
     @property
-    def kie_if_loaded(self) -> Any:
-        return None if self._kie is _UNSET else self._kie
+    def kie_if_loaded(self) -> Optional[KieResultLike]:
+        return None if self._kie is _UNSET else cast(
+            Optional[KieResultLike], self._kie
+        )

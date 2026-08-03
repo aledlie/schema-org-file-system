@@ -25,10 +25,20 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..context import FileContext
 
-from typing import Any, Iterable, List, Tuple
+from typing import Any, Iterable, List, Mapping, Protocol, Tuple
 
 from ..types import EVIDENCE_PEOPLE, CategoryScore
 from ..weights import W_LEGAL
+
+
+class _LegalClassifier(Protocol):
+    """The ContentClassifier slice this signal uses: subcategory keyword
+    vocabularies plus people extraction for graph-edge evidence."""
+
+    patterns: Mapping[str, Any]
+
+    def extract_people_names(self, text: str) -> List[str]: ...
+
 
 # Legal-document signal vocabulary. Court documents carry clerk contact
 # blocks that satisfy the generic person/contacts indicators and were
@@ -95,7 +105,9 @@ def legal_confidence(hit_count: int) -> float:
     return min(LEGAL_CONFIDENCE_BASE + LEGAL_CONFIDENCE_PER_HIT * extra_hits, LEGAL_CONFIDENCE_MAX)
 
 
-def score_legal_subcategory(text_lower: str, subcategories: dict) -> str:
+def score_legal_subcategory(
+    text_lower: str, subcategories: Mapping[str, Iterable[str]]
+) -> str:
     """Best legal subcategory by keyword occurrence counts.
 
     Mirrors ``ContentClassifier.classify_content`` subcategory scoring
@@ -124,7 +136,7 @@ class LegalContentSignal:
     weight = W_LEGAL
     cost_tier = "mid"
 
-    def __init__(self, classifier: Any) -> None:
+    def __init__(self, classifier: _LegalClassifier) -> None:
         # ContentClassifier: patterns dict for subcategory vocabularies and
         # extract_people_names for Option C graph-edge evidence.
         self._classifier = classifier

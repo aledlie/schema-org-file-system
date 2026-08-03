@@ -33,7 +33,7 @@ if TYPE_CHECKING:
     from ..context import FileContext
 
 import re
-from typing import Any, Dict, List
+from typing import Dict, List
 
 from shared.constants import CAMERA_VENDOR_PREFIX_PATTERNS
 from shared.filename_classifier import (
@@ -242,7 +242,7 @@ class FilenamePatternSignal:
     def run(self, ctx: FileContext) -> List[CategoryScore]:
         # Local state dict replaces the organizer's per-file side channel;
         # provenance lands in evidence instead (§4 row 2).
-        state: Dict[str, Any] = {}
+        state: Dict[str, object] = {}
         path = ctx.pattern_path
         result = classify_by_filename_patterns(
             path,
@@ -253,7 +253,7 @@ class FilenamePatternSignal:
             return []
         category, subcategory, company_name, people_names = result
 
-        evidence: Dict[str, Any] = {}
+        evidence: Dict[str, object] = {}
         if company_name:
             evidence[EVIDENCE_COMPANY] = company_name
         if people_names:

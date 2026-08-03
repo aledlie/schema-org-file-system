@@ -23,10 +23,22 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..context import FileContext
 
-from typing import Any, Dict, List
+from pathlib import Path
+from typing import Dict, List, Optional, Protocol, Tuple
 
 from ..types import CategoryScore
 from ..weights import W_PEOPLE_PHOTO
+
+
+class _AnalyzerLike(Protocol):
+    """The ImageContentAnalyzer slice this signal uses."""
+
+    vision_available: bool
+
+    def analyze_for_organization(
+        self, image_path: Path
+    ) -> Tuple[bool, bool, Dict[str, float]]: ...
+
 
 # Registry/signal name (referenced by the people-photo subcategory
 # refinement in ContentOrganizer, mirroring SCENE_SIGNAL_NAME).
@@ -52,7 +64,7 @@ class PhotoCompositionSignal:
     weight = W_PEOPLE_PHOTO
     cost_tier = "heavy"
 
-    def __init__(self, image_analyzer: Any) -> None:
+    def __init__(self, image_analyzer: Optional[_AnalyzerLike]) -> None:
         self._image_analyzer = image_analyzer
 
     def applies_to(self, ctx: FileContext) -> bool:
@@ -63,13 +75,16 @@ class PhotoCompositionSignal:
         )
 
     def run(self, ctx: FileContext) -> List[CategoryScore]:
-        has_people, _is_property_mgmt, scores = self._image_analyzer.analyze_for_organization(
+        analyzer = self._image_analyzer
+        if analyzer is None:  # applies_to already gates on this
+            return []
+        has_people, _is_property_mgmt, scores = analyzer.analyze_for_organization(
             ctx.path
         )
         if not has_people:
             return []
 
-        evidence: Dict[str, Any] = {}
+        evidence: Dict[str, Dict[str, float]] = {}
         if scores:
             ranked = sorted(scores.items(), key=lambda item: item[1], reverse=True)
             evidence[EVIDENCE_COMPOSITION_SCORES] = dict(ranked[:COMPOSITION_TOP_SCORES])

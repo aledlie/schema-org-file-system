@@ -31,10 +31,23 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..context import FileContext
 
-from typing import Any, List
+from typing import Dict, List, Optional, Protocol, Tuple
 
 from ..types import EVIDENCE_COMPANY, EVIDENCE_PEOPLE, CategoryScore
 from ..weights import TEXT_LENGTH_FULL_CHARS, TEXT_MIN_CHARS, W_TEXT
+
+
+class _ContentClassifierLike(Protocol):
+    """The ContentClassifier slice this signal uses."""
+
+    def classify_content(
+        self, text: str, filename: str
+    ) -> Tuple[str, str, Optional[str], List[str]]: ...
+
+    def score_categories_detailed(
+        self, text: str, filename: str
+    ) -> Dict[str, Tuple[str, float]]: ...
+
 
 # Damping applied to non-winner categories so a tied runner-up cannot equal
 # the winner's confidence within this signal.
@@ -60,7 +73,7 @@ class TextContentSignal:
     weight = W_TEXT
     cost_tier = "heavy"
 
-    def __init__(self, classifier: Any) -> None:
+    def __init__(self, classifier: _ContentClassifierLike) -> None:
         self._classifier = classifier
 
     def applies_to(self, ctx: FileContext) -> bool:

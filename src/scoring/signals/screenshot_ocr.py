@@ -26,10 +26,13 @@ if TYPE_CHECKING:
     from ..context import FileContext
 
 import re
-from typing import Any, Callable, Iterable, List, Optional, Tuple
+from typing import Any, Callable, Dict, Iterable, List, Mapping, Optional, Tuple
 
 from ..types import CategoryScore
 from ..weights import W_UI
+
+# classify_by_ocr's result shape: (category, confidence, all_scores, text).
+_OcrClassifyResult = Optional[Tuple[str, float, Dict[str, float], str]]
 
 # Minimum keyword-hit ratio to accept a screenshot OCR sub-classification.
 # classify_by_ocr() scores as hits/len(keywords), so this is calibrated to that
@@ -70,7 +73,7 @@ _RENAMED_SCREENSHOT_PREFIX_RE = re.compile(
 # Default OCR classifier — injected per instance for tests. Import degrades
 # gracefully (like the legacy organizer's guarded import): without the OCR
 # stack the signal emits only the weak fallback.
-_default_ocr_classify: Optional[Callable[..., Any]]
+_default_ocr_classify: Optional[Callable[..., _OcrClassifyResult]]
 try:
     from shared.ocr_classifier import (  # type: ignore[no-redef]
         classify_by_ocr as _default_ocr_classify,
@@ -121,8 +124,8 @@ class ScreenshotOcrSignal:
     def __init__(
         self,
         screenshot_classifier: Any = None,
-        screenshots_dict: Any = None,
-        ocr_classify: Optional[Callable[..., Any]] = None,
+        screenshots_dict: Optional[Mapping[str, object]] = None,
+        ocr_classify: Optional[Callable[..., _OcrClassifyResult]] = None,
     ) -> None:
         # ContentClassifier for schema-taxonomy OCR fallback (may be None).
         self._screenshot_classifier = screenshot_classifier

@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from ..context import FileContext
 
 from pathlib import Path
-from typing import Any, Dict, List, NamedTuple, Optional, Tuple
+from typing import List, Mapping, NamedTuple, Optional, Tuple
 
 from ..types import CategoryScore
 from ..weights import W_MEDIA
@@ -93,7 +93,7 @@ class MediaMatch(NamedTuple):
 
 
 def detect_media_match(
-    path: Path, image_metadata: Optional[Dict[str, Any]] = None
+    path: Path, image_metadata: Optional[Mapping[str, object]] = None
 ) -> Optional[MediaMatch]:
     """Classify a media file, reporting the basis of the match.
 
@@ -172,7 +172,7 @@ def detect_media_match(
 
 
 def detect_media_category(
-    path: Path, image_metadata: Optional[Dict[str, Any]] = None
+    path: Path, image_metadata: Optional[Mapping[str, object]] = None
 ) -> Optional[Tuple[str, str, str]]:
     """Legacy-shaped wrapper: ``(category, media_type, subcategory)`` or ``None``."""
     match = detect_media_match(path, image_metadata)

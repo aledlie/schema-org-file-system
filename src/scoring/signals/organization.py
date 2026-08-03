@@ -19,10 +19,17 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..context import FileContext
 
-from typing import Any, Callable, Dict, List, Optional, Tuple
+from typing import Callable, Dict, List, Optional, Protocol, Tuple
 
 from ..types import EVIDENCE_COMPANY, CategoryScore
 from ..weights import W_ORG
+
+
+class _CompanyExtractor(Protocol):
+    """The ContentClassifier slice this signal uses."""
+
+    def extract_company_names(self, text: str) -> List[str]: ...
+
 
 # Minimum extracted-text length for organization detection (mirrors the
 # legacy ``len(text) < 50`` gate in ``classify_by_organization``).
@@ -221,7 +228,7 @@ class OrganizationKeywordSignal:
     weight = W_ORG
     cost_tier = "mid"
 
-    def __init__(self, classifier: Any) -> None:
+    def __init__(self, classifier: _CompanyExtractor) -> None:
         # ContentClassifier (or anything exposing extract_company_names).
         self._classifier = classifier
 

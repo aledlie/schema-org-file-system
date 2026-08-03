@@ -20,7 +20,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..context import FileContext
 
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Iterable, List, Mapping, Optional
 
 from ..types import CategoryScore
 from ..weights import W_RENAMED
@@ -64,7 +64,7 @@ class RenamedScreenshotSignal:
     weight = W_RENAMED
     cost_tier = "cheap"
 
-    def __init__(self, screenshots_dict: Dict[str, Any]) -> None:
+    def __init__(self, screenshots_dict: Mapping[str, object]) -> None:
         # The organizer's category_paths["media"]["photos"]["screenshots"];
         # only the keys drive matching (insertion order preserved so the
         # stable longest-first sort matches the legacy dict iteration).

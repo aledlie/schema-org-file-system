@@ -26,7 +26,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..context import FileContext
 
-from typing import Any, Dict, FrozenSet, List, Mapping, Optional, Tuple
+from typing import Dict, FrozenSet, List, Mapping, Optional, Tuple
 
 from ..types import CategoryScore
 from ..weights import W_CLIP
@@ -63,7 +63,7 @@ EVIDENCE_CLIP_SCORE = "clip_score"
 
 def map_clip_label(
     label: str,
-    image_metadata: Optional[Mapping[str, Any]],
+    image_metadata: Optional[Mapping[str, object]],
     label_to_organizer: Mapping[str, Tuple[str, str]],
     geographic_labels: FrozenSet[str],
 ) -> Optional[Tuple[str, str]]:

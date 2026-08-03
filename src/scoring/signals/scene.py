@@ -31,10 +31,13 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
+    import numpy as np
+    import numpy.typing as npt
+
     from ..context import FileContext
 
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, cast
 
 from ..types import EVIDENCE_SCHEMA_TYPE, CategoryScore
 from ..weights import W_SCENE
@@ -112,7 +115,7 @@ EVIDENCE_SCENE_PROB = "scene_prob"
 SCENE_SIGNAL_NAME = "scene"
 
 
-def _get_embedding(path: Path) -> Optional[Any]:
+def _get_embedding(path: Path) -> Optional[npt.NDArray[np.float32]]:
     """Cached CLIP embedding via shared.clip_cache, or None if unavailable.
 
     Resolved lazily per call: keeps this module importable without scripts/
@@ -122,7 +125,9 @@ def _get_embedding(path: Path) -> Optional[Any]:
         from shared.clip_cache import get_or_compute_embedding
     except ImportError:
         return None
-    return get_or_compute_embedding(path)
+    return cast(
+        "Optional[npt.NDArray[np.float32]]", get_or_compute_embedding(path)
+    )
 
 
 def load_probe(path: Path) -> Optional[Tuple[Any, List[str]]]:

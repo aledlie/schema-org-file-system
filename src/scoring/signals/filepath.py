@@ -29,7 +29,7 @@ if TYPE_CHECKING:
     from ..context import FileContext
 
 from pathlib import Path
-from typing import Any, Dict, List, Mapping, NamedTuple, Optional, cast
+from typing import Dict, List, Mapping, NamedTuple, Optional, cast
 
 from ..types import CategoryScore
 from ..weights import W_PATH
@@ -290,7 +290,7 @@ class FilepathSignal:
         match = classify_filepath_match(ctx.path, self._patterns)
         if match is None:
             return []
-        evidence: Dict[str, Any] = {}
+        evidence: Dict[str, str] = {}
         if match.project_name:
             evidence[EVIDENCE_PROJECT_NAME] = match.project_name
         return [

@@ -16,10 +16,19 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..context import FileContext
 
-from typing import Any, List
+from typing import List, Optional, Protocol, Tuple
 
 from ..types import EVIDENCE_COMPANY, EVIDENCE_PEOPLE, CategoryScore
 from ..weights import W_KIE
+
+
+class _KieClassifier(Protocol):
+    """The ContentClassifier slice this signal uses."""
+
+    def classify_with_kie(
+        self, kie_result: object, text: str, filename: str
+    ) -> Optional[Tuple[str, str, Optional[str], List[str]]]: ...
+
 
 # Structured vendor+amount/date extraction is the strongest content evidence
 # short of an exact MRZ match.
@@ -36,7 +45,7 @@ class KieStructuredSignal:
     weight = W_KIE
     cost_tier = "heavy"
 
-    def __init__(self, classifier: Any) -> None:
+    def __init__(self, classifier: _KieClassifier) -> None:
         self._classifier = classifier
 
     def applies_to(self, ctx: FileContext) -> bool:

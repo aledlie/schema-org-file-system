@@ -30,12 +30,19 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..context import FileContext
 
-from typing import Any, Callable, Dict, List, NamedTuple, Optional
+from typing import Callable, Dict, List, NamedTuple, Optional, Protocol
 
 from src.classifiers.entity_detector import _has_human_name_signal
 
 from ..types import EVIDENCE_PEOPLE, CategoryScore
 from ..weights import W_PERSON
+
+
+class _PeopleExtractor(Protocol):
+    """The ContentClassifier slice this signal uses."""
+
+    def extract_people_names(self, text: str) -> List[str]: ...
+
 
 # Minimum extracted-text length for person detection (mirrors the legacy
 # ``len(text) < 50`` gate in ``classify_by_person``).
@@ -193,7 +200,7 @@ class PersonalDocSignal:
     weight = W_PERSON
     cost_tier = "mid"
 
-    def __init__(self, classifier: Any) -> None:
+    def __init__(self, classifier: _PeopleExtractor) -> None:
         # ContentClassifier (or anything exposing extract_people_names).
         self._classifier = classifier
 
@@ -208,7 +215,7 @@ class PersonalDocSignal:
         # legacy branch classified these regardless of extracted people).
         if is_resume_filename(ctx.pattern_path.name):
             people = list(extract_people_names(text) or [])
-            evidence: Dict[str, Any] = {
+            evidence: Dict[str, object] = {
                 EVIDENCE_RESUME_FILENAME: True,
                 EVIDENCE_PERSON_TYPE: CONTACTS_PERSON_TYPE,
             }
