@@ -7,14 +7,14 @@ Person, Location).
 """
 
 from pathlib import Path
-from typing import Any, Dict, Union
+from typing import Dict, Union
 import json
 
 SCHEMA_ORG_VOCAB = "https://schema.org/"
 ML_NAMESPACE = "https://schema-org-fs.example.com/ml#"
 
 # Full @context document covering all emitted properties from all five models
-_CONTEXT_DOCUMENT: Dict[str, Any] = {
+_CONTEXT_DOCUMENT: Dict[str, Dict[str, str]] = {
     "@context": {
         # Vocab and standard prefixes
         "@vocab": SCHEMA_ORG_VOCAB,
@@ -97,7 +97,7 @@ _CONTEXT_DOCUMENT: Dict[str, Any] = {
 }
 
 
-def get_context_document() -> Dict[str, Any]:
+def get_context_document() -> Dict[str, Dict[str, str]]:
     """Return the JSON-LD @context document as a Python dict.
 
     Returns:

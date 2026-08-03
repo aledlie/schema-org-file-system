@@ -160,7 +160,7 @@ class PersonVariants:
             result["jobTitle"] = job_title
 
         if works_for_iri or works_for_name:
-            works_for: Dict[str, Any] = {"@type": "Organization"}
+            works_for: Dict[str, str] = {"@type": "Organization"}
             if works_for_iri:
                 works_for["@id"] = works_for_iri
             if works_for_name:
@@ -168,7 +168,7 @@ class PersonVariants:
             result["worksFor"] = works_for
 
         if work_location_iri or work_location_name:
-            work_location: Dict[str, Any] = {"@type": "Place"}
+            work_location: Dict[str, str] = {"@type": "Place"}
             if work_location_iri:
                 work_location["@id"] = work_location_iri
             if work_location_name:

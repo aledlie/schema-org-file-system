@@ -22,7 +22,18 @@ import re
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Iterator, List, Optional, Set, Tuple, Union, cast
+from typing import (
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    TypedDict,
+    Union,
+    cast,
+)
 
 from sqlalchemy import or_
 from sqlalchemy.orm import Session
@@ -172,6 +183,35 @@ PERSONAL_SUBCAT_FOLDER: Dict[str, str] = {
 }
 
 
+class MigrationEntryDict(TypedDict):
+    """``MigrationEntry.to_dict()`` shape."""
+    src: str
+    dst: str
+    subcat: str
+    subcat_source: str
+    file_id: Optional[str]
+    flagged: bool
+
+
+class MigrationSummary(TypedDict, total=False):
+    """``migrate_person_files()`` shape; ``planned`` on dry-run,
+    ``migrated`` on apply."""
+    dry_run: bool
+    planned: int
+    migrated: int
+    flagged: int
+    manifest_path: str
+    entries: List[MigrationEntryDict]
+
+
+class PersonIndexSummary(TypedDict, total=False):
+    """``index_person_files()`` shape; ``edges`` only on apply."""
+    dry_run: bool
+    attributed: int
+    edges: int
+    people: Dict[str, int]
+
+
 @dataclass
 class MigrationEntry:
     """One planned (or executed) file move."""
@@ -183,7 +223,7 @@ class MigrationEntry:
     file_id: Optional[str] = None
     flagged: bool = False
 
-    def to_dict(self) -> Dict[str, Any]:
+    def to_dict(self) -> MigrationEntryDict:
         return {
             "src": self.src,
             "dst": self.dst,
@@ -383,7 +423,7 @@ def migrate_person_files(
     manifest_path: Path = DEFAULT_MANIFEST_PATH,
     apply: bool = False,
     verbose: bool = True,
-) -> Dict[str, Any]:
+) -> MigrationSummary:
     """
     Migrate legacy on-disk Person/ files into Personal/{subcat}/ folders.
 
@@ -445,7 +485,7 @@ def rollback_person_migration(
     manifest_path: Path,
     db_path: Optional[str] = None,
     verbose: bool = True,
-) -> Dict[str, Any]:
+) -> Dict[str, int]:
     """
     Reverse a prior apply run using the manifest it wrote. Moves every file
     from its recorded `dst` back to its recorded `src` -- never recomputes
@@ -602,7 +642,7 @@ def index_person_files(
     person_root: Path = DEFAULT_PERSON_ROOT,
     apply: bool = False,
     verbose: bool = True,
-) -> Dict[str, Any]:
+) -> PersonIndexSummary:
     """Register migrated files in the graph with person edges (no file moves).
 
     Dry-run by default: reports the per-person attribution without touching the

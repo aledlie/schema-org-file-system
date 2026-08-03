@@ -74,7 +74,7 @@ class JSONMigrator:
         # Statistics
         self.stats: defaultdict[str, int] = defaultdict(int)
 
-    def migrate_all(self, verbose: bool = True) -> Dict[str, Any]:
+    def migrate_all(self, verbose: bool = True) -> Dict[str, int]:
         """
         Migrate all JSON files in the results directory.
 
@@ -461,7 +461,7 @@ class JSONMigrator:
         print(f"  Errors:                 {self.stats['errors']}")
         print("=" * SEPARATOR_WIDTH_MEDIUM)
 
-    def verify_migration(self, verbose: bool = True) -> Dict[str, Any]:
+    def verify_migration(self, verbose: bool = True) -> Dict[str, int]:
         """
         Verify the migration by comparing counts.
 
@@ -471,7 +471,7 @@ class JSONMigrator:
         if verbose:
             print(f"\n{'Verifying Migration':=^60}")
 
-        results = {}
+        results: Dict[str, int] = {}
 
         # Count JSON files
         json_files = list(self.results_dir.glob("content_organization_report_*.json"))

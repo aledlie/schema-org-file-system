@@ -576,7 +576,7 @@ class PersonEntity(SchemaOrgEntity):
 
     def owns(self, *entity_ids: str) -> None:
         """Set (replace) ``owns`` references to other entities' ``@id``s."""
-        refs: List[Dict[str, Any]] = [{_JSONLD_ID: eid} for eid in entity_ids]
+        refs: List[Dict[str, str]] = [{_JSONLD_ID: eid} for eid in entity_ids]
         self.set_property("owns", refs[0] if len(refs) == 1 else refs)
 
     def add_owns(self, *entity_ids: str) -> None:
@@ -586,7 +586,7 @@ class PersonEntity(SchemaOrgEntity):
         further additions grow it into a list. Duplicate ``@id``s are ignored.
         """
         existing = self.get_property("owns")
-        refs: List[Dict[str, Any]] = (
+        refs: List[Dict[str, str]] = (
             [] if existing is None else existing if isinstance(existing, list) else [existing]
         )
         seen = {ref.get(_JSONLD_ID) for ref in refs}

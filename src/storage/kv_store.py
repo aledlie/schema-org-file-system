@@ -11,7 +11,16 @@ Design allows easy migration to Redis/Memcached in the future.
 from datetime import timedelta
 from pathlib import Path
 from ._time import utcnow
-from typing import Any, Dict, List, Optional, Generator, Union
+from typing import (
+    Any,
+    Dict,
+    Generator,
+    List,
+    Optional,
+    TYPE_CHECKING,
+    TypedDict,
+    Union,
+)
 from contextlib import contextmanager
 
 from sqlalchemy import create_engine, event, func, and_
@@ -22,6 +31,17 @@ try:
     from ..constants import DEFAULT_DB_PATH
 except ImportError:
     from constants import DEFAULT_DB_PATH  # type: ignore[no-redef]
+
+if TYPE_CHECKING:
+    from sqlalchemy.engine.interfaces import DBAPIConnection
+    from sqlalchemy.pool import ConnectionPoolEntry
+
+
+class KVStoreInfo(TypedDict):
+    """``KeyValueStorage.info()`` shape."""
+    total_keys: int
+    by_namespace: Dict[str, int]
+    expired_keys: int
 
 
 class KeyValueStorage:
@@ -58,7 +78,10 @@ class KeyValueStorage:
 
         # SQLite optimizations
         @event.listens_for(self.engine, "connect")
-        def set_sqlite_pragma(dbapi_connection: Any, connection_record: Any) -> None:
+        def set_sqlite_pragma(
+            dbapi_connection: "DBAPIConnection",
+            connection_record: "ConnectionPoolEntry",
+        ) -> None:
             cursor = dbapi_connection.cursor()
             cursor.execute("PRAGMA foreign_keys=ON")
             cursor.execute("PRAGMA journal_mode=WAL")
@@ -712,7 +735,7 @@ class KeyValueStorage:
     # Utility Methods
     # =========================================================================
 
-    def _get_value_type(self, value: Any) -> str:
+    def _get_value_type(self, value: object) -> str:
         """Determine the type of a value."""
         if isinstance(value, bool):
             return 'bool'
@@ -727,7 +750,7 @@ class KeyValueStorage:
         else:
             return 'json'
 
-    def info(self) -> Dict[str, Any]:
+    def info(self) -> KVStoreInfo:
         """
         Get storage statistics.
 

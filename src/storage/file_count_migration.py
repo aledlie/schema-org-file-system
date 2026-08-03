@@ -33,7 +33,7 @@ re-running is a no-op. Requires SQLite 3.35+ for ``ALTER TABLE DROP COLUMN``
 import sqlite3
 from collections import defaultdict
 from pathlib import Path
-from typing import Any, Dict, List, Tuple, Union
+from typing import Dict, List, Optional, Tuple, TypedDict, Union
 
 try:
     from ..constants import (
@@ -87,9 +87,28 @@ def _supports_drop_column() -> bool:
     return sqlite3.sqlite_version_info >= MIN_SQLITE_DROP_COLUMN
 
 
+class DriftEntry(TypedDict):
+    """One cached count that disagreed with its edges at drop time."""
+    table: str
+    name: Optional[str]
+    stored: int
+    actual: int
+
+
+class FileCountMigrationResult(TypedDict, total=False):
+    """``run_file_count_migration()`` shape: the error short-circuit, or
+    the stats keys (``drop_column_unsupported`` only on old SQLite)."""
+    error: str
+    indexes_created: int
+    columns_dropped: int
+    drifted_counts: int
+    drop_column_unsupported: int
+    drifted: List[DriftEntry]
+
+
 def run_file_count_migration(
     db_path: Union[str, Path] = DEFAULT_DB_PATH, dry_run: bool = False
-) -> Dict[str, Any]:
+) -> FileCountMigrationResult:
     """Add the association indexes, then drop the ``file_count`` cache columns.
 
     Args:
@@ -113,7 +132,7 @@ def run_file_count_migration(
     stats["indexes_created"] = 0
     stats["columns_dropped"] = 0
     stats["drifted_counts"] = 0
-    drifted: List[Dict[str, Any]] = []
+    drifted: List[DriftEntry] = []
     conn = sqlite3.connect(str(db_path))
 
     try:
@@ -209,8 +228,14 @@ def run_file_count_migration(
     finally:
         conn.close()
 
-    result: Dict[str, Any] = dict(stats)
-    result["drifted"] = drifted
+    result: FileCountMigrationResult = {
+        "indexes_created": stats["indexes_created"],
+        "columns_dropped": stats["columns_dropped"],
+        "drifted_counts": stats["drifted_counts"],
+        "drifted": drifted,
+    }
+    if "drop_column_unsupported" in stats:
+        result["drop_column_unsupported"] = stats["drop_column_unsupported"]
     return result
 
 

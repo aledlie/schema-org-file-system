@@ -11,7 +11,14 @@ import os
 import re
 import sys
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, TYPE_CHECKING, Tuple
+from typing import (
+    Iterable,
+    List,
+    Optional,
+    TYPE_CHECKING,
+    Tuple,
+    TypedDict,
+)
 
 # scripts/ isn't a package on sys.path by default outside of pytest and the
 # organize-files CLI (both of which add it); insert it lazily here so this
@@ -65,6 +72,15 @@ def _sanitize_person_name(name: str) -> str:
     return collapsed or _FALLBACK_SANITIZED_NAME
 
 
+class PersonViewSummary(TypedDict):
+    """``PersonViewGenerator.generate()`` shape."""
+    people: int
+    symlinks_created: int
+    removed_stale: int
+    dry_run: bool
+    errors: List[str]
+
+
 class PersonViewGenerator:
     """
     Regenerates view_root/{SanitizedName}/ as symlinks to each person's
@@ -84,7 +100,7 @@ class PersonViewGenerator:
         dry_run: bool = True,
         apply: bool = False,
         min_files: int = DEFAULT_MIN_FILES,
-    ) -> Dict[str, Any]:
+    ) -> "PersonViewSummary":
         """
         Regenerate the Person/ view.
 
@@ -116,7 +132,7 @@ class PersonViewGenerator:
         ]
         valid_targets = sum(len(paths) for _, paths in people) - len(missing_targets)
 
-        summary: Dict[str, Any] = {
+        summary: PersonViewSummary = {
             "people": len(people),
             "symlinks_created": valid_targets,
             "removed_stale": 0,
