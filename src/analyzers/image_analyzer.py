@@ -7,7 +7,13 @@ CLIP inference is delegated to the shared CLIPClassifier singleton
 
 from contextlib import nullcontext
 from pathlib import Path
-from typing import Any, Dict, Literal, Tuple
+from types import TracebackType
+from typing import Any, Dict, Literal, Optional, TYPE_CHECKING, Tuple
+
+if TYPE_CHECKING:
+    # The bare cost_roi_calculator import below is Any to mypy; the
+    # src.-prefixed form is the one that resolves.
+    from src.cost_roi_calculator import CostROICalculator
 
 # Vision libraries are optional
 try:
@@ -41,7 +47,12 @@ except ImportError:
         def __enter__(self) -> "CostTracker":
             return self
 
-        def __exit__(self, *args: Any) -> Literal[False]:
+        def __exit__(
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_val: Optional[BaseException],
+            exc_tb: Optional[TracebackType],
+        ) -> Literal[False]:
             return False
 
 
@@ -73,7 +84,7 @@ _SCREENSHOT_SCORE_THRESHOLD = 0.4
 class ImageContentAnalyzer:
     """Analyzes image content using computer vision."""
 
-    def __init__(self, cost_calculator: Any = None) -> None:
+    def __init__(self, cost_calculator: Optional["CostROICalculator"] = None) -> None:
         self.vision_available = _CV2_AVAILABLE and (CLIP_AVAILABLE or CLIP_CACHE_AVAILABLE)
         self.face_cascade = None
         self.cost_calculator = cost_calculator

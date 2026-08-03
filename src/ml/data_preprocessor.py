@@ -16,7 +16,7 @@ import logging
 import os
 from collections import Counter
 from datetime import datetime
-from typing import Optional, TYPE_CHECKING, Any, Dict, List, Tuple
+from typing import Optional, TYPE_CHECKING, Any, Dict, List, Tuple, TypedDict
 
 if TYPE_CHECKING:
     from src.cli_inputs import PreprocessInputs
@@ -24,6 +24,25 @@ if TYPE_CHECKING:
 from .feature_extractor import FileFeatureExtractor
 
 logger = logging.getLogger(__name__)
+
+
+class _QualityIssues(TypedDict):
+    """Buckets of problematic records found by ``validate_data_quality``."""
+    missing_category: List[str]
+    empty_filename: List[str]
+    duplicate_filenames: List[str]
+    suspicious_extensions: List[Tuple[str, str]]
+
+
+class QualityReport(TypedDict):
+    """``validate_data_quality()`` shape."""
+    total_records: int
+    uncategorized_count: int
+    empty_filename_count: int
+    duplicate_count: int
+    unknown_extension_count: int
+    quality_score: float
+    issues_sample: Dict[str, List[str]]
 
 
 class DataPreprocessor:
@@ -198,12 +217,12 @@ class DataPreprocessor:
         id_to_label = {v: k for k, v in label_to_id.items()}
         return label_to_id, id_to_label
 
-    def validate_data_quality(self) -> Dict[str, Any]:
+    def validate_data_quality(self) -> QualityReport:
         """Validate data quality and identify issues."""
         if not self.features:
             raise ValueError("No features extracted. Call extract_all_features() first.")
 
-        issues: Dict[str, List[Any]] = {
+        issues: _QualityIssues = {
             'missing_category': [],
             'empty_filename': [],
             'duplicate_filenames': [],
@@ -231,7 +250,7 @@ class DataPreprocessor:
         ]
 
         # Summarize
-        quality_report = {
+        quality_report: QualityReport = {
             'total_records': len(self.features),
             'uncategorized_count': len(issues['missing_category']),
             'empty_filename_count': len(issues['empty_filename']),
@@ -250,7 +269,7 @@ class DataPreprocessor:
         self.statistics['data_quality'] = quality_report
         return quality_report
 
-    def _compute_quality_score(self, issues: Dict) -> float:
+    def _compute_quality_score(self, issues: _QualityIssues) -> float:
         """Compute overall data quality score (0-100)."""
         total = len(self.features or [])
         if total == 0:

@@ -7,7 +7,24 @@ import sqlite3
 from contextlib import nullcontext
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from types import TracebackType
+from typing import (
+    Any,
+    Dict,
+    Literal,
+    Mapping,
+    Optional,
+    Sequence,
+    TYPE_CHECKING,
+    Tuple,
+    TypedDict,
+    cast,
+)
+
+if TYPE_CHECKING:
+    # The bare cost_roi_calculator import below is Any to mypy; the
+    # src.-prefixed form is the one that resolves.
+    from src.cost_roi_calculator import CostROICalculator
 
 # PIL / geopy are optional
 try:
@@ -73,14 +90,29 @@ except ImportError:
         def __enter__(self) -> "CostTracker":
             return self
 
-        def __exit__(self, *args: Any) -> None:
-            return
+        def __exit__(
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_val: Optional[BaseException],
+            exc_tb: Optional[TracebackType],
+        ) -> Literal[False]:
+            return False
+
+
+class GeocodedLocation(TypedDict):
+    """``geocode_address()`` result shape."""
+    display_name: str
+    latitude: float
+    longitude: float
+    city: Optional[str]
+    state: Optional[str]
+    country: Optional[str]
 
 
 class ImageMetadataParser:
     """Parses image metadata including EXIF, GPS, and timestamps."""
 
-    def __init__(self, cost_calculator: Any = None) -> None:
+    def __init__(self, cost_calculator: Optional["CostROICalculator"] = None) -> None:
         """
         Initialize the metadata parser.
 
@@ -219,7 +251,7 @@ class ImageMetadataParser:
         return text_metadata
 
     @staticmethod
-    def _normalize_text_value(value: Any) -> Optional[str]:
+    def _normalize_text_value(value: object) -> Optional[str]:
         """Coerce a PNG/GIF metadata value to a non-empty stripped str, or None."""
         if isinstance(value, bytes):
             try:
@@ -333,7 +365,7 @@ class ImageMetadataParser:
             print(f"  GPS extraction error: {e}")
             return None
 
-    def _convert_to_degrees(self, value: Any) -> Optional[float]:
+    def _convert_to_degrees(self, value: Optional[Sequence[Any]]) -> Optional[float]:
         """
         Convert GPS coordinates to decimal degrees.
 
@@ -416,7 +448,7 @@ class ImageMetadataParser:
         country = raw_address.get("country")
         return city, state, country
 
-    def geocode_address(self, address: str) -> Optional[Dict[str, Any]]:
+    def geocode_address(self, address: str) -> Optional[GeocodedLocation]:
         """Forward-geocode a text address to a structured location dict.
 
         Rate-limited (<=1 req/s) and cached on disk (keyed by normalized
@@ -434,7 +466,7 @@ class ImageMetadataParser:
         if cached is not None:
             return cached or None  # {} is a cached negative result
 
-        result: Optional[Dict[str, Any]] = None
+        result: Optional[GeocodedLocation] = None
         ctx = (
             CostTracker(self.cost_calculator, "nominatim_geocoding")
             if self.cost_calculator
@@ -478,7 +510,7 @@ class ImageMetadataParser:
         except sqlite3.Error:
             return None  # cache is best-effort; never block geocoding
 
-    def _geocode_cache_get(self, key: str) -> Optional[Dict[str, Any]]:
+    def _geocode_cache_get(self, key: str) -> Optional[GeocodedLocation]:
         conn = self._geocode_cache_conn()
         if conn is None:
             return None
@@ -486,13 +518,14 @@ class ImageMetadataParser:
             row = conn.execute(
                 "SELECT result FROM geocode_cache WHERE address = ?", (key,)
             ).fetchone()
-            return json.loads(row[0]) if row else None
+            # Safe: _geocode_cache_put is the sole writer of this table.
+            return cast(GeocodedLocation, json.loads(row[0])) if row else None
         except (sqlite3.Error, ValueError):
             return None
         finally:
             conn.close()
 
-    def _geocode_cache_put(self, key: str, value: Dict[str, Any]) -> None:
+    def _geocode_cache_put(self, key: str, value: Mapping[str, object]) -> None:
         conn = self._geocode_cache_conn()
         if conn is None:
             return

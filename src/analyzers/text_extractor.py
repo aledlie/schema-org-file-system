@@ -7,7 +7,13 @@ from __future__ import annotations
 from contextlib import nullcontext
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal, Optional
+from types import TracebackType
+from typing import Any, Literal, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    # The bare cost_roi_calculator import below is Any to mypy; the
+    # src.-prefixed form is the one that resolves.
+    from src.cost_roi_calculator import CostROICalculator
 
 from shared.constants import TEXT_EXTENSIONS
 
@@ -61,7 +67,12 @@ except ImportError:
         def __enter__(self) -> "CostTracker":
             return self
 
-        def __exit__(self, *args: Any) -> Literal[False]:
+        def __exit__(
+            self,
+            exc_type: Optional[type[BaseException]],
+            exc_val: Optional[BaseException],
+            exc_tb: Optional[TracebackType],
+        ) -> Literal[False]:
             return False
 
 
@@ -90,7 +101,7 @@ class TextExtractor:
 
     def __init__(
         self,
-        cost_calculator: Any | None = None,
+        cost_calculator: "CostROICalculator | None" = None,
         force_doctr_fallback: bool = False,
     ) -> None:
         self.cost_calculator = cost_calculator

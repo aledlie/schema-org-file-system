@@ -20,6 +20,15 @@ class _ApplyStats(TypedDict):
     categories_changed: Dict[str, int]
 
 
+class _SuggestionRow(TypedDict):
+    """One suggested re-categorization row for the correction report."""
+    filename: str
+    current: str
+    suggested: str
+    confidence: float
+    patterns: List[str]
+
+
 class FeedbackIntegration:
     """Integrates correction feedback with the file organizer."""
 
@@ -206,7 +215,7 @@ class FeedbackIntegration:
         Returns:
             Markdown report string
         """
-        suggestions = []
+        suggestions: List[_SuggestionRow] = []
 
         for result in results:
             filename = (
