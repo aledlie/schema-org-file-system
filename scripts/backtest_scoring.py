@@ -47,7 +47,21 @@ from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, cast
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    List,
+    Optional,
+    Sequence,
+    TYPE_CHECKING,
+    Tuple,
+    cast,
+)
+
+if TYPE_CHECKING:
+    # Typing-only: the runtime ORM import stays lazy (load_replay_rows).
+    from src.storage.models import ClipScores, KieFields
 
 # Bootstrap: allow `python scripts/backtest_scoring.py` from the project root
 # (sys.path[0] is scripts/, so src.* needs the root; shared.* needs scripts/).
@@ -172,8 +186,10 @@ class ReplayRow:
     extracted_text: str
     ocr_confidence: Optional[float]
     detected_language: Optional[str]
-    kie_fields: Any
-    clip_scores: Any
+    # Column-declared shapes (src.storage.models); assignment from the ORM
+    # rows in load_replay_rows is what mypy checks.
+    kie_fields: Optional[KieFields]
+    clip_scores: Optional[ClipScores]
     stored_category: Optional[str]
     stored_subcategory: Optional[str]
 

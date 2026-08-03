@@ -30,7 +30,10 @@ import json
 import sqlite3
 import sys
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from src.storage.models import ClipScores
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 for _p in (str(_REPO_ROOT), str(_REPO_ROOT / "scripts"), str(_REPO_ROOT / "src")):
@@ -78,7 +81,10 @@ def backfill(db_path: Path, apply: bool, force: bool, limit: Optional[int]) -> i
             print(f"  ERR {path.name}: {exc}")
             failed += 1
             continue
-        scores = {prompt_to_label.get(prompt, prompt): score for prompt, score in results}
+        # Checked against the column's declared shape (models.ClipScores).
+        scores: ClipScores = {
+            prompt_to_label.get(prompt, prompt): score for prompt, score in results
+        }
         updates.append((json.dumps(scores), row["id"]))
         done += 1
         if i % PROGRESS_EVERY == 0:

@@ -209,6 +209,32 @@ def _edge_count_property(assoc_table: Table, fk_column: str) -> "declared_attr[i
 
 
 # ---------------------------------------------------------------------------
+# JSON-column payload shapes. These name the write/read contract for columns
+# whose writers or readers live outside the ORM's type reach (raw SQL,
+# add_file(**kwargs)); annotate those sites with these aliases so the shape
+# is stated once, here, next to the column that stores it.
+# ---------------------------------------------------------------------------
+
+# CLIP label→score mapping in files.image_classification. Written only by
+# scripts/backfill_clip_scores.py (raw SQL); replayed by
+# scripts/backtest_scoring.py.
+ClipScores = Dict[str, float]
+
+
+class KieFieldEntry(TypedDict):
+    """One persisted KIE field ({"value", "confidence"})."""
+
+    value: str
+    confidence: float
+
+
+# files.kie_fields shape ({field_class: [entries]}), built by
+# FileProcessor._persist_to_graph_store and re-parsed by
+# scripts/backtest_scoring.reconstruct_kie.
+KieFields = Dict[str, List[KieFieldEntry]]
+
+
+# ---------------------------------------------------------------------------
 # to_dict() shapes. Functional TypedDict syntax throughout: "@id" is not a
 # valid identifier.
 # ---------------------------------------------------------------------------
@@ -365,15 +391,15 @@ class File(Base, SchemaOrgSerializable):
         String(SHORT_STRING_LENGTH)
     )  # ImageObject, Document, etc.
     schema_data: Mapped[Optional[Dict[str, Any]]] = mapped_column(JSON)
-    # KIE-extracted structured fields (raw): {field_class: [{value, confidence}]}
-    kie_fields: Mapped[Optional[Dict[str, List[Dict[str, Any]]]]] = mapped_column(JSON)
+    # KIE-extracted structured fields (raw); shape declared by KieFields.
+    kie_fields: Mapped[Optional[KieFields]] = mapped_column(JSON)
 
     # Image-specific metadata
     image_width: Mapped[Optional[int]] = mapped_column(Integer)
     image_height: Mapped[Optional[int]] = mapped_column(Integer)
     has_faces: Mapped[Optional[bool]] = mapped_column(Boolean)
     face_count: Mapped[Optional[int]] = mapped_column(Integer)
-    image_classification: Mapped[Optional[Dict[str, float]]] = mapped_column(
+    image_classification: Mapped[Optional[ClipScores]] = mapped_column(
         JSON
     )  # CLIP classification scores
 

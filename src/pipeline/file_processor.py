@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional, TYPE_CHECKING, cast
 
 if TYPE_CHECKING:
     from src.cost_roi_calculator import CostReport, CostROICalculator
+    from src.storage.models import KieFields
 from urllib.parse import quote
 
 from src.analyzers.text_redaction import (
@@ -338,7 +339,7 @@ class FileProcessor:
             )
 
             # Merge KIE-extracted Schema.org properties into schema dict.
-            kie_fields_json = None
+            kie_fields_json: Optional["KieFields"] = None
             if kie_result is not None:
                 try:
                     kie_schema = kie_result_to_schema_org(kie_result)
