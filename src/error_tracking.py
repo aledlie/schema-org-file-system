@@ -47,7 +47,10 @@ R = TypeVar("R")
 try:
     from .constants import DEFAULT_TRACES_SAMPLE_RATE, DEFAULT_PROFILES_SAMPLE_RATE
 except ImportError:
-    from constants import DEFAULT_TRACES_SAMPLE_RATE, DEFAULT_PROFILES_SAMPLE_RATE  # type: ignore[no-redef]
+    from constants import (  # type: ignore[no-redef]
+        DEFAULT_TRACES_SAMPLE_RATE,
+        DEFAULT_PROFILES_SAMPLE_RATE,
+    )
 
 # Sentry SDK import with graceful degradation
 try:
@@ -350,7 +353,7 @@ class FileProcessingErrorTracker:
         """Print processing summary."""
         print("\nFile Processing Summary:")
         print(f"  Processed: {self.processed}")
-        print(f"  Succeeded: {self.succeeded} ({self.succeeded/max(self.processed,1)*100:.1f}%)")
+        print(f"  Succeeded: {self.succeeded} ({self.succeeded/max(self.processed, 1)*100:.1f}%)")
         print(f"  Failed: {self.failed}")
 
         if self.errors:

@@ -26,7 +26,7 @@ _SRC_DIR = Path(__file__).parent.parent.parent / "src"
 if str(_SRC_DIR) not in sys.path:
     sys.path.insert(0, str(_SRC_DIR))
 
-from storage.models import Base, File, Category, Company, Person, Location
+from storage.models import Base, File, Category, Company, Person, Location  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # JSON Schema definitions for each schema.org type we emit
@@ -526,8 +526,6 @@ class TestPropertyValueTypes:
             if field in result:
                 assert isinstance(result[field], str)
                 # Verify it's a parseable date string
-                from datetime import date
-
                 value = result[field]
                 # Accept ISO 8601 date or datetime strings
                 assert len(value) >= 10

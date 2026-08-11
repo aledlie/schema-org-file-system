@@ -34,8 +34,8 @@ _SRC_DIR = Path(__file__).parent.parent.parent / "src"
 if str(_SRC_DIR) not in sys.path:
     sys.path.insert(0, str(_SRC_DIR))
 
-from storage.models import Base, Category, File, file_categories
-from storage.schema_org_exporter import SchemaOrgExporter
+from storage.models import Base, Category, File, file_categories  # noqa: E402
+from storage.schema_org_exporter import SchemaOrgExporter  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Seeding helpers

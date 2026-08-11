@@ -24,7 +24,7 @@ from urllib.parse import quote
 # than re-reaching into the raw modules with src/ on the path.
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from src import (
+from src import (  # noqa: E402
     DocumentGenerator,
     ImageGenerator,
     VideoGenerator,
@@ -34,8 +34,8 @@ from src import (
     ArchiveGenerator,
     MetadataEnricher,
 )
-from src.base import PropertyType
-from src.storage.models import file_iri
+from src.base import PropertyType  # noqa: E402
+from src.storage.models import file_iri  # noqa: E402
 
 
 def get_generator_for_type(schema_type: str, entity_id: str):

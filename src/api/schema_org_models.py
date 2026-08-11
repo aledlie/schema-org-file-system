@@ -299,7 +299,9 @@ class BulkExportParams(BaseModel):
 
     entity_types: str = Field(
         "all",
-        description="Comma-separated entity types: file, category, company, person, location, or 'all'",
+        description=(
+            "Comma-separated entity types: file, category, company, person, " "location, or 'all'"
+        ),
     )
 
 

@@ -515,7 +515,8 @@ class FileProcessor:
         if organizer is None:
             raise RuntimeError(
                 "FileProcessor._organizer is not set. "
-                "Attach a ContentBasedFileOrganizer instance to _organizer before calling organize_file."
+                "Attach a ContentBasedFileOrganizer instance to _organizer "
+                "before calling organize_file."
             )
 
         result = {

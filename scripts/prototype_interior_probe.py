@@ -240,7 +240,8 @@ def _read_manifests(paths: Sequence[str]) -> List[Tuple[Path, int]]:
 def _cv_scores(X: np.ndarray, y: np.ndarray, folds: int, C: float) -> np.ndarray:
     """Out-of-fold P(interior) via stratified k-fold."""
     skf = StratifiedKFold(n_splits=folds, shuffle=True, random_state=_SEED)
-    return cross_val_predict(make_probe(C), X, y, cv=skf, method="predict_proba")[:, 1]  # type: ignore[no-any-return]
+    proba = cross_val_predict(make_probe(C), X, y, cv=skf, method="predict_proba")
+    return proba[:, 1]  # type: ignore[no-any-return]
 
 
 def _plumbing_self_check(dim: int, folds: int, C: float) -> None:

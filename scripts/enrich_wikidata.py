@@ -38,8 +38,8 @@ _PROJECT_ROOT = Path(__file__).parent.parent
 if str(_PROJECT_ROOT / "src") not in sys.path:
     sys.path.insert(0, str(_PROJECT_ROOT / "src"))
 
-from constants import DEFAULT_DB_PATH
-from storage.wikidata_enricher import (
+from constants import DEFAULT_DB_PATH  # noqa: E402
+from storage.wikidata_enricher import (  # noqa: E402
     QID_EVENT,
     QID_ORGANIZATION,
     WikidataEnricher,
@@ -165,7 +165,7 @@ def run(
 
     queried = len(to_query)
     hit_rate = matched / queried * 100 if queried else 0.0
-    print(f"\n--- Summary ---")
+    print("\n--- Summary ---")
     print(f"  Skipped    : {already_enriched} (already enriched)")
     print(f"  Queried    : {queried}")
     print(f"  Matched    : {matched}  ({hit_rate:.1f}% hit rate on queried)")

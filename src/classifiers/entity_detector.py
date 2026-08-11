@@ -126,16 +126,19 @@ class EntityDetector:
             # Matches: "ISABEL BUDENZ\nLLM" or "JOHN DOE\nSoftware Engineer"
             r"^([A-Z]{2,})\s+([A-Z]{2,})\s*\n",
             # ALL-CAPS name followed by title/degree
-            r"\b([A-Z]{2,})\s+([A-Z]{2,})\s*\n\s*(?:LLM|MBA|PhD|MD|JD|CPA|Software|Engineer|Manager|Director|Analyst)",
+            r"\b([A-Z]{2,})\s+([A-Z]{2,})\s*\n\s*"
+            r"(?:LLM|MBA|PhD|MD|JD|CPA|Software|Engineer|Manager|Director|Analyst)",
             # Name with document type indicators
             r"\b([A-Z][a-z]+)\s+([A-Z][a-z]+)\s+(?:Resume|CV|Cover Letter)\b",
             r"\b([A-Z][a-z]+)\s+([A-Z][a-z]+)\s+(?:Portfolio|Biography|Bio)\b",
             # Field labels followed by names
-            r"\b(?:Name|Contact|From|To|Attn|Author|Client|Patient|Student):\s+([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+)\b",
+            r"\b(?:Name|Contact|From|To|Attn|Author|Client|Patient|Student):"
+            r"\s+([A-Z][a-z]+(?:\s+[A-Z]\.?)?\s+[A-Z][a-z]+)\b",
             # Email signatures (name before email)
             r"\b([A-Z][a-z]+\s+[A-Z][a-z]+)\s+<[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}>",
             # Name in "Prepared by/for" statements
-            r"\b(?:Prepared|Written|Submitted|Signed)\s+(?:by|for):\s+([A-Z][a-z]+\s+[A-Z][a-z]+)\b",
+            r"\b(?:Prepared|Written|Submitted|Signed)\s+(?:by|for):"
+            r"\s+([A-Z][a-z]+\s+[A-Z][a-z]+)\b",
             # Name followed by credentials (MD, PhD, Esq, etc.)
             r"\b([A-Z][a-z]+\s+[A-Z][a-z]+),?\s+(?:MD|PhD|Esq|DDS|CPA|MBA|JD|RN)\b",
             # Mr./Mrs./Ms./Dr. followed by name
@@ -163,10 +166,19 @@ class EntityDetector:
         self._relationship_regexes = [
             re.compile(p)
             for p in (
-                r"([A-Z][a-z]+\s+[A-Z][a-z]+)\s+(?:at|from)\s+([A-Z][A-Za-z0-9\s&\-\.]{2,50}(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))",
-                r"([A-Z][a-z]+\s+[A-Z][a-z]+),?\s+(?:CEO|CFO|CTO|COO|President|Director|Manager|Founder)\s+(?:of|at)\s+([A-Z][A-Za-z0-9\s&\-\.]{2,50}(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))",
-                r"([A-Z][A-Za-z0-9\s&\-\.]{2,50}(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))\s*[-:]\s*(?:Contact|Representative):\s*([A-Z][a-z]+\s+[A-Z][a-z]+)",
-                r"([A-Z][a-z]+\s+[A-Z][a-z]+)\s+\(([A-Z][A-Za-z0-9\s&\-\.]{2,50}(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))\)",
+                r"([A-Z][a-z]+\s+[A-Z][a-z]+)\s+(?:at|from)\s+"
+                r"([A-Z][A-Za-z0-9\s&\-\.]{2,50}"
+                r"(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))",
+                r"([A-Z][a-z]+\s+[A-Z][a-z]+),?\s+"
+                r"(?:CEO|CFO|CTO|COO|President|Director|Manager|Founder)\s+(?:of|at)\s+"
+                r"([A-Z][A-Za-z0-9\s&\-\.]{2,50}"
+                r"(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))",
+                r"([A-Z][A-Za-z0-9\s&\-\.]{2,50}"
+                r"(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))"
+                r"\s*[-:]\s*(?:Contact|Representative):\s*([A-Z][a-z]+\s+[A-Z][a-z]+)",
+                r"([A-Z][a-z]+\s+[A-Z][a-z]+)\s+\("
+                r"([A-Z][A-Za-z0-9\s&\-\.]{2,50}"
+                r"(?:\s+LLC|\s+Inc\.?|\s+Corp\.?|\s+Ltd\.?|\s+LLP))\)",
                 r"([A-Z][a-z]+\s+[A-Z][a-z]+)\s+<[a-zA-Z0-9._%+-]+@([a-zA-Z0-9.-]+)\.[a-zA-Z]{2,}>",
             )
         ]

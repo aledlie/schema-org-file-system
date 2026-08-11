@@ -3,7 +3,8 @@
 Export existing SQLite database to D1-compatible SQL dump.
 
 Usage:
-  python scripts/d1/export_to_d1.py [--db-path results/file_organization.db] [--output results/d1_dump.sql]
+  python scripts/d1/export_to_d1.py \
+      [--db-path results/file_organization.db] [--output results/d1_dump.sql]
 """
 
 import sqlite3

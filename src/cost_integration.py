@@ -286,7 +286,9 @@ def extract_text_from_image(self, image_path: Path) -> str:
             return ""
 
 # At end of organize_directories():
-def organize_directories(self, source_dirs: List[str], dry_run: bool = False, limit: int = None) -> Dict:
+def organize_directories(
+    self, source_dirs: List[str], dry_run: bool = False, limit: int = None
+) -> Dict:
     """Organize files from multiple source directories."""
     # ... existing code ...
 

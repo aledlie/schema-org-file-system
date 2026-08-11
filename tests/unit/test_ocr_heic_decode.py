@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import numpy as np
 import pytest
@@ -313,8 +313,6 @@ class TestRunImageOcrHeic:
         monkeypatch.setattr(ocr_mod, "_load_rgb", lambda path: fake_img)
 
         # Simulate np.asarray raising (e.g. numpy not installed → NameError)
-        original_np = ocr_mod.np
-
         class _BrokenNp:
             @staticmethod
             def asarray(*args, **kwargs):

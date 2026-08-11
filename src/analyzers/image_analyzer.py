@@ -93,7 +93,8 @@ class ImageContentAnalyzer:
 
         if _CV2_AVAILABLE:
             try:
-                cascade_path = cv2.data.haarcascades + "haarcascade_frontalface_default.xml"  # type: ignore[attr-defined]
+                haar_dir = cv2.data.haarcascades  # type: ignore[attr-defined]
+                cascade_path = haar_dir + "haarcascade_frontalface_default.xml"
                 self.face_cascade = cv2.CascadeClassifier(cascade_path)
             except Exception as e:
                 print(f"Warning: Could not load face cascade: {e}")

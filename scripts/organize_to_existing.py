@@ -49,7 +49,8 @@ def organize_files(base_path: str = "~/Documents", dry_run: bool = False) -> dic
         content_type = None
         fname_lower = file_path.name.lower()
 
-        # First-match wins; order is CONTENT_ABBREVIATIONS insertion order (Python 3.7+ dict guarantee).
+        # First-match wins; order is CONTENT_ABBREVIATIONS insertion order
+        # (Python 3.7+ dict guarantee).
         # Files matching multiple abbreviations resolve to whichever appears first in that dict.
         for abbrev_key, ctype in _ABBREV_TO_CONTENT.items():
             if abbrev_key in fname_lower:

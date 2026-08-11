@@ -367,7 +367,9 @@ class SystemHealthChecker:
             from classifiers.person_name_validator import available_layers
         except ImportError:
             try:
-                from src.classifiers.person_name_validator import available_layers  # type: ignore[no-redef]
+                from src.classifiers.person_name_validator import (  # type: ignore[no-redef]
+                    available_layers,
+                )
             except ImportError:
                 self.features["name_validator"] = FeatureStatus(
                     name="Person-Name Validator",

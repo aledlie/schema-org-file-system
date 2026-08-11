@@ -8,7 +8,6 @@ Uses tmp_path fixture and a seeded in-memory SQLite session.
 
 import json
 import sys
-from datetime import datetime
 from pathlib import Path
 
 from typing import Iterator
@@ -22,8 +21,8 @@ _SRC_DIR = Path(__file__).parent.parent.parent / "src"
 if str(_SRC_DIR) not in sys.path:
     sys.path.insert(0, str(_SRC_DIR))
 
-from storage.models import Base, File, Category, Company, Person, Location
-from storage.schema_org_exporter import SchemaOrgExporter, SCHEMA_ORG_CONTEXT
+from storage.models import Base, File, Category, Company, Person, Location  # noqa: E402
+from storage.schema_org_exporter import SchemaOrgExporter, SCHEMA_ORG_CONTEXT  # noqa: E402
 
 # ---------------------------------------------------------------------------
 # Fixtures
@@ -173,7 +172,7 @@ class TestExportToNdjson:
     def test_one_json_object_per_line(self, exporter: SchemaOrgExporter, tmp_path: Path):
         out = tmp_path / "export.ndjson"
         exporter.export_to_ndjson(out)
-        lines = [l for l in out.read_text().splitlines() if l.strip()]
+        lines = [ln for ln in out.read_text().splitlines() if ln.strip()]
         assert len(lines) == 5
         for line in lines:
             obj = json.loads(line)

@@ -7,7 +7,7 @@ cache is backed by a fresh in-memory SQLite database for each test.
 from __future__ import annotations
 
 import json
-from typing import Any, Optional
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -19,7 +19,6 @@ from src.storage.wikidata_enricher import (
     RECONC_MIN_SCORE,
     WikidataEnricher,
     WikidataMatch,
-    _CACHE_MISS_SENTINEL,
     _KV_NAMESPACE,
 )
 

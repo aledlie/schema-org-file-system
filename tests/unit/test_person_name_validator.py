@@ -7,19 +7,11 @@ and graceful degradation when optional layers are unavailable.
 
 from __future__ import annotations
 
-import sys
-from types import ModuleType
-from typing import Optional
-from unittest.mock import patch
-
 import pytest
 
 from src.classifiers.person_name_validator import (
-    AUTO_ACCEPT_THRESHOLD,
     PERSON_NAME_DENYLIST,
-    REJECT_THRESHOLD,
     _AMBIGUOUS_GIVEN_NAMES,
-    PersonNameValidation,
     available_layers,
     is_denylisted,
     validate_person_name,

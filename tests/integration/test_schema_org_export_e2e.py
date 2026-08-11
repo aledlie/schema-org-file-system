@@ -22,8 +22,8 @@ _SRC_DIR = Path(__file__).parent.parent.parent / "src"
 if str(_SRC_DIR) not in sys.path:
     sys.path.insert(0, str(_SRC_DIR))
 
-from storage.models import Base, File, Category, Company, Person, Location
-from storage.schema_org_exporter import SchemaOrgExporter
+from storage.models import Base, File, Category, Company, Person, Location  # noqa: E402
+from storage.schema_org_exporter import SchemaOrgExporter  # noqa: E402
 
 SCHEMA_ORG_URL = "https://schema.org"
 
@@ -241,7 +241,7 @@ class TestNdjsonExportPipeline:
     def test_produces_one_line_per_entity(self, exporter: SchemaOrgExporter, tmp_path: Path):
         out = tmp_path / "full.ndjson"
         exporter.export_to_ndjson(out)
-        lines = [l for l in out.read_text().splitlines() if l.strip()]
+        lines = [ln for ln in out.read_text().splitlines() if ln.strip()]
         assert len(lines) == 6
 
     def test_each_line_parses_as_json_object(self, exporter: SchemaOrgExporter, tmp_path: Path):

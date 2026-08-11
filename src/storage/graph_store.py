@@ -829,7 +829,9 @@ class GraphStore:
             from ..classifiers.person_name_validator import validate_person_name
         except ImportError:
             try:
-                from classifiers.person_name_validator import validate_person_name  # type: ignore[no-redef]
+                from classifiers.person_name_validator import (  # type: ignore[no-redef]
+                    validate_person_name,
+                )
             except ImportError:
                 return None
         try:

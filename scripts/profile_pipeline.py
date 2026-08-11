@@ -149,7 +149,8 @@ def _make_classify(org, counters: Dict[str, int]) -> Callable[[Path], Classifica
 def _bucketize(stats: pstats.Stats) -> Dict[str, float]:
     totals: Dict[str, float] = {name: 0.0 for name, _ in _HOTSPOT_BUCKETS}
     totals["Other"] = 0.0
-    for (filename, _lineno, func), (_cc, _nc, tottime, _ct, _callers) in stats.stats.items():  # type: ignore[attr-defined]
+    stat_items = stats.stats.items()  # type: ignore[attr-defined]
+    for (filename, _lineno, func), (_cc, _nc, tottime, _ct, _callers) in stat_items:
         hay = f"{filename}:{func}".lower()
         for name, needles in _HOTSPOT_BUCKETS:
             if any(n in hay for n in needles):

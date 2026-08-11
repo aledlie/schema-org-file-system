@@ -69,7 +69,9 @@ class MetadataEnricher:
             # Documents
             "application/pdf": "application/pdf",
             "application/msword": "application/msword",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": (
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            ),
             "text/plain": "text/plain",
             "text/markdown": "text/markdown",
             "text/html": "text/html",

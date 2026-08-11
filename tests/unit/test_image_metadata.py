@@ -93,7 +93,7 @@ def _inject_stubs() -> None:
 _inject_stubs()
 
 # Now safe to import the module under test
-import importlib.util
+import importlib.util  # noqa: E402
 
 # Import the specific submodule directly to avoid triggering __init__ (which
 # would pull in image_analyzer and its CLIP/torch dependencies).

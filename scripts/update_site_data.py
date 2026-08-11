@@ -96,17 +96,20 @@ def update_index_html(site_dir: Path, stats: dict):
         # Files Processed
         (
             r'<div class="stat-value">[\d,]+</div>\s*<div class="stat-label">Files Processed</div>',
-            f'<div class="stat-value">{stats["total_files"]:,}</div>\n                <div class="stat-label">Files Processed</div>',
+            f'<div class="stat-value">{stats["total_files"]:,}</div>\n'
+            '                <div class="stat-label">Files Processed</div>',
         ),
         # Success Rate
         (
             r'<div class="stat-value">[\d.]+%</div>\s*<div class="stat-label">Success Rate</div>',
-            f'<div class="stat-value">{stats["success_rate"]}%</div>\n                <div class="stat-label">Success Rate</div>',
+            f'<div class="stat-value">{stats["success_rate"]}%</div>\n'
+            '                <div class="stat-label">Success Rate</div>',
         ),
         # Categories
         (
             r'<div class="stat-value">\d+</div>\s*<div class="stat-label">Categories</div>',
-            f'<div class="stat-value">{stats["category_count"]}</div>\n                <div class="stat-label">Categories</div>',
+            f'<div class="stat-value">{stats["category_count"]}</div>\n'
+            '                <div class="stat-label">Categories</div>',
         ),
         # Last Updated date
         (r"Last Updated: \w+ \d+, \d+", f'Last Updated: {datetime.now().strftime("%B %d, %Y")}'),

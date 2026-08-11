@@ -209,7 +209,10 @@ class ValidationReport:
 
     def __str__(self) -> str:
         """String representation."""
-        return f"ValidationReport(type={self.schema_type}, valid={self.is_valid()}, messages={len(self.messages)})"
+        return (
+            f"ValidationReport(type={self.schema_type}, valid={self.is_valid()}, "
+            f"messages={len(self.messages)})"
+        )
 
 
 class SchemaValidator:
@@ -367,7 +370,8 @@ class SchemaValidator:
                 value = data[prop]
                 if not isinstance(value, (expected_type, dict, list)):
                     report.add_error(
-                        f"Invalid type for {prop}: expected {expected_type.__name__}, got {type(value).__name__}",
+                        f"Invalid type for {prop}: expected {expected_type.__name__}, "
+                        f"got {type(value).__name__}",
                         prop,
                         f"Convert {prop} to {expected_type.__name__}",
                     )

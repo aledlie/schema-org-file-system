@@ -858,7 +858,9 @@ class ContentOrganizer(BaseOrganizer):
             from ..analyzers.address_extractor import extract_primary_address
         except ImportError:
             try:
-                from analyzers.address_extractor import extract_primary_address  # type: ignore[no-redef]
+                from analyzers.address_extractor import (  # type: ignore[no-redef]
+                    extract_primary_address,
+                )
             except ImportError:
                 return result
 

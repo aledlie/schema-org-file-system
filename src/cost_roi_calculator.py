@@ -728,7 +728,8 @@ class CostROICalculator:
                         "feature": feature_name,
                         "type": "underutilized",
                         "severity": "low",
-                        "message": f"{config.name} is only used for {feature_files/total_files:.1%} of files "
+                        "message": f"{config.name} is only used for "
+                        f"{feature_files/total_files:.1%} of files "
                         f"but has {roi.roi_percentage:.0f}% ROI. Consider expanding usage.",
                         "potential_savings": 0.0,  # Opportunity cost
                     }
@@ -858,7 +859,8 @@ class CostROICalculator:
         print(f"  Total Files Processed:   {cost_summary['total_files_processed']:,}")
         print(f"  Avg Cost per File:       ${cost_summary['avg_cost_per_file']:.6f}")
         print(
-            f"  Total Processing Time:   {self._format_duration(cost_summary['total_processing_time_sec'])}"
+            "  Total Processing Time:   "
+            f"{self._format_duration(cost_summary['total_processing_time_sec'])}"
         )
 
         # ROI summary
@@ -883,7 +885,9 @@ class CostROICalculator:
                     f"{roi.roi_percentage:.0f}%" if roi.roi_percentage != float("inf") else "∞"
                 )
                 print(
-                    f"{feature_name:<25} ${cost.total_cost:>9.4f} ${roi.total_value:>9.2f} {roi_str:>10} {cost.total_files_processed:>10,}"
+                    f"{feature_name:<25} ${cost.total_cost:>9.4f} "
+                    f"${roi.total_value:>9.2f} {roi_str:>10} "
+                    f"{cost.total_files_processed:>10,}"
                 )
 
         # Recommendations

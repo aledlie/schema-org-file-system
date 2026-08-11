@@ -501,7 +501,9 @@ class File(Base, SchemaOrgSerializable):
             # Documents
             "application/pdf": "DigitalDocument",
             "application/msword": "DigitalDocument",
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "DigitalDocument",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": (
+                "DigitalDocument"
+            ),
             "text/plain": "DigitalDocument",
             "text/markdown": "DigitalDocument",
             "text/html": "WebPage",
@@ -1327,7 +1329,8 @@ class FileRelationship(Base):
         UniqueConstraint(
             "source_file_id", "target_file_id", "relationship_type", name="uq_file_relationship"
         ),
-        # ix_file_relationships_* indexes created by index=True on source_file_id, target_file_id, relationship_type
+        # ix_file_relationships_* indexes created by index=True on
+        # source_file_id, target_file_id, relationship_type
     )
 
 

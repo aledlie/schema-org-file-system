@@ -610,7 +610,8 @@ def run_migration(
                     print(f"  [DRY RUN] Would add merged_into_id to {table}")
                 else:
                     conn.execute(
-                        f"ALTER TABLE {table} ADD COLUMN merged_into_id INTEGER REFERENCES {table}(id)"
+                        f"ALTER TABLE {table} ADD COLUMN merged_into_id "
+                        f"INTEGER REFERENCES {table}(id)"
                     )
                     print(f"  Added merged_into_id to {table}")
 

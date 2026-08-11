@@ -15,10 +15,10 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from sqlalchemy.dialects import sqlite as sqlite_dialect
-from sqlalchemy.schema import CreateTable, CreateIndex
+from sqlalchemy.dialects import sqlite as sqlite_dialect  # noqa: E402
+from sqlalchemy.schema import CreateTable, CreateIndex  # noqa: E402
 
-from src.storage.models import Base
+from src.storage.models import Base  # noqa: E402
 
 _OUTPUT = PROJECT_ROOT / "scripts" / "d1" / "schema.sql"
 

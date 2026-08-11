@@ -266,7 +266,10 @@ class ContentBasedFileOrganizer(ContentOrganizer):
         detected_language: Optional[str] = None,
         kie_result=None,
     ) -> None:
-        """Delegates to FileProcessor._persist_to_graph_store — see that method for parameter docs."""
+        """Delegate to FileProcessor._persist_to_graph_store.
+
+        See that method for parameter docs.
+        """
         self._file_processor._persist_to_graph_store(
             file_path=file_path,
             dest_path=dest_path,

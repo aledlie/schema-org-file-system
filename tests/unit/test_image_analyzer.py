@@ -99,7 +99,7 @@ def _inject_stubs() -> None:
 
 _inject_stubs()
 
-import importlib.util
+import importlib.util  # noqa: E402
 
 # Import specific submodule directly to avoid triggering __init__
 _spec = importlib.util.spec_from_file_location(
@@ -118,7 +118,7 @@ _analyzer_module.CLIP_AVAILABLE = True
 _analyzer_module.CLIP_CACHE_AVAILABLE = False
 
 if not TYPE_CHECKING:  # runtime object; the annotation name is imported above
-    ImageContentAnalyzer = _analyzer_module.ImageContentAnalyzer
+    ImageContentAnalyzer = _analyzer_module.ImageContentAnalyzer  # noqa: F811
 
 
 # ---------------------------------------------------------------------------
