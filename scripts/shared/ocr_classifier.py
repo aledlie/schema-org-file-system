@@ -10,6 +10,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
+from shared.constants import HEIC_HEIF_EXTENSIONS
 from shared.ocr_easyocr import (
     EASYOCR_AVAILABLE,
     extract_lines_easyocr,
@@ -36,9 +37,9 @@ try:
 except ImportError:
     pass
 
-# Container formats that docTR's DocumentFile.from_images cannot parse.
-# For these, _run_image_ocr decodes via PIL and passes a pixel array instead.
-_HEIC_EXTENSIONS = frozenset({".heic", ".heif"})
+# Module-private alias — canonical definition in shared.constants.
+# docTR's DocumentFile.from_images raises ValueError for these containers.
+_HEIC_EXTENSIONS = HEIC_HEIF_EXTENSIONS
 
 # Image preprocessing (dark-background inversion + CLAHE) needs PIL + numpy;
 # CLAHE additionally needs OpenCV. Each is optional and degrades gracefully.
@@ -281,9 +282,9 @@ def _run_image_ocr(image_path: Path):
             # docTR's DocumentFile.from_images raises ValueError for HEIC/HEIF.
             # PIL (already HEIF-capable via pillow_heif) can decode the file;
             # pass a pixel array so docTR never touches the container path.
-            _heic_img = _load_rgb(image_path)
-            if _heic_img is not None:
-                page = np.asarray(_heic_img)
+            heic_img = _load_rgb(image_path)
+            if heic_img is not None:
+                page = np.asarray(heic_img)
         doc = [page] if page is not None else DocumentFile.from_images([str(image_path)])
         result = predictor(doc)
         chars = len(result.render().strip())

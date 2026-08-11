@@ -13,6 +13,11 @@ SIDECAR_DIR_SUFFIXES = (
     "_bestanden",   # nl
 )
 
+# HEIC/HEIF container extensions — used by OCR backends that must decode via
+# PIL instead of passing raw paths (cv2.imread and docTR's DocumentFile cannot
+# read these containers).
+HEIC_HEIF_EXTENSIONS = frozenset({".heic", ".heif"})
+
 # Image extensions -- used by 6+ scripts
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".heic", ".webp", ".gif", ".bmp"}
 IMAGE_EXTENSIONS_WIDE = IMAGE_EXTENSIONS | {".tiff", ".tif", ".svg", ".ico", ".raw"}

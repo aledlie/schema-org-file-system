@@ -147,8 +147,6 @@ class TestRunImageOcrHeic:
         received = self._setup_predictor(monkeypatch)
 
         # DocumentFile.from_images must NOT be reached for HEIC
-        original_df = ocr_mod.DocumentFile
-
         class _GuardedDocumentFile:
             @staticmethod
             def from_images(paths):
@@ -208,8 +206,6 @@ class TestRunImageOcrHeic:
 
         monkeypatch.setattr(ocr_mod, "OCR_AVAILABLE", True)
         monkeypatch.setattr(ocr_mod, "_get_predictor", lambda: _fake_predictor)
-
-        original_df = ocr_mod.DocumentFile
 
         class _TrackingDocumentFile:
             @staticmethod

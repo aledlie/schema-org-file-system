@@ -30,7 +30,7 @@ import warnings
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from shared.constants import EASYOCR_DEFAULT_LANGUAGE
+from shared.constants import EASYOCR_DEFAULT_LANGUAGE, HEIC_HEIF_EXTENSIONS
 
 if TYPE_CHECKING:
     # Runtime import lives inside the functions to avoid a circular import
@@ -53,11 +53,10 @@ try:
 except ImportError:
     pass
 
-# Container formats that cv2.imread cannot read — easyocr's CRAFT detector
-# calls cv2.imread internally and returns None for these, crashing with
-# 'NoneType has no attribute shape'. PIL (already HEIF-capable) can decode
-# them; _readtext_input passes pixel arrays for these extensions.
-_HEIC_EXTENSIONS = frozenset({".heic", ".heif"})
+# Module-private alias — see shared.constants.HEIC_HEIF_EXTENSIONS for the
+# canonical definition.  cv2.imread returns None for these containers;
+# _readtext_input passes pixel arrays instead of paths.
+_HEIC_EXTENSIONS = HEIC_HEIF_EXTENSIONS
 
 
 def _resolve_languages() -> list[str]:
