@@ -21,6 +21,7 @@ EXPECTED_FEATURES = {
     "ocr",
     "clip_vision",
     "scene_probe",
+    "similarity",
     "database",
     "geocoding",
     "sentry",

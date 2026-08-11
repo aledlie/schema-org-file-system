@@ -39,11 +39,19 @@ from cli_inputs import (  # noqa: E402  (needs the src path insert above)
 )
 from constants import DEFAULT_DB_PATH  # noqa: E402  (src on path via insert above)
 from scoring.weights import OCR_CLIP_GATE_TOPK, OCR_FORCE_DOCTR_FALLBACK  # noqa: E402
+from similarity.constants import (  # noqa: E402  (pathlib only — no torch/faiss import)
+    DEFAULT_MAX_NEIGHBORS,
+    DEFAULT_SIMILARITY_THRESHOLD,
+)
 
 # Shared option defaults, single-sourced for the parser definitions below.
 DEFAULT_SOURCES = ["~/Desktop", "~/Downloads"]
 DEFAULT_TARGET = "~/Documents"
 DEFAULT_COST_REPORT = "results/cost_report.json"
+
+# Exit status when an optional dependency needed by the requested subcommand is
+# absent — distinct from a run that executed and found nothing.
+EXIT_MISSING_DEPENDENCY = 2
 
 
 def cmd_content(args: argparse.Namespace) -> None:
@@ -442,6 +450,30 @@ def cmd_review_people(args: argparse.Namespace) -> None:
         print(f"  [{row['review_status']}] {row['name']}  (id={row['person_id']}, score={score})")
         for path in row.get("paths", []):
             print(f"    {path}")
+
+
+def cmd_find_duplicates(args: argparse.Namespace) -> None:
+    """Report near-duplicate files. Never moves or deletes anything."""
+    # Import path must match the module-level ``similarity.constants`` import
+    # below: ``src.similarity`` and ``similarity`` are distinct module objects
+    # to Python, and descriptors.py caches the loaded model in a module global.
+    from similarity import find_duplicates, print_report, unavailable_reason, write_report
+
+    reason = unavailable_reason()
+    if reason:
+        print(f"Cannot scan: {reason}")
+        sys.exit(EXIT_MISSING_DEPENDENCY)
+
+    report = find_duplicates(
+        sources=[Path(source) for source in args.source],
+        threshold=args.threshold,
+        max_neighbors=args.max_neighbors,
+        include_pdfs=not args.no_pdfs,
+        limit=args.limit,
+    )
+    print_report(report)
+    if args.output:
+        write_report(report, Path(args.output))
 
 
 def cmd_health(args: argparse.Namespace) -> None:
@@ -1046,6 +1078,47 @@ For more help on a specific command:
         "--apply", action="store_true", help="Write changes (default is dry-run)"
     )
     review_people_parser.set_defaults(func=cmd_review_people)
+
+    # Near-duplicate report (read-only)
+    find_duplicates_parser = subparsers.add_parser(
+        "find-duplicates",
+        help="Report near-duplicate files (re-encoded, resized, PDF-vs-image copies)",
+        description="Group files that are the same content in different bytes — the case "
+        "exact content-hash grouping cannot see. Uses SSCD copy-detection descriptors "
+        "(downloaded once on first run) indexed with faiss. Read-only: nothing is moved, "
+        "deleted, or written to the graph store.",
+    )
+    find_duplicates_parser.add_argument(
+        "--source",
+        nargs="+",
+        default=DEFAULT_SOURCES,
+        help="Directories or files to scan, searched recursively (default: %(default)s)",
+    )
+    find_duplicates_parser.add_argument(
+        "--threshold",
+        type=float,
+        default=DEFAULT_SIMILARITY_THRESHOLD,
+        help="Cosine similarity at or above which two files are near-duplicates "
+        "(default: %(default)s; lower to widen the net)",
+    )
+    find_duplicates_parser.add_argument(
+        "--max-neighbors",
+        type=int,
+        default=DEFAULT_MAX_NEIGHBORS,
+        help="Neighbours retrieved per file before thresholding (default: %(default)s)",
+    )
+    find_duplicates_parser.add_argument(
+        "--no-pdfs",
+        action="store_true",
+        help="Skip PDFs instead of rasterising their first page for comparison",
+    )
+    find_duplicates_parser.add_argument(
+        "--limit", type=int, default=None, help="Scan at most this many files"
+    )
+    find_duplicates_parser.add_argument(
+        "--output", default=None, help="Also write the report as JSON to this path"
+    )
+    find_duplicates_parser.set_defaults(func=cmd_find_duplicates)
 
     # Health check
     health_parser = subparsers.add_parser(

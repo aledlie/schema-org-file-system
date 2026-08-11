@@ -43,15 +43,16 @@ test.describe('Dashboard', () => {
     const cardsGrid = page.locator('.cards-grid');
     await expect(cardsGrid).toBeVisible();
 
-    // Should have 4 feature cards
+    // Should have 5 feature cards
     const featureCards = page.locator('.feature-card');
-    await expect(featureCards).toHaveCount(4);
+    await expect(featureCards).toHaveCount(5);
 
     // Verify card titles
     await expect(page.locator('.card-title').filter({ hasText: 'Organization Report' })).toBeVisible();
     await expect(page.locator('.card-title').filter({ hasText: 'Metadata Viewer' })).toBeVisible();
     await expect(page.locator('.card-title').filter({ hasText: 'Correction Interface' })).toBeVisible();
     await expect(page.locator('.card-title').filter({ hasText: 'ML Data Explorer' })).toBeVisible();
+    await expect(page.locator('.card-title').filter({ hasText: 'Residence Galleries' })).toBeVisible();
   });
 
   test('should navigate to Organization Report', async ({ page }) => {

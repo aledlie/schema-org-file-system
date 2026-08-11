@@ -5,7 +5,7 @@ PYTHON := venv/bin/python
 PYTHONPATH := src:scripts:.
 RESULTS := results
 
-.PHONY: calibrate clip-backfill backtest weight-grid threshold-sweeps golden
+.PHONY: calibrate clip-backfill backtest weight-grid threshold-sweeps weight-search golden
 
 ## Full calibration pass: backfill CLIP scores, replay + sensitivity,
 ## directional weight grid, threshold sweeps, golden-corpus gate.
@@ -32,6 +32,15 @@ threshold-sweeps:
 		--sweep-confidence --output $(RESULTS)/threshold_confidence.json
 	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/weight_grid_search.py \
 		--sweep-margin --output $(RESULTS)/threshold_margin.json
+
+## Joint weight + threshold search (nevergrad). Deliberately NOT part of
+## `calibrate`: it is exploratory and budget-priced, where `calibrate` is the
+## reproducible gate. Reports a proposal only — it never writes weights.py.
+## BUDGET=250 make weight-search
+BUDGET ?= 150
+weight-search:
+	PYTHONPATH=$(PYTHONPATH) $(PYTHON) scripts/weight_search.py \
+		--budget $(BUDGET) --output $(RESULTS)/weight_search.json
 
 ## Golden corpus — the correctness gate any weight change must hold.
 golden:

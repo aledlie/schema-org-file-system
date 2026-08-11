@@ -60,6 +60,7 @@ class SystemHealthChecker:
         self._check_ocr()
         self._check_clip_vision()
         self._check_scene_probe()
+        self._check_similarity()
         self._check_database()
         self._check_geocoding()
         self._check_error_tracking()
@@ -167,6 +168,40 @@ class SystemHealthChecker:
                 error=f"Missing: {', '.join(missing)}",
                 impact="No AI classification - pip install torch open-clip-torch",
             )
+
+    def _check_similarity(self) -> None:
+        """Check faiss for the near-duplicate index.
+
+        Reports only on faiss: the SSCD descriptor half needs torch/torchvision,
+        already covered by the CLIP check, and its checkpoint downloads on first
+        use rather than at install time — so its absence is not a config error.
+
+        Deliberately probes without importing faiss: this checker also imports
+        torch, and the two abort the process when both initialise OpenMP
+        (see src/similarity/worker.py).
+        """
+        import importlib.metadata
+        import importlib.util
+
+        if importlib.util.find_spec("faiss") is None:
+            self.features["similarity"] = FeatureStatus(
+                name="Near-duplicate index (faiss)",
+                available=False,
+                error="Missing: faiss-cpu",
+                impact="No near-duplicate report - pip install -e '.[similarity]'",
+            )
+            return
+
+        try:
+            version = importlib.metadata.version("faiss-cpu")
+        except importlib.metadata.PackageNotFoundError:
+            version = "unknown"
+        self.features["similarity"] = FeatureStatus(
+            name="Near-duplicate index (faiss)",
+            available=True,
+            version=version,
+            impact="organize-files find-duplicates",
+        )
 
     def _check_database(self) -> None:
         """Check SQLAlchemy for database storage."""
