@@ -653,7 +653,7 @@ should get `# noqa: E402` rather than reordering.
 
 `package.json:3` declares `"version": "1.3.0"` while `pyproject.toml` and `CLAUDE.md` both carry **2.1.0** — the JS metadata stopped tracking the project at some point and nothing flagged it. Separately, `package.json:5-15` defines only Playwright scripts (`test:e2e` plus five variants); the unit suite is pytest (`pytest tests/unit/`, 2,357 passing) with no npm entry point, so `npm run test:unit` fails with `Missing script: "test:unit"` — the exact wrong-runner mistake the `test:*` namespace invites.
 
-**Status:** Open
+**Status:** Done — version bumped to 2.1.0 and `"test:unit": "pytest tests/unit/"` added; kept `test:e2e` name intact (referenced in `.claude/settings.local.json` permission grants). 2026-08-11
 **Priority:** P4
 **Source:** test-suite run + `package.json` read, 2026-08-11
 
