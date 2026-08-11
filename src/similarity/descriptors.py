@@ -261,8 +261,12 @@ def encode_images(paths: Sequence[Path]) -> List[Tuple[int, "np.ndarray"]]:
     Returns ``(index_into_paths, descriptor)`` pairs, skipping anything that
     could not be opened or encoded — callers must not assume a 1:1 mapping.
     """
+    # Check for work BEFORE touching the model: _get_model downloads a 94 MB
+    # checkpoint on first use, and an empty batch must never trigger that.
+    if not paths:
+        return []
     model, transform = _get_model()
-    if model is None or not paths:
+    if model is None:
         return []
 
     results: List[Tuple[int, "np.ndarray"]] = []
@@ -323,9 +327,13 @@ def get_descriptors(paths: Iterable[Path]) -> List[Tuple[Path, "np.ndarray"]]:
             miss_indices.append(index)
             miss_paths.append(path)
 
-    for local_index, descriptor in encode_images(miss_paths):
-        original_index = miss_indices[local_index]
-        cached[original_index] = descriptor
-        _save_cached(cache_paths[original_index], descriptor)
+    # Guarded: a fully-cached run must not load the model at all. encode_images
+    # returns indices into miss_paths, which miss_indices maps back to the
+    # caller's original positions.
+    if miss_paths:
+        for local_index, descriptor in encode_images(miss_paths):
+            original_index = miss_indices[local_index]
+            cached[original_index] = descriptor
+            _save_cached(cache_paths[original_index], descriptor)
 
     return [(ordered[i], cached[i]) for i in sorted(cached)]

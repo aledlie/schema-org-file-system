@@ -57,6 +57,7 @@ ALL_SUBCOMMANDS = [
     "migrate-person",
     "index-people",
     "prune-person",
+    "find-duplicates",
     "health",
     "update-site",
     "timeline",
