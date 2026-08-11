@@ -12,6 +12,15 @@ export const DASHBOARD_CARDS = [
   { title: 'Residence Galleries', href: 'residence_gallery.html' },
 ] as const;
 
+// Same rationale as DASHBOARD_CARDS: one array so a new stat cannot ship with
+// the count updated and the label unasserted, or vice versa.
+export const DASHBOARD_STATS = [
+  'Files Processed',
+  'Success Rate',
+  'Categories',
+  'ML Accuracy',
+] as const;
+
 test.describe('Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
@@ -39,29 +48,26 @@ test.describe('Dashboard', () => {
     const statsBar = page.locator('.stats-bar');
     await expect(statsBar).toBeVisible();
 
-    // Should have 4 stat items
     const statItems = page.locator('.stat-item');
-    await expect(statItems).toHaveCount(4);
+    await expect(statItems).toHaveCount(DASHBOARD_STATS.length);
 
-    // Verify stat labels exist
-    await expect(page.getByText('Files Processed')).toBeVisible();
-    await expect(page.getByText('Success Rate')).toBeVisible();
-    await expect(page.getByText('Categories')).toBeVisible();
-    await expect(page.getByText('ML Accuracy')).toBeVisible();
+    await expect(page.locator('.stat-label')).toHaveText([...DASHBOARD_STATS]);
   });
 
   test('should display feature cards', async ({ page }) => {
     const cardsGrid = page.locator('.cards-grid');
     await expect(cardsGrid).toBeVisible();
 
-    // The count catches an added card; the title filters catch a removed or
-    // renamed one. Neither subsumes the other, so both stay.
+    // Two locators, so neither assertion subsumes the other: the count is over
+    // .feature-card (the anchors), the text is over .card-title (their headings).
+    // A card with no title, or a stray title outside a card, fails exactly one.
     const featureCards = page.locator('.feature-card');
     await expect(featureCards).toHaveCount(DASHBOARD_CARDS.length);
 
-    for (const { title } of DASHBOARD_CARDS) {
-      await expect(page.locator('.card-title').filter({ hasText: title })).toBeVisible();
-    }
+    // toHaveText matches each element's full text, not a substring, so a title
+    // that is merely a prefix of the real one fails here. It is also ordered,
+    // which pins DASHBOARD_CARDS to DOM order rather than just asserting it.
+    await expect(page.locator('.card-title')).toHaveText(DASHBOARD_CARDS.map((card) => card.title));
   });
 
   for (const { title, href } of DASHBOARD_CARDS) {
