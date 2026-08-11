@@ -196,7 +196,13 @@ def is_ocr_available() -> bool:
 
 
 def _load_rgb(image_path: Path):
-    """Load an image as an EXIF-oriented RGB PIL image, or None on failure."""
+    """Load an image as an EXIF-oriented RGB PIL image, or None on failure.
+
+    IMPORTANT: This function must never raise — it must always return a PIL
+    image or None.  The HEIC branch in _run_image_ocr relies on this contract
+    to skip DocumentFile.from_images when PIL is unavailable (NameError is
+    caught below as a subclass of Exception).
+    """
     try:
         img = Image.open(image_path)
         oriented = ImageOps.exif_transpose(img)
@@ -269,26 +275,41 @@ def _run_image_ocr(image_path: Path):
     was dark (inverted) or partially read — so textless bright photos are not
     charged a second model pass. Returns the docTR result object, or None.
 
-    HEIC/HEIF images that are not dark (i.e. preprocess_for_ocr returns None)
-    are decoded via PIL before reaching DocumentFile.from_images, which cannot
-    parse those containers and would raise ValueError.
+    HEIC/HEIF images are decoded via PIL before reaching DocumentFile.from_images,
+    which cannot parse those containers and would raise ValueError.  This decode
+    path uses _load_rgb (PIL only) and is independent of _PREPROCESS_AVAILABLE —
+    when PIL is absent _load_rgb returns None and the function returns early
+    rather than falling through to DocumentFile.from_images.
     """
     if not OCR_AVAILABLE:
         return None
     try:
         predictor = _get_predictor()
         page = preprocess_for_ocr(image_path, enhance=False)
-        if page is None and _PREPROCESS_AVAILABLE and image_path.suffix.lower() in _HEIC_EXTENSIONS:
+        if page is None and image_path.suffix.lower() in _HEIC_EXTENSIONS:
             # docTR's DocumentFile.from_images raises ValueError for HEIC/HEIF.
             # PIL (already HEIF-capable via pillow_heif) can decode the file;
             # pass a pixel array so docTR never touches the container path.
+            # _PREPROCESS_AVAILABLE is intentionally NOT checked here — the decode
+            # path uses _load_rgb, not preprocess_for_ocr.  _load_rgb's own
+            # `except Exception` guard returns None on any failure (including
+            # NameError when PIL is absent), so the None branch below fires
+            # instead of falling through to DocumentFile.from_images.
             heic_img = _load_rgb(image_path)
             if heic_img is None:
                 # Corrupted or unsupported HEIC — cannot fall through to
                 # DocumentFile.from_images (it would also fail). Return early.
                 print(f"  OCR warning: HEIC decode failed for {image_path.name}")
                 return None
-            page = np.asarray(heic_img)
+            try:
+                page = np.asarray(heic_img)
+            except (ImportError, NameError, AttributeError):
+                # numpy absent (unusual: PIL available but numpy not installed).
+                # NameError/AttributeError cover the missing-module access paths;
+                # other exceptions (OOM, value errors) are intentionally left to
+                # the outer try/except for visibility.
+                print(f"  OCR warning: HEIC array conversion failed for {image_path.name}")
+                return None
         doc = [page] if page is not None else DocumentFile.from_images([str(image_path)])
         result = predictor(doc)
         chars = len(result.render().strip())

@@ -274,3 +274,76 @@ class TestRunImageOcrHeic:
 
         assert len(received) == 1
         assert np.array_equal(received[0][0], dark_array)
+
+    def test_heic_does_not_fall_through_to_document_file_when_preprocess_unavailable(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """HEIC must not reach DocumentFile.from_images even when _PREPROCESS_AVAILABLE
+        is False (e.g. PIL/numpy not installed).  Formerly the _PREPROCESS_AVAILABLE
+        gate short-circuited the PIL decode path and the file fell through to
+        DocumentFile.from_images, which raises ValueError for HEIC containers.
+        After the fix the HEIC extension check is unconditional and _load_rgb catches
+        any import error, so the function returns None rather than propagating."""
+        heic_path = tmp_path / "photo.heic"
+        heic_path.write_bytes(b"fake-heic")
+
+        # Simulate preprocessing deps absent
+        monkeypatch.setattr(ocr_mod, "_PREPROCESS_AVAILABLE", False)
+        monkeypatch.setattr(ocr_mod, "preprocess_for_ocr", lambda path, **_: None)
+        # Simulate _load_rgb returning None as it would when PIL is absent
+        monkeypatch.setattr(ocr_mod, "_load_rgb", lambda path: None)
+
+        self._setup_predictor(monkeypatch)
+
+        class _GuardedDocumentFile:
+            @staticmethod
+            def from_images(paths):
+                raise AssertionError(
+                    "DocumentFile.from_images must not be called for HEIC when "
+                    "_PREPROCESS_AVAILABLE is False — spurious gate was not removed"
+                )
+
+        monkeypatch.setattr(ocr_mod, "DocumentFile", _GuardedDocumentFile)
+
+        result = ocr_mod._run_image_ocr(heic_path)
+        # _load_rgb returned None → early return, no DocumentFile call, no exception
+        assert result is None
+
+    def test_heic_array_conversion_failure_returns_none(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """When PIL succeeds but numpy raises (unusual: PIL present, numpy absent),
+        the np.asarray guard must return None instead of propagating or falling
+        through to DocumentFile.from_images."""
+        heic_path = tmp_path / "photo.heic"
+        heic_path.write_bytes(b"fake-heic")
+
+        monkeypatch.setattr(ocr_mod, "preprocess_for_ocr", lambda path, **_: None)
+        monkeypatch.setattr(ocr_mod, "_PREPROCESS_AVAILABLE", True)
+
+        fake_img = _fake_pil_image()
+        monkeypatch.setattr(ocr_mod, "_load_rgb", lambda path: fake_img)
+
+        # Simulate np.asarray raising (e.g. numpy not installed → NameError)
+        original_np = ocr_mod.np
+
+        class _BrokenNp:
+            @staticmethod
+            def asarray(*args, **kwargs):
+                raise NameError("name 'np' is not defined")
+
+        monkeypatch.setattr(ocr_mod, "np", _BrokenNp())
+
+        self._setup_predictor(monkeypatch)
+
+        class _GuardedDocumentFile:
+            @staticmethod
+            def from_images(paths):
+                raise AssertionError(
+                    "DocumentFile.from_images must not be called when np.asarray fails"
+                )
+
+        monkeypatch.setattr(ocr_mod, "DocumentFile", _GuardedDocumentFile)
+
+        result = ocr_mod._run_image_ocr(heic_path)
+        assert result is None
