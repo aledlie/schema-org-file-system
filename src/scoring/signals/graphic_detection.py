@@ -56,9 +56,7 @@ from ..weights import W_GRAPHIC
 SVG_EXTENSION = ".svg"
 
 # Raster formats that can carry transparency or be icon-sized graphics.
-RASTER_EXTENSIONS = frozenset(
-    {".png", ".webp", ".gif", ".bmp", ".tiff", ".tif", ".ico"}
-)
+RASTER_EXTENSIONS = frozenset({".png", ".webp", ".gif", ".bmp", ".tiff", ".tif", ".ico"})
 
 # ---------------------------------------------------------------------------
 # Category / subcategory targets
@@ -274,9 +272,7 @@ class GraphicDetectionSignal:
             return []
 
         # Route: transparency + square icon → icons; otherwise other.
-        is_icon = bool(
-            evidence.get(EVIDENCE_HAS_ALPHA) and evidence.get(EVIDENCE_IS_SQUARE_ICON)
-        )
+        is_icon = bool(evidence.get(EVIDENCE_HAS_ALPHA) and evidence.get(EVIDENCE_IS_SQUARE_ICON))
         subcategory = ICONS_SUBCATEGORY if is_icon else OTHER_SUBCATEGORY
 
         return [

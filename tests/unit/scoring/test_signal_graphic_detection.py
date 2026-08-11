@@ -67,8 +67,10 @@ def _pil_rgb_photo(width: int = 1920, height: int = 1080) -> "Image.Image":
     import random
 
     img = Image.new("RGB", (width, height))
-    pixels = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-              for _ in range(width * height)]
+    pixels = [
+        (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+        for _ in range(width * height)
+    ]
     img.putdata(pixels)
     return img
 
@@ -327,9 +329,12 @@ class TestRunRaster:
         # Use a 100x67 RGB image with many distinct colours to simulate a photo.
         img = Image.new("RGB", (100, 67))
         import random
+
         random.seed(42)
-        pixels = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-                  for _ in range(100 * 67)]
+        pixels = [
+            (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+            for _ in range(100 * 67)
+        ]
         img.putdata(pixels)
         path = tmp_path / "photo.png"
         img.save(path)
@@ -342,10 +347,13 @@ class TestRunRaster:
     def test_asset_path_alone_below_threshold(self, tmp_path):
         """Asset path (+0.15) alone is below _MIN_RASTER_CONFIDENCE (0.35)."""
         import random
+
         random.seed(42)
         img = Image.new("RGB", (100, 67))
-        pixels = [(random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
-                  for _ in range(100 * 67)]
+        pixels = [
+            (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255))
+            for _ in range(100 * 67)
+        ]
         img.putdata(pixels)
         assets_dir = tmp_path / "assets"
         assets_dir.mkdir()

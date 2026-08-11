@@ -29,7 +29,9 @@ def organize_files(base_path: str = "~/Documents", dry_run: bool = False) -> dic
     print(f"Base path: {root_path}")
 
     # Find all files in ~/Documents root that match our renamed files
-    root_files = [f for f in root_path.iterdir() if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS]
+    root_files = [
+        f for f in root_path.iterdir() if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS
+    ]
 
     # Filter to only files we renamed (have content descriptions)
     files_to_organize = []
@@ -55,13 +57,13 @@ def organize_files(base_path: str = "~/Documents", dry_run: bool = False) -> dic
                 break
 
         if not content_type:
-            stats['no_content_type'] += 1
+            stats["no_content_type"] += 1
             continue
 
         # Get destination folder
         dest_folder = CONTENT_TO_EXISTING_FOLDER.get(content_type)
         if not dest_folder:
-            stats['no_mapping'] += 1
+            stats["no_mapping"] += 1
             continue
 
         dest_dir = root_path / dest_folder
@@ -79,13 +81,15 @@ def organize_files(base_path: str = "~/Documents", dry_run: bool = False) -> dic
             if not dry_run:
                 shutil.move(str(file_path), str(dest_path))
 
-            stats['organized'] += 1
-            organization_log.append({
-                'source': str(file_path),
-                'destination': str(dest_path),
-                'content_type': content_type,
-                'folder': dest_folder
-            })
+            stats["organized"] += 1
+            organization_log.append(
+                {
+                    "source": str(file_path),
+                    "destination": str(dest_path),
+                    "content_type": content_type,
+                    "folder": dest_folder,
+                }
+            )
 
             if i <= 30 or i % 100 == 0:
                 action = "Would move" if dry_run else "Moved"
@@ -93,7 +97,7 @@ def organize_files(base_path: str = "~/Documents", dry_run: bool = False) -> dic
                 print(f"       → {dest_folder}/")
 
         except Exception as e:
-            stats['errors'] += 1
+            stats["errors"] += 1
             print(f"  Error: {file_path.name}: {e}")
 
     # Print summary
@@ -115,42 +119,32 @@ def organize_files(base_path: str = "~/Documents", dry_run: bool = False) -> dic
         print("-" * 40)
         folder_counts: defaultdict[str, int] = defaultdict(int)
         for item in organization_log:
-            folder_counts[item['folder']] += 1
+            folder_counts[item["folder"]] += 1
 
         for folder, count in sorted(folder_counts.items(), key=lambda x: x[1], reverse=True):
             print(f"  {folder}: {count}")
 
-    return {
-        'stats': dict(stats),
-        'log': organization_log
-    }
+    return {"stats": dict(stats), "log": organization_log}
 
 
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description='Organize files into existing folder structure'
-    )
+    parser = argparse.ArgumentParser(description="Organize files into existing folder structure")
     parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Preview changes without moving files'
+        "--dry-run", action="store_true", help="Preview changes without moving files"
     )
-    parser.add_argument(
-        '--output-log',
-        help='Save organization log to JSON file'
-    )
+    parser.add_argument("--output-log", help="Save organization log to JSON file")
 
     args = parser.parse_args()
 
     result = organize_files(dry_run=args.dry_run)
 
     if args.output_log:
-        with open(args.output_log, 'w') as f:
+        with open(args.output_log, "w") as f:
             json.dump(result, f, indent=2)
         print(f"\nOrganization log saved to: {args.output_log}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

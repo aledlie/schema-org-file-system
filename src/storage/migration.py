@@ -266,7 +266,7 @@ class JSONMigrator:
                 if image_meta.get("datetime"):
                     try:
                         file.exif_datetime = datetime.fromisoformat(image_meta["datetime"])
-                    except (ValueError, TypeError):
+                    except ValueError, TypeError:
                         pass
 
                 coords = image_meta.get("gps_coordinates")

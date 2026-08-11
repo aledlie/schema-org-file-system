@@ -48,7 +48,7 @@ def get_labeled_categories(db_path: str, ml_session: str) -> Tuple[Dict, Dict]:
 
         for row in cursor.fetchall():
             original_path, filename, category_name, full_path = row
-            parts = full_path.split('/') if full_path else []
+            parts = full_path.split("/") if full_path else []
             parent_category = parts[0] if parts else category_name
 
             labeled_by_path[original_path] = (category_name, full_path, parent_category)
@@ -72,7 +72,9 @@ class _UpdateStats(TypedDict):
     updated_files: List[Dict[str, str]]
 
 
-def update_report(report_path: str, labeled_data: Tuple[Dict, Dict], output_path: str) -> _UpdateStats:
+def update_report(
+    report_path: str, labeled_data: Tuple[Dict, Dict], output_path: str
+) -> _UpdateStats:
     """
     Update the organization report with labeled category data.
 
@@ -87,76 +89,80 @@ def update_report(report_path: str, labeled_data: Tuple[Dict, Dict], output_path
     labeled_by_path, labeled_by_filename = labeled_data
 
     print(f"Loading report from: {report_path}")
-    with open(report_path, 'r') as f:
+    with open(report_path, "r") as f:
         report = json.load(f)
 
-    results = report.get('results', [])
+    results = report.get("results", [])
 
     stats: _UpdateStats = {
-        'total_files': len(results),
-        'updated': 0,
-        'unchanged': 0,
-        'matched_by_path': 0,
-        'matched_by_filename': 0,
-        'not_found': 0,
-        'category_changes': {},
-        'updated_files': []
+        "total_files": len(results),
+        "updated": 0,
+        "unchanged": 0,
+        "matched_by_path": 0,
+        "matched_by_filename": 0,
+        "not_found": 0,
+        "category_changes": {},
+        "updated_files": [],
     }
 
     for result in results:
-        source = result.get('source', '')
-        filename = Path(source).name if source else ''
+        source = result.get("source", "")
+        filename = Path(source).name if source else ""
 
         # Try to match by path first, then by filename
         match = None
         match_type = None
         if source in labeled_by_path:
             match = labeled_by_path[source]
-            match_type = 'path'
+            match_type = "path"
         elif filename in labeled_by_filename:
             match = labeled_by_filename[filename]
-            match_type = 'filename'
+            match_type = "filename"
 
         if match:
             subcategory, full_path, parent_category = match
-            old_category = result.get('category', 'unknown')
-            old_subcategory = result.get('subcategory', 'unknown')
+            old_category = result.get("category", "unknown")
+            old_subcategory = result.get("subcategory", "unknown")
 
-            if match_type == 'path':
-                stats['matched_by_path'] += 1
+            if match_type == "path":
+                stats["matched_by_path"] += 1
             else:
-                stats['matched_by_filename'] += 1
+                stats["matched_by_filename"] += 1
 
             # Only update if different
             if old_subcategory != subcategory or old_category != parent_category:
                 # Track the change
                 change_key = f"{old_category}/{old_subcategory} -> {parent_category}/{subcategory}"
-                stats['category_changes'][change_key] = stats['category_changes'].get(change_key, 0) + 1
+                stats["category_changes"][change_key] = (
+                    stats["category_changes"].get(change_key, 0) + 1
+                )
 
                 # Update the result
-                result['category'] = parent_category
-                result['subcategory'] = subcategory
-                result['label_source'] = 'database_verified'
+                result["category"] = parent_category
+                result["subcategory"] = subcategory
+                result["label_source"] = "database_verified"
 
-                stats['updated'] += 1
-                stats['updated_files'].append({
-                    'path': source,
-                    'old': f"{old_category}/{old_subcategory}",
-                    'new': f"{parent_category}/{subcategory}"
-                })
+                stats["updated"] += 1
+                stats["updated_files"].append(
+                    {
+                        "path": source,
+                        "old": f"{old_category}/{old_subcategory}",
+                        "new": f"{parent_category}/{subcategory}",
+                    }
+                )
             else:
-                stats['unchanged'] += 1
+                stats["unchanged"] += 1
         else:
-            stats['not_found'] += 1
+            stats["not_found"] += 1
 
     # Update report metadata
-    report['label_update_timestamp'] = datetime.now().isoformat()
-    report['labeled_files_count'] = stats['updated']
-    report['total_matched'] = stats['matched_by_path'] + stats['matched_by_filename']
+    report["label_update_timestamp"] = datetime.now().isoformat()
+    report["labeled_files_count"] = stats["updated"]
+    report["total_matched"] = stats["matched_by_path"] + stats["matched_by_filename"]
 
     # Save updated report
     print(f"Saving updated report to: {output_path}")
-    with open(output_path, 'w') as f:
+    with open(output_path, "w") as f:
         json.dump(report, f, indent=2)
 
     return stats
@@ -165,18 +171,24 @@ def update_report(report_path: str, labeled_data: Tuple[Dict, Dict], output_path
 def main():
     import argparse
 
-    parser = argparse.ArgumentParser(description='Update organization report with labeled categories')
-    parser.add_argument('--report', '-r',
-                        default='results/content_organization_report_20251209_104237.json',
-                        help='Path to original organization report')
-    parser.add_argument('--database', '-d',
-                        default='results/file_organization.db',
-                        help='Path to SQLite database')
-    parser.add_argument('--output', '-o',
-                        help='Output path (default: timestamped in results/)')
-    parser.add_argument('--ml-session',
-                        default='a6b07a390a11312d8306bcd3589c20572c146747338809c1d0ad5af53edd40bb',
-                        help='Session ID for the main ML run with labels')
+    parser = argparse.ArgumentParser(
+        description="Update organization report with labeled categories"
+    )
+    parser.add_argument(
+        "--report",
+        "-r",
+        default="results/content_organization_report_20251209_104237.json",
+        help="Path to original organization report",
+    )
+    parser.add_argument(
+        "--database", "-d", default="results/file_organization.db", help="Path to SQLite database"
+    )
+    parser.add_argument("--output", "-o", help="Output path (default: timestamped in results/)")
+    parser.add_argument(
+        "--ml-session",
+        default="a6b07a390a11312d8306bcd3589c20572c146747338809c1d0ad5af53edd40bb",
+        help="Session ID for the main ML run with labels",
+    )
 
     args = parser.parse_args()
 
@@ -184,8 +196,8 @@ def main():
     if args.output:
         output_path = args.output
     else:
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        output_path = f'results/content_organization_report_labeled_{timestamp}.json'
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        output_path = f"results/content_organization_report_labeled_{timestamp}.json"
 
     print("=" * 60)
     print("UPDATE ORGANIZATION REPORT WITH LABELED CATEGORIES")
@@ -213,11 +225,11 @@ def main():
     print(f"Files unchanged: {stats['unchanged']:,}")
     print(f"Files not found in DB: {stats['not_found']:,}")
 
-    if stats['category_changes']:
+    if stats["category_changes"]:
         print("\n" + "-" * 40)
         print("CATEGORY CHANGES")
         print("-" * 40)
-        for change, count in sorted(stats['category_changes'].items(), key=lambda x: -x[1]):
+        for change, count in sorted(stats["category_changes"].items(), key=lambda x: -x[1]):
             print(f"  {change}: {count} files")
 
     print("\n" + "-" * 40)

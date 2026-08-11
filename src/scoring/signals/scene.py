@@ -125,9 +125,7 @@ def _get_embedding(path: Path) -> Optional[npt.NDArray[np.float32]]:
         from shared.clip_cache import get_or_compute_embedding
     except ImportError:
         return None
-    return cast(
-        "Optional[npt.NDArray[np.float32]]", get_or_compute_embedding(path)
-    )
+    return cast("Optional[npt.NDArray[np.float32]]", get_or_compute_embedding(path))
 
 
 def load_probe(path: Path) -> Optional[Tuple[Any, List[str]]]:

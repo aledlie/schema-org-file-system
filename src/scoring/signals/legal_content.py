@@ -105,9 +105,7 @@ def legal_confidence(hit_count: int) -> float:
     return min(LEGAL_CONFIDENCE_BASE + LEGAL_CONFIDENCE_PER_HIT * extra_hits, LEGAL_CONFIDENCE_MAX)
 
 
-def score_legal_subcategory(
-    text_lower: str, subcategories: Mapping[str, Iterable[str]]
-) -> str:
+def score_legal_subcategory(text_lower: str, subcategories: Mapping[str, Iterable[str]]) -> str:
     """Best legal subcategory by keyword occurrence counts.
 
     Mirrors ``ContentClassifier.classify_content`` subcategory scoring

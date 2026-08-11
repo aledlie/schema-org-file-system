@@ -185,11 +185,7 @@ def relabel(samples: list[dict]) -> tuple[list[dict], dict[str, Counter[str]]]:
         ):
             counters["pass2"][cat] += 1
             s["category"] = "game_assets"
-        elif (
-            cat == "game_assets"
-            and parent != "Games"
-            and ext in _PHOTO_EXTENSIONS
-        ):
+        elif cat == "game_assets" and parent != "Games" and ext in _PHOTO_EXTENSIONS:
             # Misfiled photos: a JPEG/HEIC labeled game_assets outside Games/
             # is a photo, not a sprite/texture. Correct it to media.
             counters["pass6"][cat] += 1

@@ -13,25 +13,28 @@ _SEPARATOR = "=" * 60
 # is unchanged from the previous inline literal. Guarded for import contexts
 # where scripts/shared is not on sys.path (e.g. direct-import unit tests).
 try:
-  from shared.constants import IMAGE_EXTENSIONS as _SHARED_IMAGE_EXTENSIONS
-  _IMAGE_EXTENSIONS = frozenset(_SHARED_IMAGE_EXTENSIONS | {".tiff", ".tif"})
+    from shared.constants import IMAGE_EXTENSIONS as _SHARED_IMAGE_EXTENSIONS
+
+    _IMAGE_EXTENSIONS = frozenset(_SHARED_IMAGE_EXTENSIONS | {".tiff", ".tif"})
 except ImportError:
-  _IMAGE_EXTENSIONS = frozenset(
-    {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".heic", ".tiff", ".tif"}
-  )
+    _IMAGE_EXTENSIONS = frozenset(
+        {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".heic", ".tiff", ".tif"}
+    )
 
 try:
-  from shared.clip_cache import get_cached_embeddings_batch, CLIP_CACHE_AVAILABLE
-  from shared.constants import CLIP_CONTENT_LABELS, CLIP_BATCH_SIZE
-  _BATCH_PREWARM_AVAILABLE = CLIP_CACHE_AVAILABLE
+    from shared.clip_cache import get_cached_embeddings_batch, CLIP_CACHE_AVAILABLE
+    from shared.constants import CLIP_CONTENT_LABELS, CLIP_BATCH_SIZE
+
+    _BATCH_PREWARM_AVAILABLE = CLIP_CACHE_AVAILABLE
 except ImportError:
-  _BATCH_PREWARM_AVAILABLE = False
+    _BATCH_PREWARM_AVAILABLE = False
 
 try:
-  from shared.ocr_easyocr import EASYOCR_AVAILABLE, prewarm_reader as _easyocr_prewarm
-  _EASYOCR_PREWARM_AVAILABLE = EASYOCR_AVAILABLE
+    from shared.ocr_easyocr import EASYOCR_AVAILABLE, prewarm_reader as _easyocr_prewarm
+
+    _EASYOCR_PREWARM_AVAILABLE = EASYOCR_AVAILABLE
 except ImportError:
-  _EASYOCR_PREWARM_AVAILABLE = False
+    _EASYOCR_PREWARM_AVAILABLE = False
 
 # Image extensions likely to contain UI/screenshot text that benefits from
 # easyocr pre-warming. Matches the extensions BatchProcessor scans.
@@ -121,7 +124,9 @@ class BatchProcessor:
         if _BATCH_PREWARM_AVAILABLE:
             image_paths = [p for p in all_files if p.suffix.lower() in _IMAGE_EXTENSIONS]
             if image_paths:
-                print(f"\nPre-warming CLIP cache: {len(image_paths)} images (batch={CLIP_BATCH_SIZE})")
+                print(
+                    f"\nPre-warming CLIP cache: {len(image_paths)} images (batch={CLIP_BATCH_SIZE})"
+                )
                 for chunk_start in range(0, len(image_paths), CLIP_BATCH_SIZE):
                     chunk = image_paths[chunk_start : chunk_start + CLIP_BATCH_SIZE]
                     get_cached_embeddings_batch(chunk, CLIP_CONTENT_LABELS)

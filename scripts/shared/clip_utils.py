@@ -190,10 +190,11 @@ class CLIPClassifier:
         downscale reduces the pixel count to a safe size.
         """
         with Image.open(image_path) as img:
-            if Image.MAX_IMAGE_PIXELS is not None and img.width * img.height > Image.MAX_IMAGE_PIXELS:
-                self._thumbnail_oversized(
-                    img, (self._CLIP_INPUT_SIZE, self._CLIP_INPUT_SIZE)
-                )
+            if (
+                Image.MAX_IMAGE_PIXELS is not None
+                and img.width * img.height > Image.MAX_IMAGE_PIXELS
+            ):
+                self._thumbnail_oversized(img, (self._CLIP_INPUT_SIZE, self._CLIP_INPUT_SIZE))
             return (  # type: ignore[no-any-return]
                 self.preprocess(img.convert("RGB")).unsqueeze(0).to(self.device, dtype=self._dtype)
             )
@@ -241,7 +242,10 @@ class CLIPClassifier:
             for i, path in enumerate(chunk):
                 try:
                     with Image.open(path) as img:
-                        if Image.MAX_IMAGE_PIXELS is not None and img.width * img.height > Image.MAX_IMAGE_PIXELS:
+                        if (
+                            Image.MAX_IMAGE_PIXELS is not None
+                            and img.width * img.height > Image.MAX_IMAGE_PIXELS
+                        ):
                             self._thumbnail_oversized(
                                 img, (self._CLIP_INPUT_SIZE, self._CLIP_INPUT_SIZE)
                             )
@@ -364,7 +368,10 @@ class CLIPClassifier:
         Images that fail to load return [(label, 0.0), ...].
         """
         text_prompts = [f"{prompt_prefix}{lbl}" for lbl in labels]
-        return cast(List[List[tuple[str, float]]], self._run_batch(image_paths, labels, text_prompts, batch_size))
+        return cast(
+            List[List[tuple[str, float]]],
+            self._run_batch(image_paths, labels, text_prompts, batch_size),
+        )
 
     def classify_raw_batch(
         self,
@@ -373,7 +380,10 @@ class CLIPClassifier:
         batch_size: int = _DEFAULT_BATCH_SIZE,
     ) -> List[List[tuple[str, float]]]:
         """Classify a list of images using raw text prompts (no prefix added)."""
-        return cast(List[List[tuple[str, float]]], self._run_batch(image_paths, text_prompts, text_prompts, batch_size))
+        return cast(
+            List[List[tuple[str, float]]],
+            self._run_batch(image_paths, text_prompts, text_prompts, batch_size),
+        )
 
     def top_match_batch(
         self,
@@ -413,7 +423,10 @@ class CLIPClassifier:
             for i, path in enumerate(chunk):
                 try:
                     with Image.open(path) as img:
-                        if Image.MAX_IMAGE_PIXELS is not None and img.width * img.height > Image.MAX_IMAGE_PIXELS:
+                        if (
+                            Image.MAX_IMAGE_PIXELS is not None
+                            and img.width * img.height > Image.MAX_IMAGE_PIXELS
+                        ):
                             self._thumbnail_oversized(
                                 img, (self._CLIP_INPUT_SIZE, self._CLIP_INPUT_SIZE)
                             )

@@ -38,7 +38,9 @@ COMMAND_CONTRACTS = [
     pytest.param(add_name_arguments, NameInputs, [], id="name"),
     pytest.param(add_type_arguments, TypeInputs, [], id="type"),
     pytest.param(
-        add_preprocess_arguments, PreprocessInputs, ["--input", "/data/in"],
+        add_preprocess_arguments,
+        PreprocessInputs,
+        ["--input", "/data/in"],
         id="preprocess",
     ),
     pytest.param(add_evaluate_arguments, EvaluateInputs, [], id="evaluate"),
@@ -63,9 +65,7 @@ class TestParserDataclassParity:
         assert dataclasses.asdict(inputs) == vars(namespace)
 
     @pytest.mark.parametrize("add_arguments,inputs_cls,argv", COMMAND_CONTRACTS)
-    def test_subparser_bookkeeping_attrs_are_excluded(
-        self, add_arguments, inputs_cls, argv
-    ):
+    def test_subparser_bookkeeping_attrs_are_excluded(self, add_arguments, inputs_cls, argv):
         """organize-files namespaces carry command/func; both must be dropped."""
         namespace = parse(add_arguments, argv)
         namespace.command = "some-command"

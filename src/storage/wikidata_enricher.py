@@ -69,9 +69,9 @@ RECONC_LIMIT = 3
 RECONC_TIMEOUT_SEC = 5
 
 # Entity-class QIDs for type-filtered reconciliation.
-QID_ORGANIZATION = "Q43229"   # organization (and all subclasses)
-QID_EVENT = "Q1656682"        # occurrence (general event superclass)
-QID_LOCATION = "Q2221906"     # geographic location
+QID_ORGANIZATION = "Q43229"  # organization (and all subclasses)
+QID_EVENT = "Q1656682"  # occurrence (general event superclass)
+QID_LOCATION = "Q2221906"  # geographic location
 
 # KV store namespace for Wikidata cache entries.
 _KV_NAMESPACE = "wikidata"
@@ -88,9 +88,9 @@ _CACHE_MISS_SENTINEL = "__none__"
 class WikidataMatch:
     """A confirmed Wikidata entity match returned by the reconciliation API."""
 
-    qid: str           # Wikidata item ID, e.g. "Q95"
-    label: str         # English label returned by the API, e.g. "Google"
-    score: float       # Reconciliation confidence score (0–100)
+    qid: str  # Wikidata item ID, e.g. "Q95"
+    label: str  # English label returned by the API, e.g. "Google"
+    score: float  # Reconciliation confidence score (0–100)
     entity_class: str  # Class QID used in the query, e.g. "Q43229"
 
     @property
@@ -160,7 +160,7 @@ class WikidataEnricher:
                 return None
             try:
                 return WikidataMatch(**cached)
-            except (TypeError, KeyError):
+            except TypeError, KeyError:
                 # Stale or corrupt cache entry; re-query.
                 logger.debug("Corrupt Wikidata cache entry for %r; re-querying", name)
 

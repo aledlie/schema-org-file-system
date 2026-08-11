@@ -25,7 +25,6 @@ from src.classifiers.person_name_validator import (
     validate_person_name,
 )
 
-
 # ---------------------------------------------------------------------------
 # L0 denylist (is_denylisted + validate_person_name short-circuit)
 # ---------------------------------------------------------------------------
@@ -167,9 +166,9 @@ class TestFalsePositives:
         """
         result = validate_person_name("Summer Hill")
         assert result.decision == "review"
-        assert any("ambiguous given name" in r for r in result.reasons), (
-            f"Expected 'ambiguous given name' reason for 'Summer Hill', got: {result.reasons}"
-        )
+        assert any(
+            "ambiguous given name" in r for r in result.reasons
+        ), f"Expected 'ambiguous given name' reason for 'Summer Hill', got: {result.reasons}"
 
     def test_acme_llc_rejected_by_denylist(self) -> None:
         result = validate_person_name("Acme LLC")
@@ -264,9 +263,7 @@ class TestNoOptionalLayers:
         monkeypatch.setattr(
             "src.classifiers.person_name_validator._probablepeople_available", lambda: False
         )
-        monkeypatch.setattr(
-            "src.classifiers.person_name_validator._load_gazetteer", lambda: None
-        )
+        monkeypatch.setattr("src.classifiers.person_name_validator._load_gazetteer", lambda: None)
         result = validate_person_name("John Smith")
         assert result.decision == "review"
         assert any("no optional layers" in r for r in result.reasons)

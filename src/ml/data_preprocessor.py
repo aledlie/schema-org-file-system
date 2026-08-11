@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 class _QualityIssues(TypedDict):
     """Buckets of problematic records found by ``validate_data_quality``."""
+
     missing_category: List[str]
     empty_filename: List[str]
     duplicate_filenames: List[str]
@@ -36,6 +37,7 @@ class _QualityIssues(TypedDict):
 
 class QualityReport(TypedDict):
     """``validate_data_quality()`` shape."""
+
     total_records: int
     uncategorized_count: int
     empty_filename_count: int
@@ -66,12 +68,12 @@ class DataPreprocessor:
         if not path:
             raise ValueError("No report path provided")
 
-        with open(path, 'r') as f:
+        with open(path, "r") as f:
             data: Dict[str, Any] = json.load(f)
 
         self.data = data
-        self.statistics['total_records'] = len(data.get('results', []))
-        self.statistics['load_time'] = datetime.now().isoformat()
+        self.statistics["total_records"] = len(data.get("results", []))
+        self.statistics["load_time"] = datetime.now().isoformat()
         return data
 
     def extract_all_features(self) -> List[Dict]:
@@ -79,14 +81,14 @@ class DataPreprocessor:
         if not self.data:
             raise ValueError("No data loaded. Call load_data() first.")
 
-        results = self.data.get('results', [])
+        results = self.data.get("results", [])
         self.features = []
 
         for record in results:
             features = self.feature_extractor.extract_features(record)
             self.features.append(features)
 
-        self.statistics['features_extracted'] = len(self.features)
+        self.statistics["features_extracted"] = len(self.features)
         return self.features
 
     def compute_statistics(self) -> Dict:
@@ -95,47 +97,49 @@ class DataPreprocessor:
             raise ValueError("No features extracted. Call extract_all_features() first.")
 
         # Category distribution
-        categories = Counter(f['category'] for f in self.features)
-        subcategories = Counter(f['subcategory'] for f in self.features)
+        categories = Counter(f["category"] for f in self.features)
+        subcategories = Counter(f["subcategory"] for f in self.features)
 
         # Extension distribution
-        extensions = Counter(f['extension'] for f in self.features)
+        extensions = Counter(f["extension"] for f in self.features)
 
         # Pattern counts
-        screenshots = sum(1 for f in self.features if f['is_screenshot'])
-        game_assets = sum(1 for f in self.features if f['is_game_asset'])
-        documents = sum(1 for f in self.features if f['is_document'])
+        screenshots = sum(1 for f in self.features if f["is_screenshot"])
+        game_assets = sum(1 for f in self.features if f["is_game_asset"])
+        documents = sum(1 for f in self.features if f["is_document"])
 
         # Metadata availability
-        has_text = sum(1 for f in self.features if f['has_extracted_text'])
-        has_datetime = sum(1 for f in self.features if f['has_datetime'])
-        has_gps = sum(1 for f in self.features if f['has_gps'])
+        has_text = sum(1 for f in self.features if f["has_extracted_text"])
+        has_datetime = sum(1 for f in self.features if f["has_datetime"])
+        has_gps = sum(1 for f in self.features if f["has_gps"])
 
         # Filename analysis
-        avg_filename_length = sum(f['filename_length'] for f in self.features) / len(self.features)
+        avg_filename_length = sum(f["filename_length"] for f in self.features) / len(self.features)
         token_counts: Counter[str] = Counter()
         for f in self.features:
-            token_counts.update(f['filename_tokens'])
+            token_counts.update(f["filename_tokens"])
 
-        self.statistics.update({
-            'category_distribution': dict(categories),
-            'subcategory_distribution': dict(subcategories.most_common(20)),
-            'extension_distribution': dict(extensions.most_common(20)),
-            'pattern_counts': {
-                'screenshots': screenshots,
-                'game_assets': game_assets,
-                'documents': documents,
-            },
-            'metadata_availability': {
-                'has_text': has_text,
-                'has_datetime': has_datetime,
-                'has_gps': has_gps,
-            },
-            'filename_analysis': {
-                'avg_length': round(avg_filename_length, 2),
-                'top_tokens': dict(token_counts.most_common(30)),
-            },
-        })
+        self.statistics.update(
+            {
+                "category_distribution": dict(categories),
+                "subcategory_distribution": dict(subcategories.most_common(20)),
+                "extension_distribution": dict(extensions.most_common(20)),
+                "pattern_counts": {
+                    "screenshots": screenshots,
+                    "game_assets": game_assets,
+                    "documents": documents,
+                },
+                "metadata_availability": {
+                    "has_text": has_text,
+                    "has_datetime": has_datetime,
+                    "has_gps": has_gps,
+                },
+                "filename_analysis": {
+                    "avg_length": round(avg_filename_length, 2),
+                    "top_tokens": dict(token_counts.most_common(30)),
+                },
+            }
+        )
 
         return self.statistics
 
@@ -223,50 +227,50 @@ class DataPreprocessor:
             raise ValueError("No features extracted. Call extract_all_features() first.")
 
         issues: _QualityIssues = {
-            'missing_category': [],
-            'empty_filename': [],
-            'duplicate_filenames': [],
-            'suspicious_extensions': [],
+            "missing_category": [],
+            "empty_filename": [],
+            "duplicate_filenames": [],
+            "suspicious_extensions": [],
         }
 
-        filename_counts = Counter(f['filename'] for f in self.features)
+        filename_counts = Counter(f["filename"] for f in self.features)
 
         for f in self.features:
             # Check for missing categories
-            if not f['category'] or f['category'] == 'uncategorized':
-                issues['missing_category'].append(f['filename'])
+            if not f["category"] or f["category"] == "uncategorized":
+                issues["missing_category"].append(f["filename"])
 
             # Check for empty filenames
-            if not f['filename']:
-                issues['empty_filename'].append(f['filepath'])
+            if not f["filename"]:
+                issues["empty_filename"].append(f["filepath"])
 
             # Check for suspicious extensions
-            if f['extension'] and f['extension'] not in self.feature_extractor.extension_map:
-                issues['suspicious_extensions'].append((f['filename'], f['extension']))
+            if f["extension"] and f["extension"] not in self.feature_extractor.extension_map:
+                issues["suspicious_extensions"].append((f["filename"], f["extension"]))
 
         # Find duplicates
-        issues['duplicate_filenames'] = [
+        issues["duplicate_filenames"] = [
             name for name, count in filename_counts.items() if count > 1
         ]
 
         # Summarize
         quality_report: QualityReport = {
-            'total_records': len(self.features),
-            'uncategorized_count': len(issues['missing_category']),
-            'empty_filename_count': len(issues['empty_filename']),
-            'duplicate_count': len(issues['duplicate_filenames']),
-            'unknown_extension_count': len(issues['suspicious_extensions']),
-            'quality_score': self._compute_quality_score(issues),
-            'issues_sample': {
-                'uncategorized': issues['missing_category'][:10],
-                'duplicates': issues['duplicate_filenames'][:10],
-                'unknown_extensions': list(
-                    set(ext for _, ext in issues['suspicious_extensions'])
-                )[:10],
-            }
+            "total_records": len(self.features),
+            "uncategorized_count": len(issues["missing_category"]),
+            "empty_filename_count": len(issues["empty_filename"]),
+            "duplicate_count": len(issues["duplicate_filenames"]),
+            "unknown_extension_count": len(issues["suspicious_extensions"]),
+            "quality_score": self._compute_quality_score(issues),
+            "issues_sample": {
+                "uncategorized": issues["missing_category"][:10],
+                "duplicates": issues["duplicate_filenames"][:10],
+                "unknown_extensions": list(set(ext for _, ext in issues["suspicious_extensions"]))[
+                    :10
+                ],
+            },
         }
 
-        self.statistics['data_quality'] = quality_report
+        self.statistics["data_quality"] = quality_report
         return quality_report
 
     def _compute_quality_score(self, issues: _QualityIssues) -> float:
@@ -277,18 +281,16 @@ class DataPreprocessor:
 
         # Penalize based on issues
         penalties = 0.0
-        penalties += len(issues['missing_category']) * 0.5
-        penalties += len(issues['empty_filename']) * 1.0
-        penalties += len(issues['duplicate_filenames']) * 0.1
-        penalties += len(issues['suspicious_extensions']) * 0.05
+        penalties += len(issues["missing_category"]) * 0.5
+        penalties += len(issues["empty_filename"]) * 1.0
+        penalties += len(issues["duplicate_filenames"]) * 0.1
+        penalties += len(issues["suspicious_extensions"]) * 0.05
 
         score = max(0, 100 - (penalties / total * 100))
         return round(score, 2)
 
     def export_for_training(
-        self,
-        output_dir: str,
-        include_test_split: bool = True
+        self, output_dir: str, include_test_split: bool = True
     ) -> Dict[str, str]:
         """Export preprocessed data for ML training.
 
@@ -303,47 +305,51 @@ class DataPreprocessor:
         output_files = {}
 
         # Export all features
-        features_path = os.path.join(output_dir, 'features.json')
-        with open(features_path, 'w') as f:
+        features_path = os.path.join(output_dir, "features.json")
+        with open(features_path, "w") as f:
             json.dump(self.features, f, indent=2)
-        output_files['features'] = features_path
+        output_files["features"] = features_path
 
         # Export vocabulary
         vocab = self.get_vocabulary()
-        vocab_path = os.path.join(output_dir, 'vocabulary.json')
-        with open(vocab_path, 'w') as f:
+        vocab_path = os.path.join(output_dir, "vocabulary.json")
+        with open(vocab_path, "w") as f:
             json.dump(vocab, f, indent=2)
-        output_files['vocabulary'] = vocab_path
+        output_files["vocabulary"] = vocab_path
 
         # Export label encoders
         label_to_id, id_to_label = self.get_label_encoder()
-        labels_path = os.path.join(output_dir, 'labels.json')
-        with open(labels_path, 'w') as f:
-            json.dump({
-                'label_to_id': label_to_id,
-                'id_to_label': {str(k): v for k, v in id_to_label.items()},
-            }, f, indent=2)
-        output_files['labels'] = labels_path
+        labels_path = os.path.join(output_dir, "labels.json")
+        with open(labels_path, "w") as f:
+            json.dump(
+                {
+                    "label_to_id": label_to_id,
+                    "id_to_label": {str(k): v for k, v in id_to_label.items()},
+                },
+                f,
+                indent=2,
+            )
+        output_files["labels"] = labels_path
 
         # Export train/test split
         if include_test_split:
             train_data, test_data = self.create_train_test_split()
 
-            train_path = os.path.join(output_dir, 'train.json')
-            with open(train_path, 'w') as f:
+            train_path = os.path.join(output_dir, "train.json")
+            with open(train_path, "w") as f:
                 json.dump(train_data, f, indent=2)
-            output_files['train'] = train_path
+            output_files["train"] = train_path
 
-            test_path = os.path.join(output_dir, 'test.json')
-            with open(test_path, 'w') as f:
+            test_path = os.path.join(output_dir, "test.json")
+            with open(test_path, "w") as f:
                 json.dump(test_data, f, indent=2)
-            output_files['test'] = test_path
+            output_files["test"] = test_path
 
         # Export statistics
-        stats_path = os.path.join(output_dir, 'statistics.json')
-        with open(stats_path, 'w') as f:
+        stats_path = os.path.join(output_dir, "statistics.json")
+        with open(stats_path, "w") as f:
             json.dump(self.statistics, f, indent=2)
-        output_files['statistics'] = stats_path
+        output_files["statistics"] = stats_path
 
         return output_files
 
@@ -370,16 +376,16 @@ class DataPreprocessor:
         report.append("\n" + "-" * 40)
         report.append("CATEGORY DISTRIBUTION")
         report.append("-" * 40)
-        cats = self.statistics.get('category_distribution', {})
+        cats = self.statistics.get("category_distribution", {})
         for cat, count in sorted(cats.items(), key=lambda x: -x[1])[:15]:
-            pct = (count / self.statistics.get('total_records', 1)) * 100
+            pct = (count / self.statistics.get("total_records", 1)) * 100
             report.append(f"  {cat:20} {count:8,} ({pct:5.1f}%)")
 
         # Pattern Detection
         report.append("\n" + "-" * 40)
         report.append("PATTERN DETECTION")
         report.append("-" * 40)
-        patterns = self.statistics.get('pattern_counts', {})
+        patterns = self.statistics.get("pattern_counts", {})
         for name, count in patterns.items():
             report.append(f"  {name:20} {count:8,}")
 
@@ -387,16 +393,16 @@ class DataPreprocessor:
         report.append("\n" + "-" * 40)
         report.append("METADATA AVAILABILITY")
         report.append("-" * 40)
-        meta = self.statistics.get('metadata_availability', {})
+        meta = self.statistics.get("metadata_availability", {})
         for name, count in meta.items():
-            pct = (count / self.statistics.get('total_records', 1)) * 100
+            pct = (count / self.statistics.get("total_records", 1)) * 100
             report.append(f"  {name:20} {count:8,} ({pct:5.1f}%)")
 
         # Top Tokens
         report.append("\n" + "-" * 40)
         report.append("TOP FILENAME TOKENS")
         report.append("-" * 40)
-        tokens = self.statistics.get('filename_analysis', {}).get('top_tokens', {})
+        tokens = self.statistics.get("filename_analysis", {}).get("top_tokens", {})
         for token, count in list(tokens.items())[:15]:
             report.append(f"  {token:20} {count:8,}")
 
@@ -404,28 +410,28 @@ class DataPreprocessor:
         report.append("\n" + "-" * 40)
         report.append("DATA QUALITY")
         report.append("-" * 40)
-        quality = self.statistics.get('data_quality', {})
+        quality = self.statistics.get("data_quality", {})
         report.append(f"  Quality Score: {quality.get('quality_score', 0):.1f}/100")
         report.append(f"  Uncategorized: {quality.get('uncategorized_count', 0):,}")
         report.append(f"  Duplicates: {quality.get('duplicate_count', 0):,}")
         report.append(f"  Unknown Extensions: {quality.get('unknown_extension_count', 0):,}")
 
         # Train/Test Split
-        if 'train_test_split' in self.statistics:
+        if "train_test_split" in self.statistics:
             report.append("\n" + "-" * 40)
             report.append("TRAIN/TEST SPLIT")
             report.append("-" * 40)
-            split = self.statistics['train_test_split']
+            split = self.statistics["train_test_split"]
             report.append(f"  Train Size: {split['train_size']:,}")
             report.append(f"  Test Size: {split['test_size']:,}")
             report.append(f"  Test Ratio: {split['test_ratio']:.1%}")
 
         # Vocabulary
-        if 'vocabulary' in self.statistics:
+        if "vocabulary" in self.statistics:
             report.append("\n" + "-" * 40)
             report.append("VOCABULARY")
             report.append("-" * 40)
-            vocab = self.statistics['vocabulary']
+            vocab = self.statistics["vocabulary"]
             report.append(f"  Size: {vocab['size']:,}")
             report.append(f"  Min Frequency: {vocab['min_freq']}")
 
@@ -462,10 +468,7 @@ def run(args: "PreprocessInputs") -> None:
 
     if not args.report_only:
         print(f"\nExporting data to: {args.output}")
-        output_files = preprocessor.export_for_training(
-            args.output,
-            include_test_split=True
-        )
+        output_files = preprocessor.export_for_training(args.output, include_test_split=True)
 
         print("\nGenerated files:")
         for name, path in output_files.items():
@@ -482,6 +485,6 @@ def main():
     from src.cli import add_preprocess_arguments
     from src.cli_inputs import PreprocessInputs
 
-    parser = argparse.ArgumentParser(description='Preprocess file organization data for ML')
+    parser = argparse.ArgumentParser(description="Preprocess file organization data for ML")
     add_preprocess_arguments(parser)
     run(PreprocessInputs.from_namespace(parser.parse_args()))

@@ -32,6 +32,7 @@ R = TypeVar("R")
 class FileErrorInfo(TypedDict):
     """One failed file's error record (structural mirror of
     src.error_tracking.FileErrorInfo, usable when that import fails)."""
+
     file_path: str
     error_type: str
     error_message: str
@@ -41,6 +42,7 @@ class FileErrorInfo(TypedDict):
 class ProcessingStats(TypedDict):
     """Aggregate counters (structural mirror of
     src.error_tracking.ProcessingStats)."""
+
     processed: int
     succeeded: int
     failed: int
@@ -102,8 +104,10 @@ except ImportError:
         reraise: bool = True,
     ) -> Callable[[Callable[P, R]], Callable[P, Optional[R]]]:
         """Stub: identity decorator."""
+
         def decorator(func: Callable[P, R]) -> Callable[P, Optional[R]]:
             return func
+
         return decorator
 
     class FileProcessingErrorTracker:  # type: ignore[no-redef]
@@ -169,15 +173,14 @@ except ImportError:
                     error_types[key] = error_types.get(key, 0) + 1
 
                 print("\nError breakdown:")
-                for error_type, count in sorted(
-                    error_types.items(), key=lambda x: -x[1]
-                ):
+                for error_type, count in sorted(error_types.items(), key=lambda x: -x[1]):
                     print(f"  {error_type}: {count}")
 
 
 # ---------------------------------------------------------------------------
 # CostTracker — lightweight context manager (no external deps)
 # ---------------------------------------------------------------------------
+
 
 class CostTracker:
     """

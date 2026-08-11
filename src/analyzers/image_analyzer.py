@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 # Vision libraries are optional
 try:
     import cv2
+
     _CV2_AVAILABLE = True
 except ImportError:
     _CV2_AVAILABLE = False
@@ -38,6 +39,7 @@ except ImportError:
 try:
     from cost_roi_calculator import CostTracker
 except ImportError:
+
     class CostTracker:  # type: ignore[no-redef]
         """Stub when cost tracking is not installed."""
 
@@ -114,7 +116,11 @@ class ImageContentAnalyzer:
         if not _CV2_AVAILABLE or self.face_cascade is None:
             return False
 
-        ctx = CostTracker(self.cost_calculator, "face_detection") if self.cost_calculator else nullcontext()
+        ctx = (
+            CostTracker(self.cost_calculator, "face_detection")
+            if self.cost_calculator
+            else nullcontext()
+        )
         with ctx:
             try:
                 img = cv2.imread(str(image_path))
@@ -144,7 +150,11 @@ class ImageContentAnalyzer:
         if not self.vision_available:
             return {}
 
-        ctx = CostTracker(self.cost_calculator, "clip_vision") if self.cost_calculator else nullcontext()
+        ctx = (
+            CostTracker(self.cost_calculator, "clip_vision")
+            if self.cost_calculator
+            else nullcontext()
+        )
         with ctx:
             try:
                 if CLIP_CACHE_AVAILABLE:
@@ -182,9 +192,7 @@ class ImageContentAnalyzer:
 
         return (is_interior and not has_people, scores)
 
-    def analyze_for_organization(
-        self, image_path: Path
-    ) -> Tuple[bool, bool, Dict[str, float]]:
+    def analyze_for_organization(self, image_path: Path) -> Tuple[bool, bool, Dict[str, float]]:
         """
         Run CLIP inference once and return both organization-relevant flags.
 

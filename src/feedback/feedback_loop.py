@@ -22,6 +22,7 @@ class _ApplyStats(TypedDict):
 
 class _SuggestionRow(TypedDict):
     """One suggested re-categorization row for the correction report."""
+
     filename: str
     current: str
     suggested: str
@@ -56,7 +57,7 @@ class FeedbackIntegration:
         file_path: str,
         filename: str,
         proposed_category: str,
-        proposed_subcategory: Optional[str] = None
+        proposed_subcategory: Optional[str] = None,
     ) -> Tuple[str, Optional[str], float]:
         """Check if corrections suggest a different category.
 
@@ -78,7 +79,7 @@ class FeedbackIntegration:
             return (
                 correction["correct_category"],
                 correction.get("correct_subcategory"),
-                1.0  # Exact match has full confidence
+                1.0,  # Exact match has full confidence
             )
 
         # Check for pattern-based suggestions
@@ -87,7 +88,7 @@ class FeedbackIntegration:
             return (
                 suggestion["suggested_category"],
                 suggestion.get("suggested_subcategory") or proposed_subcategory,
-                suggestion["confidence"]
+                suggestion["confidence"],
             )
 
         # No correction needed
@@ -108,10 +109,7 @@ class FeedbackIntegration:
         for rule in rules.get("pattern_rules", []):
             category = rule["category"]
             if category not in keywords:
-                keywords[category] = {
-                    "patterns": [],
-                    "content_hints": []
-                }
+                keywords[category] = {"patterns": [], "content_hints": []}
 
             pattern = rule["pattern"]
             # Convert pattern labels back to keywords
@@ -123,18 +121,13 @@ class FeedbackIntegration:
         for rule in rules.get("content_rules", []):
             category = rule["category"]
             if category not in keywords:
-                keywords[category] = {
-                    "patterns": [],
-                    "content_hints": []
-                }
+                keywords[category] = {"patterns": [], "content_hints": []}
             keywords[category]["content_hints"].append(rule["hint"])
 
         return keywords
 
     def apply_to_organization_result(
-        self,
-        result: Dict[str, Any],
-        auto_apply: bool = False
+        self, result: Dict[str, Any], auto_apply: bool = False
     ) -> Dict[str, Any]:
         """Apply feedback suggestions to an organization result.
 
@@ -145,9 +138,8 @@ class FeedbackIntegration:
         Returns:
             Modified result with feedback suggestions
         """
-        filename = (
-            result.get("schema", {}).get("name")
-            or os.path.basename(result.get("source", ""))
+        filename = result.get("schema", {}).get("name") or os.path.basename(
+            result.get("source", "")
         )
         current_category = result.get("category", "uncategorized")
 
@@ -165,9 +157,7 @@ class FeedbackIntegration:
         return result
 
     def batch_apply_corrections(
-        self,
-        results: List[Dict[str, Any]],
-        confidence_threshold: float = 0.85
+        self, results: List[Dict[str, Any]], confidence_threshold: float = 0.85
     ) -> Tuple[List[Dict[str, Any]], _ApplyStats]:
         """Apply corrections to a batch of organization results.
 
@@ -183,14 +173,13 @@ class FeedbackIntegration:
             "total": len(results),
             "suggestions_made": 0,
             "auto_applied": 0,
-            "categories_changed": {}
+            "categories_changed": {},
         }
 
         for result in results:
             original_category = result.get("category")
             modified_result = self.apply_to_organization_result(
-                result.copy(),
-                auto_apply=confidence_threshold < 1.0
+                result.copy(), auto_apply=confidence_threshold < 1.0
             )
 
             if "feedback_suggestion" in modified_result:
@@ -218,21 +207,22 @@ class FeedbackIntegration:
         suggestions: List[_SuggestionRow] = []
 
         for result in results:
-            filename = (
-                result.get("schema", {}).get("name")
-                or os.path.basename(result.get("source", ""))
+            filename = result.get("schema", {}).get("name") or os.path.basename(
+                result.get("source", "")
             )
             current_category = result.get("category", "uncategorized")
 
             suggestion = self.feedback.get_suggestion(filename, current_category)
             if suggestion:
-                suggestions.append({
-                    "filename": filename,
-                    "current": current_category,
-                    "suggested": suggestion["suggested_category"],
-                    "confidence": suggestion["confidence"],
-                    "patterns": suggestion["matching_patterns"]
-                })
+                suggestions.append(
+                    {
+                        "filename": filename,
+                        "current": current_category,
+                        "suggested": suggestion["suggested_category"],
+                        "confidence": suggestion["confidence"],
+                        "patterns": suggestion["matching_patterns"],
+                    }
+                )
 
         if not suggestions:
             return "No correction suggestions based on learned patterns."

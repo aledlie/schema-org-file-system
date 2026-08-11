@@ -6,11 +6,11 @@
 # so organizers skip the whole sidecar folder during scanning rather than
 # scatter it across categories. Compared against lowercased directory names.
 SIDECAR_DIR_SUFFIXES = (
-    "_files",       # en
-    "-dateien",     # de
-    "_archivos",    # es
-    "_fichiers",    # fr
-    "_bestanden",   # nl
+    "_files",  # en
+    "-dateien",  # de
+    "_archivos",  # es
+    "_fichiers",  # fr
+    "_bestanden",  # nl
 )
 
 # HEIC/HEIF container extensions — used by OCR backends that must decode via
@@ -40,10 +40,28 @@ SOFTWARE_PACKAGE_EXTENSIONS = {".deb", ".rpm", ".snap", ".flatpak", ".appimage"}
 # excludes source code and bulk data (.json/.xml/.yaml) — those already route to
 # technical/data by extension and reading them only risks keyword false matches.
 TEXT_EXTENSIONS = {
-    ".txt", ".text", ".md", ".markdown", ".mdown", ".mkd", ".csv",
-    ".rst", ".adoc", ".asciidoc", ".org", ".tex", ".log", ".vtt", ".srt",
-    ".vcf", ".ics", ".eml",
-    ".mod", ".vdf", ".acf", ".desktop",
+    ".txt",
+    ".text",
+    ".md",
+    ".markdown",
+    ".mdown",
+    ".mkd",
+    ".csv",
+    ".rst",
+    ".adoc",
+    ".asciidoc",
+    ".org",
+    ".tex",
+    ".log",
+    ".vtt",
+    ".srt",
+    ".vcf",
+    ".ics",
+    ".eml",
+    ".mod",
+    ".vdf",
+    ".acf",
+    ".desktop",
 }
 
 # CLIP content labels -- canonical list used by analyze_renamed_files, organize_by_content, etc.
@@ -608,8 +626,8 @@ DOCUMENT_PATTERNS = [
 # and name_organizer.py camera_photos (uses re.IGNORECASE) stay in sync when
 # new device vendors appear.  All patterns are lowercase anchored-start regexes.
 CAMERA_VENDOR_PREFIX_PATTERNS: tuple[str, ...] = (
-    r"^img_\d+",   # IMG_1234 (Apple / Android camera roll)
-    r"^pxl_\d+",   # PXL_20250425 (Google Pixel)
+    r"^img_\d+",  # IMG_1234 (Apple / Android camera roll)
+    r"^pxl_\d+",  # PXL_20250425 (Google Pixel)
     r"^dsc_?\d+",  # DSC_1234 / DSC1234 (Sony / Nikon; optional underscore)
     r"^dcim_\d+",  # DCIM_1234 (generic DCIM roll)
 )

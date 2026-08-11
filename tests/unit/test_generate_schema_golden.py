@@ -99,8 +99,7 @@ def test_golden_image_object(processor, temp_dir):
 def test_golden_digital_document(processor, temp_dir):
     """Document branch -> DocumentGenerator (+url, contentSize)."""
     path = _write(temp_dir, "sample_doc.txt", "document body\n")
-    _assert_golden("digital_document",
-                   processor.generate_schema(path, "DigitalDocument"))
+    _assert_golden("digital_document", processor.generate_schema(path, "DigitalDocument"))
 
 
 def test_golden_scholarly_article(processor, temp_dir):
@@ -117,8 +116,7 @@ def test_golden_scholarly_article(processor, temp_dir):
         }
     )
     path = _write(temp_dir, "2401.12345v1.pdf", "fake-paper-bytes")
-    _assert_golden("scholarly_article",
-                   processor.generate_schema(path, "ScholarlyArticle"))
+    _assert_golden("scholarly_article", processor.generate_schema(path, "ScholarlyArticle"))
 
 
 def test_golden_image_with_clip_description(processor, temp_dir):
@@ -131,23 +129,20 @@ def test_golden_image_with_clip_description(processor, temp_dir):
     )
     path = temp_dir / "sample_landscape.png"
     image.new("RGB", (4, 2), "green").save(path)
-    _assert_golden("image_with_clip_description",
-                   processor.generate_schema(path, "ImageObject"))
+    _assert_golden("image_with_clip_description", processor.generate_schema(path, "ImageObject"))
 
 
 def test_golden_fallback_video_object(processor, temp_dir):
     """VideoObject -> VideoGenerator (contentUrl/encodingFormat/uploadDate).
     Named 'fallback_video_object' for historical continuity with the golden file."""
     path = _write(temp_dir, "sample_clip.mp4", "fake-video-bytes")
-    _assert_golden("fallback_video_object",
-                   processor.generate_schema(path, "VideoObject"))
+    _assert_golden("fallback_video_object", processor.generate_schema(path, "VideoObject"))
 
 
 def test_golden_fallback_document(processor, temp_dir):
     """Unknown schema_type -> same generic fallback branch."""
     path = _write(temp_dir, "sample_other.bin", "opaque-bytes")
-    _assert_golden("fallback_document",
-                   processor.generate_schema(path, "CreativeWork"))
+    _assert_golden("fallback_document", processor.generate_schema(path, "CreativeWork"))
 
 
 def test_golden_document_with_extracted_text(processor, temp_dir):

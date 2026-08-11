@@ -46,13 +46,16 @@ def _analyze(
     clip_result=_CLIP_RESULT,
 ):
     analyzer = ImageAnalyzer(profile)
-    with patch.object(rename_images, "classify_with_ocr_fallback", return_value=clip_result), \
-         patch.object(rename_images, "extract_screenshot_lines", return_value=lines), \
-         patch.object(ImageAnalyzer, "_detect_number", return_value=detected_number), \
-         patch.object(
-             rename_images, "generate_clip_filename",
-             side_effect=lambda p, label, mp: f"20260101_{label.replace(' ', '_')}{p.suffix}",
-         ):
+    with (
+        patch.object(rename_images, "classify_with_ocr_fallback", return_value=clip_result),
+        patch.object(rename_images, "extract_screenshot_lines", return_value=lines),
+        patch.object(ImageAnalyzer, "_detect_number", return_value=detected_number),
+        patch.object(
+            rename_images,
+            "generate_clip_filename",
+            side_effect=lambda p, label, mp: f"20260101_{label.replace(' ', '_')}{p.suffix}",
+        ),
+    ):
         return analyzer.analyze_image(image_path)
 
 

@@ -176,9 +176,7 @@ def run(
             print(f"    - {n!r}")
 
     if not apply and matched > 0:
-        print(
-            f"\n[{label}] Pass --apply to write {matched} QID(s) to the database."
-        )
+        print(f"\n[{label}] Pass --apply to write {matched} QID(s) to the database.")
 
 
 def main() -> None:

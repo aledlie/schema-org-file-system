@@ -14,18 +14,19 @@ from sqlalchemy.orm import Session, selectinload, joinedload
 # make these return annotations the OpenAPI/serialization schema.
 from src.schema_types import GraphDocument, SchemaMapping
 
-from storage.models import (
-    File, Category, Company, Person, Location
-)
+from storage.models import File, Category, Company, Person, Location
 from storage.models import get_session
 from storage.schema_org_exporter import SchemaOrgExporter
 from storage.schema_org_context import get_context_document
 from api.schema_org_models import (
-    FileFilterParams, CategoryFilterParams, CompanyFilterParams,
-    PersonFilterParams, LocationFilterParams, BulkExportParams,
-    ErrorResponse
+    FileFilterParams,
+    CategoryFilterParams,
+    CompanyFilterParams,
+    PersonFilterParams,
+    LocationFilterParams,
+    BulkExportParams,
+    ErrorResponse,
 )
-
 
 # Create FastAPI app
 app = FastAPI(
@@ -35,7 +36,7 @@ app = FastAPI(
     responses={
         404: {"model": ErrorResponse},
         400: {"model": ErrorResponse},
-    }
+    },
 )
 
 
@@ -51,10 +52,7 @@ def get_db() -> Iterator[Session]:
 
 # File Endpoints
 @app.get("/api/files/{file_id}/schema-org", response_model=Dict[str, Any])
-async def get_file_schema_org(
-    file_id: str,
-    db: Session = Depends(get_db)
-) -> SchemaMapping:
+async def get_file_schema_org(file_id: str, db: Session = Depends(get_db)) -> SchemaMapping:
     """
     Get File as schema.org JSON-LD.
 
@@ -70,8 +68,7 @@ async def get_file_schema_org(
 
 @app.get("/api/files/schema-org/bulk", response_model=Dict[str, Any])
 async def get_files_schema_org_bulk(
-    params: FileFilterParams = Depends(),
-    db: Session = Depends(get_db)
+    params: FileFilterParams = Depends(), db: Session = Depends(get_db)
 ) -> GraphDocument:
     """
     Get multiple Files as schema.org JSON-LD.
@@ -87,12 +84,17 @@ async def get_files_schema_org_bulk(
     if params.mime_type:
         query = query.filter(File.mime_type == params.mime_type)
 
-    files = query.options(
-        selectinload(File.categories),
-        selectinload(File.companies),
-        selectinload(File.people),
-        selectinload(File.locations),
-    ).offset(params.skip).limit(params.limit).all()
+    files = (
+        query.options(
+            selectinload(File.categories),
+            selectinload(File.companies),
+            selectinload(File.people),
+            selectinload(File.locations),
+        )
+        .offset(params.skip)
+        .limit(params.limit)
+        .all()
+    )
     return {
         "@context": get_context_document()["@context"],
         "@graph": [file.to_schema_org() for file in files],
@@ -101,10 +103,7 @@ async def get_files_schema_org_bulk(
 
 # Category Endpoints
 @app.get("/api/categories/{category_id}/schema-org", response_model=Dict[str, Any])
-async def get_category_schema_org(
-    category_id: int,
-    db: Session = Depends(get_db)
-) -> SchemaMapping:
+async def get_category_schema_org(category_id: int, db: Session = Depends(get_db)) -> SchemaMapping:
     """
     Get Category as schema.org JSON-LD (DefinedTerm).
 
@@ -120,8 +119,7 @@ async def get_category_schema_org(
 
 @app.get("/api/categories/schema-org/bulk", response_model=Dict[str, Any])
 async def get_categories_schema_org_bulk(
-    params: CategoryFilterParams = Depends(),
-    db: Session = Depends(get_db)
+    params: CategoryFilterParams = Depends(), db: Session = Depends(get_db)
 ) -> GraphDocument:
     """
     Get multiple Categories as schema.org JSON-LD.
@@ -137,11 +135,16 @@ async def get_categories_schema_org_bulk(
     if params.level is not None:
         query = query.filter(Category.level == params.level)
 
-    categories = query.options(
-        selectinload(Category.files),
-        joinedload(Category.parent),
-        selectinload(Category.subcategories),
-    ).offset(params.skip).limit(params.limit).all()
+    categories = (
+        query.options(
+            selectinload(Category.files),
+            joinedload(Category.parent),
+            selectinload(Category.subcategories),
+        )
+        .offset(params.skip)
+        .limit(params.limit)
+        .all()
+    )
     return {
         "@context": get_context_document()["@context"],
         "@graph": [category.to_schema_org() for category in categories],
@@ -150,10 +153,7 @@ async def get_categories_schema_org_bulk(
 
 # Company Endpoints
 @app.get("/api/companies/{company_id}/schema-org", response_model=Dict[str, Any])
-async def get_company_schema_org(
-    company_id: int,
-    db: Session = Depends(get_db)
-) -> SchemaMapping:
+async def get_company_schema_org(company_id: int, db: Session = Depends(get_db)) -> SchemaMapping:
     """
     Get Company as schema.org JSON-LD (Organization).
 
@@ -168,10 +168,7 @@ async def get_company_schema_org(
 
 
 @app.get("/api/companies/schema-org/by-name/{name}", response_model=Dict[str, Any])
-async def get_company_by_name_schema_org(
-    name: str,
-    db: Session = Depends(get_db)
-) -> SchemaMapping:
+async def get_company_by_name_schema_org(name: str, db: Session = Depends(get_db)) -> SchemaMapping:
     """
     Get Company by name as schema.org JSON-LD.
 
@@ -190,8 +187,7 @@ async def get_company_by_name_schema_org(
 
 @app.get("/api/companies/schema-org/bulk", response_model=Dict[str, Any])
 async def get_companies_schema_org_bulk(
-    params: CompanyFilterParams = Depends(),
-    db: Session = Depends(get_db)
+    params: CompanyFilterParams = Depends(), db: Session = Depends(get_db)
 ) -> GraphDocument:
     """
     Get multiple Companies as schema.org JSON-LD.
@@ -207,9 +203,14 @@ async def get_companies_schema_org_bulk(
     if params.industry:
         query = query.filter(Company.industry == params.industry)
 
-    companies = query.options(
-        selectinload(Company.files),
-    ).offset(params.skip).limit(params.limit).all()
+    companies = (
+        query.options(
+            selectinload(Company.files),
+        )
+        .offset(params.skip)
+        .limit(params.limit)
+        .all()
+    )
     return {
         "@context": get_context_document()["@context"],
         "@graph": [company.to_schema_org() for company in companies],
@@ -218,10 +219,7 @@ async def get_companies_schema_org_bulk(
 
 # Person Endpoints
 @app.get("/api/people/{person_id}/schema-org", response_model=Dict[str, Any])
-async def get_person_schema_org(
-    person_id: int,
-    db: Session = Depends(get_db)
-) -> SchemaMapping:
+async def get_person_schema_org(person_id: int, db: Session = Depends(get_db)) -> SchemaMapping:
     """
     Get Person as schema.org JSON-LD.
 
@@ -236,10 +234,7 @@ async def get_person_schema_org(
 
 
 @app.get("/api/people/schema-org/by-name/{name}", response_model=Dict[str, Any])
-async def get_person_by_name_schema_org(
-    name: str,
-    db: Session = Depends(get_db)
-) -> SchemaMapping:
+async def get_person_by_name_schema_org(name: str, db: Session = Depends(get_db)) -> SchemaMapping:
     """
     Get Person by name as schema.org JSON-LD.
 
@@ -258,8 +253,7 @@ async def get_person_by_name_schema_org(
 
 @app.get("/api/people/schema-org/bulk", response_model=Dict[str, Any])
 async def get_people_schema_org_bulk(
-    params: PersonFilterParams = Depends(),
-    db: Session = Depends(get_db)
+    params: PersonFilterParams = Depends(), db: Session = Depends(get_db)
 ) -> GraphDocument:
     """
     Get multiple People as schema.org JSON-LD.
@@ -275,9 +269,14 @@ async def get_people_schema_org_bulk(
     if params.role:
         query = query.filter(Person.role == params.role)
 
-    people = query.options(
-        selectinload(Person.files),
-    ).offset(params.skip).limit(params.limit).all()
+    people = (
+        query.options(
+            selectinload(Person.files),
+        )
+        .offset(params.skip)
+        .limit(params.limit)
+        .all()
+    )
     return {
         "@context": get_context_document()["@context"],
         "@graph": [person.to_schema_org() for person in people],
@@ -286,10 +285,7 @@ async def get_people_schema_org_bulk(
 
 # Location Endpoints
 @app.get("/api/locations/{location_id}/schema-org", response_model=Dict[str, Any])
-async def get_location_schema_org(
-    location_id: int,
-    db: Session = Depends(get_db)
-) -> SchemaMapping:
+async def get_location_schema_org(location_id: int, db: Session = Depends(get_db)) -> SchemaMapping:
     """
     Get Location as schema.org JSON-LD (Place).
 
@@ -305,8 +301,7 @@ async def get_location_schema_org(
 
 @app.get("/api/locations/schema-org/by-name/{name}", response_model=Dict[str, Any])
 async def get_location_by_name_schema_org(
-    name: str,
-    db: Session = Depends(get_db)
+    name: str, db: Session = Depends(get_db)
 ) -> SchemaMapping:
     """
     Get Location by name as schema.org JSON-LD.
@@ -326,8 +321,7 @@ async def get_location_by_name_schema_org(
 
 @app.get("/api/locations/schema-org/bulk", response_model=Dict[str, Any])
 async def get_locations_schema_org_bulk(
-    params: LocationFilterParams = Depends(),
-    db: Session = Depends(get_db)
+    params: LocationFilterParams = Depends(), db: Session = Depends(get_db)
 ) -> GraphDocument:
     """
     Get multiple Locations as schema.org JSON-LD.
@@ -343,9 +337,14 @@ async def get_locations_schema_org_bulk(
     if params.country:
         query = query.filter(Location.country == params.country)
 
-    locations = query.options(
-        selectinload(Location.files),
-    ).offset(params.skip).limit(params.limit).all()
+    locations = (
+        query.options(
+            selectinload(Location.files),
+        )
+        .offset(params.skip)
+        .limit(params.limit)
+        .all()
+    )
     return {
         "@context": get_context_document()["@context"],
         "@graph": [location.to_schema_org() for location in locations],
@@ -355,8 +354,7 @@ async def get_locations_schema_org_bulk(
 # Bulk Export Endpoint
 @app.get("/api/schema-org/export", response_model=Dict[str, Any])
 async def export_all_entities_schema_org(
-    params: BulkExportParams = Depends(),
-    db: Session = Depends(get_db)
+    params: BulkExportParams = Depends(), db: Session = Depends(get_db)
 ) -> GraphDocument:
     """
     Export all entities as schema.org JSON-LD @graph document.
@@ -387,9 +385,7 @@ async def export_all_entities_schema_org(
 
 # Graph Export Endpoint
 @app.get("/api/schema-org/graph", response_model=Dict[str, Any])
-async def get_full_graph_document(
-    db: Session = Depends(get_db)
-) -> GraphDocument:
+async def get_full_graph_document(db: Session = Depends(get_db)) -> GraphDocument:
     """
     Return a full JSON-LD @graph document for all entity types.
 

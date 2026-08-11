@@ -14,12 +14,13 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 # Ensure src/ is on the path
-sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'src'))
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / "src"))
 
 
 # ---------------------------------------------------------------------------
 # extract_text_from_image
 # ---------------------------------------------------------------------------
+
 
 class TestExtractTextFromImage:
     def test_returns_string_when_ocr_available(self, tmp_path):
@@ -31,6 +32,7 @@ class TestExtractTextFromImage:
             patch("src.analyzers.text_extractor.extract_ocr_text", return_value="hello world"),
         ):
             from src.analyzers.text_extractor import TextExtractor
+
             extractor = TextExtractor()
             extractor.ocr_available = True
 
@@ -44,6 +46,7 @@ class TestExtractTextFromImage:
         fake_image.write_bytes(b"fake")
 
         from src.analyzers.text_extractor import TextExtractor
+
         extractor = TextExtractor()
         extractor.ocr_available = False
 
@@ -59,6 +62,7 @@ class TestExtractTextFromImage:
             side_effect=RuntimeError("bad image"),
         ):
             from src.analyzers.text_extractor import TextExtractor
+
             extractor = TextExtractor()
             extractor.ocr_available = True
 
@@ -70,6 +74,7 @@ class TestExtractTextFromImage:
 # ---------------------------------------------------------------------------
 # extract_text_from_pdf
 # ---------------------------------------------------------------------------
+
 
 class TestExtractTextFromPdf:
     def test_returns_string_from_searchable_pdf(self, tmp_path):
@@ -89,6 +94,7 @@ class TestExtractTextFromPdf:
             mock_pypdf.PdfReader.return_value = mock_reader
 
             from src.analyzers.text_extractor import TextExtractor
+
             extractor = TextExtractor()
             extractor.ocr_available = True
 
@@ -102,6 +108,7 @@ class TestExtractTextFromPdf:
         fake_pdf.write_bytes(b"fake")
 
         from src.analyzers.text_extractor import TextExtractor
+
         extractor = TextExtractor()
         extractor.ocr_available = False
 
@@ -116,6 +123,7 @@ class TestExtractTextFromPdf:
             mock_pypdf.PdfReader.side_effect = Exception("corrupt pdf")
 
             from src.analyzers.text_extractor import TextExtractor
+
             extractor = TextExtractor()
             extractor.ocr_available = True
 
@@ -127,6 +135,7 @@ class TestExtractTextFromPdf:
 # ---------------------------------------------------------------------------
 # extract_text_from_docx
 # ---------------------------------------------------------------------------
+
 
 class TestExtractTextFromDocx:
     def test_returns_string_when_docx_available(self, tmp_path):
@@ -145,6 +154,7 @@ class TestExtractTextFromDocx:
             patch("src.analyzers.text_extractor.Document", return_value=mock_doc),
         ):
             from src.analyzers.text_extractor import TextExtractor
+
             extractor = TextExtractor()
 
             result = extractor.extract_text_from_docx(fake_docx)
@@ -158,6 +168,7 @@ class TestExtractTextFromDocx:
 
         with patch("src.analyzers.text_extractor.DOCX_AVAILABLE", False):
             from src.analyzers.text_extractor import TextExtractor
+
             extractor = TextExtractor()
             result = extractor.extract_text_from_docx(fake_docx)
 
@@ -172,6 +183,7 @@ class TestExtractTextFromDocx:
             patch("src.analyzers.text_extractor.Document", side_effect=Exception("bad docx")),
         ):
             from src.analyzers.text_extractor import TextExtractor
+
             extractor = TextExtractor()
             result = extractor.extract_text_from_docx(fake_docx)
 
@@ -181,6 +193,7 @@ class TestExtractTextFromDocx:
 # ---------------------------------------------------------------------------
 # extract_text_from_xlsx
 # ---------------------------------------------------------------------------
+
 
 class TestExtractTextFromXlsx:
     def test_returns_string_when_excel_available(self, tmp_path):
@@ -199,6 +212,7 @@ class TestExtractTextFromXlsx:
             patch("src.analyzers.text_extractor.load_workbook", return_value=mock_workbook),
         ):
             from src.analyzers.text_extractor import TextExtractor
+
             extractor = TextExtractor()
             result = extractor.extract_text_from_xlsx(fake_xlsx)
 
@@ -211,6 +225,7 @@ class TestExtractTextFromXlsx:
 
         with patch("src.analyzers.text_extractor.EXCEL_AVAILABLE", False):
             from src.analyzers.text_extractor import TextExtractor
+
             extractor = TextExtractor()
             result = extractor.extract_text_from_xlsx(fake_xlsx)
 
@@ -225,6 +240,7 @@ class TestExtractTextFromXlsx:
             patch("src.analyzers.text_extractor.load_workbook", side_effect=Exception("bad xlsx")),
         ):
             from src.analyzers.text_extractor import TextExtractor
+
             extractor = TextExtractor()
             result = extractor.extract_text_from_xlsx(fake_xlsx)
 
@@ -235,9 +251,11 @@ class TestExtractTextFromXlsx:
 # extract_text dispatch
 # ---------------------------------------------------------------------------
 
+
 class TestExtractTextDispatch:
     def _extractor(self):
         from src.analyzers.text_extractor import TextExtractor
+
         return TextExtractor()
 
     def test_routes_image_by_mime(self, tmp_path):
@@ -321,6 +339,7 @@ class TestExtractTextDispatch:
 # ExtractionResult and extract_from_image
 # ---------------------------------------------------------------------------
 
+
 class TestExtractFromImage:
     def test_returns_extraction_result_with_confidence(self, tmp_path):
         fake_image = tmp_path / "test.png"
@@ -333,9 +352,13 @@ class TestExtractFromImage:
 
         with (
             patch("src.analyzers.text_extractor.OCR_AVAILABLE", True),
-            patch("src.analyzers.text_extractor.extract_ocr_with_confidence", return_value=mock_ocr_result),
+            patch(
+                "src.analyzers.text_extractor.extract_ocr_with_confidence",
+                return_value=mock_ocr_result,
+            ),
         ):
             from src.analyzers.text_extractor import TextExtractor
+
             extractor = TextExtractor()
             extractor.ocr_available = True
 
@@ -351,6 +374,7 @@ class TestExtractFromImage:
         fake_image.write_bytes(b"fake")
 
         from src.analyzers.text_extractor import TextExtractor
+
         extractor = TextExtractor()
         extractor.ocr_available = False
 
@@ -367,6 +391,7 @@ class TestExtractFromImage:
             return_value=None,
         ):
             from src.analyzers.text_extractor import TextExtractor
+
             extractor = TextExtractor()
             extractor.ocr_available = True
 
@@ -379,13 +404,16 @@ class TestExtractFromImage:
 # extract (rich dispatch)
 # ---------------------------------------------------------------------------
 
+
 class TestExtractDispatch:
     def _extractor(self):
         from src.analyzers.text_extractor import TextExtractor
+
         return TextExtractor()
 
     def test_routes_image_returns_extraction_result(self, tmp_path):
         from src.analyzers.text_extractor import ExtractionResult
+
         p = tmp_path / "photo.jpg"
         p.write_bytes(b"fake")
         ext = self._extractor()

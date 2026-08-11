@@ -89,6 +89,7 @@ def _supports_drop_column() -> bool:
 
 class DriftEntry(TypedDict):
     """One cached count that disagreed with its edges at drop time."""
+
     table: str
     name: Optional[str]
     stored: int
@@ -98,6 +99,7 @@ class DriftEntry(TypedDict):
 class FileCountMigrationResult(TypedDict, total=False):
     """``run_file_count_migration()`` shape: the error short-circuit, or
     the stats keys (``drop_column_unsupported`` only on old SQLite)."""
+
     error: str
     indexes_created: int
     columns_dropped: int

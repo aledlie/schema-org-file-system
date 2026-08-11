@@ -88,9 +88,13 @@ class TestBuildMigrationPlan:
         assert entry.subcat == SUBCAT_CONTACTS
         assert entry.subcat_source == SUBCAT_SOURCE_SUBFOLDER
         assert entry.flagged is False
-        assert entry.dst == str(documents_root / PERSONAL_SUBCAT_FOLDER[SUBCAT_CONTACTS] / "resume.pdf")
+        assert entry.dst == str(
+            documents_root / PERSONAL_SUBCAT_FOLDER[SUBCAT_CONTACTS] / "resume.pdf"
+        )
 
-    def test_identity_dir_maps_to_identification(self, person_tree: Path, documents_root: Path) -> None:
+    def test_identity_dir_maps_to_identification(
+        self, person_tree: Path, documents_root: Path
+    ) -> None:
         entries = build_migration_plan(person_tree, documents_root)
         entry = next(e for e in entries if Path(e.src).name == "passport.jpg")
 
@@ -98,7 +102,9 @@ class TestBuildMigrationPlan:
         assert entry.subcat_source == SUBCAT_SOURCE_SUBFOLDER
         assert entry.flagged is False
 
-    def test_employment_dir_maps_to_employment(self, person_tree: Path, documents_root: Path) -> None:
+    def test_employment_dir_maps_to_employment(
+        self, person_tree: Path, documents_root: Path
+    ) -> None:
         entries = build_migration_plan(person_tree, documents_root)
         entry = next(e for e in entries if Path(e.src).name == "offer_letter.pdf")
 
@@ -166,9 +172,7 @@ class TestBuildMigrationPlan:
         assert entry.subcat == SUBCAT_IDENTIFICATION
         assert entry.subcat_source == SUBCAT_SOURCE_SUBFOLDER
 
-    def test_os_junk_files_are_excluded(
-        self, tmp_path: Path, documents_root: Path
-    ) -> None:
+    def test_os_junk_files_are_excluded(self, tmp_path: Path, documents_root: Path) -> None:
         person_root = tmp_path / "Documents" / "Person"
         name_dir = person_root / "Alyshia Ledlie"
         name_dir.mkdir(parents=True)
@@ -184,7 +188,9 @@ class TestBuildMigrationPlan:
 
         assert migrated_names == {"resume.pdf"}
 
-    def test_no_db_path_still_produces_full_plan(self, person_tree: Path, documents_root: Path) -> None:
+    def test_no_db_path_still_produces_full_plan(
+        self, person_tree: Path, documents_root: Path
+    ) -> None:
         entries = build_migration_plan(person_tree, documents_root, db_path=None)
         assert len(entries) == 4
         assert all(entry.file_id is None for entry in entries)
@@ -335,7 +341,9 @@ class TestRollback:
         # specifically rather than all of documents_root, since Person/
         # itself lives under documents_root in this fixture layout.
         personal_root = documents_root / "Personal"
-        remaining = [p for p in personal_root.rglob("*") if p.is_file()] if personal_root.exists() else []
+        remaining = (
+            [p for p in personal_root.rglob("*") if p.is_file()] if personal_root.exists() else []
+        )
         assert remaining == []
 
     def test_rollback_uses_recorded_dst_not_recomputed_path(
@@ -454,12 +462,12 @@ class TestPersonIndex:
             ("Chyna_Strange_Resume.pdf", "Chyna Strange"),
             ("CV JohnDoe.docx", "John Doe"),
             # False positives that must stay None:
-            ("Resume-Blue.docx.webp", None),        # template color
-            ("Resume-Orange.docx.webp", None),      # template color
+            ("Resume-Blue.docx.webp", None),  # template color
+            ("Resume-Orange.docx.webp", None),  # template color
             ("Modern-Minimalist-Resume.pdf", None),  # template/style words
-            ("MarketingTemplate.docx", None),       # not a resume/cv context
-            ("PAS-PartTime.docx", None),            # not a resume/cv context
-            ("resume.pdf", None),                   # no name tokens
+            ("MarketingTemplate.docx", None),  # not a resume/cv context
+            ("PAS-PartTime.docx", None),  # not a resume/cv context
+            ("resume.pdf", None),  # no name tokens
         ],
     )
     def test_person_from_filename(self, filename: str, expected) -> None:
@@ -504,8 +512,11 @@ class TestPersonIndex:
         manifest = self._manifest(tmp_path, person_root)
 
         result = index_person_files(
-            manifest_path=manifest, db_path=db_path,
-            person_root=person_root, apply=False, verbose=False,
+            manifest_path=manifest,
+            db_path=db_path,
+            person_root=person_root,
+            apply=False,
+            verbose=False,
         )
         assert result["dry_run"] is True
         assert result["attributed"] == 2

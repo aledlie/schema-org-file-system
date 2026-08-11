@@ -29,6 +29,7 @@ OUTPUT_PATH = Path(__file__).resolve().parents[2] / "_site" / "timeline_data.jso
 class SessionChanges(TypedDict, total=False):
     """Deltas vs the preceding session; only the first three keys when
     there is no predecessor (``is_first`` is True)."""
+
     is_first: bool
     files_delta: int
     organized_delta: int
@@ -39,6 +40,7 @@ class SessionChanges(TypedDict, total=False):
 
 class TimelineDocument(TypedDict):
     """Complete timeline document written to ``_site/timeline_data.json``."""
+
     generated_at: str
     cumulative: dict[str, Any]
     sessions: list[dict[str, Any]]
@@ -81,9 +83,7 @@ class TimelineAPI:
             )
 
     @contextmanager
-    def _cursor(
-        self, conn: sqlite3.Connection | None = None
-    ) -> Iterator[sqlite3.Cursor]:
+    def _cursor(self, conn: sqlite3.Connection | None = None) -> Iterator[sqlite3.Cursor]:
         """Yield a cursor, reusing ``conn`` when given or opening a scoped one.
 
         Query methods accept an optional connection so they stay usable
@@ -111,9 +111,7 @@ class TimelineAPI:
             cursor.execute(sql, params)
             return [dict(row) for row in cursor.fetchall()]
 
-    def get_sessions(
-        self, conn: sqlite3.Connection | None = None
-    ) -> list[dict[str, Any]]:
+    def get_sessions(self, conn: sqlite3.Connection | None = None) -> list[dict[str, Any]]:
         """Get all non-empty organization sessions with their stats, oldest first."""
         with self._cursor(conn) as cursor:
             cursor.execute("""
@@ -139,26 +137,24 @@ class TimelineAPI:
             sessions = []
             for row in cursor.fetchall():
                 session = dict(row)
-                session['id_short'] = session['id'][:8]
+                session["id_short"] = session["id"][:8]
 
                 # Parse JSON fields
-                if session['source_directories']:
+                if session["source_directories"]:
                     try:
-                        session['source_directories'] = json.loads(
-                            session['source_directories']
-                        )
-                    except (json.JSONDecodeError, TypeError):
-                        session['source_directories'] = []
+                        session["source_directories"] = json.loads(session["source_directories"])
+                    except json.JSONDecodeError, TypeError:
+                        session["source_directories"] = []
                 else:
-                    session['source_directories'] = []
+                    session["source_directories"] = []
 
                 # Calculate success rate
-                if session['total_files'] > 0:
-                    session['success_rate'] = round(
-                        (session['organized_count'] / session['total_files']) * 100, 1
+                if session["total_files"] > 0:
+                    session["success_rate"] = round(
+                        (session["organized_count"] / session["total_files"]) * 100, 1
                     )
                 else:
-                    session['success_rate'] = 0
+                    session["success_rate"] = 0
 
                 sessions.append(session)
 
@@ -168,7 +164,8 @@ class TimelineAPI:
         self, session_id: str, conn: sqlite3.Connection | None = None
     ) -> list[dict[str, Any]]:
         """Get category breakdown for a specific session."""
-        return self._fetch_dicts("""
+        return self._fetch_dicts(
+            """
             SELECT
                 c.name,
                 c.color,
@@ -182,13 +179,17 @@ class TimelineAPI:
             GROUP BY c.id
             ORDER BY count DESC
             LIMIT 10
-        """, (session_id,), conn)
+        """,
+            (session_id,),
+            conn,
+        )
 
     def get_session_schema_types(
         self, session_id: str, conn: sqlite3.Connection | None = None
     ) -> list[dict[str, Any]]:
         """Get schema type distribution for a specific session."""
-        return self._fetch_dicts("""
+        return self._fetch_dicts(
+            """
             SELECT
                 schema_type,
                 COUNT(*) as count
@@ -196,13 +197,17 @@ class TimelineAPI:
             WHERE session_id = ? AND schema_type IS NOT NULL
             GROUP BY schema_type
             ORDER BY count DESC
-        """, (session_id,), conn)
+        """,
+            (session_id,),
+            conn,
+        )
 
     def get_session_extensions(
         self, session_id: str, conn: sqlite3.Connection | None = None
     ) -> list[dict[str, Any]]:
         """Get file extension distribution for a specific session."""
-        return self._fetch_dicts("""
+        return self._fetch_dicts(
+            """
             SELECT
                 LOWER(file_extension) as extension,
                 COUNT(*) as count
@@ -211,37 +216,35 @@ class TimelineAPI:
             GROUP BY LOWER(file_extension)
             ORDER BY count DESC
             LIMIT 10
-        """, (session_id,), conn)
+        """,
+            (session_id,),
+            conn,
+        )
 
     @staticmethod
-    def calculate_session_changes(
-        current: dict, previous: dict | None
-    ) -> SessionChanges:
+    def calculate_session_changes(current: dict, previous: dict | None) -> SessionChanges:
         """Calculate what changed between two consecutive sessions."""
         if previous is None:
             return {
-                'is_first': True,
-                'files_delta': current['total_files'],
-                'organized_delta': current['organized_count'],
+                "is_first": True,
+                "files_delta": current["total_files"],
+                "organized_delta": current["organized_count"],
             }
 
         return {
-            'is_first': False,
-            'files_delta': current['total_files'] - previous['total_files'],
-            'organized_delta': current['organized_count'] - previous['organized_count'],
-            'success_rate_delta': round(
-                current['success_rate'] - previous['success_rate'], 1
+            "is_first": False,
+            "files_delta": current["total_files"] - previous["total_files"],
+            "organized_delta": current["organized_count"] - previous["organized_count"],
+            "success_rate_delta": round(current["success_rate"] - previous["success_rate"], 1),
+            "cost_delta": round(current["total_cost"] - previous["total_cost"], 4),
+            "time_delta": round(
+                (current["total_processing_time_sec"] or 0)
+                - (previous["total_processing_time_sec"] or 0),
+                2,
             ),
-            'cost_delta': round(current['total_cost'] - previous['total_cost'], 4),
-            'time_delta': round(
-                (current['total_processing_time_sec'] or 0) -
-                (previous['total_processing_time_sec'] or 0), 2
-            )
         }
 
-    def get_cumulative_stats(
-        self, conn: sqlite3.Connection | None = None
-    ) -> dict[str, Any]:
+    def get_cumulative_stats(self, conn: sqlite3.Connection | None = None) -> dict[str, Any]:
         """Get cumulative statistics across all sessions."""
         with self._cursor(conn) as cursor:
             cursor.execute("""
@@ -255,10 +258,16 @@ class TimelineAPI:
             """)
 
             row = cursor.fetchone()
-            stats = dict(row) if row else {
-                'total_sessions': 0, 'total_files': 0,
-                'total_organized': 0, 'avg_processing_time': None,
-            }
+            stats = (
+                dict(row)
+                if row
+                else {
+                    "total_sessions": 0,
+                    "total_files": 0,
+                    "total_organized": 0,
+                    "avg_processing_time": None,
+                }
+            )
 
             # Get category totals
             cursor.execute("""
@@ -272,7 +281,7 @@ class TimelineAPI:
                 LIMIT 5
             """)
 
-            stats['top_categories'] = [dict(row) for row in cursor.fetchall()]
+            stats["top_categories"] = [dict(row) for row in cursor.fetchall()]
 
         return stats
 
@@ -290,10 +299,10 @@ class TimelineAPI:
             previous_session = None
 
             for session in sessions:
-                session['categories'] = self.get_session_categories(session['id'], conn)
-                session['schema_types'] = self.get_session_schema_types(session['id'], conn)
-                session['extensions'] = self.get_session_extensions(session['id'], conn)
-                session['changes'] = self.calculate_session_changes(session, previous_session)
+                session["categories"] = self.get_session_categories(session["id"], conn)
+                session["schema_types"] = self.get_session_schema_types(session["id"], conn)
+                session["extensions"] = self.get_session_extensions(session["id"], conn)
+                session["changes"] = self.calculate_session_changes(session, previous_session)
 
                 enriched_sessions.append(session)
                 previous_session = session
@@ -301,15 +310,13 @@ class TimelineAPI:
             cumulative = self.get_cumulative_stats(conn)
 
         return {
-            'generated_at': utcnow().isoformat(),
-            'cumulative': cumulative,
-            'sessions': enriched_sessions,
-            'session_count': len(enriched_sessions)
+            "generated_at": utcnow().isoformat(),
+            "cumulative": cumulative,
+            "sessions": enriched_sessions,
+            "session_count": len(enriched_sessions),
         }
 
-    def export_to_json(
-        self, output_path: Path | str = OUTPUT_PATH
-    ) -> TimelineDocument:
+    def export_to_json(self, output_path: Path | str = OUTPUT_PATH) -> TimelineDocument:
         """Generate the timeline document and write it to ``output_path``.
 
         Returns the generated document so callers can report counts without
@@ -319,7 +326,7 @@ class TimelineAPI:
 
         output_file = Path(output_path)
         output_file.parent.mkdir(parents=True, exist_ok=True)
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(data, f, indent=2, default=str)
 
         return data
@@ -359,7 +366,7 @@ def main() -> None:
     from src.cli import add_timeline_arguments
     from src.cli_inputs import TimelineInputs
 
-    parser = argparse.ArgumentParser(description='Generate timeline visualization data')
+    parser = argparse.ArgumentParser(description="Generate timeline visualization data")
     add_timeline_arguments(parser)
     run(TimelineInputs.from_namespace(parser.parse_args()))
 

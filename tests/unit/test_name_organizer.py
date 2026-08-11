@@ -30,29 +30,32 @@ def dry_organizer(tmp_path: Path) -> FileNameOrganizer:
 def redirect_report_dir(tmp_path: Path, monkeypatch):
     """Point save_report's Path(__file__).parents[2]/'results' into tmp_path."""
     fake_module = tmp_path / "src" / "organizers" / "name_organizer.py"
-    monkeypatch.setattr(name_organizer, '__file__', str(fake_module))
+    monkeypatch.setattr(name_organizer, "__file__", str(fake_module))
     return tmp_path / "results"
 
 
 class TestCategorizeByExtension:
-    @pytest.mark.parametrize("filename,expected", [
-        ("bundle.js.map", ("Technical", "JavaScript")),
-        ("styles.css.map", ("Technical", "JavaScript")),
-        ("photo.jpg", ("Media/Photos", "Other")),
-        ("photo.HEIC", ("Media/Photos", "Other")),  # case-insensitive suffix
-        ("clip.mp4", ("Media/Videos", "Recordings")),
-        ("song.flac", ("Media/Audio", "Other")),
-        ("notes.pdf", ("Documents", "General")),
-        ("budget.xlsx", ("Data", "Spreadsheets")),
-        ("deck.pptx", ("Documents", "Presentations")),
-        ("script.py", ("Technical", "Code")),
-        ("config.yaml", ("Data", "Configs")),
-        ("backup.tar", ("Data", "Archives")),
-        ("server.pem", ("Technical", "Certificates")),
-        ("slot1.sav", ("GameAssets", "SaveFiles")),
-        ("mockup.psd", ("Creative", "Design")),
-        ("model.blend", ("Creative", "3D")),
-    ])
+    @pytest.mark.parametrize(
+        "filename,expected",
+        [
+            ("bundle.js.map", ("Technical", "JavaScript")),
+            ("styles.css.map", ("Technical", "JavaScript")),
+            ("photo.jpg", ("Media/Photos", "Other")),
+            ("photo.HEIC", ("Media/Photos", "Other")),  # case-insensitive suffix
+            ("clip.mp4", ("Media/Videos", "Recordings")),
+            ("song.flac", ("Media/Audio", "Other")),
+            ("notes.pdf", ("Documents", "General")),
+            ("budget.xlsx", ("Data", "Spreadsheets")),
+            ("deck.pptx", ("Documents", "Presentations")),
+            ("script.py", ("Technical", "Code")),
+            ("config.yaml", ("Data", "Configs")),
+            ("backup.tar", ("Data", "Archives")),
+            ("server.pem", ("Technical", "Certificates")),
+            ("slot1.sav", ("GameAssets", "SaveFiles")),
+            ("mockup.psd", ("Creative", "Design")),
+            ("model.blend", ("Creative", "3D")),
+        ],
+    )
     def test_known_extensions(self, organizer, filename, expected):
         assert organizer.categorize_by_extension(Path(filename)) == expected
 
@@ -62,49 +65,52 @@ class TestCategorizeByExtension:
 
 
 class TestCategorizeByFilename:
-    @pytest.mark.parametrize("filename,expected", [
-        # Build artifacts (trashed)
-        ("module.pyc", (".Trash", "BuildArtifacts")),
-        (".DS_Store", (".Trash", "BuildArtifacts")),
-        ("bundle.min.js", (".Trash", "BuildArtifacts")),
-        ("types.d.ts", (".Trash", "BuildArtifacts")),
-        # Technical / docs
-        ("makefile", ("Technical/Code", "Other")),
-        (".eslintrc.json", ("Technical/Code", "Other")),
-        ("LICENSE", ("Technical/Code", "Other")),
-        ("README.md", ("Technical", "ReadMes")),
-        ("CHANGELOG.md", ("Technical", "ReadMes")),
-        ("server.log", ("Technical", "Logs")),
-        ("settings.txt", ("Technical", "Other")),
-        # Provenance-named images
-        ("ChatGPT Image Jul 1.png", ("AI-Generated", "Images")),
-        ("Screen Shot 2024-01-01.png", ("Media/Photos", "Screenshots")),
-        ("screenshot_2024.png", ("Media/Photos", "Screenshots")),
-        ("WhatsApp Image 2024-01-01.jpg", ("Media/Photos", "WhatsApp")),
-        ("IMG_1234.jpg", ("Media/Photos", "Camera")),
-        ("PXL_20240101_123456.jpg", ("Media/Photos", "Camera")),
-        ("20240101_123456.jpg", ("Media/Photos", "Camera")),
-        # Camera-vendor prefixes are single-homed in shared.constants and matched
-        # with re.IGNORECASE, so both DSC_ (Sony/Nikon) and its no-underscore
-        # variant, plus lowercase forms, route to Camera.
-        ("DSC_5678.jpg", ("Media/Photos", "Camera")),
-        ("DSC0001.JPG", ("Media/Photos", "Camera")),   # dsc_? — optional underscore
-        ("img_9.jpg", ("Media/Photos", "Camera")),      # IGNORECASE — lowercase prefix
-        ("123_456_789_012_345_n.jpg", ("Media/Photos", "Social_Media")),
-        # Game assets: image extensions route to the photo view
-        ("char_a_01.png", ("Media/Photos", "Games")),
-        ("torso_2.xyz", ("GameAssets", "Sprites")),
-        ("bg_forest.xyz", ("GameAssets", "Textures")),
-        ("hp_mp_bar.xyz", ("GameAssets", "UI")),
-        # Branding / icons / misc
-        ("company-logo.png", ("Creative", "Branding")),
-        ("icon_home.svg", ("Creative", "Icons")),
-        ("calendar-2024.svg", ("Creative", "Icons")),
-        ("medication-list.pdf", ("Medical", "General")),
-        ("1f600.png", ("Creative", "Emoji")),
-        ("Port_Moresby", ("Data", "LocationData")),
-        ("12345.png", ("GameAssets", "Sprites")),
-    ])
+    @pytest.mark.parametrize(
+        "filename,expected",
+        [
+            # Build artifacts (trashed)
+            ("module.pyc", (".Trash", "BuildArtifacts")),
+            (".DS_Store", (".Trash", "BuildArtifacts")),
+            ("bundle.min.js", (".Trash", "BuildArtifacts")),
+            ("types.d.ts", (".Trash", "BuildArtifacts")),
+            # Technical / docs
+            ("makefile", ("Technical/Code", "Other")),
+            (".eslintrc.json", ("Technical/Code", "Other")),
+            ("LICENSE", ("Technical/Code", "Other")),
+            ("README.md", ("Technical", "ReadMes")),
+            ("CHANGELOG.md", ("Technical", "ReadMes")),
+            ("server.log", ("Technical", "Logs")),
+            ("settings.txt", ("Technical", "Other")),
+            # Provenance-named images
+            ("ChatGPT Image Jul 1.png", ("AI-Generated", "Images")),
+            ("Screen Shot 2024-01-01.png", ("Media/Photos", "Screenshots")),
+            ("screenshot_2024.png", ("Media/Photos", "Screenshots")),
+            ("WhatsApp Image 2024-01-01.jpg", ("Media/Photos", "WhatsApp")),
+            ("IMG_1234.jpg", ("Media/Photos", "Camera")),
+            ("PXL_20240101_123456.jpg", ("Media/Photos", "Camera")),
+            ("20240101_123456.jpg", ("Media/Photos", "Camera")),
+            # Camera-vendor prefixes are single-homed in shared.constants and matched
+            # with re.IGNORECASE, so both DSC_ (Sony/Nikon) and its no-underscore
+            # variant, plus lowercase forms, route to Camera.
+            ("DSC_5678.jpg", ("Media/Photos", "Camera")),
+            ("DSC0001.JPG", ("Media/Photos", "Camera")),  # dsc_? — optional underscore
+            ("img_9.jpg", ("Media/Photos", "Camera")),  # IGNORECASE — lowercase prefix
+            ("123_456_789_012_345_n.jpg", ("Media/Photos", "Social_Media")),
+            # Game assets: image extensions route to the photo view
+            ("char_a_01.png", ("Media/Photos", "Games")),
+            ("torso_2.xyz", ("GameAssets", "Sprites")),
+            ("bg_forest.xyz", ("GameAssets", "Textures")),
+            ("hp_mp_bar.xyz", ("GameAssets", "UI")),
+            # Branding / icons / misc
+            ("company-logo.png", ("Creative", "Branding")),
+            ("icon_home.svg", ("Creative", "Icons")),
+            ("calendar-2024.svg", ("Creative", "Icons")),
+            ("medication-list.pdf", ("Medical", "General")),
+            ("1f600.png", ("Creative", "Emoji")),
+            ("Port_Moresby", ("Data", "LocationData")),
+            ("12345.png", ("GameAssets", "Sprites")),
+        ],
+    )
     def test_pattern_matches(self, organizer, filename, expected):
         assert organizer.categorize_by_filename(Path(filename)) == expected
 
@@ -114,7 +120,8 @@ class TestCategorizeByFilename:
     def test_artifact_patterns_beat_readme_patterns(self, organizer):
         # README* matches readme_files, but *.min.js is checked first.
         assert organizer.categorize_by_filename(Path("README.min.js")) == (
-            ".Trash", "BuildArtifacts"
+            ".Trash",
+            "BuildArtifacts",
         )
 
 
@@ -134,23 +141,21 @@ class TestCategorizeFilePriority:
     def test_filename_pattern_beats_extension(self, organizer):
         # .png alone would give Media/Photos/Other; the screenshot name wins.
         assert organizer.categorize_file(Path("Screen Shot 1.png")) == (
-            "Media/Photos", "Screenshots"
+            "Media/Photos",
+            "Screenshots",
         )
 
     def test_extension_beats_filepath(self, organizer):
         assert organizer.categorize_file(Path("/x/GameAssets/notes.pdf")) == (
-            "Documents", "General"
+            "Documents",
+            "General",
         )
 
     def test_filepath_when_name_and_extension_miss(self, organizer):
-        assert organizer.categorize_file(Path("/x/GameAssets/foo.zzz")) == (
-            "GameAssets", "Other"
-        )
+        assert organizer.categorize_file(Path("/x/GameAssets/foo.zzz")) == ("GameAssets", "Other")
 
     def test_uncategorized_fallback(self, organizer):
-        assert organizer.categorize_file(Path("/tmp/blob.zzz")) == (
-            "Uncategorized", "Other"
-        )
+        assert organizer.categorize_file(Path("/tmp/blob.zzz")) == ("Uncategorized", "Other")
 
 
 class TestGetDestinationPath:
@@ -210,9 +215,7 @@ class TestOrganizeDirectory:
         (source / "blob.zzz").write_text("?")
         return source
 
-    def test_real_run_moves_files_and_counts(
-        self, organizer, tmp_path, redirect_report_dir
-    ):
+    def test_real_run_moves_files_and_counts(self, organizer, tmp_path, redirect_report_dir):
         source = self._make_source(tmp_path)
 
         organizer.organize_directory(str(source))
@@ -221,10 +224,10 @@ class TestOrganizeDirectory:
         assert (base / "Documents" / "General" / "notes.pdf").exists()
         assert (base / "Media/Photos" / "Screenshots" / "Screen Shot 1.png").exists()
         assert (base / "Uncategorized" / "Other" / "blob.zzz").exists()
-        assert organizer.stats['total_files'] == 3
-        assert organizer.stats['moved_files'] == 3
-        assert organizer.stats['errors'] == 0
-        assert organizer.stats['by_category'] == {
+        assert organizer.stats["total_files"] == 3
+        assert organizer.stats["moved_files"] == 3
+        assert organizer.stats["errors"] == 0
+        assert organizer.stats["by_category"] == {
             "Documents/General": 1,
             "Media/Photos/Screenshots": 1,
             "Uncategorized/Other": 1,
@@ -240,24 +243,22 @@ class TestOrganizeDirectory:
         # dry-run check, so directories appear even in dry-run — but no
         # files are ever written there.
         organized = tmp_path / "organized"
-        moved_files = [p for p in organized.rglob('*') if p.is_file()]
+        moved_files = [p for p in organized.rglob("*") if p.is_file()]
         assert moved_files == []
-        assert dry_organizer.stats['moved_files'] == 3
+        assert dry_organizer.stats["moved_files"] == 3
         out = capsys.readouterr().out
         assert "SUMMARY" in out
         assert "Total files: 3" in out
 
-    def test_file_already_in_place_is_skipped(
-        self, organizer, tmp_path, redirect_report_dir
-    ):
+    def test_file_already_in_place_is_skipped(self, organizer, tmp_path, redirect_report_dir):
         in_place = tmp_path / "organized" / "Documents" / "General"
         in_place.mkdir(parents=True)
         (in_place / "notes.pdf").write_text("doc")
 
         organizer.organize_directory(str(in_place))
 
-        assert organizer.stats['skipped_files'] == 1
-        assert organizer.stats['moved_files'] == 0
+        assert organizer.stats["skipped_files"] == 1
+        assert organizer.stats["moved_files"] == 0
         assert (in_place / "notes.pdf").exists()
 
     def test_limit_processes_first_n_files(self, dry_organizer, tmp_path):
@@ -265,7 +266,7 @@ class TestOrganizeDirectory:
 
         dry_organizer.organize_directory(str(source), limit=2)
 
-        assert dry_organizer.stats['total_files'] == 2
+        assert dry_organizer.stats["total_files"] == 2
 
     def test_recursive_includes_subdirectories(self, dry_organizer, tmp_path):
         source = self._make_source(tmp_path)
@@ -274,34 +275,32 @@ class TestOrganizeDirectory:
         (nested / "deep.pdf").write_text("doc")
 
         dry_organizer.organize_directory(str(source), recursive=False)
-        non_recursive_total = dry_organizer.stats['total_files']
+        non_recursive_total = dry_organizer.stats["total_files"]
         dry_organizer.organize_directory(str(source), recursive=True)
 
         assert non_recursive_total == 3
-        assert dry_organizer.stats['total_files'] == 4
+        assert dry_organizer.stats["total_files"] == 4
 
     def test_missing_source_prints_error_and_returns(self, organizer, capsys):
         organizer.organize_directory("/nonexistent/inbox")
 
         assert "does not exist" in capsys.readouterr().out
-        assert organizer.stats['total_files'] == 0
+        assert organizer.stats["total_files"] == 0
 
 
 class TestSaveReport:
-    def test_writes_json_report_with_stats(
-        self, organizer, redirect_report_dir, capsys
-    ):
-        organizer.stats['moved_files'] = 2
-        organizer.stats['by_category'] = {"Documents/General": 2}
+    def test_writes_json_report_with_stats(self, organizer, redirect_report_dir, capsys):
+        organizer.stats["moved_files"] = 2
+        organizer.stats["by_category"] = {"Documents/General": 2}
 
         organizer.save_report()
 
         reports = list(redirect_report_dir.glob("name_organization_report_*.json"))
         assert len(reports) == 1
         report = json.loads(reports[0].read_text())
-        assert report['base_path'] == str(organizer.base_path)
-        assert report['stats']['moved_files'] == 2
-        assert report['stats']['by_category'] == {"Documents/General": 2}
+        assert report["base_path"] == str(organizer.base_path)
+        assert report["stats"]["moved_files"] == 2
+        assert report["stats"]["by_category"] == {"Documents/General": 2}
         assert "Report saved" in capsys.readouterr().out
 
     def test_real_run_saves_report_dry_run_does_not(

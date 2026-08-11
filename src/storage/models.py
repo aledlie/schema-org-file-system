@@ -1346,9 +1346,7 @@ class OrganizationSession(Base):
     dry_run: Mapped[Optional[bool]] = mapped_column(Boolean, default=False)
 
     # Session parameters
-    source_directories: Mapped[Optional[List[str]]] = mapped_column(
-        JSON
-    )  # List of source paths
+    source_directories: Mapped[Optional[List[str]]] = mapped_column(JSON)  # List of source paths
     base_path: Mapped[Optional[str]] = mapped_column(String(BASE_PATH_MAX_LENGTH))
     file_limit: Mapped[Optional[int]] = mapped_column(Integer)
 

@@ -28,6 +28,7 @@ if TYPE_CHECKING:
 
 class OutputFormat(Enum):
     """Supported output formats."""
+
     JSON_LD = "json-ld"
     MICRODATA = "microdata"
     RDFA = "rdfa"
@@ -39,6 +40,7 @@ class ApiResponse(TypedDict):
 
     ``count`` is present only on collection responses.
     """
+
     success: bool
     data: Union[SchemaMapping, List[SchemaMapping]]
     format: str
@@ -47,6 +49,7 @@ class ApiResponse(TypedDict):
 
 class RegistryEntry(TypedDict):
     """One registered schema with its metadata."""
+
     schema: SchemaMapping
     metadata: Dict[str, Any]
     registered_at: str
@@ -54,6 +57,7 @@ class RegistryEntry(TypedDict):
 
 class RegistryStatistics(TypedDict):
     """Aggregate counts for a SchemaRegistry."""
+
     total_schemas: int
     types: Dict[str, int]
 
@@ -70,7 +74,7 @@ class SchemaIntegration:
         """Initialize integration layer."""
         self.schemas: List[SchemaMapping] = []
 
-    def add_schema(self, schema: Union[SchemaMapping, 'SchemaOrgBase']) -> 'SchemaIntegration':
+    def add_schema(self, schema: Union[SchemaMapping, "SchemaOrgBase"]) -> "SchemaIntegration":
         """
         Add schema to collection.
 
@@ -80,15 +84,14 @@ class SchemaIntegration:
         Returns:
             Self for method chaining
         """
-        if hasattr(schema, 'to_dict'):
+        if hasattr(schema, "to_dict"):
             # mypy can't intersect Mapping with a to_dict protocol; the
             # duck-typed branch is only reachable for SchemaOrgBase-likes.
-            schema = cast('SchemaOrgBase', schema).to_dict()
+            schema = cast("SchemaOrgBase", schema).to_dict()
         self.schemas.append(schema)
         return self
 
-    def to_json_ld(self, schema: Optional[SchemaMapping] = None,
-                   indent: int = 2) -> str:
+    def to_json_ld(self, schema: Optional[SchemaMapping] = None, indent: int = 2) -> str:
         """
         Convert to JSON-LD format.
 
@@ -109,8 +112,7 @@ class SchemaIntegration:
 
         return json.dumps(data, indent=indent, ensure_ascii=False)
 
-    def to_json_ld_script(self, schema: Optional[SchemaMapping] = None,
-                         indent: int = 2) -> str:
+    def to_json_ld_script(self, schema: Optional[SchemaMapping] = None, indent: int = 2) -> str:
         """
         Convert to JSON-LD script tag for HTML.
 
@@ -124,8 +126,7 @@ class SchemaIntegration:
         json_ld = self.to_json_ld(schema, indent)
         return f'<script type="application/ld+json">\n{json_ld}\n</script>'
 
-    def to_microdata(self, schema: SchemaMapping,
-                     tag: str = "div") -> str:
+    def to_microdata(self, schema: SchemaMapping, tag: str = "div") -> str:
         """
         Convert to HTML5 microdata format.
 
@@ -157,24 +158,17 @@ class SchemaIntegration:
             else:
                 # Simple property
                 if key in ["url", "contentUrl", "thumbnailUrl"]:
-                    html_parts.append(
-                        f'  <link itemprop="{key}" href="{escape(str(value))}">'
-                    )
+                    html_parts.append(f'  <link itemprop="{key}" href="{escape(str(value))}">')
                 elif key in ["image", "logo"]:
                     if isinstance(value, str):
-                        html_parts.append(
-                            f'  <link itemprop="{key}" href="{escape(value)}">'
-                        )
+                        html_parts.append(f'  <link itemprop="{key}" href="{escape(value)}">')
                 else:
-                    html_parts.append(
-                        f'  <meta itemprop="{key}" content="{escape(str(value))}">'
-                    )
+                    html_parts.append(f'  <meta itemprop="{key}" content="{escape(str(value))}">')
 
-        html_parts.append(f'</{tag}>')
-        return '\n'.join(html_parts)
+        html_parts.append(f"</{tag}>")
+        return "\n".join(html_parts)
 
-    def to_rdfa(self, schema: SchemaMapping,
-                tag: str = "div") -> str:
+    def to_rdfa(self, schema: SchemaMapping, tag: str = "div") -> str:
         """
         Convert to RDFa format.
 
@@ -186,9 +180,7 @@ class SchemaIntegration:
             HTML with RDFa attributes
         """
         schema_type = schema.get("@type", "Thing")
-        html_parts = [
-            f'<{tag} vocab="https://schema.org/" typeof="{schema_type}">'
-        ]
+        html_parts = [f'<{tag} vocab="https://schema.org/" typeof="{schema_type}">']
 
         for key, value in schema.items():
             if key.startswith("@"):
@@ -198,15 +190,15 @@ class SchemaIntegration:
                 # Nested schema
                 nested_html = self.to_rdfa(value, tag="div")
                 html_parts.append(f'  <div property="{key}">')
-                html_parts.append(f'    {nested_html}')
-                html_parts.append('  </div>')
+                html_parts.append(f"    {nested_html}")
+                html_parts.append("  </div>")
             elif isinstance(value, list):
                 for item in value:
                     if isinstance(item, dict) and "@type" in item:
                         nested_html = self.to_rdfa(item, tag="div")
                         html_parts.append(f'  <div property="{key}">')
-                        html_parts.append(f'    {nested_html}')
-                        html_parts.append('  </div>')
+                        html_parts.append(f"    {nested_html}")
+                        html_parts.append("  </div>")
                     else:
                         html_parts.append(
                             f'  <meta property="{key}" content="{escape(str(item))}">'
@@ -214,19 +206,14 @@ class SchemaIntegration:
             else:
                 # Simple property
                 if key in ["url", "contentUrl", "thumbnailUrl"]:
-                    html_parts.append(
-                        f'  <link property="{key}" href="{escape(str(value))}">'
-                    )
+                    html_parts.append(f'  <link property="{key}" href="{escape(str(value))}">')
                 else:
-                    html_parts.append(
-                        f'  <meta property="{key}" content="{escape(str(value))}">'
-                    )
+                    html_parts.append(f'  <meta property="{key}" content="{escape(str(value))}">')
 
-        html_parts.append(f'</{tag}>')
-        return '\n'.join(html_parts)
+        html_parts.append(f"</{tag}>")
+        return "\n".join(html_parts)
 
-    def export_format(self, format: OutputFormat,
-                     schema: Optional[SchemaMapping] = None) -> str:
+    def export_format(self, format: OutputFormat, schema: Optional[SchemaMapping] = None) -> str:
         """
         Export in specified format.
 
@@ -267,9 +254,9 @@ class SchemaIntegration:
         """
         return [self.export_format(format, schema) for schema in self.schemas]
 
-    def create_html_page(self, title: str,
-                        content: str,
-                        format: OutputFormat = OutputFormat.JSON_LD) -> str:
+    def create_html_page(
+        self, title: str, content: str, format: OutputFormat = OutputFormat.JSON_LD
+    ) -> str:
         """
         Create complete HTML page with embedded structured data.
 
@@ -318,21 +305,16 @@ class SchemaIntegration:
         if schema_id is not None:
             # In real implementation, look up by ID
             schema: SchemaMapping = self.schemas[0] if self.schemas else {}
-            return {
-                "success": True,
-                "data": schema,
-                "format": "application/ld+json"
-            }
+            return {"success": True, "data": schema, "format": "application/ld+json"}
         else:
             return {
                 "success": True,
                 "data": self.schemas,
                 "count": len(self.schemas),
-                "format": "application/ld+json"
+                "format": "application/ld+json",
             }
 
-    def export_bulk(self, format: OutputFormat,
-                   file_path: str) -> None:
+    def export_bulk(self, format: OutputFormat, file_path: str) -> None:
         """
         Export all schemas to file.
 
@@ -342,14 +324,14 @@ class SchemaIntegration:
         """
         if format == OutputFormat.JSON_LD or format == OutputFormat.JSON:
             data = {"@graph": self.schemas} if len(self.schemas) > 1 else self.schemas[0]
-            with open(file_path, 'w', encoding='utf-8') as f:
+            with open(file_path, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
         else:
             # For HTML formats, create one file per schema
-            base_path = file_path.rsplit('.', 1)[0]
+            base_path = file_path.rsplit(".", 1)[0]
             for i, schema in enumerate(self.schemas):
                 output = self.export_format(format, schema)
-                with open(f"{base_path}_{i}.html", 'w', encoding='utf-8') as f:
+                with open(f"{base_path}_{i}.html", "w", encoding="utf-8") as f:
                     f.write(output)
 
     def clear(self) -> None:
@@ -368,8 +350,9 @@ class SchemaRegistry:
         """Initialize registry."""
         self.registry: Dict[str, RegistryEntry] = {}
 
-    def register(self, schema_id: str, schema: SchemaMapping,
-                metadata: Optional[Dict[str, Any]] = None) -> None:
+    def register(
+        self, schema_id: str, schema: SchemaMapping, metadata: Optional[Dict[str, Any]] = None
+    ) -> None:
         """
         Register a schema.
 
@@ -381,7 +364,7 @@ class SchemaRegistry:
         self.registry[schema_id] = {
             "schema": schema,
             "metadata": metadata or {},
-            "registered_at": str(json.dumps({"timestamp": "now"}))
+            "registered_at": str(json.dumps({"timestamp": "now"})),
         }
 
     def get(self, schema_id: str) -> Optional[SchemaMapping]:
@@ -413,8 +396,10 @@ class SchemaRegistry:
         for entry in self.registry.values():
             schema = entry["schema"]
             # Search in name and description
-            if (query_lower in str(schema.get("name", "")).lower() or
-                query_lower in str(schema.get("description", "")).lower()):
+            if (
+                query_lower in str(schema.get("name", "")).lower()
+                or query_lower in str(schema.get("description", "")).lower()
+            ):
                 results.append(schema)
         return results
 
@@ -452,7 +437,4 @@ class SchemaRegistry:
             schema_type = str(entry["schema"].get("@type", "Unknown"))
             type_counts[schema_type] = type_counts.get(schema_type, 0) + 1
 
-        return {
-            "total_schemas": len(self.registry),
-            "types": type_counts
-        }
+        return {"total_schemas": len(self.registry), "types": type_counts}

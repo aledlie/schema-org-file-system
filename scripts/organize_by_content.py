@@ -28,14 +28,14 @@ def organize_files(
     rename_log_file: str,
     base_path: str = "~/Documents",
     dry_run: bool = False,
-    move_files: bool = True
+    move_files: bool = True,
 ) -> Dict:
     """Organize files based on content classification."""
 
     base_dir = Path(base_path).expanduser()
 
     # Load rename log with content types
-    with open(rename_log_file, 'r') as f:
+    with open(rename_log_file, "r") as f:
         data = json.load(f)
 
     print(f"\n{'='*60}")
@@ -48,18 +48,18 @@ def organize_files(
     stats: defaultdict[str, int] = defaultdict(int)
     organization_log = []
 
-    for i, item in enumerate(data['log'], 1):
-        source_path = Path(item['new'])
-        content_type = item.get('content_type')
+    for i, item in enumerate(data["log"], 1):
+        source_path = Path(item["new"])
+        content_type = item.get("content_type")
 
         # Skip if file doesn't exist
         if not source_path.exists():
-            stats['missing'] += 1
+            stats["missing"] += 1
             continue
 
         # Skip if no content type
         if not content_type:
-            stats['no_content_type'] += 1
+            stats["no_content_type"] += 1
             continue
 
         # Get destination path
@@ -68,7 +68,7 @@ def organize_files(
 
         # Skip if already in correct location
         if source_path.parent == dest_dir:
-            stats['already_organized'] += 1
+            stats["already_organized"] += 1
             continue
 
         # Handle collisions
@@ -86,13 +86,17 @@ def organize_files(
                 else:
                     shutil.copy2(str(source_path), str(dest_path))
 
-            stats['organized'] += 1
-            organization_log.append({
-                'source': str(source_path),
-                'destination': str(dest_path),
-                'content_type': content_type,
-                'schema_category': CONTENT_TO_SCHEMA.get(content_type, ('ImageObject', 'Other'))
-            })
+            stats["organized"] += 1
+            organization_log.append(
+                {
+                    "source": str(source_path),
+                    "destination": str(dest_path),
+                    "content_type": content_type,
+                    "schema_category": CONTENT_TO_SCHEMA.get(
+                        content_type, ("ImageObject", "Other")
+                    ),
+                }
+            )
 
             if i <= 30 or i % 50 == 0:
                 action = "Would move" if dry_run else ("Moved" if move_files else "Copied")
@@ -101,7 +105,7 @@ def organize_files(
                 print(f"       → {rel_dest}")
 
         except Exception as e:
-            stats['errors'] += 1
+            stats["errors"] += 1
             print(f"  Error: {source_path.name}: {e}")
 
     # Print summary
@@ -124,48 +128,36 @@ def organize_files(
         print("-" * 40)
         category_counts: defaultdict[str, int] = defaultdict(int)
         for item in organization_log:
-            cat = "/".join(item['schema_category'])
+            cat = "/".join(item["schema_category"])
             category_counts[cat] += 1
 
         for cat, count in sorted(category_counts.items(), key=lambda x: x[1], reverse=True):
             print(f"  {cat}: {count}")
 
-    return {
-        'stats': dict(stats),
-        'log': organization_log
-    }
+    return {"stats": dict(stats), "log": organization_log}
 
 
 def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description='Organize files into Schema.org-based folder structure'
+        description="Organize files into Schema.org-based folder structure"
     )
     parser.add_argument(
-        '--rename-log',
-        default=str(Path(__file__).parent.parent / 'results' / 'content_rename_log.json'),
-        help='Path to rename log JSON file'
+        "--rename-log",
+        default=str(Path(__file__).parent.parent / "results" / "content_rename_log.json"),
+        help="Path to rename log JSON file",
     )
     parser.add_argument(
-        '--base-path',
-        default='~/Documents',
-        help='Base path for organization (default: ~/Documents)'
+        "--base-path",
+        default="~/Documents",
+        help="Base path for organization (default: ~/Documents)",
     )
     parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Preview changes without moving files'
+        "--dry-run", action="store_true", help="Preview changes without moving files"
     )
-    parser.add_argument(
-        '--copy',
-        action='store_true',
-        help='Copy files instead of moving'
-    )
-    parser.add_argument(
-        '--output-log',
-        help='Save organization log to JSON file'
-    )
+    parser.add_argument("--copy", action="store_true", help="Copy files instead of moving")
+    parser.add_argument("--output-log", help="Save organization log to JSON file")
 
     args = parser.parse_args()
 
@@ -173,14 +165,14 @@ def main():
         rename_log_file=args.rename_log,
         base_path=args.base_path,
         dry_run=args.dry_run,
-        move_files=not args.copy
+        move_files=not args.copy,
     )
 
     if args.output_log:
-        with open(args.output_log, 'w') as f:
+        with open(args.output_log, "w") as f:
             json.dump(result, f, indent=2)
         print(f"\nOrganization log saved to: {args.output_log}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

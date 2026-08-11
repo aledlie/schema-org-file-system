@@ -28,10 +28,10 @@ from src.generators import (
 )
 from src.base import PropertyType, SchemaContext
 
-
 # =============================================================================
 # Test Constants
 # =============================================================================
+
 
 class TestPropertyConstants:
     """Test that property constants are properly defined."""
@@ -77,6 +77,7 @@ class TestPropertyConstants:
 # Test SchemaContext
 # =============================================================================
 
+
 class TestSchemaContext:
     """Test SchemaContext class."""
 
@@ -103,6 +104,7 @@ class TestSchemaContext:
 # Test PropertyType
 # =============================================================================
 
+
 class TestPropertyType:
     """Test PropertyType enum."""
 
@@ -122,6 +124,7 @@ class TestPropertyType:
 # =============================================================================
 # Test DocumentGenerator
 # =============================================================================
+
 
 class TestDocumentGenerator:
     """Test DocumentGenerator class."""
@@ -162,6 +165,7 @@ class TestDocumentGenerator:
 # Test ImageGenerator
 # =============================================================================
 
+
 class TestImageGenerator:
     """Test ImageGenerator class."""
 
@@ -180,6 +184,7 @@ class TestImageGenerator:
 # Test VideoGenerator
 # =============================================================================
 
+
 class TestVideoGenerator:
     """Test VideoGenerator class."""
 
@@ -197,6 +202,7 @@ class TestVideoGenerator:
 # =============================================================================
 # Test AudioGenerator
 # =============================================================================
+
 
 class TestAudioGenerator:
     """Test AudioGenerator class."""
@@ -221,6 +227,7 @@ class TestAudioGenerator:
 # Test CodeGenerator
 # =============================================================================
 
+
 class TestCodeGenerator:
     """Test CodeGenerator class."""
 
@@ -233,6 +240,7 @@ class TestCodeGenerator:
 # =============================================================================
 # Test DatasetGenerator
 # =============================================================================
+
 
 class TestDatasetGenerator:
     """Test DatasetGenerator class."""
@@ -247,6 +255,7 @@ class TestDatasetGenerator:
 # Test ArchiveGenerator
 # =============================================================================
 
+
 class TestArchiveGenerator:
     """Test ArchiveGenerator class."""
 
@@ -260,6 +269,7 @@ class TestArchiveGenerator:
 # =============================================================================
 # Test OrganizationGenerator
 # =============================================================================
+
 
 class TestOrganizationGenerator:
     """Test OrganizationGenerator class."""
@@ -298,6 +308,7 @@ class TestOrganizationGenerator:
 # Test PersonGenerator
 # =============================================================================
 
+
 class TestPersonGenerator:
     """Test PersonGenerator class."""
 
@@ -324,6 +335,7 @@ class TestPersonGenerator:
 # =============================================================================
 # Test SchemaOrgBase Methods
 # =============================================================================
+
 
 class TestSchemaOrgBaseMethods:
     """Test SchemaOrgBase methods via concrete implementations."""
@@ -399,7 +411,7 @@ class TestSchemaOrgBaseMethods:
         script = doc.to_json_ld_script()
 
         assert '<script type="application/ld+json">' in script
-        assert '</script>' in script
+        assert "</script>" in script
 
     def test_validate_required_properties(self):
         """Test validating required properties."""

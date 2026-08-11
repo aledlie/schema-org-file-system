@@ -105,6 +105,7 @@ except ImportError:
 
 class GeocodedLocation(TypedDict):
     """``geocode_address()`` result shape."""
+
     display_name: str
     latitude: float
     longitude: float
@@ -357,7 +358,7 @@ class ImageMetadataParser:
             if tag in exif_data:
                 try:
                     return datetime.strptime(str(exif_data[tag]), "%Y:%m:%d %H:%M:%S")
-                except (ValueError, TypeError):
+                except ValueError, TypeError:
                     continue
         return None
 
@@ -391,8 +392,7 @@ class ImageMetadataParser:
                 return None
 
             gps_info: Dict[str, Any] = {
-                str(GPSTAGS.get(tag_id, tag_id)): value
-                for tag_id, value in raw_gps.items()
+                str(GPSTAGS.get(tag_id, tag_id)): value for tag_id, value in raw_gps.items()
             }
 
             if not gps_info:
@@ -439,7 +439,7 @@ class ImageMetadataParser:
         try:
             d, m, s = (part(value[i]) for i in range(3))
             return d + (m / 60.0) + (s / 3600.0)
-        except (IndexError, TypeError, ZeroDivisionError, ValueError):
+        except IndexError, TypeError, ZeroDivisionError, ValueError:
             return None
 
     def get_location_name(self, coordinates: Tuple[float, float]) -> Optional[str]:
@@ -570,7 +570,7 @@ class ImageMetadataParser:
             ).fetchone()
             # Safe: _geocode_cache_put is the sole writer of this table.
             return cast(GeocodedLocation, json.loads(row[0])) if row else None
-        except (sqlite3.Error, ValueError):
+        except sqlite3.Error, ValueError:
             return None
         finally:
             conn.close()
@@ -585,7 +585,7 @@ class ImageMetadataParser:
                 (key, json.dumps(value)),
             )
             conn.commit()
-        except (sqlite3.Error, ValueError):
+        except sqlite3.Error, ValueError:
             pass
         finally:
             conn.close()

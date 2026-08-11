@@ -105,9 +105,7 @@ class TestShouldRedactText:
 
 
 class TestMedicalPersistenceRedaction:
-    def _persist(
-        self, tmp_path: Path, category: str, subcategory: str = "records"
-    ) -> MagicMock:
+    def _persist(self, tmp_path: Path, category: str, subcategory: str = "records") -> MagicMock:
         graph_store = MagicMock()
         graph_store.add_file.return_value = MagicMock(id="file-1")
         fp = _make_file_processor(tmp_path, graph_store)

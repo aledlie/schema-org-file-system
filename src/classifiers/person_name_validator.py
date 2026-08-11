@@ -107,21 +107,35 @@ _GAZETTEER_DIR = Path(__file__).resolve().parent / "data" / "census_names"
 # Derivation: every word in this set (a) appears in Census given_names.txt and
 # (b) is also a common English noun/adjective/month that regularly appears in
 # non-personal document headings, event names, and location references.
-_AMBIGUOUS_GIVEN_NAMES: frozenset = frozenset({
-    # Seasons
-    "summer", "spring", "autumn", "winter",
-    # Months commonly used as given names (March/July/October/November/December
-    # are rarely used as first names and not in the gazetteer).
-    "april", "may", "june", "august",
-    # Time of day / nature phenomena
-    "dawn", "eve",
-    # Virtue / abstract noun names
-    "faith", "hope", "grace", "joy", "amber", "sage",
-    # Role / job words sometimes used as given names
-    "hunter",
-    # Nature / toponym words
-    "brook",
-})
+_AMBIGUOUS_GIVEN_NAMES: frozenset = frozenset(
+    {
+        # Seasons
+        "summer",
+        "spring",
+        "autumn",
+        "winter",
+        # Months commonly used as given names (March/July/October/November/December
+        # are rarely used as first names and not in the gazetteer).
+        "april",
+        "may",
+        "june",
+        "august",
+        # Time of day / nature phenomena
+        "dawn",
+        "eve",
+        # Virtue / abstract noun names
+        "faith",
+        "hope",
+        "grace",
+        "joy",
+        "amber",
+        "sage",
+        # Role / job words sometimes used as given names
+        "hunter",
+        # Nature / toponym words
+        "brook",
+    }
+)
 
 
 @dataclass(frozen=True)

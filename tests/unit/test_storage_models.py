@@ -8,9 +8,16 @@ import pytest
 import uuid
 
 from src.storage.models import (
-    File, Category, Company, Person, Location,
-    FileStatus, RelationshipType, MergeEvent, MergeEventType,
-    NAMESPACES
+    File,
+    Category,
+    Company,
+    Person,
+    Location,
+    FileStatus,
+    RelationshipType,
+    MergeEvent,
+    MergeEventType,
+    NAMESPACES,
 )
 
 
@@ -47,18 +54,14 @@ class TestFileModel:
             id="abc123",
             canonical_id="urn:sha256:test",
             filename="test.jpg",
-            original_path="/tmp/test.jpg"
+            original_path="/tmp/test.jpg",
         )
 
         assert file.get_iri() == "urn:sha256:test"
 
     def test_get_iri_fallback(self):
         """Test get_iri falls back to id-based URN."""
-        file = File(
-            id="abc123",
-            filename="test.jpg",
-            original_path="/tmp/test.jpg"
-        )
+        file = File(id="abc123", filename="test.jpg", original_path="/tmp/test.jpg")
 
         assert file.get_iri() == "urn:sha256:abc123"
 
@@ -70,28 +73,31 @@ class TestFileModel:
             filename="test.jpg",
             original_path="/tmp/test.jpg",
             mime_type="image/jpeg",
-            status=FileStatus.ORGANIZED
+            status=FileStatus.ORGANIZED,
         )
 
         data = file.to_dict()
 
-        assert data['id'] == 'abc123'
-        assert data['filename'] == 'test.jpg'
-        assert data['status'] == 'organized'
-        assert '@id' in data
+        assert data["id"] == "abc123"
+        assert data["filename"] == "test.jpg"
+        assert data["status"] == "organized"
+        assert "@id" in data
 
-    @pytest.mark.parametrize("mime_type,expected_type", [
-        ("image/jpeg", "ImageObject"),
-        ("image/png", "ImageObject"),
-        ("video/mp4", "VideoObject"),
-        ("audio/mpeg", "AudioObject"),
-        ("application/pdf", "DigitalDocument"),
-        ("text/html", "WebPage"),
-        ("application/json", "SoftwareSourceCode"),
-        ("text/plain", "DigitalDocument"),
-        (None, "DigitalDocument"),
-        ("unknown/type", "DigitalDocument"),
-    ])
+    @pytest.mark.parametrize(
+        "mime_type,expected_type",
+        [
+            ("image/jpeg", "ImageObject"),
+            ("image/png", "ImageObject"),
+            ("video/mp4", "VideoObject"),
+            ("audio/mpeg", "AudioObject"),
+            ("application/pdf", "DigitalDocument"),
+            ("text/html", "WebPage"),
+            ("application/json", "SoftwareSourceCode"),
+            ("text/plain", "DigitalDocument"),
+            (None, "DigitalDocument"),
+            ("unknown/type", "DigitalDocument"),
+        ],
+    )
     def test_get_schema_type_from_mime(self, mime_type, expected_type):
         """Test MIME type to schema.org type mapping, including fallbacks."""
         assert File.get_schema_type_from_mime(mime_type) == expected_type
@@ -104,24 +110,23 @@ class TestFileModel:
             filename="test.jpg",
             original_path="/tmp/test.jpg",
             mime_type="image/jpeg",
-            schema_data={
-                "description": "Content: a landscape or nature scene (84% confident)"
-            },
+            schema_data={"description": "Content: a landscape or nature scene (84% confident)"},
         )
 
         jsonld = file.to_schema_org()
 
-        assert jsonld["description"] == (
-            "Content: a landscape or nature scene (84% confident)"
-        )
+        assert jsonld["description"] == ("Content: a landscape or nature scene (84% confident)")
 
-    @pytest.mark.parametrize("schema_data", [
-        None,
-        {},
-        {"description": ""},
-        {"name": "no description key"},
-        ["not-a-dict"],
-    ])
+    @pytest.mark.parametrize(
+        "schema_data",
+        [
+            None,
+            {},
+            {"description": ""},
+            {"name": "no description key"},
+            ["not-a-dict"],
+        ],
+    )
     def test_to_schema_org_omits_description_without_schema_data(self, schema_data):
         """No description property when schema_data lacks a usable one."""
         file = File(
@@ -157,9 +162,7 @@ class TestCategoryModel:
     def test_get_iri(self):
         """Test IRI generation."""
         category = Category(
-            id=1,
-            name="GameAssets",
-            canonical_id=Category.generate_canonical_id("GameAssets")
+            id=1, name="GameAssets", canonical_id=Category.generate_canonical_id("GameAssets")
         )
 
         iri = category.get_iri()
@@ -179,9 +182,9 @@ class TestCategoryModel:
 
         data = category.to_dict()
 
-        assert data['name'] == 'Documents'
-        assert 'file_count' in data  # derived from edges; see TestDerivedFileCount
-        assert '@id' in data
+        assert data["name"] == "Documents"
+        assert "file_count" in data  # derived from edges; see TestDerivedFileCount
+        assert "@id" in data
 
 
 class TestCompanyModel:
@@ -206,7 +209,7 @@ class TestCompanyModel:
             id=1,
             name="Test Corp",
             normalized_name="test corp",
-            canonical_id=Company.generate_canonical_id("Test Corp")
+            canonical_id=Company.generate_canonical_id("Test Corp"),
         )
 
         iri = company.get_iri()
@@ -225,8 +228,8 @@ class TestCompanyModel:
 
         data = company.to_dict()
 
-        assert data['name'] == 'Acme Corp'
-        assert data['domain'] == 'acme.com'
+        assert data["name"] == "Acme Corp"
+        assert data["domain"] == "acme.com"
 
 
 class TestPersonModel:
@@ -256,8 +259,8 @@ class TestPersonModel:
 
         data = person.to_dict()
 
-        assert data['name'] == 'John Doe'
-        assert data['email'] == 'john@example.com'
+        assert data["name"] == "John Doe"
+        assert data["email"] == "john@example.com"
 
 
 class TestLocationModel:
@@ -285,9 +288,9 @@ class TestLocationModel:
 
         data = location.to_dict()
 
-        assert data['name'] == 'San Francisco'
-        assert data['city'] == 'San Francisco'
-        assert data['latitude'] == 37.7749
+        assert data["name"] == "San Francisco"
+        assert data["city"] == "San Francisco"
+        assert data["latitude"] == 37.7749
 
 
 class TestFileStatus:
@@ -333,17 +336,17 @@ class TestMergeEvent:
             merge_reason="Duplicate companies",
             confidence=0.95,
             performed_by="system",
-            performed_at=utcnow()
+            performed_at=utcnow(),
         )
 
         jsonld = merge.generate_jsonld()
 
-        assert jsonld['@type'] == 'MergeAction'
-        assert '@context' in jsonld
-        assert 'owl' in jsonld['@context']
-        assert 'targetEntity' in jsonld
-        assert jsonld['targetEntity']['@id'] == 'urn:uuid:abc-123'
-        assert 'owl:sameAs' in jsonld['targetEntity']
+        assert jsonld["@type"] == "MergeAction"
+        assert "@context" in jsonld
+        assert "owl" in jsonld["@context"]
+        assert "targetEntity" in jsonld
+        assert jsonld["targetEntity"]["@id"] == "urn:uuid:abc-123"
+        assert "owl:sameAs" in jsonld["targetEntity"]
 
     def test_to_dict(self):
         """Test serialization."""
@@ -352,14 +355,14 @@ class TestMergeEvent:
             target_entity_type=MergeEventType.PERSON,
             target_entity_id=1,
             source_entity_ids=[2],
-            merge_reason="Same person"
+            merge_reason="Same person",
         )
 
         data = merge.to_dict()
 
-        assert data['id'] == 'test-merge-id'
-        assert data['target_entity_type'] == 'person'
-        assert data['merge_reason'] == 'Same person'
+        assert data["id"] == "test-merge-id"
+        assert data["target_entity_type"] == "person"
+        assert data["merge_reason"] == "Same person"
 
 
 class TestNamespaces:
@@ -377,6 +380,6 @@ class TestNamespaces:
 
     def test_expected_namespaces(self):
         """Test expected namespaces exist."""
-        expected = ['file', 'category', 'company', 'person', 'location', 'session', 'merge_event']
+        expected = ["file", "category", "company", "person", "location", "session", "merge_event"]
         for ns in expected:
             assert ns in NAMESPACES, f"Missing namespace: {ns}"

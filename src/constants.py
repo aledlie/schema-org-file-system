@@ -18,13 +18,13 @@ DEFAULT_DB_PATH = Path(__file__).resolve().parent.parent / "results" / "file_org
 # Database Column Lengths
 # =============================================================================
 
-SHA256_HEX_LENGTH = 64       # SHA-256 hex digest = 64 characters
-UUID_STRING_LENGTH = 36      # UUID with hyphens: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-MAX_STRING_LENGTH = 255      # General-purpose string fields
-SHORT_STRING_LENGTH = 50     # Short fields (role, type, icon, namespace)
-SHORT_FIELD_LENGTH = 20      # Very short fields (extension, color, value_type)
-GEOHASH_MAX_LENGTH = 12      # Geohash precision characters
-BASE_PATH_MAX_LENGTH = 500   # Session base path
+SHA256_HEX_LENGTH = 64  # SHA-256 hex digest = 64 characters
+UUID_STRING_LENGTH = 36  # UUID with hyphens: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+MAX_STRING_LENGTH = 255  # General-purpose string fields
+SHORT_STRING_LENGTH = 50  # Short fields (role, type, icon, namespace)
+SHORT_FIELD_LENGTH = 20  # Very short fields (extension, color, value_type)
+GEOHASH_MAX_LENGTH = 12  # Geohash precision characters
+BASE_PATH_MAX_LENGTH = 500  # Session base path
 
 # =============================================================================
 # Time Conversions
@@ -37,8 +37,8 @@ SECONDS_PER_HOUR = 3600
 # Geographic Constants
 # =============================================================================
 
-KM_PER_DEGREE_LATITUDE = 111.0        # Approximate km per degree of latitude
-COORDINATE_TOLERANCE_DEG = 0.001      # ~111m tolerance for location matching
+KM_PER_DEGREE_LATITUDE = 111.0  # Approximate km per degree of latitude
+COORDINATE_TOLERANCE_DEG = 0.001  # ~111m tolerance for location matching
 
 # =============================================================================
 # Display / Formatting

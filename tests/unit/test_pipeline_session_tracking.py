@@ -35,17 +35,27 @@ def _mock_organizer(dest_dir: Path) -> MagicMock:
     org.should_skip_file.return_value = False
     org._maybe_rename_image.side_effect = lambda p, dry_run: p
     org.detect_file_category.return_value = (
-        "technical", "other", "DigitalDocument", "", None, [], {},
+        "technical",
+        "other",
+        "DigitalDocument",
+        "",
+        None,
+        [],
+        {},
     )
     org.generate_schema.side_effect = lambda *a, **k: {"@type": "DigitalDocument"}
-    org.get_destination_path.side_effect = lambda renamed_path, *a, **k: dest_dir / Path(renamed_path).name
+    org.get_destination_path.side_effect = (
+        lambda renamed_path, *a, **k: dest_dir / Path(renamed_path).name
+    )
     org._last_file_ocr_confidence = None
     org._last_file_detected_language = None
     org._last_file_state = {}
     return org
 
 
-def _batch(tmp_path: Path, graph_store: Any, filenames: List[str]) -> Tuple[BatchProcessor, Path, MagicMock]:
+def _batch(
+    tmp_path: Path, graph_store: Any, filenames: List[str]
+) -> Tuple[BatchProcessor, Path, MagicMock]:
     """Wire a real FileProcessor + BatchProcessor over ``filenames`` in a temp dir."""
     src = tmp_path / "source"
     src.mkdir()

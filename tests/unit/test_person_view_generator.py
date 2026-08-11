@@ -33,9 +33,7 @@ class FakeGraphStore:
         self, session=None, min_files: int = 1
     ) -> List[Tuple[str, List[str]]]:
         return [
-            (name, paths)
-            for name, paths in self._people_files.items()
-            if len(paths) >= min_files
+            (name, paths) for name, paths in self._people_files.items() if len(paths) >= min_files
         ]
 
 

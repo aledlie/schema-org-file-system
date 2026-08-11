@@ -9,6 +9,7 @@ committing any real driver's-license PII to version control. See docs/BACKLOG.md
 
 Run: python scripts/generate_specimen_id.py --output results/test_set_augmentation/redacted
 """
+
 import argparse
 from pathlib import Path
 
@@ -63,7 +64,9 @@ def render_specimen_id(out_path: Path) -> Path:
     cx = (_PHOTO_BOX[0] + _PHOTO_BOX[2]) // 2
     draw.ellipse([cx - 55, 175, cx + 55, 285], fill=(120, 128, 138))  # head
     draw.ellipse([cx - 95, 300, cx + 95, 470], fill=(120, 128, 138))  # shoulders
-    draw.text((_PHOTO_BOX[0] + 6, _PHOTO_BOX[3] + 8), "NO PHOTO", font=_font(24), fill=(90, 96, 104))
+    draw.text(
+        (_PHOTO_BOX[0] + 6, _PHOTO_BOX[3] + 8), "NO PHOTO", font=_font(24), fill=(90, 96, 104)
+    )
 
     # Field block, right of the photo.
     x = _PHOTO_BOX[2] + 40
@@ -89,10 +92,12 @@ def render_specimen_id(out_path: Path) -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--output", default="results/test_set_augmentation/redacted",
-                        help="Directory to write the specimen PNG into")
-    parser.add_argument("--name", default="specimen_drivers_license.png",
-                        help="Output filename")
+    parser.add_argument(
+        "--output",
+        default="results/test_set_augmentation/redacted",
+        help="Directory to write the specimen PNG into",
+    )
+    parser.add_argument("--name", default="specimen_drivers_license.png", help="Output filename")
     args = parser.parse_args()
     path = render_specimen_id(Path(args.output) / args.name)
     print(f"Wrote synthetic specimen ID: {path}")

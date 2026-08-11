@@ -323,7 +323,7 @@ def _run_image_ocr(image_path: Path) -> DocTRResult | None:
                 return None
             try:
                 page = np.asarray(heic_img)
-            except (ImportError, NameError, AttributeError):
+            except ImportError, NameError, AttributeError:
                 # numpy absent (unusual: PIL available but numpy not installed).
                 # NameError/AttributeError cover the missing-module access paths;
                 # other exceptions (OOM, value errors) are intentionally left to

@@ -13,7 +13,6 @@ from src.integration import (
     SchemaRegistry,
 )
 
-
 # ---------------------------------------------------------------------------
 # Shared fixtures
 # ---------------------------------------------------------------------------
@@ -135,7 +134,7 @@ class TestSchemaIntegrationMicrodata:
     def test_basic_microdata(self) -> None:
         si = SchemaIntegration()
         html = si.to_microdata(IMAGE_SCHEMA)
-        assert 'itemscope' in html
+        assert "itemscope" in html
         assert 'itemtype="https://schema.org/ImageObject"' in html
 
     def test_url_property_uses_link_tag(self) -> None:

@@ -344,8 +344,12 @@ def evaluate_model(
     correct_subcategory = 0
     skipped_missing = 0
 
-    category_metrics: defaultdict[str, dict[str, int]] = defaultdict(lambda: {"tp": 0, "fp": 0, "fn": 0})
-    confusion_matrix: defaultdict[str, defaultdict[str, int]] = defaultdict(lambda: defaultdict(int))
+    category_metrics: defaultdict[str, dict[str, int]] = defaultdict(
+        lambda: {"tp": 0, "fp": 0, "fn": 0}
+    )
+    confusion_matrix: defaultdict[str, defaultdict[str, int]] = defaultdict(
+        lambda: defaultdict(int)
+    )
     confidence_scores = []
 
     print(f"Running predictions (classifier={classifier})...")

@@ -18,14 +18,26 @@ class TestGraphStoreInit:
     def test_creates_tables(self, graph_store):
         """Test that all tables are created."""
         from sqlalchemy import inspect
+
         inspector = inspect(graph_store.engine)
         tables = inspector.get_table_names()
 
         expected_tables = [
-            'files', 'categories', 'companies', 'people', 'locations',
-            'file_relationships', 'organization_sessions', 'cost_records',
-            'schema_metadata', 'key_value_store', 'file_categories',
-            'file_companies', 'file_people', 'file_locations', 'merge_events'
+            "files",
+            "categories",
+            "companies",
+            "people",
+            "locations",
+            "file_relationships",
+            "organization_sessions",
+            "cost_records",
+            "schema_metadata",
+            "key_value_store",
+            "file_categories",
+            "file_companies",
+            "file_people",
+            "file_locations",
+            "merge_events",
         ]
 
         for table in expected_tables:
@@ -47,9 +59,9 @@ class TestGraphStoreFileOperations:
             file = graph_store.add_file(**sample_file_data, session=session)
 
             assert file is not None
-            assert file.filename == sample_file_data['filename']
-            assert file.mime_type == sample_file_data['mime_type']
-            assert file.file_extension == '.jpg'
+            assert file.filename == sample_file_data["filename"]
+            assert file.mime_type == sample_file_data["mime_type"]
+            assert file.file_extension == ".jpg"
         finally:
             session.close()
 
@@ -71,7 +83,7 @@ class TestGraphStoreFileOperations:
             file = graph_store.add_file(**sample_file_data, session=session)
 
             assert file.canonical_id is not None
-            assert file.canonical_id.startswith('urn:sha256:')
+            assert file.canonical_id.startswith("urn:sha256:")
         finally:
             session.close()
 
@@ -98,7 +110,9 @@ class TestGraphStoreFileOperations:
             created = graph_store.add_file(**sample_file_data, session=session)
             created_id = created.id
 
-            retrieved = graph_store.get_file(path=sample_file_data['original_path'], session=session)
+            retrieved = graph_store.get_file(
+                path=sample_file_data["original_path"], session=session
+            )
 
             assert retrieved is not None
             assert retrieved.id == created_id
@@ -107,7 +121,7 @@ class TestGraphStoreFileOperations:
 
     def test_get_nonexistent_file(self, graph_store):
         """Test retrieving non-existent file returns None."""
-        result = graph_store.get_file(file_id='nonexistent')
+        result = graph_store.get_file(file_id="nonexistent")
         assert result is None
 
     def test_duplicate_file_updates_existing(self, graph_store, sample_file_data):
@@ -119,7 +133,7 @@ class TestGraphStoreFileOperations:
 
             # Add same file with different data
             updated_data = sample_file_data.copy()
-            updated_data['file_size'] = 2048
+            updated_data["file_size"] = 2048
             file2 = graph_store.add_file(**updated_data, session=session)
 
             # Should be same record
@@ -138,8 +152,8 @@ class TestGraphStoreFileOperations:
             result = graph_store.update_file_status(
                 file_id,
                 FileStatus.ORGANIZED,
-                destination='/organized/path/sample.jpg',
-                session=session
+                destination="/organized/path/sample.jpg",
+                session=session,
             )
 
             assert result is True
@@ -147,7 +161,7 @@ class TestGraphStoreFileOperations:
             # Verify update
             updated = graph_store.get_file(file_id=file_id, session=session)
             assert updated.status == FileStatus.ORGANIZED
-            assert updated.current_path == '/organized/path/sample.jpg'
+            assert updated.current_path == "/organized/path/sample.jpg"
         finally:
             session.close()
 
@@ -168,19 +182,15 @@ class TestGraphStoreFileOperations:
         try:
             # Add files with different extensions
             graph_store.add_file(
-                original_path='/tmp/test.jpg',
-                filename='test.jpg',
-                session=session
+                original_path="/tmp/test.jpg", filename="test.jpg", session=session
             )
             graph_store.add_file(
-                original_path='/tmp/test.png',
-                filename='test.png',
-                session=session
+                original_path="/tmp/test.png", filename="test.png", session=session
             )
 
-            jpg_files = graph_store.get_files(extension='.jpg', session=session)
+            jpg_files = graph_store.get_files(extension=".jpg", session=session)
             assert len(jpg_files) >= 1
-            assert all(f.file_extension == '.jpg' for f in jpg_files)
+            assert all(f.file_extension == ".jpg" for f in jpg_files)
         finally:
             session.close()
 
@@ -219,9 +229,7 @@ class TestGraphStoreCategoryOperations:
             parent = graph_store.get_or_create_category(name="Media", session=session)
             parent_id = parent.id
             child = graph_store.get_or_create_category(
-                name="Photos",
-                parent_name="Media",
-                session=session
+                name="Photos", parent_name="Media", session=session
             )
 
             assert child is not None
@@ -238,11 +246,7 @@ class TestGraphStoreCategoryOperations:
             file = graph_store.add_file(**sample_file_data, session=session)
             file_id = file.id
 
-            result = graph_store.add_file_to_category(
-                file_id,
-                "Documents",
-                session=session
-            )
+            result = graph_store.add_file_to_category(file_id, "Documents", session=session)
 
             assert result is True
 
@@ -261,10 +265,7 @@ class TestGraphStoreCategoryOperations:
             file_id = file.id
 
             result = graph_store.add_file_to_category(
-                file_id,
-                category_name="Financial",
-                subcategory_name="Invoices",
-                session=session
+                file_id, category_name="Financial", subcategory_name="Invoices", session=session
             )
 
             assert result is True
@@ -283,7 +284,7 @@ class TestGraphStoreCategoryOperations:
             tree = graph_store.get_category_tree(session=session)
 
             assert len(tree) >= 2
-            root_names = [c['name'] for c in tree]
+            root_names = [c["name"] for c in tree]
             assert "Root1" in root_names
             assert "Root2" in root_names
         finally:
@@ -325,11 +326,7 @@ class TestGraphStoreCompanyOperations:
             file = graph_store.add_file(**sample_file_data, session=session)
             file_id = file.id
 
-            result = graph_store.add_file_to_company(
-                file_id,
-                "Test Corp",
-                session=session
-            )
+            result = graph_store.add_file_to_company(file_id, "Test Corp", session=session)
 
             assert result is True
 
@@ -362,10 +359,7 @@ class TestGraphStorePersonOperations:
         session = graph_store.get_session()
         try:
             person = graph_store.get_or_create_person(
-                name="Jane Smith",
-                email="jane@example.com",
-                role="author",
-                session=session
+                name="Jane Smith", email="jane@example.com", role="author", session=session
             )
 
             assert person.email == "jane@example.com"
@@ -380,11 +374,7 @@ class TestGraphStorePersonOperations:
             file = graph_store.add_file(**sample_file_data, session=session)
             file_id = file.id
 
-            result = graph_store.add_file_to_person(
-                file_id,
-                "Test Person",
-                session=session
-            )
+            result = graph_store.add_file_to_person(file_id, "Test Person", session=session)
 
             assert result is True
         finally:
@@ -400,13 +390,13 @@ class TestGraphStorePersonOperations:
             graph_store.update_file_status(
                 file_id,
                 FileStatus.ORGANIZED,
-                destination='/organized/Person/Ada Lovelace/sample.jpg',
-                session=session
+                destination="/organized/Person/Ada Lovelace/sample.jpg",
+                session=session,
             )
 
             paths = graph_store.get_files_by_person("Ada Lovelace", session=session)
 
-            assert paths == ['/organized/Person/Ada Lovelace/sample.jpg']
+            assert paths == ["/organized/Person/Ada Lovelace/sample.jpg"]
         finally:
             session.close()
 
@@ -421,8 +411,8 @@ class TestGraphStorePersonOperations:
             graph_store.update_file_status(
                 file_id,
                 FileStatus.ORGANIZED,
-                destination='/organized/Person/Grace Hopper/sample.jpg',
-                session=session
+                destination="/organized/Person/Grace Hopper/sample.jpg",
+                session=session,
             )
 
             person_obj = graph_store.get_or_create_person("Grace Hopper", session=session)
@@ -430,7 +420,7 @@ class TestGraphStorePersonOperations:
 
             paths = graph_store.get_files_by_person(person_id, session=session)
 
-            assert paths == ['/organized/Person/Grace Hopper/sample.jpg']
+            assert paths == ["/organized/Person/Grace Hopper/sample.jpg"]
         finally:
             session.close()
 
@@ -453,17 +443,19 @@ class TestGraphStorePersonOperations:
             graph_store.update_file_status(
                 file_id,
                 FileStatus.ORGANIZED,
-                destination='/organized/Person/Marie Curie/sample.jpg',
-                session=session
+                destination="/organized/Person/Marie Curie/sample.jpg",
+                session=session,
             )
 
             people = graph_store.get_all_people_with_files(session=session)
 
-            assert ("Marie Curie", ['/organized/Person/Marie Curie/sample.jpg']) in people
+            assert ("Marie Curie", ["/organized/Person/Marie Curie/sample.jpg"]) in people
         finally:
             session.close()
 
-    def test_get_all_people_with_files_excludes_denylisted_names(self, graph_store, sample_file_data):
+    def test_get_all_people_with_files_excludes_denylisted_names(
+        self, graph_store, sample_file_data
+    ):
         """Test that org/meeting false positives are filtered from the view."""
         session = graph_store.get_session()
         try:
@@ -473,8 +465,8 @@ class TestGraphStorePersonOperations:
             graph_store.update_file_status(
                 file_id,
                 FileStatus.ORGANIZED,
-                destination='/organized/Person/Integrity Studio/sample.jpg',
-                session=session
+                destination="/organized/Person/Integrity Studio/sample.jpg",
+                session=session,
             )
 
             people = graph_store.get_all_people_with_files(session=session)
@@ -483,7 +475,9 @@ class TestGraphStorePersonOperations:
         finally:
             session.close()
 
-    def test_get_all_people_with_files_excludes_unorganized_files(self, graph_store, sample_file_data):
+    def test_get_all_people_with_files_excludes_unorganized_files(
+        self, graph_store, sample_file_data
+    ):
         """Test that files with no current_path (not yet organized) are excluded,
         and a person left with zero valid paths is excluded entirely."""
         session = graph_store.get_session()
@@ -514,7 +508,7 @@ class TestGraphStoreLocationOperations:
                 country="USA",
                 latitude=37.7749,
                 longitude=-122.4194,
-                session=session
+                session=session,
             )
 
             assert location is not None
@@ -529,19 +523,13 @@ class TestGraphStoreLocationOperations:
         session = graph_store.get_session()
         try:
             created = graph_store.get_or_create_location(
-                name="NYC",
-                latitude=40.7128,
-                longitude=-74.0060,
-                session=session
+                name="NYC", latitude=40.7128, longitude=-74.0060, session=session
             )
             created_id = created.id
 
             # Find with slightly different coordinates
             found = graph_store.get_or_create_location(
-                name="NYC Area",
-                latitude=40.7130,
-                longitude=-74.0058,
-                session=session
+                name="NYC Area", latitude=40.7130, longitude=-74.0058, session=session
             )
 
             assert created_id == found.id
@@ -556,11 +544,7 @@ class TestGraphStoreLocationOperations:
             file_id = file.id
 
             result = graph_store.add_file_to_location(
-                file_id,
-                "Test Location",
-                latitude=40.0,
-                longitude=-74.0,
-                session=session
+                file_id, "Test Location", latitude=40.0, longitude=-74.0, session=session
             )
 
             assert result is True
@@ -576,15 +560,11 @@ class TestGraphStoreRelationships:
         session = graph_store.get_session()
         try:
             file1 = graph_store.add_file(
-                original_path='/tmp/file1.jpg',
-                filename='file1.jpg',
-                session=session
+                original_path="/tmp/file1.jpg", filename="file1.jpg", session=session
             )
             file1_id = file1.id
             file2 = graph_store.add_file(
-                original_path='/tmp/file2.jpg',
-                filename='file2.jpg',
-                session=session
+                original_path="/tmp/file2.jpg", filename="file2.jpg", session=session
             )
             file2_id = file2.id
 
@@ -593,7 +573,7 @@ class TestGraphStoreRelationships:
                 target_file_id=file2_id,
                 relationship_type=RelationshipType.SIMILAR,
                 confidence=0.85,
-                session=session
+                session=session,
             )
 
             assert relationship is not None
@@ -606,15 +586,11 @@ class TestGraphStoreRelationships:
         session = graph_store.get_session()
         try:
             file1 = graph_store.add_file(
-                original_path='/tmp/source.jpg',
-                filename='source.jpg',
-                session=session
+                original_path="/tmp/source.jpg", filename="source.jpg", session=session
             )
             file1_id = file1.id
             file2 = graph_store.add_file(
-                original_path='/tmp/related.jpg',
-                filename='related.jpg',
-                session=session
+                original_path="/tmp/related.jpg", filename="related.jpg", session=session
             )
             file2_id = file2.id
 
@@ -622,7 +598,7 @@ class TestGraphStoreRelationships:
                 source_file_id=file1_id,
                 target_file_id=file2_id,
                 relationship_type=RelationshipType.RELATED,
-                session=session
+                session=session,
             )
 
             related = graph_store.find_related_files(file1_id, session=session)
@@ -639,17 +615,17 @@ class TestGraphStoreRelationships:
         try:
             # Add files with same content hash
             file1 = graph_store.add_file(
-                original_path='/tmp/dup1.jpg',
-                filename='dup1.jpg',
-                content_hash='abc123',
-                session=session
+                original_path="/tmp/dup1.jpg",
+                filename="dup1.jpg",
+                content_hash="abc123",
+                session=session,
             )
             file1_id = file1.id
             file2 = graph_store.add_file(
-                original_path='/tmp/dup2.jpg',
-                filename='dup2.jpg',
-                content_hash='abc123',
-                session=session
+                original_path="/tmp/dup2.jpg",
+                filename="dup2.jpg",
+                content_hash="abc123",
+                session=session,
             )
             file2_id = file2.id
 
@@ -672,10 +648,10 @@ class TestGraphStoreSession:
         db_session = graph_store.get_session()
         try:
             org_session = graph_store.create_session(
-                source_directories=['/tmp/source'],
-                base_path='/tmp/target',
+                source_directories=["/tmp/source"],
+                base_path="/tmp/target",
                 dry_run=True,
-                session=db_session
+                session=db_session,
             )
 
             assert org_session is not None
@@ -689,21 +665,14 @@ class TestGraphStoreSession:
         db_session = graph_store.get_session()
         try:
             org_session = graph_store.create_session(
-                source_directories=['/tmp/source'],
-                base_path='/tmp/target',
-                session=db_session
+                source_directories=["/tmp/source"], base_path="/tmp/target", session=db_session
             )
             session_id = org_session.id
 
             result = graph_store.complete_session(
                 session_id=session_id,
-                stats={
-                    'total_files': 100,
-                    'organized': 95,
-                    'skipped': 3,
-                    'errors': 2
-                },
-                db_session=db_session
+                stats={"total_files": 100, "organized": 95, "skipped": 3, "errors": 2},
+                db_session=db_session,
             )
 
             assert result is True
@@ -722,10 +691,10 @@ class TestGraphStoreStatistics:
             graph_store.add_file(**sample_file_data, session=session)
             stats = graph_store.get_statistics(session=session)
 
-            assert 'total_files' in stats
-            assert 'total_categories' in stats
-            assert 'total_companies' in stats
-            assert stats['total_files'] >= 1
+            assert "total_files" in stats
+            assert "total_categories" in stats
+            assert "total_companies" in stats
+            assert stats["total_files"] >= 1
         finally:
             session.close()
 
@@ -735,9 +704,9 @@ class TestGraphStoreStatistics:
         try:
             stats = graph_store.get_cost_statistics(session=session)
 
-            assert 'total_records' in stats
-            assert 'total_cost' in stats
-            assert 'by_feature' in stats
+            assert "total_records" in stats
+            assert "total_cost" in stats
+            assert "by_feature" in stats
         finally:
             session.close()
 
@@ -747,32 +716,25 @@ class TestGraphStoreSearch:
 
     def test_search_by_filename(self, graph_store):
         """Test searching files by filename."""
-        graph_store.add_file(
-            original_path='/tmp/invoice_2024.pdf',
-            filename='invoice_2024.pdf'
-        )
+        graph_store.add_file(original_path="/tmp/invoice_2024.pdf", filename="invoice_2024.pdf")
 
         results = graph_store.search_files(
-            query='invoice',
-            search_filename=True,
-            search_content=False
+            query="invoice", search_filename=True, search_content=False
         )
 
         assert len(results) >= 1
-        assert any('invoice' in f.filename.lower() for f in results)
+        assert any("invoice" in f.filename.lower() for f in results)
 
     def test_search_by_content(self, graph_store):
         """Test searching files by extracted text."""
         graph_store.add_file(
-            original_path='/tmp/doc.txt',
-            filename='doc.txt',
-            extracted_text='This document contains important financial data'
+            original_path="/tmp/doc.txt",
+            filename="doc.txt",
+            extracted_text="This document contains important financial data",
         )
 
         results = graph_store.search_files(
-            query='financial',
-            search_filename=False,
-            search_content=True
+            query="financial", search_filename=False, search_content=True
         )
 
         assert len(results) >= 1

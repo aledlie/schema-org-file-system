@@ -20,7 +20,6 @@ _CONTEXT_DOCUMENT: Dict[str, Dict[str, str]] = {
         "@vocab": SCHEMA_ORG_VOCAB,
         "schema": SCHEMA_ORG_VOCAB,
         "ml": ML_NAMESPACE,
-
         # ---------------------------------------------------------------
         # File (ImageObject / VideoObject / DigitalDocument / AudioObject)
         # ---------------------------------------------------------------
@@ -35,10 +34,8 @@ _CONTEXT_DOCUMENT: Dict[str, Dict[str, str]] = {
         "width": "schema:width",
         "height": "schema:height",
         "contentLocation": "schema:contentLocation",
-
         # Custom ml: extension — not a standard schema.org property
         "hasFaces": "ml:hasFaces",
-
         # ---------------------------------------------------------------
         # Category (DefinedTerm)
         # ---------------------------------------------------------------
@@ -47,21 +44,17 @@ _CONTEXT_DOCUMENT: Dict[str, Dict[str, str]] = {
         "inDefinedTermSet": "schema:inDefinedTermSet",
         "broader": "schema:broader",
         "narrower": "schema:narrower",
-
         # Non-standard extensions on Category
         "fileCount": "ml:fileCount",
         "hierarchyLevel": "ml:hierarchyLevel",
-
         # ---------------------------------------------------------------
         # Company (Organization)
         # ---------------------------------------------------------------
         "knowsAbout": "schema:knowsAbout",
         "dateFounded": "schema:foundingDate",
         "sameAs": "schema:sameAs",
-
         # Non-standard extension shared by Company/Person/Location
         "mentionCount": "ml:mentionCount",
-
         # ---------------------------------------------------------------
         # Person
         # ---------------------------------------------------------------
@@ -69,16 +62,13 @@ _CONTEXT_DOCUMENT: Dict[str, Dict[str, str]] = {
         "jobTitle": "schema:jobTitle",
         "worksFor": "schema:worksFor",
         "workLocation": "schema:workLocation",
-
         # ---------------------------------------------------------------
         # Location (Place / City / Country)
         # ---------------------------------------------------------------
         "address": "schema:address",
         "geo": "schema:geo",
-
         # Non-standard geohash extension
         "geoHash": "ml:geoHash",
-
         # Nested types used in address / geo
         "PostalAddress": "schema:PostalAddress",
         "GeoCoordinates": "schema:GeoCoordinates",
@@ -87,7 +77,6 @@ _CONTEXT_DOCUMENT: Dict[str, Dict[str, str]] = {
         "addressCountry": "schema:addressCountry",
         "latitude": "schema:latitude",
         "longitude": "schema:longitude",
-
         # ---------------------------------------------------------------
         # @graph export format
         # ---------------------------------------------------------------

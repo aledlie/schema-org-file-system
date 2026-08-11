@@ -26,7 +26,7 @@ from src.organizers.category_config import CATEGORY_PATHS  # noqa: E402
 
 # Miscellaneous known formats with no canonical format category. Bucketed to
 # 'Other' (vs 'Uncategorized' for truly-unknown extensions) to preserve intent.
-_MISC_EXTENSIONS = {'.tpl', '.proto', '.rst', '.noe', '.lark'}
+_MISC_EXTENSIONS = {".tpl", ".proto", ".rst", ".noe", ".lark"}
 
 
 class FileTypeOrganizer:
@@ -50,16 +50,19 @@ class FileTypeOrganizer:
 
         # Special naming/structure patterns BEFORE format classification
         # Screenshots - check first so they don't get categorized as generic images
-        if name_lower.startswith('screenshot'):
-            return 'Images/Photos/Screenshots'
+        if name_lower.startswith("screenshot"):
+            return "Images/Photos/Screenshots"
 
         # Game assets (lots of numbered/timestamped files)
-        if any(pattern in name_lower for pattern in ['frame', 'item', 'segment', 'wing', 'arm', 'leg', 'head', 'torso']):
-            return 'Images/Photos/GameAssets'
+        if any(
+            pattern in name_lower
+            for pattern in ["frame", "item", "segment", "wing", "arm", "leg", "head", "torso"]
+        ):
+            return "Images/Photos/GameAssets"
 
         # Extension-less single-token files (e.g. timezone data)
-        if file_path.suffix == '' and len(file_path.name.split('_')) == 1:
-            return 'Data/Timezones'
+        if file_path.suffix == "" and len(file_path.name.split("_")) == 1:
+            return "Data/Timezones"
 
         category, subcategory, _ = classify_by_mime(file_path, None)
         return self._resolve_category_path(category, subcategory, ext)
@@ -73,14 +76,14 @@ class FileTypeOrganizer:
         'other')``) go to 'Other' for known-but-uncategorized formats and
         'Uncategorized' for everything else, preserving the prior fallback split.
         """
-        if (category, subcategory) == ('other', 'other'):
-            return 'Other' if ext in _MISC_EXTENSIONS else 'Uncategorized'
+        if (category, subcategory) == ("other", "other"):
+            return "Other" if ext in _MISC_EXTENSIONS else "Uncategorized"
         node = CATEGORY_PATHS.get(category)
         if isinstance(node, dict):
-            return node.get(subcategory) or node.get('other', f'{category.capitalize()}/Other')
+            return node.get(subcategory) or node.get("other", f"{category.capitalize()}/Other")
         if isinstance(node, str):
             return node
-        return 'Uncategorized'
+        return "Uncategorized"
 
     def should_skip_file(self, file_path: Path) -> bool:
         """Check if file should be skipped (delegates to shared.file_ops.should_skip_file)."""
@@ -89,24 +92,24 @@ class FileTypeOrganizer:
     def organize_file(self, file_path: Path, dry_run: bool = False) -> dict:
         """Organize a single file based on type."""
         result = {
-            'source': str(file_path),
-            'status': 'skipped',
-            'destination': None,
-            'category': None
+            "source": str(file_path),
+            "status": "skipped",
+            "destination": None,
+            "category": None,
         }
 
         if self.should_skip_file(file_path):
-            self.stats['skipped'] += 1
+            self.stats["skipped"] += 1
             return result
 
         if not file_path.is_file():
-            self.stats['skipped'] += 1
+            self.stats["skipped"] += 1
             return result
 
         try:
             # Get category
             category = self.get_category_for_file(file_path)
-            result['category'] = category
+            result["category"] = category
 
             # Create destination path
             dest_dir = self.base_path / category
@@ -119,26 +122,26 @@ class FileTypeOrganizer:
 
             # Skip if already in right place
             if file_path.parent == dest_dir:
-                result['status'] = 'already_organized'
-                result['destination'] = str(dest_path)
-                self.stats['already_organized'] += 1
+                result["status"] = "already_organized"
+                result["destination"] = str(dest_path)
+                self.stats["already_organized"] += 1
                 return result
 
             # Move file if not dry run
             if not dry_run:
                 shutil.move(str(file_path), str(dest_path))
-                result['status'] = 'organized'
+                result["status"] = "organized"
             else:
-                result['status'] = 'would_organize'
+                result["status"] = "would_organize"
 
-            result['destination'] = str(dest_path)
-            self.stats['organized'] += 1
-            self.stats[f'category_{category}'] += 1
+            result["destination"] = str(dest_path)
+            self.stats["organized"] += 1
+            self.stats[f"category_{category}"] += 1
 
         except Exception as e:
-            result['status'] = 'error'
-            result['error'] = str(e)
-            self.stats['errors'] += 1
+            result["status"] = "error"
+            result["error"] = str(e)
+            self.stats["errors"] += 1
             print(f"  Error: {e}")
 
         return result
@@ -156,7 +159,7 @@ class FileTypeOrganizer:
 
         # Collect all files
         all_files = []
-        for item in source_path.rglob('*'):
+        for item in source_path.rglob("*"):
             if item.is_file() and not self.should_skip_file(item):
                 all_files.append(item)
 
@@ -172,13 +175,13 @@ class FileTypeOrganizer:
 
         # Generate summary
         summary = {
-            'total_files': len(all_files),
-            'organized': self.stats['organized'],
-            'already_organized': self.stats['already_organized'],
-            'skipped': self.stats['skipped'],
-            'errors': self.stats['errors'],
-            'dry_run': dry_run,
-            'results': results
+            "total_files": len(all_files),
+            "organized": self.stats["organized"],
+            "already_organized": self.stats["already_organized"],
+            "skipped": self.stats["skipped"],
+            "errors": self.stats["errors"],
+            "dry_run": dry_run,
+            "results": results,
         }
 
         return summary
@@ -195,7 +198,7 @@ class FileTypeOrganizer:
         print(f"Skipped: {summary['skipped']}")
         print(f"Errors: {summary['errors']}")
 
-        if summary['dry_run']:
+        if summary["dry_run"]:
             print("\n⚠️  This was a DRY RUN - no files were moved")
 
         # Category breakdown
@@ -204,9 +207,9 @@ class FileTypeOrganizer:
         print(f"{'='*60}\n")
 
         category_stats: defaultdict[str, int] = defaultdict(int)
-        for result in summary['results']:
-            if result.get('category'):
-                category_stats[result['category']] += 1
+        for result in summary["results"]:
+            if result.get("category"):
+                category_stats[result["category"]] += 1
 
         for category, count in sorted(category_stats.items(), key=lambda x: x[1], reverse=True):
             print(f"{category}: {count} files")
@@ -222,10 +225,7 @@ def run(args: "TypeInputs") -> None:
     organizer = FileTypeOrganizer(base_path=args.base_path)
 
     for source_dir in args.sources:
-        summary = organizer.organize_directory(
-            source_dir=source_dir,
-            dry_run=args.dry_run
-        )
+        summary = organizer.organize_directory(source_dir=source_dir, dry_run=args.dry_run)
         organizer.print_summary(summary)
 
 
@@ -237,12 +237,10 @@ def main():
     from src.cli import add_type_arguments
     from src.cli_inputs import TypeInputs
 
-    parser = argparse.ArgumentParser(
-        description='Organize files by type based on extensions'
-    )
+    parser = argparse.ArgumentParser(description="Organize files by type based on extensions")
     add_type_arguments(parser)
     run(TypeInputs.from_namespace(parser.parse_args()))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

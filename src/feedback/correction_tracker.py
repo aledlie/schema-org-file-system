@@ -85,9 +85,9 @@ class CorrectionFeedbackSystem:
         """Load existing corrections from file."""
         if os.path.exists(self.feedback_file):
             try:
-                with open(self.feedback_file, 'r') as f:
+                with open(self.feedback_file, "r") as f:
                     return cast(Dict, json.load(f))
-            except (json.JSONDecodeError, IOError):
+            except json.JSONDecodeError, IOError:
                 pass
 
         return {
@@ -97,19 +97,19 @@ class CorrectionFeedbackSystem:
             "statistics": {
                 "total_corrections": 0,
                 "corrections_by_category": {},
-                "most_common_mistakes": []
+                "most_common_mistakes": [],
             },
             "metadata": {
                 "created": datetime.now().isoformat(),
                 "last_updated": datetime.now().isoformat(),
-                "version": "1.0"
-            }
+                "version": "1.0",
+            },
         }
 
     def _save_data(self) -> None:
         """Save corrections to file."""
         self.data["metadata"]["last_updated"] = datetime.now().isoformat()
-        with open(self.feedback_file, 'w') as f:
+        with open(self.feedback_file, "w") as f:
             json.dump(self.data, f, indent=2)
 
     @staticmethod
@@ -129,7 +129,7 @@ class CorrectionFeedbackSystem:
                 for chunk in iter(lambda: f.read(8192), b""):
                     sha256_hash.update(chunk)
             return sha256_hash.hexdigest()
-        except (IOError, OSError):
+        except IOError, OSError:
             # Fallback to path-based hash if file can't be read
             return hashlib.sha256(file_path.encode()).hexdigest()
 
@@ -148,29 +148,29 @@ class CorrectionFeedbackSystem:
 
         # Common patterns
         pattern_checks = [
-            (r'^screenshot', 'screenshot_prefix'),
-            (r'^img_', 'img_prefix'),
-            (r'^pxl_', 'pixel_prefix'),
-            (r'^dsc_', 'dsc_prefix'),
-            (r'frame\d*', 'frame_pattern'),
-            (r'sprite', 'sprite_keyword'),
-            (r'texture', 'texture_keyword'),
-            (r'audio|sound|sfx', 'audio_keyword'),
-            (r'music|bgm|ost', 'music_keyword'),
-            (r'icon', 'icon_keyword'),
-            (r'button', 'button_keyword'),
-            (r'tile', 'tile_keyword'),
-            (r'wall|floor|door', 'environment_keyword'),
-            (r'character|player|enemy', 'character_keyword'),
-            (r'weapon|sword|bow|axe', 'weapon_keyword'),
-            (r'item|potion|scroll', 'item_keyword'),
-            (r'ui_|gui_|hud_', 'ui_prefix'),
-            (r'\d{8}_\d{6}', 'timestamp_pattern'),
-            (r'whatsapp', 'whatsapp_keyword'),
-            (r'chatgpt', 'chatgpt_keyword'),
-            (r'invoice|receipt', 'financial_keyword'),
-            (r'contract|agreement', 'legal_keyword'),
-            (r'resume|cv', 'employment_keyword'),
+            (r"^screenshot", "screenshot_prefix"),
+            (r"^img_", "img_prefix"),
+            (r"^pxl_", "pixel_prefix"),
+            (r"^dsc_", "dsc_prefix"),
+            (r"frame\d*", "frame_pattern"),
+            (r"sprite", "sprite_keyword"),
+            (r"texture", "texture_keyword"),
+            (r"audio|sound|sfx", "audio_keyword"),
+            (r"music|bgm|ost", "music_keyword"),
+            (r"icon", "icon_keyword"),
+            (r"button", "button_keyword"),
+            (r"tile", "tile_keyword"),
+            (r"wall|floor|door", "environment_keyword"),
+            (r"character|player|enemy", "character_keyword"),
+            (r"weapon|sword|bow|axe", "weapon_keyword"),
+            (r"item|potion|scroll", "item_keyword"),
+            (r"ui_|gui_|hud_", "ui_prefix"),
+            (r"\d{8}_\d{6}", "timestamp_pattern"),
+            (r"whatsapp", "whatsapp_keyword"),
+            (r"chatgpt", "chatgpt_keyword"),
+            (r"invoice|receipt", "financial_keyword"),
+            (r"contract|agreement", "legal_keyword"),
+            (r"resume|cv", "employment_keyword"),
         ]
 
         for pattern, label in pattern_checks:
@@ -194,7 +194,7 @@ class CorrectionFeedbackSystem:
         assigned_subcategory: Optional[str] = None,
         correct_subcategory: Optional[str] = None,
         correction_reason: Optional[str] = None,
-        content_hints: Optional[List[str]] = None
+        content_hints: Optional[List[str]] = None,
     ) -> str:
         """Add a correction for a miscategorized file.
 
@@ -236,7 +236,7 @@ class CorrectionFeedbackSystem:
             "correction_date": datetime.now().isoformat(),
             "correction_reason": correction_reason,
             "filename_patterns": filename_patterns,
-            "content_hints": content_hints or []
+            "content_hints": content_hints or [],
         }
 
         self.data["corrections"][file_hash] = correction
@@ -270,11 +270,9 @@ class CorrectionFeedbackSystem:
                 break
 
         if not found:
-            stats["most_common_mistakes"].append({
-                "from": assigned_category,
-                "to": correct_category,
-                "count": 1
-            })
+            stats["most_common_mistakes"].append(
+                {"from": assigned_category, "to": correct_category, "count": 1}
+            )
 
         # Sort by count
         stats["most_common_mistakes"].sort(key=lambda x: -x["count"])
@@ -282,18 +280,12 @@ class CorrectionFeedbackSystem:
         stats["most_common_mistakes"] = stats["most_common_mistakes"][:20]
 
     def _update_learned_patterns(
-        self,
-        patterns: List[str],
-        correct_category: str,
-        correct_subcategory: Optional[str]
+        self, patterns: List[str], correct_category: str, correct_subcategory: Optional[str]
     ) -> None:
         """Update learned patterns from corrections."""
         for pattern in patterns:
             if pattern not in self.data["learned_patterns"]:
-                self.data["learned_patterns"][pattern] = {
-                    "categories": {},
-                    "subcategories": {}
-                }
+                self.data["learned_patterns"][pattern] = {"categories": {}, "subcategories": {}}
 
             learned = self.data["learned_patterns"][pattern]
 
@@ -356,7 +348,7 @@ class CorrectionFeedbackSystem:
                 "suggested_subcategory": best_subcategory,
                 "confidence": round(confidence, 3),
                 "matching_patterns": patterns,
-                "sample_count": int(best_category[1])
+                "sample_count": int(best_category[1]),
             }
 
         return None
@@ -424,11 +416,7 @@ class CorrectionFeedbackSystem:
         Returns:
             Dictionary of rules that can be applied to improve categorization
         """
-        rules: dict[str, Any] = {
-            "pattern_rules": [],
-            "content_rules": [],
-            "extension_rules": {}
-        }
+        rules: dict[str, Any] = {"pattern_rules": [], "content_rules": [], "extension_rules": {}}
 
         # Extract high-confidence pattern rules
         for pattern, data in self.data["learned_patterns"].items():
@@ -442,19 +430,23 @@ class CorrectionFeedbackSystem:
                     if data["subcategories"]:
                         best_subcat = max(data["subcategories"].items(), key=lambda x: x[1])[0]
 
-                    rules["pattern_rules"].append({
-                        "pattern": pattern,
-                        "category": best_cat[0],
-                        "subcategory": best_subcat,
-                        "confidence": round(confidence, 3),
-                        "sample_count": total
-                    })
+                    rules["pattern_rules"].append(
+                        {
+                            "pattern": pattern,
+                            "category": best_cat[0],
+                            "subcategory": best_subcat,
+                            "confidence": round(confidence, 3),
+                            "sample_count": total,
+                        }
+                    )
 
         # Sort by sample count
         rules["pattern_rules"].sort(key=lambda x: -x["sample_count"])
 
         # Extract content hint rules
-        content_hints: defaultdict[str, defaultdict[str, int]] = defaultdict(lambda: defaultdict(int))
+        content_hints: defaultdict[str, defaultdict[str, int]] = defaultdict(
+            lambda: defaultdict(int)
+        )
         for correction in self.data["corrections"].values():
             for hint in correction.get("content_hints", []):
                 content_hints[hint][correction["correct_category"]] += 1
@@ -465,12 +457,14 @@ class CorrectionFeedbackSystem:
             confidence = best_cat[1] / total
 
             if total >= 2 and confidence >= 0.7:
-                rules["content_rules"].append({
-                    "hint": hint,
-                    "category": best_cat[0],
-                    "confidence": round(confidence, 3),
-                    "sample_count": total
-                })
+                rules["content_rules"].append(
+                    {
+                        "hint": hint,
+                        "category": best_cat[0],
+                        "confidence": round(confidence, 3),
+                        "sample_count": total,
+                    }
+                )
 
         rules["content_rules"].sort(key=lambda x: -x["sample_count"])
 
@@ -485,7 +479,7 @@ class CorrectionFeedbackSystem:
         return {
             **self.data["statistics"],
             "total_patterns_learned": len(self.data["learned_patterns"]),
-            "last_updated": self.data["metadata"]["last_updated"]
+            "last_updated": self.data["metadata"]["last_updated"],
         }
 
     def remove_correction(self, file_hash: str) -> bool:
@@ -512,13 +506,13 @@ class CorrectionFeedbackSystem:
             "statistics": {
                 "total_corrections": 0,
                 "corrections_by_category": {},
-                "most_common_mistakes": []
+                "most_common_mistakes": [],
             },
             "metadata": {
                 "created": datetime.now().isoformat(),
                 "last_updated": datetime.now().isoformat(),
-                "version": "1.0"
-            }
+                "version": "1.0",
+            },
         }
         self._save_data()
 
@@ -527,9 +521,7 @@ def main():
     """Command-line interface for the correction feedback system."""
     import argparse
 
-    parser = argparse.ArgumentParser(
-        description="Correction Feedback System for File Organizer"
-    )
+    parser = argparse.ArgumentParser(description="Correction Feedback System for File Organizer")
     subparsers = parser.add_subparsers(dest="command", help="Commands")
 
     # Add correction
@@ -578,7 +570,7 @@ def main():
             assigned_subcategory=args.assigned_subcat,
             correct_subcategory=args.correct_subcat,
             correction_reason=args.reason,
-            content_hints=args.hints
+            content_hints=args.hints,
         )
         print(f"Correction added with hash: {file_hash}")
 
@@ -609,15 +601,14 @@ def main():
             corrections = system.get_corrections_for_category(args.category)
         else:
             corrections = [
-                {**c, "hash": h}
-                for h, c in list(system.data["corrections"].items())[:args.limit]
+                {**c, "hash": h} for h, c in list(system.data["corrections"].items())[: args.limit]
             ]
 
-        for c in corrections[:args.limit]:
+        for c in corrections[: args.limit]:
             print(f"\n{c['hash'][:12]}...")
             print(f"  File: {c['filename']}")
             print(f"  {c['assigned_category']} -> {c['correct_category']}")
-            if c.get('correction_reason'):
+            if c.get("correction_reason"):
                 print(f"  Reason: {c['correction_reason']}")
 
     else:

@@ -262,9 +262,7 @@ class TestDoctrFallbackGate:
         from shared.ocr_classifier import OCRResult
 
         ocr_classifier, doctr_calls = gated
-        hit = OCRResult(
-            text="hello", confidence=0.9, language="en", word_count=1, orientation=None
-        )
+        hit = OCRResult(text="hello", confidence=0.9, language="en", word_count=1, orientation=None)
         monkeypatch.setattr(
             ocr_classifier,
             "extract_text_easyocr_with_status",
@@ -354,8 +352,10 @@ class TestExtractScreenshotLines:
 
         fake_result = MagicMock()
         fake_result.render.return_value = "Title  Line\n\n  body   text here \n"
-        with patch.object(oc, "EASYOCR_AVAILABLE", False), \
-             patch.object(oc, "_run_image_ocr", return_value=fake_result):
+        with (
+            patch.object(oc, "EASYOCR_AVAILABLE", False),
+            patch.object(oc, "_run_image_ocr", return_value=fake_result),
+        ):
             lines = oc.extract_screenshot_lines(sample_image_file)
 
         assert lines == ["Title Line", "body text here"]
@@ -365,9 +365,11 @@ class TestExtractScreenshotLines:
 
         import shared.ocr_classifier as oc
 
-        with patch.object(oc, "EASYOCR_AVAILABLE", True), \
-             patch.object(oc, "extract_lines_easyocr", return_value=["From Easy"]) as easy, \
-             patch.object(oc, "_run_image_ocr") as doctr:
+        with (
+            patch.object(oc, "EASYOCR_AVAILABLE", True),
+            patch.object(oc, "extract_lines_easyocr", return_value=["From Easy"]) as easy,
+            patch.object(oc, "_run_image_ocr") as doctr,
+        ):
             lines = oc.extract_screenshot_lines(sample_image_file)
 
         assert lines == ["From Easy"]
@@ -379,6 +381,8 @@ class TestExtractScreenshotLines:
 
         import shared.ocr_classifier as oc
 
-        with patch.object(oc, "EASYOCR_AVAILABLE", False), \
-             patch.object(oc, "_run_image_ocr", return_value=None):
+        with (
+            patch.object(oc, "EASYOCR_AVAILABLE", False),
+            patch.object(oc, "_run_image_ocr", return_value=None),
+        ):
             assert oc.extract_screenshot_lines(sample_image_file) is None

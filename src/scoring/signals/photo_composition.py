@@ -35,9 +35,7 @@ class _AnalyzerLike(Protocol):
 
     vision_available: bool
 
-    def analyze_for_organization(
-        self, image_path: Path
-    ) -> Tuple[bool, bool, Dict[str, float]]: ...
+    def analyze_for_organization(self, image_path: Path) -> Tuple[bool, bool, Dict[str, float]]: ...
 
 
 # Registry/signal name (referenced by the people-photo subcategory
@@ -78,9 +76,7 @@ class PhotoCompositionSignal:
         analyzer = self._image_analyzer
         if analyzer is None:  # applies_to already gates on this
             return []
-        has_people, _is_property_mgmt, scores = analyzer.analyze_for_organization(
-            ctx.path
-        )
+        has_people, _is_property_mgmt, scores = analyzer.analyze_for_organization(ctx.path)
         if not has_people:
             return []
 

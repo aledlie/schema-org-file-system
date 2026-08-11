@@ -27,6 +27,7 @@ from sqlalchemy import create_engine, event, func, and_
 from sqlalchemy.orm import Session, sessionmaker
 
 from .models import Base, KeyValueStore
+
 try:
     from ..constants import DEFAULT_DB_PATH
 except ImportError:
@@ -39,6 +40,7 @@ if TYPE_CHECKING:
 
 class KVStoreInfo(TypedDict):
     """``KeyValueStorage.info()`` shape."""
+
     total_keys: int
     by_namespace: Dict[str, int]
     expired_keys: int
@@ -59,12 +61,12 @@ class KeyValueStorage:
     """
 
     # Default namespaces
-    NAMESPACE_CACHE = 'cache'           # Temporary cached data
-    NAMESPACE_CONFIG = 'config'         # Configuration values
-    NAMESPACE_METADATA = 'metadata'     # File metadata overflow
-    NAMESPACE_STATS = 'stats'           # Statistics and counters
-    NAMESPACE_SESSION = 'session'       # Session-specific data
-    NAMESPACE_FEATURE = 'feature'       # Feature flags
+    NAMESPACE_CACHE = "cache"  # Temporary cached data
+    NAMESPACE_CONFIG = "config"  # Configuration values
+    NAMESPACE_METADATA = "metadata"  # File metadata overflow
+    NAMESPACE_STATS = "stats"  # Statistics and counters
+    NAMESPACE_SESSION = "session"  # Session-specific data
+    NAMESPACE_FEATURE = "feature"  # Feature flags
 
     def __init__(self, db_path: Union[str, Path] = DEFAULT_DB_PATH):
         """
@@ -74,7 +76,7 @@ class KeyValueStorage:
             db_path: Path to SQLite database (shared with graph store)
         """
         self.db_path = db_path
-        self.engine = create_engine(f'sqlite:///{db_path}', echo=False)
+        self.engine = create_engine(f"sqlite:///{db_path}", echo=False)
 
         # SQLite optimizations
         @event.listens_for(self.engine, "connect")
@@ -113,12 +115,7 @@ class KeyValueStorage:
     # Basic Operations
     # =========================================================================
 
-    def get(
-        self,
-        key: str,
-        namespace: str = NAMESPACE_CACHE,
-        default: Any = None
-    ) -> Any:
+    def get(self, key: str, namespace: str = NAMESPACE_CACHE, default: Any = None) -> Any:
         """
         Get a value by key.
 
@@ -131,12 +128,11 @@ class KeyValueStorage:
             The value or default
         """
         with self.session_scope() as session:
-            record = session.query(KeyValueStore).filter(
-                and_(
-                    KeyValueStore.namespace == namespace,
-                    KeyValueStore.key == key
-                )
-            ).first()
+            record = (
+                session.query(KeyValueStore)
+                .filter(and_(KeyValueStore.namespace == namespace, KeyValueStore.key == key))
+                .first()
+            )
 
             if not record:
                 return default
@@ -154,7 +150,7 @@ class KeyValueStorage:
         value: Any,
         namespace: str = NAMESPACE_CACHE,
         ttl_seconds: Optional[int] = None,
-        file_id: Optional[str] = None
+        file_id: Optional[str] = None,
     ) -> bool:
         """
         Set a value.
@@ -179,12 +175,11 @@ class KeyValueStorage:
             value_type = self._get_value_type(value)
 
             # Check if exists
-            record = session.query(KeyValueStore).filter(
-                and_(
-                    KeyValueStore.namespace == namespace,
-                    KeyValueStore.key == key
-                )
-            ).first()
+            record = (
+                session.query(KeyValueStore)
+                .filter(and_(KeyValueStore.namespace == namespace, KeyValueStore.key == key))
+                .first()
+            )
 
             if record:
                 record.value = value
@@ -199,7 +194,7 @@ class KeyValueStorage:
                     value=value,
                     value_type=value_type,
                     expires_at=expires_at,
-                    file_id=file_id
+                    file_id=file_id,
                 )
                 session.add(record)
 
@@ -217,12 +212,11 @@ class KeyValueStorage:
             True if key existed and was deleted
         """
         with self.session_scope() as session:
-            result = session.query(KeyValueStore).filter(
-                and_(
-                    KeyValueStore.namespace == namespace,
-                    KeyValueStore.key == key
-                )
-            ).delete()
+            result = (
+                session.query(KeyValueStore)
+                .filter(and_(KeyValueStore.namespace == namespace, KeyValueStore.key == key))
+                .delete()
+            )
             return result > 0
 
     def exists(self, key: str, namespace: str = NAMESPACE_CACHE) -> bool:
@@ -237,12 +231,11 @@ class KeyValueStorage:
             True if key exists and hasn't expired
         """
         with self.session_scope() as session:
-            record = session.query(KeyValueStore).filter(
-                and_(
-                    KeyValueStore.namespace == namespace,
-                    KeyValueStore.key == key
-                )
-            ).first()
+            record = (
+                session.query(KeyValueStore)
+                .filter(and_(KeyValueStore.namespace == namespace, KeyValueStore.key == key))
+                .first()
+            )
 
             if not record:
                 return False
@@ -258,11 +251,7 @@ class KeyValueStorage:
     # Batch Operations
     # =========================================================================
 
-    def mget(
-        self,
-        keys: List[str],
-        namespace: str = NAMESPACE_CACHE
-    ) -> Dict[str, Any]:
+    def mget(self, keys: List[str], namespace: str = NAMESPACE_CACHE) -> Dict[str, Any]:
         """
         Get multiple values at once.
 
@@ -274,12 +263,11 @@ class KeyValueStorage:
             Dictionary of key -> value (missing keys omitted)
         """
         with self.session_scope() as session:
-            records = session.query(KeyValueStore).filter(
-                and_(
-                    KeyValueStore.namespace == namespace,
-                    KeyValueStore.key.in_(keys)
-                )
-            ).all()
+            records = (
+                session.query(KeyValueStore)
+                .filter(and_(KeyValueStore.namespace == namespace, KeyValueStore.key.in_(keys)))
+                .all()
+            )
 
             now = utcnow()
             result = {}
@@ -296,7 +284,7 @@ class KeyValueStorage:
         self,
         mapping: Dict[str, Any],
         namespace: str = NAMESPACE_CACHE,
-        ttl_seconds: Optional[int] = None
+        ttl_seconds: Optional[int] = None,
     ) -> bool:
         """
         Set multiple values at once.
@@ -317,12 +305,7 @@ class KeyValueStorage:
     # Counter Operations
     # =========================================================================
 
-    def incr(
-        self,
-        key: str,
-        amount: int = 1,
-        namespace: str = NAMESPACE_STATS
-    ) -> int:
+    def incr(self, key: str, amount: int = 1, namespace: str = NAMESPACE_STATS) -> int:
         """
         Increment a counter.
 
@@ -335,12 +318,11 @@ class KeyValueStorage:
             New counter value
         """
         with self.session_scope() as session:
-            record = session.query(KeyValueStore).filter(
-                and_(
-                    KeyValueStore.namespace == namespace,
-                    KeyValueStore.key == key
-                )
-            ).first()
+            record = (
+                session.query(KeyValueStore)
+                .filter(and_(KeyValueStore.namespace == namespace, KeyValueStore.key == key))
+                .first()
+            )
 
             if record:
                 current = record.value or 0
@@ -348,21 +330,11 @@ class KeyValueStorage:
                 record.updated_at = utcnow()
                 return record.value
             else:
-                record = KeyValueStore(
-                    namespace=namespace,
-                    key=key,
-                    value=amount,
-                    value_type='int'
-                )
+                record = KeyValueStore(namespace=namespace, key=key, value=amount, value_type="int")
                 session.add(record)
                 return amount
 
-    def decr(
-        self,
-        key: str,
-        amount: int = 1,
-        namespace: str = NAMESPACE_STATS
-    ) -> int:
+    def decr(self, key: str, amount: int = 1, namespace: str = NAMESPACE_STATS) -> int:
         """
         Decrement a counter.
 
@@ -376,12 +348,7 @@ class KeyValueStorage:
         """
         return self.incr(key, -amount, namespace)
 
-    def incrby_float(
-        self,
-        key: str,
-        amount: float,
-        namespace: str = NAMESPACE_STATS
-    ) -> float:
+    def incrby_float(self, key: str, amount: float, namespace: str = NAMESPACE_STATS) -> float:
         """
         Increment a float counter.
 
@@ -394,25 +361,21 @@ class KeyValueStorage:
             New counter value
         """
         with self.session_scope() as session:
-            record = session.query(KeyValueStore).filter(
-                and_(
-                    KeyValueStore.namespace == namespace,
-                    KeyValueStore.key == key
-                )
-            ).first()
+            record = (
+                session.query(KeyValueStore)
+                .filter(and_(KeyValueStore.namespace == namespace, KeyValueStore.key == key))
+                .first()
+            )
 
             if record:
                 current = float(record.value or 0)
                 record.value = current + amount
-                record.value_type = 'float'
+                record.value_type = "float"
                 record.updated_at = utcnow()
                 return record.value
             else:
                 record = KeyValueStore(
-                    namespace=namespace,
-                    key=key,
-                    value=amount,
-                    value_type='float'
+                    namespace=namespace, key=key, value=amount, value_type="float"
                 )
                 session.add(record)
                 return amount
@@ -421,11 +384,7 @@ class KeyValueStorage:
     # Scan and Pattern Matching
     # =========================================================================
 
-    def keys(
-        self,
-        pattern: str = '*',
-        namespace: str = NAMESPACE_CACHE
-    ) -> List[str]:
+    def keys(self, pattern: str = "*", namespace: str = NAMESPACE_CACHE) -> List[str]:
         """
         Get all keys matching a pattern.
 
@@ -437,13 +396,11 @@ class KeyValueStorage:
             List of matching keys
         """
         with self.session_scope() as session:
-            query = session.query(KeyValueStore.key).filter(
-                KeyValueStore.namespace == namespace
-            )
+            query = session.query(KeyValueStore.key).filter(KeyValueStore.namespace == namespace)
 
-            if pattern != '*':
+            if pattern != "*":
                 # Convert glob to SQL LIKE
-                sql_pattern = pattern.replace('*', '%').replace('?', '_')
+                sql_pattern = pattern.replace("*", "%").replace("?", "_")
                 query = query.filter(KeyValueStore.key.like(sql_pattern))
 
             return [row[0] for row in query.all()]
@@ -453,7 +410,7 @@ class KeyValueStorage:
         namespace: str = NAMESPACE_CACHE,
         match: Optional[str] = None,
         count: int = 100,
-        cursor: int = 0
+        cursor: int = 0,
     ) -> tuple:
         """
         Incrementally iterate over keys.
@@ -473,12 +430,10 @@ class KeyValueStorage:
             )
 
             if match:
-                sql_pattern = match.replace('*', '%').replace('?', '_')
+                sql_pattern = match.replace("*", "%").replace("?", "_")
                 query = query.filter(KeyValueStore.key.like(sql_pattern))
 
-            query = query.filter(KeyValueStore.id > cursor)\
-                .order_by(KeyValueStore.id)\
-                .limit(count)
+            query = query.filter(KeyValueStore.id > cursor).order_by(KeyValueStore.id).limit(count)
 
             results = query.all()
 
@@ -489,12 +444,11 @@ class KeyValueStorage:
             next_cursor = results[-1][1]
 
             # Check if there are more
-            more = session.query(KeyValueStore.id).filter(
-                and_(
-                    KeyValueStore.namespace == namespace,
-                    KeyValueStore.id > next_cursor
-                )
-            ).first()
+            more = (
+                session.query(KeyValueStore.id)
+                .filter(and_(KeyValueStore.namespace == namespace, KeyValueStore.id > next_cursor))
+                .first()
+            )
 
             if not more:
                 next_cursor = 0
@@ -505,12 +459,7 @@ class KeyValueStorage:
     # Hash Operations (nested dictionaries)
     # =========================================================================
 
-    def hget(
-        self,
-        name: str,
-        key: str,
-        namespace: str = NAMESPACE_METADATA
-    ) -> Any:
+    def hget(self, name: str, key: str, namespace: str = NAMESPACE_METADATA) -> Any:
         """
         Get a field from a hash.
 
@@ -525,13 +474,7 @@ class KeyValueStorage:
         hash_key = f"{name}:{key}"
         return self.get(hash_key, namespace)
 
-    def hset(
-        self,
-        name: str,
-        key: str,
-        value: Any,
-        namespace: str = NAMESPACE_METADATA
-    ) -> bool:
+    def hset(self, name: str, key: str, value: Any, namespace: str = NAMESPACE_METADATA) -> bool:
         """
         Set a field in a hash.
 
@@ -547,11 +490,7 @@ class KeyValueStorage:
         hash_key = f"{name}:{key}"
         return self.set(hash_key, value, namespace)
 
-    def hgetall(
-        self,
-        name: str,
-        namespace: str = NAMESPACE_METADATA
-    ) -> Dict[str, Any]:
+    def hgetall(self, name: str, namespace: str = NAMESPACE_METADATA) -> Dict[str, Any]:
         """
         Get all fields from a hash.
 
@@ -567,17 +506,12 @@ class KeyValueStorage:
 
         result = {}
         for key in keys:
-            field = key[len(name) + 1:]  # Remove "name:" prefix
+            field = key[len(name) + 1 :]  # Remove "name:" prefix
             result[field] = self.get(key, namespace)
 
         return result
 
-    def hdel(
-        self,
-        name: str,
-        *keys: str,
-        namespace: str = NAMESPACE_METADATA
-    ) -> int:
+    def hdel(self, name: str, *keys: str, namespace: str = NAMESPACE_METADATA) -> int:
         """
         Delete fields from a hash.
 
@@ -612,12 +546,11 @@ class KeyValueStorage:
             Seconds remaining, -1 if no TTL, None if key doesn't exist
         """
         with self.session_scope() as session:
-            record = session.query(KeyValueStore).filter(
-                and_(
-                    KeyValueStore.namespace == namespace,
-                    KeyValueStore.key == key
-                )
-            ).first()
+            record = (
+                session.query(KeyValueStore)
+                .filter(and_(KeyValueStore.namespace == namespace, KeyValueStore.key == key))
+                .first()
+            )
 
             if not record:
                 return None
@@ -628,12 +561,7 @@ class KeyValueStorage:
             remaining = (record.expires_at - utcnow()).total_seconds()
             return max(0, int(remaining))
 
-    def expire(
-        self,
-        key: str,
-        seconds: int,
-        namespace: str = NAMESPACE_CACHE
-    ) -> bool:
+    def expire(self, key: str, seconds: int, namespace: str = NAMESPACE_CACHE) -> bool:
         """
         Set TTL on an existing key.
 
@@ -646,12 +574,11 @@ class KeyValueStorage:
             True if key exists and TTL was set
         """
         with self.session_scope() as session:
-            record = session.query(KeyValueStore).filter(
-                and_(
-                    KeyValueStore.namespace == namespace,
-                    KeyValueStore.key == key
-                )
-            ).first()
+            record = (
+                session.query(KeyValueStore)
+                .filter(and_(KeyValueStore.namespace == namespace, KeyValueStore.key == key))
+                .first()
+            )
 
             if not record:
                 return False
@@ -671,12 +598,11 @@ class KeyValueStorage:
             True if key exists and TTL was removed
         """
         with self.session_scope() as session:
-            record = session.query(KeyValueStore).filter(
-                and_(
-                    KeyValueStore.namespace == namespace,
-                    KeyValueStore.key == key
-                )
-            ).first()
+            record = (
+                session.query(KeyValueStore)
+                .filter(and_(KeyValueStore.namespace == namespace, KeyValueStore.key == key))
+                .first()
+            )
 
             if not record:
                 return False
@@ -696,12 +622,13 @@ class KeyValueStorage:
             Number of keys removed
         """
         with self.session_scope() as session:
-            result = session.query(KeyValueStore).filter(
-                and_(
-                    KeyValueStore.expires_at.isnot(None),
-                    KeyValueStore.expires_at < utcnow()
+            result = (
+                session.query(KeyValueStore)
+                .filter(
+                    and_(KeyValueStore.expires_at.isnot(None), KeyValueStore.expires_at < utcnow())
                 )
-            ).delete()
+                .delete()
+            )
             return result
 
     def flush_namespace(self, namespace: str) -> int:
@@ -715,9 +642,9 @@ class KeyValueStorage:
             Number of keys deleted
         """
         with self.session_scope() as session:
-            result = session.query(KeyValueStore).filter(
-                KeyValueStore.namespace == namespace
-            ).delete()
+            result = (
+                session.query(KeyValueStore).filter(KeyValueStore.namespace == namespace).delete()
+            )
             return result
 
     def flush_all(self) -> int:
@@ -738,17 +665,17 @@ class KeyValueStorage:
     def _get_value_type(self, value: object) -> str:
         """Determine the type of a value."""
         if isinstance(value, bool):
-            return 'bool'
+            return "bool"
         elif isinstance(value, int):
-            return 'int'
+            return "int"
         elif isinstance(value, float):
-            return 'float'
+            return "float"
         elif isinstance(value, str):
-            return 'string'
+            return "string"
         elif isinstance(value, (dict, list)):
-            return 'json'
+            return "json"
         else:
-            return 'json'
+            return "json"
 
     def info(self) -> KVStoreInfo:
         """
@@ -760,22 +687,24 @@ class KeyValueStorage:
         with self.session_scope() as session:
             total = session.query(func.count(KeyValueStore.id)).scalar()
 
-            by_namespace = session.query(
-                KeyValueStore.namespace,
-                func.count(KeyValueStore.id)
-            ).group_by(KeyValueStore.namespace).all()
+            by_namespace = (
+                session.query(KeyValueStore.namespace, func.count(KeyValueStore.id))
+                .group_by(KeyValueStore.namespace)
+                .all()
+            )
 
-            expired = session.query(func.count(KeyValueStore.id)).filter(
-                and_(
-                    KeyValueStore.expires_at.isnot(None),
-                    KeyValueStore.expires_at < utcnow()
+            expired = (
+                session.query(func.count(KeyValueStore.id))
+                .filter(
+                    and_(KeyValueStore.expires_at.isnot(None), KeyValueStore.expires_at < utcnow())
                 )
-            ).scalar()
+                .scalar()
+            )
 
             return {
-                'total_keys': total,
-                'by_namespace': {ns: count for ns, count in by_namespace},
-                'expired_keys': expired
+                "total_keys": total,
+                "by_namespace": {ns: count for ns, count in by_namespace},
+                "expired_keys": expired,
             }
 
 

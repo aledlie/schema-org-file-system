@@ -90,11 +90,15 @@ class TestNamedEntityCanonicalId:
 
     @pytest.mark.parametrize("model, _ns_key", UUID_NAMED_ENTITIES)
     def test_canonical_id_deterministic(self, model, _ns_key):
-        assert model.generate_canonical_id("Repeatable") == model.generate_canonical_id("Repeatable")
+        assert model.generate_canonical_id("Repeatable") == model.generate_canonical_id(
+            "Repeatable"
+        )
 
     @pytest.mark.parametrize("model, _ns_key", UUID_NAMED_ENTITIES)
     def test_canonical_id_normalizes_case_and_whitespace(self, model, _ns_key):
-        assert model.generate_canonical_id("Acme Corp") == model.generate_canonical_id("  acme corp  ")
+        assert model.generate_canonical_id("Acme Corp") == model.generate_canonical_id(
+            "  acme corp  "
+        )
 
     @pytest.mark.parametrize("model, _ns_key", UUID_NAMED_ENTITIES)
     def test_distinct_names_yield_distinct_ids(self, model, _ns_key):
@@ -122,7 +126,7 @@ class TestNamedEntityIri:
         iri = entity.get_iri()
         assert iri == URN_UUID_PREFIX + cid
         # The tail must be a parseable UUID.
-        uuid.UUID(iri[len(URN_UUID_PREFIX):])
+        uuid.UUID(iri[len(URN_UUID_PREFIX) :])
 
     def test_file_and_named_entity_iris_use_different_schemes(self):
         f = File(id="f" * SHA256_HEX_LEN, canonical_id=None)

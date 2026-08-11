@@ -78,10 +78,7 @@ def run_wikidata_migration(
             print(f"  Table {COMPANIES_TABLE!r} does not exist — nothing to migrate")
         elif not _column_exists(conn, COMPANIES_TABLE, WIKIDATA_QID_COLUMN):
             if dry_run:
-                print(
-                    f"  [DRY RUN] Would add {WIKIDATA_QID_COLUMN} "
-                    f"to {COMPANIES_TABLE}"
-                )
+                print(f"  [DRY RUN] Would add {WIKIDATA_QID_COLUMN} " f"to {COMPANIES_TABLE}")
             else:
                 conn.execute(
                     f"ALTER TABLE {COMPANIES_TABLE} "
@@ -90,9 +87,7 @@ def run_wikidata_migration(
                 print(f"  Added {WIKIDATA_QID_COLUMN} to {COMPANIES_TABLE}")
                 stats["columns_added"] += 1  # only on actual ALTER TABLE, not dry-run
         else:
-            print(
-                f"  {WIKIDATA_QID_COLUMN} already exists in {COMPANIES_TABLE}"
-            )
+            print(f"  {WIKIDATA_QID_COLUMN} already exists in {COMPANIES_TABLE}")
 
         if not dry_run:
             conn.commit()

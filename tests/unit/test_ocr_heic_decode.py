@@ -53,9 +53,7 @@ class TestReadtextInputHeic:
         with patch("PIL.Image.open", return_value=fake_img):
             result = easyocr_mod._readtext_input(heic_path)
 
-        assert isinstance(result, np.ndarray), (
-            f"expected ndarray for .heic, got {type(result)}"
-        )
+        assert isinstance(result, np.ndarray), f"expected ndarray for .heic, got {type(result)}"
         assert result.shape == (4, 4, 3)
 
     def test_heif_returns_ndarray(self, tmp_path: Path) -> None:
@@ -66,9 +64,7 @@ class TestReadtextInputHeic:
         with patch("PIL.Image.open", return_value=fake_img):
             result = easyocr_mod._readtext_input(heif_path)
 
-        assert isinstance(result, np.ndarray), (
-            f"expected ndarray for .heif, got {type(result)}"
-        )
+        assert isinstance(result, np.ndarray), f"expected ndarray for .heif, got {type(result)}"
 
     def test_png_still_returns_str_path(self, tmp_path: Path) -> None:
         """Non-HEIC images without multiple frames keep the str-path fast path."""
@@ -79,9 +75,7 @@ class TestReadtextInputHeic:
         with patch("PIL.Image.open", return_value=fake_img):
             result = easyocr_mod._readtext_input(png_path)
 
-        assert result == str(png_path), (
-            "expected str path for .png, got ndarray"
-        )
+        assert result == str(png_path), "expected str path for .png, got ndarray"
 
     def test_animated_gif_still_returns_ndarray(self, tmp_path: Path) -> None:
         """Animated images keep their existing ndarray path (unaffected by change)."""
@@ -131,9 +125,7 @@ class TestRunImageOcrHeic:
         monkeypatch.setattr(ocr_mod, "_get_predictor", lambda: _fake_predictor)
         return received
 
-    def test_heic_uses_pixel_array_not_document_file(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_heic_uses_pixel_array_not_document_file(self, tmp_path: Path, monkeypatch) -> None:
         heic_path = tmp_path / "photo.heic"
         heic_path.write_bytes(b"fake-heic")
 
@@ -159,9 +151,9 @@ class TestRunImageOcrHeic:
         ocr_mod._run_image_ocr(heic_path)
 
         assert len(received) == 1, "predictor should have been called once"
-        assert isinstance(received[0][0], np.ndarray), (
-            "predictor should receive ndarray for HEIC, not a str"
-        )
+        assert isinstance(
+            received[0][0], np.ndarray
+        ), "predictor should receive ndarray for HEIC, not a str"
 
     def test_heif_uses_pixel_array(self, tmp_path: Path, monkeypatch) -> None:
         heif_path = tmp_path / "photo.heif"
@@ -244,9 +236,7 @@ class TestRunImageOcrHeic:
         result = ocr_mod._run_image_ocr(heic_path)
         assert result is None  # fails gracefully, no exception propagated
 
-    def test_dark_heic_uses_preprocess_result(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_dark_heic_uses_preprocess_result(self, tmp_path: Path, monkeypatch) -> None:
         """A dark HEIC image is handled by preprocess_for_ocr (unchanged path)."""
         heic_path = tmp_path / "dark.heic"
         heic_path.write_bytes(b"fake-dark-heic")
@@ -309,9 +299,7 @@ class TestRunImageOcrHeic:
         # _load_rgb returned None → early return, no DocumentFile call, no exception
         assert result is None
 
-    def test_heic_array_conversion_failure_returns_none(
-        self, tmp_path: Path, monkeypatch
-    ) -> None:
+    def test_heic_array_conversion_failure_returns_none(self, tmp_path: Path, monkeypatch) -> None:
         """When PIL succeeds but numpy raises (unusual: PIL present, numpy absent),
         the np.asarray guard must return None instead of propagating or falling
         through to DocumentFile.from_images."""

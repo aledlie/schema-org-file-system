@@ -228,9 +228,9 @@ def test_gps_zero_latitude_emits_content_location(rich_session):
             SchemaOrgExporter(rich_session, use_core=use_core)._collect_records([File])
         )
         img = records[f_img_id]
-        assert "contentLocation" in img, (
-            f"contentLocation missing for lat=0.0 (use_core={use_core})"
-        )
+        assert (
+            "contentLocation" in img
+        ), f"contentLocation missing for lat=0.0 (use_core={use_core})"
         geo = img["contentLocation"]["geo"]
         assert geo["latitude"] == 0.0
         assert geo["longitude"] == 5.0

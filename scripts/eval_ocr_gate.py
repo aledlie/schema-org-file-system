@@ -73,8 +73,14 @@ def load_corpus(path: Optional[str]) -> List[dict]:
     if not path:
         return DEFAULT_CORPUS
     specs = json.loads(Path(path).read_text())
-    return [{"dir": Path(s["dir"]).expanduser(), "text_bearing": bool(s["text_bearing"]),
-             "cap": int(s.get("cap", 0)) or None} for s in specs]
+    return [
+        {
+            "dir": Path(s["dir"]).expanduser(),
+            "text_bearing": bool(s["text_bearing"]),
+            "cap": int(s.get("cap", 0)) or None,
+        }
+        for s in specs
+    ]
 
 
 def gather(corpus: List[dict]) -> List[Tuple[Path, bool]]:
@@ -85,7 +91,8 @@ def gather(corpus: List[dict]) -> List[Tuple[Path, bool]]:
             print(f"  (skip missing dir: {root})")
             continue
         found = sorted(
-            p for p in root.rglob("*")
+            p
+            for p in root.rglob("*")
             if p.suffix.lower() in IMG_EXTS and not p.name.startswith(".")
         )
         cap = spec.get("cap")
@@ -125,6 +132,7 @@ def _topk_keep(labels: frozenset, k: int) -> Callable[[Dict[str, float]], bool]:
     def keep(clip: Dict[str, float]) -> bool:
         top = sorted(clip, key=lambda lbl: clip[lbl], reverse=True)[:k]
         return any(lbl in labels for lbl in top)
+
     return keep
 
 
@@ -133,6 +141,7 @@ def _margin_keep(labels: frozenset, margin: float) -> Callable[[Dict[str, float]
         max_text = max((s for lbl, s in clip.items() if lbl in labels), default=0.0)
         max_other = max((s for lbl, s in clip.items() if lbl not in labels), default=0.0)
         return max_text >= max_other - margin
+
     return keep
 
 
@@ -174,13 +183,17 @@ def print_report(res: dict, labels: frozenset) -> None:
     print("top-k gate (keep OCR iff a text label is in top-K):")
     print(f"  {'K':>3} {'recall':>8} {'skip':>8} {'text_skipped':>13} {'photo_kept':>11}")
     for k, r in res["topk"].items():
-        print(f"  {k:>3} {r['recall']:>7.1%} {r['skip']:>7.1%} "
-              f"{r['text_wrongly_skipped']:>13} {r['photo_kept']:>11}")
+        print(
+            f"  {k:>3} {r['recall']:>7.1%} {r['skip']:>7.1%} "
+            f"{r['text_wrongly_skipped']:>13} {r['photo_kept']:>11}"
+        )
     print("\nmargin gate (keep OCR iff max_text >= max_other - margin):")
     print(f"  {'margin':>7} {'recall':>8} {'skip':>8} {'text_skipped':>13} {'photo_kept':>11}")
     for m, r in res["margin"].items():
-        print(f"  {m:>7.4f} {r['recall']:>7.1%} {r['skip']:>7.1%} "
-              f"{r['text_wrongly_skipped']:>13} {r['photo_kept']:>11}")
+        print(
+            f"  {m:>7.4f} {r['recall']:>7.1%} {r['skip']:>7.1%} "
+            f"{r['text_wrongly_skipped']:>13} {r['photo_kept']:>11}"
+        )
     rk = res["rank_p10_p50_p90"]
     print("\nrank of best text-bearing label (0=argmax); p10/p50/p90:")
     print(f"  text-bearing: {rk['text']}")
@@ -189,11 +202,19 @@ def print_report(res: dict, labels: frozenset) -> None:
 
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(description="Evaluate the CLIP OCR gate on a labeled corpus.")
-    p.add_argument("--corpus", help="JSON list of {dir, text_bearing, cap}; default = photo library")
-    p.add_argument("--topk", type=int, nargs="+", default=list(DEFAULT_TOPKS),
-                   help="top-K values to sweep")
-    p.add_argument("--margin", type=float, nargs="+", default=list(DEFAULT_MARGINS),
-                   help="margin values to sweep")
+    p.add_argument(
+        "--corpus", help="JSON list of {dir, text_bearing, cap}; default = photo library"
+    )
+    p.add_argument(
+        "--topk", type=int, nargs="+", default=list(DEFAULT_TOPKS), help="top-K values to sweep"
+    )
+    p.add_argument(
+        "--margin",
+        type=float,
+        nargs="+",
+        default=list(DEFAULT_MARGINS),
+        help="margin values to sweep",
+    )
     p.add_argument("--json", dest="json_out", help="Write the eval result JSON here")
     return p
 

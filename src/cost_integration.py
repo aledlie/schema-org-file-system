@@ -23,6 +23,7 @@ from typing import (
 from pathlib import Path
 from contextlib import contextmanager
 from cost_roi_calculator import CostROICalculator, CostTracker
+
 try:
     from .constants import SEPARATOR_WIDTH_LARGE
     from .enrichment import cached_stat
@@ -73,21 +74,22 @@ def track_cost(
         feature_name: Name of the feature being tracked
         files_processed: Number of files processed per call
     """
+
     def decorator(func: Callable[P, R]) -> Callable[P, R]:
         @wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
             calculator = get_calculator()
             with CostTracker(calculator, feature_name, files_processed):
                 return func(*args, **kwargs)
+
         return wrapper
+
     return decorator
 
 
 @contextmanager
 def track_feature(
-    feature_name: str,
-    files_processed: int = 1,
-    file_path: Optional[Path] = None
+    feature_name: str, files_processed: int = 1, file_path: Optional[Path] = None
 ) -> Generator[None, None, None]:
     """
     Context manager for tracking feature costs.
@@ -107,10 +109,7 @@ def track_feature(
         file_size = cached_stat(str(file_path)).st_size
 
     with CostTracker(
-        calculator,
-        feature_name,
-        files_processed=files_processed,
-        input_file_size_bytes=file_size
+        calculator, feature_name, files_processed=files_processed, input_file_size_bytes=file_size
     ):
         yield
 
@@ -120,7 +119,7 @@ def record_feature_usage(
     processing_time_sec: float,
     files_processed: int = 1,
     success: bool = True,
-    error_message: Optional[str] = None
+    error_message: Optional[str] = None,
 ) -> None:
     """
     Manually record feature usage.
@@ -140,7 +139,7 @@ def record_feature_usage(
         processing_time_sec=processing_time_sec,
         files_processed=files_processed,
         success=success,
-        error_message=error_message
+        error_message=error_message,
     )
 
 
@@ -160,8 +159,7 @@ def save_cost_report(output_path: str) -> None:
 
 
 def estimate_processing_cost(
-    file_count: int,
-    features: Optional[List[str]] = None
+    file_count: int, features: Optional[List[str]] = None
 ) -> "CostEstimate":
     """
     Estimate cost for processing a number of files.
@@ -173,13 +171,12 @@ def estimate_processing_cost(
     Returns:
         Cost estimate dictionary
     """
-    return cast(
-        "CostEstimate", get_calculator().estimate_cost_for_files(file_count, features)
-    )
+    return cast("CostEstimate", get_calculator().estimate_cost_for_files(file_count, features))
 
 
 class TrackerSummary(TypedDict):
     """``FeatureTracker.summary()`` shape."""
+
     timings: Dict[str, float]
     successes: Dict[str, int]
     errors: Dict[str, str]
@@ -226,7 +223,9 @@ class FeatureTracker:
         finally:
             elapsed = time.time() - start
             self.timings[feature_name] = self.timings.get(feature_name, 0) + elapsed
-            self.successes[feature_name] = self.successes.get(feature_name, 0) + (1 if success else 0)
+            self.successes[feature_name] = self.successes.get(feature_name, 0) + (
+                1 if success else 0
+            )
             if error_msg:
                 self.errors[feature_name] = error_msg
 
@@ -236,16 +235,16 @@ class FeatureTracker:
                 processing_time_sec=elapsed,
                 files_processed=files,
                 success=success,
-                error_message=error_msg
+                error_message=error_msg,
             )
 
     def summary(self) -> TrackerSummary:
         """Get tracking summary."""
         return {
-            'timings': self.timings,
-            'successes': self.successes,
-            'errors': self.errors,
-            'total_time': sum(self.timings.values())
+            "timings": self.timings,
+            "successes": self.successes,
+            "errors": self.errors,
+            "total_time": sum(self.timings.values()),
         }
 
 
@@ -387,5 +386,5 @@ print(f"Estimated ROI: {estimate['estimated_roi']:.0f}%")
     print("=" * SEPARATOR_WIDTH_LARGE)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     print_integration_guide()

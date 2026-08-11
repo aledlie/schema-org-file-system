@@ -1,4 +1,5 @@
 """KIE field class names and Schema.org property mappings."""
+
 from __future__ import annotations
 
 from typing import TYPE_CHECKING

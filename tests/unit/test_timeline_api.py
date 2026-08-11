@@ -58,15 +58,52 @@ def timeline_db(tmp_path: Path) -> Path:
     conn.executemany(
         "INSERT INTO organization_sessions VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
         [
-            (SESSION_A, "2026-01-01T10:00:00", "2026-01-01T10:05:00", 0,
-             '["~/Desktop", "~/Downloads"]', "~/Documents", 100,
-             10, 7, 2, 1, 0.5, 20.0),
-            (SESSION_B, "2026-02-01T09:00:00", "2026-02-01T09:10:00", 1,
-             "not-json", "~/Documents", None,
-             20, 15, 4, 1, 1.25, 30.5),
+            (
+                SESSION_A,
+                "2026-01-01T10:00:00",
+                "2026-01-01T10:05:00",
+                0,
+                '["~/Desktop", "~/Downloads"]',
+                "~/Documents",
+                100,
+                10,
+                7,
+                2,
+                1,
+                0.5,
+                20.0,
+            ),
+            (
+                SESSION_B,
+                "2026-02-01T09:00:00",
+                "2026-02-01T09:10:00",
+                1,
+                "not-json",
+                "~/Documents",
+                None,
+                20,
+                15,
+                4,
+                1,
+                1.25,
+                30.5,
+            ),
             # total_files = 0 -> must be filtered out of the document
-            (SESSION_EMPTY, "2026-03-01T08:00:00", None, 0,
-             None, "~/Documents", None, 0, 0, 0, 0, 0.0, None),
+            (
+                SESSION_EMPTY,
+                "2026-03-01T08:00:00",
+                None,
+                0,
+                None,
+                "~/Documents",
+                None,
+                0,
+                0,
+                0,
+                0,
+                0.0,
+                None,
+            ),
         ],
     )
     conn.executemany(
@@ -93,8 +130,7 @@ def timeline_db(tmp_path: Path) -> Path:
     )
     conn.executemany(
         "INSERT INTO file_categories VALUES (?,?,?)",
-        [(1, 1, 0.9), (2, 1, 0.8), (3, 2, 0.95),
-         (5, 2, 0.7), (6, 1, 0.6), (7, 1, 0.85)],
+        [(1, 1, 0.9), (2, 1, 0.8), (3, 2, 0.95), (5, 2, 0.7), (6, 1, 0.6), (7, 1, 0.85)],
     )
     conn.commit()
     conn.close()
@@ -141,8 +177,11 @@ class TestSessionBreakdowns:
     def test_categories_shape(self, timeline_db):
         cats = TimelineAPI(timeline_db).get_session_categories(SESSION_A)
         assert cats[0] == {
-            "name": "media", "color": "#ff0000", "icon": "image",
-            "count": 2, "avg_confidence": pytest.approx(0.85),
+            "name": "media",
+            "color": "#ff0000",
+            "icon": "image",
+            "count": 2,
+            "avg_confidence": pytest.approx(0.85),
         }
 
     def test_schema_types_shape_and_null_excluded(self, timeline_db):
@@ -166,20 +205,31 @@ class TestSessionChanges:
             {"total_files": 10, "organized_count": 7}, None
         )
         assert changes == {
-            "is_first": True, "files_delta": 10, "organized_delta": 7,
+            "is_first": True,
+            "files_delta": 10,
+            "organized_delta": 7,
         }
 
     def test_deltas_between_sessions(self, timeline_db):
         a, b = TimelineAPI(timeline_db).get_sessions()
         changes = TimelineAPI.calculate_session_changes(b, a)
         assert changes == {
-            "is_first": False, "files_delta": 10, "organized_delta": 8,
-            "success_rate_delta": 5.0, "cost_delta": 0.75, "time_delta": 10.5,
+            "is_first": False,
+            "files_delta": 10,
+            "organized_delta": 8,
+            "success_rate_delta": 5.0,
+            "cost_delta": 0.75,
+            "time_delta": 10.5,
         }
 
     def test_none_processing_time_treated_as_zero(self):
-        base = {"total_files": 1, "organized_count": 1, "success_rate": 100.0,
-                "total_cost": 0.0, "total_processing_time_sec": None}
+        base = {
+            "total_files": 1,
+            "organized_count": 1,
+            "success_rate": 100.0,
+            "total_cost": 0.0,
+            "total_processing_time_sec": None,
+        }
         changes = TimelineAPI.calculate_session_changes(dict(base), dict(base))
         assert changes["time_delta"] == 0
 

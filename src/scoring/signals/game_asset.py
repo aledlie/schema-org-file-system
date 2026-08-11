@@ -116,6 +116,7 @@ def _is_camera_or_scan_stem(stem: str) -> bool:
     """True when *stem* (already case-folded) is a camera-roll or scanner name."""
     return any(p.match(stem) for p in _CAMERA_OR_SCAN_STEM_PATTERNS)
 
+
 # Subset of game_sprite_keywords that implies sprite (vs texture)
 # classification. Moved verbatim from the ContentOrganizer class attribute
 # (which now aliases this constant).

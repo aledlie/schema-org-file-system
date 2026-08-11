@@ -27,6 +27,7 @@ def cached_stat(path: str) -> os.stat_result:
     """
     return Path(path).stat()
 
+
 try:
     from .constants import SECONDS_PER_HOUR, SECONDS_PER_MINUTE
 except ImportError:
@@ -66,47 +67,41 @@ class MetadataEnricher:
         """Build MIME type to encoding format mapping."""
         return {
             # Documents
-            'application/pdf': 'application/pdf',
-            'application/msword': 'application/msword',
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-            'text/plain': 'text/plain',
-            'text/markdown': 'text/markdown',
-            'text/html': 'text/html',
-
+            "application/pdf": "application/pdf",
+            "application/msword": "application/msword",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "text/plain": "text/plain",
+            "text/markdown": "text/markdown",
+            "text/html": "text/html",
             # Images
-            'image/jpeg': 'image/jpeg',
-            'image/png': 'image/png',
-            'image/gif': 'image/gif',
-            'image/webp': 'image/webp',
-            'image/svg+xml': 'image/svg+xml',
-
+            "image/jpeg": "image/jpeg",
+            "image/png": "image/png",
+            "image/gif": "image/gif",
+            "image/webp": "image/webp",
+            "image/svg+xml": "image/svg+xml",
             # Videos
-            'video/mp4': 'video/mp4',
-            'video/mpeg': 'video/mpeg',
-            'video/webm': 'video/webm',
-            'video/quicktime': 'video/quicktime',
-
+            "video/mp4": "video/mp4",
+            "video/mpeg": "video/mpeg",
+            "video/webm": "video/webm",
+            "video/quicktime": "video/quicktime",
             # Audio
-            'audio/mpeg': 'audio/mpeg',
-            'audio/mp4': 'audio/mp4',
-            'audio/wav': 'audio/wav',
-            'audio/ogg': 'audio/ogg',
-
+            "audio/mpeg": "audio/mpeg",
+            "audio/mp4": "audio/mp4",
+            "audio/wav": "audio/wav",
+            "audio/ogg": "audio/ogg",
             # Code
-            'text/x-python': 'text/x-python',
-            'text/javascript': 'text/javascript',
-            'text/x-java': 'text/x-java',
-            'text/x-c': 'text/x-c',
-
+            "text/x-python": "text/x-python",
+            "text/javascript": "text/javascript",
+            "text/x-java": "text/x-java",
+            "text/x-c": "text/x-c",
             # Archives
-            'application/zip': 'application/zip',
-            'application/x-tar': 'application/x-tar',
-            'application/gzip': 'application/gzip',
-
+            "application/zip": "application/zip",
+            "application/x-tar": "application/x-tar",
+            "application/gzip": "application/gzip",
             # Data
-            'text/csv': 'text/csv',
-            'application/json': 'application/json',
-            'application/xml': 'application/xml',
+            "text/csv": "text/csv",
+            "application/json": "application/json",
+            "application/xml": "application/xml",
         }
 
     def detect_mime_type(self, file_path: str) -> str:
@@ -120,7 +115,7 @@ class MetadataEnricher:
             MIME type string
         """
         mime_type, _ = mimetypes.guess_type(file_path)
-        return mime_type or 'application/octet-stream'
+        return mime_type or "application/octet-stream"
 
     def get_encoding_format(self, file_path: str) -> str:
         """
@@ -163,36 +158,36 @@ class MetadataEnricher:
         file_hash = hashlib.sha256(abs_path.encode()).hexdigest()
 
         return {
-            '@id': f'urn:sha256:{file_hash}',
-            'name': path.name,
-            'url': f'file://{path.absolute()}',
-            'encodingFormat': self.get_encoding_format(file_path),
-            'contentSize': stats.st_size,
-            'dateCreated': datetime.fromtimestamp(stats.st_ctime),
-            'dateModified': datetime.fromtimestamp(stats.st_mtime),
+            "@id": f"urn:sha256:{file_hash}",
+            "name": path.name,
+            "url": f"file://{path.absolute()}",
+            "encodingFormat": self.get_encoding_format(file_path),
+            "contentSize": stats.st_size,
+            "dateCreated": datetime.fromtimestamp(stats.st_ctime),
+            "dateModified": datetime.fromtimestamp(stats.st_mtime),
         }
 
     def _generate_person_id(self, name: str) -> str:
         """Generate deterministic @id for a Person."""
         person_uuid = uuid.uuid5(
-            uuid.UUID('d1e2a3b4-5678-9abc-def0-123456789012'),  # Person namespace
-            name.lower().strip()
+            uuid.UUID("d1e2a3b4-5678-9abc-def0-123456789012"),  # Person namespace
+            name.lower().strip(),
         )
         return f"urn:uuid:{person_uuid}"
 
     def _generate_org_id(self, name: str) -> str:
         """Generate deterministic @id for an Organization."""
         org_uuid = uuid.uuid5(
-            uuid.UUID('c0e1a2b3-4567-89ab-cdef-012345678901'),  # Company namespace
-            name.lower().strip()
+            uuid.UUID("c0e1a2b3-4567-89ab-cdef-012345678901"),  # Company namespace
+            name.lower().strip(),
         )
         return f"urn:uuid:{org_uuid}"
 
     def _generate_place_id(self, name: str) -> str:
         """Generate deterministic @id for a Place."""
         place_uuid = uuid.uuid5(
-            uuid.UUID('e2e3a4b5-6789-abcd-ef01-234567890123'),  # Location namespace
-            name.lower().strip()
+            uuid.UUID("e2e3a4b5-6789-abcd-ef01-234567890123"),  # Location namespace
+            name.lower().strip(),
         )
         return f"urn:uuid:{place_uuid}"
 
@@ -209,63 +204,63 @@ class MetadataEnricher:
         metadata: Dict[str, Any] = {}
 
         # Creator information
-        if 'Artist' in exif_data:
-            artist_name = exif_data['Artist']
-            metadata['creator'] = {
-                '@type': 'Person',
-                '@id': self._generate_person_id(artist_name),
-                'name': artist_name
+        if "Artist" in exif_data:
+            artist_name = exif_data["Artist"]
+            metadata["creator"] = {
+                "@type": "Person",
+                "@id": self._generate_person_id(artist_name),
+                "name": artist_name,
             }
 
         # Camera information
         camera_info = []
-        if 'Make' in exif_data:
-            camera_info.append(exif_data['Make'])
-        if 'Model' in exif_data:
-            camera_info.append(exif_data['Model'])
+        if "Make" in exif_data:
+            camera_info.append(exif_data["Make"])
+        if "Model" in exif_data:
+            camera_info.append(exif_data["Model"])
         if camera_info:
-            metadata['exifData'] = {
-                '@type': 'PropertyValue',
-                'name': 'Camera',
-                'value': ' '.join(camera_info)
+            metadata["exifData"] = {
+                "@type": "PropertyValue",
+                "name": "Camera",
+                "value": " ".join(camera_info),
             }
 
         # Dates
-        date_fields = ['DateTime', 'DateTimeOriginal', 'DateTimeDigitized']
+        date_fields = ["DateTime", "DateTimeOriginal", "DateTimeDigitized"]
         for field in date_fields:
             if field in exif_data:
                 try:
                     # EXIF dates are typically in format: YYYY:MM:DD HH:MM:SS
-                    date_str = exif_data[field].replace(':', '-', 2)
-                    metadata['dateCreated'] = date_str
+                    date_str = exif_data[field].replace(":", "-", 2)
+                    metadata["dateCreated"] = date_str
                     break
                 except Exception:
                     pass
 
         # Location
-        if 'GPSLatitude' in exif_data and 'GPSLongitude' in exif_data:
-            metadata['contentLocation'] = {
-                '@type': 'Place',
-                'geo': {
-                    '@type': 'GeoCoordinates',
-                    'latitude': exif_data['GPSLatitude'],
-                    'longitude': exif_data['GPSLongitude']
-                }
+        if "GPSLatitude" in exif_data and "GPSLongitude" in exif_data:
+            metadata["contentLocation"] = {
+                "@type": "Place",
+                "geo": {
+                    "@type": "GeoCoordinates",
+                    "latitude": exif_data["GPSLatitude"],
+                    "longitude": exif_data["GPSLongitude"],
+                },
             }
 
         # Dimensions
-        if 'ImageWidth' in exif_data:
-            metadata['width'] = exif_data['ImageWidth']
-        if 'ImageHeight' in exif_data:
-            metadata['height'] = exif_data['ImageHeight']
+        if "ImageWidth" in exif_data:
+            metadata["width"] = exif_data["ImageWidth"]
+        if "ImageHeight" in exif_data:
+            metadata["height"] = exif_data["ImageHeight"]
 
         # Copyright
-        if 'Copyright' in exif_data:
-            metadata['copyrightNotice'] = exif_data['Copyright']
+        if "Copyright" in exif_data:
+            metadata["copyrightNotice"] = exif_data["Copyright"]
 
         # Description
-        if 'ImageDescription' in exif_data:
-            metadata['description'] = exif_data['ImageDescription']
+        if "ImageDescription" in exif_data:
+            metadata["description"] = exif_data["ImageDescription"]
 
         return metadata
 
@@ -283,27 +278,27 @@ class MetadataEnricher:
 
         # Basic properties
         property_mapping = {
-            'title': 'name',
-            'subject': 'abstract',
-            'description': 'description',
-            'keywords': 'keywords',
-            'creator': 'author',
-            'author': 'author',
-            'created': 'dateCreated',
-            'modified': 'dateModified',
-            'language': 'inLanguage',
-            'pages': 'numberOfPages',
+            "title": "name",
+            "subject": "abstract",
+            "description": "description",
+            "keywords": "keywords",
+            "creator": "author",
+            "author": "author",
+            "created": "dateCreated",
+            "modified": "dateModified",
+            "language": "inLanguage",
+            "pages": "numberOfPages",
         }
 
         for doc_key, schema_key in property_mapping.items():
             if doc_key in doc_props:
                 value = doc_props[doc_key]
 
-                if schema_key in ['author', 'creator'] and isinstance(value, str):
+                if schema_key in ["author", "creator"] and isinstance(value, str):
                     metadata[schema_key] = {
-                        '@type': 'Person',
-                        '@id': self._generate_person_id(value),
-                        'name': value
+                        "@type": "Person",
+                        "@id": self._generate_person_id(value),
+                        "name": value,
                     }
                 else:
                     metadata[schema_key] = value
@@ -323,61 +318,54 @@ class MetadataEnricher:
         metadata: Dict[str, Any] = {}
 
         # Keywords and topics
-        if 'keywords' in nlp_results:
-            metadata['keywords'] = ', '.join(nlp_results['keywords'])
+        if "keywords" in nlp_results:
+            metadata["keywords"] = ", ".join(nlp_results["keywords"])
 
-        if 'topics' in nlp_results:
-            metadata['about'] = [
-                {'@type': 'Thing', 'name': topic}
-                for topic in nlp_results['topics']
+        if "topics" in nlp_results:
+            metadata["about"] = [
+                {"@type": "Thing", "name": topic} for topic in nlp_results["topics"]
             ]
 
         # Entities
-        if 'entities' in nlp_results:
+        if "entities" in nlp_results:
             mentions = []
-            for entity in nlp_results['entities']:
-                entity_type = entity.get('type', 'Thing')
+            for entity in nlp_results["entities"]:
+                entity_type = entity.get("type", "Thing")
                 schema_type = self._map_entity_type_to_schema(entity_type)
-                entity_name = entity.get('text', entity.get('name', ''))
+                entity_name = entity.get("text", entity.get("name", ""))
 
                 # Generate appropriate @id based on entity type
-                if schema_type == 'Person':
+                if schema_type == "Person":
                     entity_id = self._generate_person_id(entity_name)
-                elif schema_type == 'Organization':
+                elif schema_type == "Organization":
                     entity_id = self._generate_org_id(entity_name)
-                elif schema_type == 'Place':
+                elif schema_type == "Place":
                     entity_id = self._generate_place_id(entity_name)
                 else:
                     # Generic Thing - use a hash-based ID
                     thing_uuid = uuid.uuid5(
-                        uuid.UUID('a0b1c2d3-4567-89ab-cdef-0123456789ab'),  # Thing namespace
-                        entity_name.lower().strip()
+                        uuid.UUID("a0b1c2d3-4567-89ab-cdef-0123456789ab"),  # Thing namespace
+                        entity_name.lower().strip(),
                     )
                     entity_id = f"urn:uuid:{thing_uuid}"
 
-                mentions.append({
-                    '@type': schema_type,
-                    '@id': entity_id,
-                    'name': entity_name
-                })
+                mentions.append({"@type": schema_type, "@id": entity_id, "name": entity_name})
             if mentions:
-                metadata['mentions'] = mentions
+                metadata["mentions"] = mentions
 
         # Language
-        if 'language' in nlp_results:
-            metadata['inLanguage'] = nlp_results['language']
+        if "language" in nlp_results:
+            metadata["inLanguage"] = nlp_results["language"]
 
         # Sentiment (as custom property)
-        if 'sentiment' in nlp_results:
-            metadata['additionalProperty'] = [{
-                '@type': 'PropertyValue',
-                'name': 'sentiment',
-                'value': nlp_results['sentiment']
-            }]
+        if "sentiment" in nlp_results:
+            metadata["additionalProperty"] = [
+                {"@type": "PropertyValue", "name": "sentiment", "value": nlp_results["sentiment"]}
+            ]
 
         # Summary
-        if 'summary' in nlp_results:
-            metadata['abstract'] = nlp_results['summary']
+        if "summary" in nlp_results:
+            metadata["abstract"] = nlp_results["summary"]
 
         return metadata
 
@@ -394,50 +382,52 @@ class MetadataEnricher:
         metadata: Dict[str, Any] = {}
 
         # Basic properties
-        if 'title' in audio_meta:
-            metadata['name'] = audio_meta['title']
-        if 'artist' in audio_meta:
-            artist_name = audio_meta['artist']
-            metadata['byArtist'] = {
-                '@type': 'Person',
-                '@id': self._generate_person_id(artist_name),
-                'name': artist_name
+        if "title" in audio_meta:
+            metadata["name"] = audio_meta["title"]
+        if "artist" in audio_meta:
+            artist_name = audio_meta["artist"]
+            metadata["byArtist"] = {
+                "@type": "Person",
+                "@id": self._generate_person_id(artist_name),
+                "name": artist_name,
             }
-        if 'album' in audio_meta:
-            album_name = audio_meta['album']
+        if "album" in audio_meta:
+            album_name = audio_meta["album"]
             album_uuid = uuid.uuid5(
-                uuid.UUID('b1c2d3e4-5678-9abc-def0-123456789abc'),  # Album namespace
-                album_name.lower().strip()
+                uuid.UUID("b1c2d3e4-5678-9abc-def0-123456789abc"),  # Album namespace
+                album_name.lower().strip(),
             )
-            metadata['inAlbum'] = {
-                '@type': 'MusicAlbum',
-                '@id': f"urn:uuid:{album_uuid}",
-                'name': album_name
+            metadata["inAlbum"] = {
+                "@type": "MusicAlbum",
+                "@id": f"urn:uuid:{album_uuid}",
+                "name": album_name,
             }
-        if 'genre' in audio_meta:
-            metadata['genre'] = audio_meta['genre']
-        if 'duration' in audio_meta:
+        if "genre" in audio_meta:
+            metadata["genre"] = audio_meta["genre"]
+        if "duration" in audio_meta:
             # Convert seconds to ISO 8601 duration
-            duration_sec = audio_meta['duration']
-            metadata['duration'] = self._seconds_to_iso_duration(duration_sec)
+            duration_sec = audio_meta["duration"]
+            metadata["duration"] = self._seconds_to_iso_duration(duration_sec)
 
         # Audio quality
-        if 'bitrate' in audio_meta:
-            metadata['bitrate'] = f"{audio_meta['bitrate']}kbps"
-        if 'sample_rate' in audio_meta:
-            metadata['encodingFormat'] = f"{metadata.get('encodingFormat', 'audio/mpeg')} ({audio_meta['sample_rate']}Hz)"
+        if "bitrate" in audio_meta:
+            metadata["bitrate"] = f"{audio_meta['bitrate']}kbps"
+        if "sample_rate" in audio_meta:
+            metadata["encodingFormat"] = (
+                f"{metadata.get('encodingFormat', 'audio/mpeg')} ({audio_meta['sample_rate']}Hz)"
+            )
 
         # Track number
-        if 'track_number' in audio_meta:
-            metadata['position'] = audio_meta['track_number']
+        if "track_number" in audio_meta:
+            metadata["position"] = audio_meta["track_number"]
 
         # Year/date
-        if 'year' in audio_meta:
-            metadata['datePublished'] = f"{audio_meta['year']}-01-01"
+        if "year" in audio_meta:
+            metadata["datePublished"] = f"{audio_meta['year']}-01-01"
 
         # ISRC
-        if 'isrc' in audio_meta:
-            metadata['isrcCode'] = audio_meta['isrc']
+        if "isrc" in audio_meta:
+            metadata["isrcCode"] = audio_meta["isrc"]
 
         return metadata
 
@@ -454,37 +444,37 @@ class MetadataEnricher:
         metadata: Dict[str, Any] = {}
 
         # Basic properties
-        if 'title' in video_meta:
-            metadata['name'] = video_meta['title']
-        if 'description' in video_meta:
-            metadata['description'] = video_meta['description']
+        if "title" in video_meta:
+            metadata["name"] = video_meta["title"]
+        if "description" in video_meta:
+            metadata["description"] = video_meta["description"]
 
         # Dimensions
-        if 'width' in video_meta:
-            metadata['width'] = video_meta['width']
-        if 'height' in video_meta:
-            metadata['height'] = video_meta['height']
+        if "width" in video_meta:
+            metadata["width"] = video_meta["width"]
+        if "height" in video_meta:
+            metadata["height"] = video_meta["height"]
 
         # Duration
-        if 'duration' in video_meta:
-            duration_sec = video_meta['duration']
-            metadata['duration'] = self._seconds_to_iso_duration(duration_sec)
+        if "duration" in video_meta:
+            duration_sec = video_meta["duration"]
+            metadata["duration"] = self._seconds_to_iso_duration(duration_sec)
 
         # Quality
-        if 'bitrate' in video_meta:
-            metadata['bitrate'] = f"{video_meta['bitrate']}kbps"
+        if "bitrate" in video_meta:
+            metadata["bitrate"] = f"{video_meta['bitrate']}kbps"
 
         # Codec
-        if 'codec' in video_meta:
-            metadata['videoCodec'] = video_meta['codec']
-        if 'audio_codec' in video_meta:
-            metadata['audioCodec'] = video_meta['audio_codec']
+        if "codec" in video_meta:
+            metadata["videoCodec"] = video_meta["codec"]
+        if "audio_codec" in video_meta:
+            metadata["audioCodec"] = video_meta["audio_codec"]
 
         # Upload date (default to current)
-        if 'upload_date' in video_meta:
-            metadata['uploadDate'] = video_meta['upload_date']
+        if "upload_date" in video_meta:
+            metadata["uploadDate"] = video_meta["upload_date"]
         else:
-            metadata['uploadDate'] = datetime.now()
+            metadata["uploadDate"] = datetime.now()
 
         return metadata
 
@@ -501,48 +491,48 @@ class MetadataEnricher:
         metadata: Dict[str, Any] = {}
 
         # Language
-        if 'language' in code_analysis:
-            metadata['programmingLanguage'] = code_analysis['language']
+        if "language" in code_analysis:
+            metadata["programmingLanguage"] = code_analysis["language"]
 
         # Repository info
-        if 'repository' in code_analysis:
-            repo = code_analysis['repository']
-            metadata['codeRepository'] = repo.get('url', '')
-            if 'branch' in repo:
-                metadata['targetProduct'] = repo['branch']
+        if "repository" in code_analysis:
+            repo = code_analysis["repository"]
+            metadata["codeRepository"] = repo.get("url", "")
+            if "branch" in repo:
+                metadata["targetProduct"] = repo["branch"]
 
         # Dependencies
-        if 'dependencies' in code_analysis:
-            metadata['dependencies'] = [
+        if "dependencies" in code_analysis:
+            metadata["dependencies"] = [
                 {
-                    '@type': 'SoftwareApplication',
-                    'name': dep['name'],
-                    'softwareVersion': dep.get('version', '')
+                    "@type": "SoftwareApplication",
+                    "name": dep["name"],
+                    "softwareVersion": dep.get("version", ""),
                 }
-                for dep in code_analysis['dependencies']
+                for dep in code_analysis["dependencies"]
             ]
 
         # Runtime
-        if 'runtime' in code_analysis:
-            metadata['runtimePlatform'] = code_analysis['runtime']
+        if "runtime" in code_analysis:
+            metadata["runtimePlatform"] = code_analysis["runtime"]
 
         # License
-        if 'license' in code_analysis:
-            metadata['license'] = code_analysis['license']
+        if "license" in code_analysis:
+            metadata["license"] = code_analysis["license"]
 
         # Author
-        if 'author' in code_analysis:
-            author_name = code_analysis['author']
-            metadata['author'] = {
-                '@type': 'Person',
-                '@id': self._generate_person_id(author_name),
-                'name': author_name
+        if "author" in code_analysis:
+            author_name = code_analysis["author"]
+            metadata["author"] = {
+                "@type": "Person",
+                "@id": self._generate_person_id(author_name),
+                "name": author_name,
             }
 
         # Functions/classes (as description)
-        if 'functions' in code_analysis:
-            func_count = len(code_analysis['functions'])
-            metadata['description'] = f"Contains {func_count} functions"
+        if "functions" in code_analysis:
+            func_count = len(code_analysis["functions"])
+            metadata["description"] = f"Contains {func_count} functions"
 
         return metadata
 
@@ -559,49 +549,46 @@ class MetadataEnricher:
         metadata: Dict[str, Any] = {}
 
         # Basic properties
-        if 'name' in dataset_info:
-            metadata['name'] = dataset_info['name']
-        if 'description' in dataset_info:
-            metadata['description'] = dataset_info['description']
+        if "name" in dataset_info:
+            metadata["name"] = dataset_info["name"]
+        if "description" in dataset_info:
+            metadata["description"] = dataset_info["description"]
 
         # Variables/columns
-        if 'columns' in dataset_info:
-            metadata['variableMeasured'] = [
+        if "columns" in dataset_info:
+            metadata["variableMeasured"] = [
                 {
-                    '@type': 'PropertyValue',
-                    'name': col['name'],
-                    'description': col.get('description', '')
+                    "@type": "PropertyValue",
+                    "name": col["name"],
+                    "description": col.get("description", ""),
                 }
-                for col in dataset_info['columns']
+                for col in dataset_info["columns"]
             ]
 
         # Coverage
-        if 'temporal_coverage' in dataset_info:
-            temporal = dataset_info['temporal_coverage']
+        if "temporal_coverage" in dataset_info:
+            temporal = dataset_info["temporal_coverage"]
             if isinstance(temporal, dict):
-                start = temporal.get('start', '')
-                end = temporal.get('end', '')
-                metadata['temporalCoverage'] = f"{start}/{end}"
+                start = temporal.get("start", "")
+                end = temporal.get("end", "")
+                metadata["temporalCoverage"] = f"{start}/{end}"
             else:
-                metadata['temporalCoverage'] = temporal
+                metadata["temporalCoverage"] = temporal
 
-        if 'spatial_coverage' in dataset_info:
-            metadata['spatialCoverage'] = dataset_info['spatial_coverage']
+        if "spatial_coverage" in dataset_info:
+            metadata["spatialCoverage"] = dataset_info["spatial_coverage"]
 
         # Distribution
-        if 'format' in dataset_info:
-            metadata['distribution'] = [{
-                '@type': 'DataDownload',
-                'encodingFormat': dataset_info['format']
-            }]
+        if "format" in dataset_info:
+            metadata["distribution"] = [
+                {"@type": "DataDownload", "encodingFormat": dataset_info["format"]}
+            ]
 
         # Size
-        if 'rows' in dataset_info:
-            metadata['additionalProperty'] = [{
-                '@type': 'PropertyValue',
-                'name': 'rows',
-                'value': dataset_info['rows']
-            }]
+        if "rows" in dataset_info:
+            metadata["additionalProperty"] = [
+                {"@type": "PropertyValue", "name": "rows", "value": dataset_info["rows"]}
+            ]
 
         return metadata
 
@@ -616,19 +603,19 @@ class MetadataEnricher:
             Schema.org type
         """
         mapping = {
-            'PERSON': 'Person',
-            'ORG': 'Organization',
-            'ORGANIZATION': 'Organization',
-            'GPE': 'Place',
-            'LOC': 'Place',
-            'LOCATION': 'Place',
-            'EVENT': 'Event',
-            'WORK_OF_ART': 'CreativeWork',
-            'PRODUCT': 'Product',
-            'DATE': 'Date',
-            'TIME': 'Time',
+            "PERSON": "Person",
+            "ORG": "Organization",
+            "ORGANIZATION": "Organization",
+            "GPE": "Place",
+            "LOC": "Place",
+            "LOCATION": "Place",
+            "EVENT": "Event",
+            "WORK_OF_ART": "CreativeWork",
+            "PRODUCT": "Product",
+            "DATE": "Date",
+            "TIME": "Time",
         }
-        return mapping.get(entity_type.upper(), 'Thing')
+        return mapping.get(entity_type.upper(), "Thing")
 
     def _seconds_to_iso_duration(self, seconds: Union[int, float]) -> str:
         """
@@ -644,15 +631,15 @@ class MetadataEnricher:
         minutes = int((seconds % SECONDS_PER_HOUR) // SECONDS_PER_MINUTE)
         secs = int(seconds % SECONDS_PER_MINUTE)
 
-        parts = ['PT']
+        parts = ["PT"]
         if hours > 0:
-            parts.append(f'{hours}H')
+            parts.append(f"{hours}H")
         if minutes > 0:
-            parts.append(f'{minutes}M')
+            parts.append(f"{minutes}M")
         if secs > 0 or (hours == 0 and minutes == 0):
-            parts.append(f'{secs}S')
+            parts.append(f"{secs}S")
 
-        return ''.join(parts)
+        return "".join(parts)
 
     def merge_metadata(self, *metadata_dicts: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -673,9 +660,12 @@ class MetadataEnricher:
                     merged[key] = value
         return merged
 
-    def create_enriched_schema(self, generator_class: Callable[..., SchemaOrgBase],
-                              base_metadata: Dict[str, Any],
-                              *enrichment_sources: Dict[str, Any]) -> SchemaOrgBase:
+    def create_enriched_schema(
+        self,
+        generator_class: Callable[..., SchemaOrgBase],
+        base_metadata: Dict[str, Any],
+        *enrichment_sources: Dict[str, Any],
+    ) -> SchemaOrgBase:
         """
         Create enriched schema from multiple metadata sources.
 
@@ -695,7 +685,7 @@ class MetadataEnricher:
 
         # Apply metadata to generator
         for key, value in merged.items():
-            if hasattr(generator, 'set_property'):
+            if hasattr(generator, "set_property"):
                 try:
                     generator.set_property(key, value)
                 except Exception:

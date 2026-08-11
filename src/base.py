@@ -17,10 +17,7 @@ class SchemaContext:
     """Manages Schema.org context and namespace."""
 
     SCHEMA_ORG = "https://schema.org"
-    DEFAULT_CONTEXT = {
-        "@context": "https://schema.org",
-        "@vocab": "https://schema.org/"
-    }
+    DEFAULT_CONTEXT = {"@context": "https://schema.org", "@vocab": "https://schema.org/"}
 
     @classmethod
     def get_context(cls, additional_contexts: Optional[Dict[str, str]] = None) -> Dict[str, str]:
@@ -41,6 +38,7 @@ class SchemaContext:
 
 class PropertyType(Enum):
     """Schema.org property types."""
+
     TEXT = "Text"
     URL = "URL"
     DATE = "Date"
@@ -94,7 +92,7 @@ class SchemaOrgBase(ABC):
         if entity_id is None:
             # Generate random UUID v4
             normalized_id = f"urn:uuid:{uuid.uuid4()}"
-        elif entity_id.startswith(('http://', 'https://', 'urn:')):
+        elif entity_id.startswith(("http://", "https://", "urn:")):
             # Already a valid IRI
             normalized_id = entity_id
         else:
@@ -104,7 +102,7 @@ class SchemaOrgBase(ABC):
         self.data: Dict[str, Any] = {
             "@context": SchemaContext.SCHEMA_ORG,
             "@type": schema_type,
-            "@id": normalized_id
+            "@id": normalized_id,
         }
         self._required_properties: List[str] = []
         self._recommended_properties: List[str] = []
@@ -129,8 +127,9 @@ class SchemaOrgBase(ABC):
         """
         pass
 
-    def set_property(self, name: str, value: Any,
-                     property_type: Optional[PropertyType] = None) -> 'SchemaOrgBase':
+    def set_property(
+        self, name: str, value: Any, property_type: Optional[PropertyType] = None
+    ) -> "SchemaOrgBase":
         """
         Set a property value with optional type validation.
 
@@ -170,7 +169,7 @@ class SchemaOrgBase(ABC):
             return str(value)
         elif property_type == PropertyType.URL:
             url_str = str(value)
-            if not (url_str.startswith('http://') or url_str.startswith('https://')):
+            if not (url_str.startswith("http://") or url_str.startswith("https://")):
                 raise ValueError(f"Invalid URL: {url_str}")
             return url_str
         elif property_type == PropertyType.DATE:
@@ -210,9 +209,12 @@ class SchemaOrgBase(ABC):
         """
         return cast(str, self.data.get("@id", ""))
 
-    def set_dates(self, created: Optional[datetime] = None,
-                  modified: Optional[datetime] = None,
-                  published: Optional[datetime] = None) -> 'SchemaOrgBase':
+    def set_dates(
+        self,
+        created: Optional[datetime] = None,
+        modified: Optional[datetime] = None,
+        published: Optional[datetime] = None,
+    ) -> "SchemaOrgBase":
         """
         Set date properties.
 

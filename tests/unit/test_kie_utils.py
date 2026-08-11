@@ -4,6 +4,7 @@ Unit tests for KIE utilities and Schema.org mapping.
 All heavy dependencies (doctr, torch) are mocked so the tests run without
 those libraries installed.
 """
+
 from __future__ import annotations
 
 import sys
@@ -47,6 +48,7 @@ def kie_classifier():
 # ---------------------------------------------------------------------------
 # KIEField / KIEResult dataclass tests
 # ---------------------------------------------------------------------------
+
 
 class TestKIEDataclasses:
     def test_kie_field_construction(self):
@@ -96,17 +98,20 @@ class TestKIEDataclasses:
 # Schema.org mapping tests
 # ---------------------------------------------------------------------------
 
+
 class TestKIESchemaMapping:
     def test_basic_invoice_mapping(self):
         from shared.kie_schema_mapping import kie_result_to_schema_org
 
-        result = _make_kie_result({
-            "vendor_name": [("Acme Corp", 0.9)],
-            "total_amount": [("1500.00", 0.85)],
-            "currency": [("USD", 0.8)],
-            "invoice_date": [("2024-03-15", 0.75)],
-            "invoice_number": [("INV-2024-001", 0.88)],
-        })
+        result = _make_kie_result(
+            {
+                "vendor_name": [("Acme Corp", 0.9)],
+                "total_amount": [("1500.00", 0.85)],
+                "currency": [("USD", 0.8)],
+                "invoice_date": [("2024-03-15", 0.75)],
+                "invoice_number": [("INV-2024-001", 0.88)],
+            }
+        )
 
         schema = kie_result_to_schema_org(result)
 
@@ -121,10 +126,12 @@ class TestKIESchemaMapping:
     def test_low_confidence_fields_excluded(self):
         from shared.kie_schema_mapping import kie_result_to_schema_org
 
-        result = _make_kie_result({
-            "vendor_name": [("Acme Corp", 0.9)],
-            "total_amount": [("???", 0.2)],  # below threshold
-        })
+        result = _make_kie_result(
+            {
+                "vendor_name": [("Acme Corp", 0.9)],
+                "total_amount": [("???", 0.2)],  # below threshold
+            }
+        )
 
         schema = kie_result_to_schema_org(result)
         assert "provider" in schema
@@ -133,9 +140,11 @@ class TestKIESchemaMapping:
     def test_picks_highest_confidence_field(self):
         from shared.kie_schema_mapping import kie_result_to_schema_org
 
-        result = _make_kie_result({
-            "vendor_name": [("Wrong Corp", 0.4), ("Acme Corp", 0.9)],
-        })
+        result = _make_kie_result(
+            {
+                "vendor_name": [("Wrong Corp", 0.4), ("Acme Corp", 0.9)],
+            }
+        )
 
         schema = kie_result_to_schema_org(result)
         assert schema["provider"]["name"] == "Acme Corp"
@@ -143,11 +152,13 @@ class TestKIESchemaMapping:
     def test_receipt_fields_map_to_invoice(self):
         from shared.kie_schema_mapping import kie_result_to_schema_org
 
-        result = _make_kie_result({
-            "store_name": [("Target", 0.85)],
-            "receipt_total": [("42.99", 0.9)],
-            "receipt_date": [("2024-01-20", 0.7)],
-        })
+        result = _make_kie_result(
+            {
+                "store_name": [("Target", 0.85)],
+                "receipt_total": [("42.99", 0.9)],
+                "receipt_date": [("2024-01-20", 0.7)],
+            }
+        )
 
         schema = kie_result_to_schema_org(result)
         assert schema["@type"] == "Invoice"
@@ -167,6 +178,7 @@ class TestKIESchemaMapping:
 # ---------------------------------------------------------------------------
 # KIE availability / graceful fallback tests
 # ---------------------------------------------------------------------------
+
 
 class TestKIEAvailability:
     def test_kie_unavailable_when_no_weights(self, tmp_path):
@@ -200,12 +212,15 @@ class TestKIEAvailability:
 # classify_with_kie tests
 # ---------------------------------------------------------------------------
 
+
 class TestClassifyWithKIE:
     def test_classifies_invoice_with_vendor_and_amount(self, kie_classifier):
-        kie_result = _make_kie_result({
-            "vendor_name": [("Acme Corp", 0.9)],
-            "total_amount": [("500.00", 0.85)],
-        })
+        kie_result = _make_kie_result(
+            {
+                "vendor_name": [("Acme Corp", 0.9)],
+                "total_amount": [("500.00", 0.85)],
+            }
+        )
 
         result = kie_classifier.classify_with_kie(kie_result)
         assert result is not None
@@ -215,10 +230,12 @@ class TestClassifyWithKIE:
         assert company_name == "Acme Corp"
 
     def test_classifies_invoice_with_vendor_and_date(self, kie_classifier):
-        kie_result = _make_kie_result({
-            "store_name": [("Target", 0.8)],
-            "receipt_date": [("2024-01-15", 0.75)],
-        })
+        kie_result = _make_kie_result(
+            {
+                "store_name": [("Target", 0.8)],
+                "receipt_date": [("2024-01-15", 0.75)],
+            }
+        )
 
         result = kie_classifier.classify_with_kie(kie_result)
         assert result is not None
@@ -226,26 +243,32 @@ class TestClassifyWithKIE:
         assert result[2] == "Target"
 
     def test_returns_none_without_vendor(self, kie_classifier):
-        kie_result = _make_kie_result({
-            "total_amount": [("500.00", 0.85)],
-        })
+        kie_result = _make_kie_result(
+            {
+                "total_amount": [("500.00", 0.85)],
+            }
+        )
 
         result = kie_classifier.classify_with_kie(kie_result)
         assert result is None
 
     def test_returns_none_with_low_confidence(self, kie_classifier):
-        kie_result = _make_kie_result({
-            "vendor_name": [("Maybe Corp", 0.3)],  # below 0.5 threshold
-            "total_amount": [("100.00", 0.3)],
-        })
+        kie_result = _make_kie_result(
+            {
+                "vendor_name": [("Maybe Corp", 0.3)],  # below 0.5 threshold
+                "total_amount": [("100.00", 0.3)],
+            }
+        )
 
         result = kie_classifier.classify_with_kie(kie_result)
         assert result is None
 
     def test_returns_none_with_vendor_only(self, kie_classifier):
-        kie_result = _make_kie_result({
-            "vendor_name": [("Acme Corp", 0.9)],
-        })
+        kie_result = _make_kie_result(
+            {
+                "vendor_name": [("Acme Corp", 0.9)],
+            }
+        )
 
         # Vendor alone is not enough — need amount OR date.
         result = kie_classifier.classify_with_kie(kie_result)
@@ -255,6 +278,7 @@ class TestClassifyWithKIE:
 # ---------------------------------------------------------------------------
 # KIE field class list
 # ---------------------------------------------------------------------------
+
 
 class TestKIEFieldClasses:
     def test_all_classes_have_schema_mapping(self):

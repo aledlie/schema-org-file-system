@@ -4,10 +4,10 @@ import pytest
 
 from src.utils.tracking import CostTracker, FileProcessingErrorTracker
 
-
 # ---------------------------------------------------------------------------
 # CostTracker tests
 # ---------------------------------------------------------------------------
+
 
 class TestCostTracker:
     def test_context_manager_returns_self(self) -> None:
@@ -43,6 +43,7 @@ class TestCostTracker:
 # ---------------------------------------------------------------------------
 # FileProcessingErrorTracker tests
 # ---------------------------------------------------------------------------
+
 
 class TestFileProcessingErrorTracker:
     def test_initial_counters_are_zero(self) -> None:

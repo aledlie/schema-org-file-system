@@ -74,6 +74,7 @@ def _sanitize_person_name(name: str) -> str:
 
 class PersonViewSummary(TypedDict):
     """``PersonViewGenerator.generate()`` shape."""
+
     people: int
     symlinks_created: int
     removed_stale: int

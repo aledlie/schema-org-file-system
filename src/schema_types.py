@@ -23,8 +23,6 @@ SchemaMapping = Mapping[str, SchemaValue]
 # graph routes (functional syntax: @-prefixed keys are not identifiers).
 # @context is SchemaValue because producers emit either the plain
 # "https://schema.org" string or the full term-map dict.
-GraphDocument = TypedDict(
-    "GraphDocument", {"@context": SchemaValue, "@graph": List[SchemaMapping]}
-)
+GraphDocument = TypedDict("GraphDocument", {"@context": SchemaValue, "@graph": List[SchemaMapping]})
 
 __all__ = ["GraphDocument", "SchemaMapping", "SchemaValue"]

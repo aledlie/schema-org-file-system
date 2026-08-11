@@ -5,10 +5,10 @@ import pytest
 
 from src.validator import SchemaValidator, ValidationReport, ValidationLevel, ValidationMessage
 
-
 # ---------------------------------------------------------------------------
 # ValidationMessage
 # ---------------------------------------------------------------------------
+
 
 class TestValidationMessage:
     def test_to_dict_basic(self) -> None:
@@ -35,6 +35,7 @@ class TestValidationMessage:
 # ---------------------------------------------------------------------------
 # ValidationReport
 # ---------------------------------------------------------------------------
+
 
 class TestValidationReport:
     def _report(self) -> ValidationReport:
@@ -138,6 +139,7 @@ class TestValidationReport:
 # SchemaValidator — structure checks
 # ---------------------------------------------------------------------------
 
+
 class TestSchemaValidatorStructure:
     def _v(self) -> SchemaValidator:
         return SchemaValidator()
@@ -189,6 +191,7 @@ class TestSchemaValidatorStructure:
 # SchemaValidator — required properties
 # ---------------------------------------------------------------------------
 
+
 class TestSchemaValidatorRequired:
     def _v(self) -> SchemaValidator:
         return SchemaValidator()
@@ -198,8 +201,11 @@ class TestSchemaValidatorRequired:
         # ImageObject requires contentUrl
         schema = {"@context": "https://schema.org", "@type": "ImageObject"}
         report = v.validate(schema)
-        errors = [m.property_name for m in report.get_messages_by_level(ValidationLevel.ERROR)
-                  if m.property_name]
+        errors = [
+            m.property_name
+            for m in report.get_messages_by_level(ValidationLevel.ERROR)
+            if m.property_name
+        ]
         assert "contentUrl" in errors
 
     def test_empty_required_property_is_error(self) -> None:
@@ -221,6 +227,7 @@ class TestSchemaValidatorRequired:
 # ---------------------------------------------------------------------------
 # SchemaValidator — property types
 # ---------------------------------------------------------------------------
+
 
 class TestSchemaValidatorPropertyTypes:
     def _v(self) -> SchemaValidator:
@@ -249,14 +256,18 @@ class TestSchemaValidatorPropertyTypes:
             "height": 600,
         }
         report = v.validate(schema)
-        type_errors = [m for m in report.get_messages_by_level(ValidationLevel.ERROR)
-                       if "type" in m.message.lower() and m.property_name in ("width", "height")]
+        type_errors = [
+            m
+            for m in report.get_messages_by_level(ValidationLevel.ERROR)
+            if "type" in m.message.lower() and m.property_name in ("width", "height")
+        ]
         assert len(type_errors) == 0
 
 
 # ---------------------------------------------------------------------------
 # SchemaValidator — format validation
 # ---------------------------------------------------------------------------
+
 
 class TestSchemaValidatorFormats:
     def _v(self) -> SchemaValidator:
@@ -270,8 +281,11 @@ class TestSchemaValidatorFormats:
             "contentUrl": "not-a-url",
         }
         report = v.validate(schema)
-        errors = [m.property_name for m in report.get_messages_by_level(ValidationLevel.ERROR)
-                  if m.property_name]
+        errors = [
+            m.property_name
+            for m in report.get_messages_by_level(ValidationLevel.ERROR)
+            if m.property_name
+        ]
         assert "contentUrl" in errors
 
     def test_valid_https_url_no_format_error(self) -> None:
@@ -282,8 +296,11 @@ class TestSchemaValidatorFormats:
             "contentUrl": "https://example.com/img.png",
         }
         report = v.validate(schema)
-        url_errors = [m for m in report.get_messages_by_level(ValidationLevel.ERROR)
-                      if m.property_name == "contentUrl" and "URL" in m.message]
+        url_errors = [
+            m
+            for m in report.get_messages_by_level(ValidationLevel.ERROR)
+            if m.property_name == "contentUrl" and "URL" in m.message
+        ]
         assert len(url_errors) == 0
 
     def test_invalid_date_format_adds_warning(self) -> None:
@@ -307,8 +324,11 @@ class TestSchemaValidatorFormats:
             "dateCreated": "2024-01-15",
         }
         report = v.validate(schema)
-        date_warnings = [m for m in report.get_messages_by_level(ValidationLevel.WARNING)
-                         if m.property_name == "dateCreated"]
+        date_warnings = [
+            m
+            for m in report.get_messages_by_level(ValidationLevel.WARNING)
+            if m.property_name == "dateCreated"
+        ]
         assert len(date_warnings) == 0
 
     def test_invalid_duration_adds_warning(self) -> None:
@@ -332,14 +352,18 @@ class TestSchemaValidatorFormats:
             "duration": "PT1H30M",
         }
         report = v.validate(schema)
-        dur_warnings = [m for m in report.get_messages_by_level(ValidationLevel.WARNING)
-                        if m.property_name == "duration"]
+        dur_warnings = [
+            m
+            for m in report.get_messages_by_level(ValidationLevel.WARNING)
+            if m.property_name == "duration"
+        ]
         assert len(dur_warnings) == 0
 
 
 # ---------------------------------------------------------------------------
 # SchemaValidator — nested schemas and recommended
 # ---------------------------------------------------------------------------
+
 
 class TestSchemaValidatorNested:
     def _v(self) -> SchemaValidator:
@@ -358,8 +382,11 @@ class TestSchemaValidatorNested:
             },
         }
         report = v.validate(schema)
-        nested_warns = [m for m in report.get_messages_by_level(ValidationLevel.WARNING)
-                        if "publisher" in (m.property_name or "")]
+        nested_warns = [
+            m
+            for m in report.get_messages_by_level(ValidationLevel.WARNING)
+            if "publisher" in (m.property_name or "")
+        ]
         assert len(nested_warns) == 0
 
     def test_invalid_nested_schema_adds_warning(self) -> None:
@@ -374,8 +401,11 @@ class TestSchemaValidatorNested:
             },
         }
         report = v.validate(schema)
-        nested_warns = [m for m in report.get_messages_by_level(ValidationLevel.WARNING)
-                        if "publisher" in (m.property_name or "")]
+        nested_warns = [
+            m
+            for m in report.get_messages_by_level(ValidationLevel.WARNING)
+            if "publisher" in (m.property_name or "")
+        ]
         assert len(nested_warns) == 1
 
     def test_nested_schema_in_list_with_errors_adds_warning(self) -> None:
@@ -389,8 +419,11 @@ class TestSchemaValidatorNested:
             ],
         }
         report = v.validate(schema)
-        list_warns = [m for m in report.get_messages_by_level(ValidationLevel.WARNING)
-                      if "hasPart" in (m.property_name or "")]
+        list_warns = [
+            m
+            for m in report.get_messages_by_level(ValidationLevel.WARNING)
+            if "hasPart" in (m.property_name or "")
+        ]
         assert len(list_warns) == 1
 
     def test_missing_recommended_properties_adds_info(self) -> None:
@@ -407,6 +440,7 @@ class TestSchemaValidatorNested:
 # SchemaValidator — Rich Results compatibility
 # ---------------------------------------------------------------------------
 
+
 class TestRichResultsCompatibility:
     def _v(self) -> SchemaValidator:
         return SchemaValidator()
@@ -415,15 +449,20 @@ class TestRichResultsCompatibility:
         v = self._v()
         schema = {"@context": "https://schema.org", "@type": "Article"}
         report = v.validate(schema)
-        errors = [m.property_name for m in report.get_messages_by_level(ValidationLevel.ERROR)
-                  if m.property_name]
+        errors = [
+            m.property_name
+            for m in report.get_messages_by_level(ValidationLevel.ERROR)
+            if m.property_name
+        ]
         assert "headline" in errors
 
     def test_article_without_image_and_author_adds_warnings(self) -> None:
         v = self._v()
         schema = {"@context": "https://schema.org", "@type": "Article", "headline": "Test"}
         report = v.validate(schema)
-        warn_props = {m.property_name for m in report.get_messages_by_level(ValidationLevel.WARNING)}
+        warn_props = {
+            m.property_name for m in report.get_messages_by_level(ValidationLevel.WARNING)
+        }
         assert "image" in warn_props
         assert "author" in warn_props
 
@@ -431,8 +470,11 @@ class TestRichResultsCompatibility:
         v = self._v()
         schema = {"@context": "https://schema.org", "@type": "VideoObject"}
         report = v.validate(schema)
-        error_props = {m.property_name for m in report.get_messages_by_level(ValidationLevel.ERROR)
-                       if m.property_name}
+        error_props = {
+            m.property_name
+            for m in report.get_messages_by_level(ValidationLevel.ERROR)
+            if m.property_name
+        }
         assert "thumbnailUrl" in error_props
         assert "uploadDate" in error_props
 
@@ -441,6 +483,7 @@ class TestRichResultsCompatibility:
 # SchemaValidator — batch and summary
 # ---------------------------------------------------------------------------
 
+
 class TestBatchAndSummary:
     def _v(self) -> SchemaValidator:
         return SchemaValidator()
@@ -448,8 +491,11 @@ class TestBatchAndSummary:
     def test_validate_batch_returns_one_report_per_schema(self) -> None:
         v = self._v()
         schemas = [
-            {"@context": "https://schema.org", "@type": "ImageObject",
-             "contentUrl": "https://localhost/a.png"},
+            {
+                "@context": "https://schema.org",
+                "@type": "ImageObject",
+                "contentUrl": "https://localhost/a.png",
+            },
             {"@context": "https://schema.org", "@type": "DigitalDocument", "name": "b"},
         ]
         reports = v.validate_batch(schemas)
@@ -459,8 +505,11 @@ class TestBatchAndSummary:
         v = self._v()
         # One valid, one invalid schema
         schemas = [
-            {"@context": "https://schema.org", "@type": "ImageObject",
-             "contentUrl": "https://localhost/a.png"},
+            {
+                "@context": "https://schema.org",
+                "@type": "ImageObject",
+                "contentUrl": "https://localhost/a.png",
+            },
             {"@context": "https://schema.org", "@type": "ImageObject"},  # missing contentUrl
         ]
         reports = v.validate_batch(schemas)

@@ -42,25 +42,24 @@ def get_generator_for_type(schema_type: str, entity_id: str):
     """Get the appropriate generator for a schema type with @id."""
     # Generators that take schema_type as first argument
     type_generators = {
-        'ImageObject': lambda: ImageGenerator('ImageObject', entity_id=entity_id),
-        'Photograph': lambda: ImageGenerator('Photograph', entity_id=entity_id),
-        'DigitalDocument': lambda: DocumentGenerator('DigitalDocument', entity_id=entity_id),
-        'Article': lambda: DocumentGenerator('Article', entity_id=entity_id),
-        'Report': lambda: DocumentGenerator('Report', entity_id=entity_id),
-        'VideoObject': lambda: VideoGenerator('VideoObject', entity_id=entity_id),
-        'MovieClip': lambda: VideoGenerator('MovieClip', entity_id=entity_id),
-        'AudioObject': lambda: AudioGenerator('AudioObject', entity_id=entity_id),
-        'MusicRecording': lambda: AudioGenerator('MusicRecording', entity_id=entity_id),
-        'PodcastEpisode': lambda: AudioGenerator('PodcastEpisode', entity_id=entity_id),
+        "ImageObject": lambda: ImageGenerator("ImageObject", entity_id=entity_id),
+        "Photograph": lambda: ImageGenerator("Photograph", entity_id=entity_id),
+        "DigitalDocument": lambda: DocumentGenerator("DigitalDocument", entity_id=entity_id),
+        "Article": lambda: DocumentGenerator("Article", entity_id=entity_id),
+        "Report": lambda: DocumentGenerator("Report", entity_id=entity_id),
+        "VideoObject": lambda: VideoGenerator("VideoObject", entity_id=entity_id),
+        "MovieClip": lambda: VideoGenerator("MovieClip", entity_id=entity_id),
+        "AudioObject": lambda: AudioGenerator("AudioObject", entity_id=entity_id),
+        "MusicRecording": lambda: AudioGenerator("MusicRecording", entity_id=entity_id),
+        "PodcastEpisode": lambda: AudioGenerator("PodcastEpisode", entity_id=entity_id),
         # These generators don't take schema_type
-        'SoftwareSourceCode': lambda: CodeGenerator(entity_id=entity_id),
-        'Dataset': lambda: DatasetGenerator(entity_id=entity_id),
-        'Archive': lambda: ArchiveGenerator(entity_id=entity_id),
+        "SoftwareSourceCode": lambda: CodeGenerator(entity_id=entity_id),
+        "Dataset": lambda: DatasetGenerator(entity_id=entity_id),
+        "Archive": lambda: ArchiveGenerator(entity_id=entity_id),
     }
 
     generator_factory = type_generators.get(
-        schema_type,
-        lambda: DocumentGenerator('DigitalDocument', entity_id=entity_id)
+        schema_type, lambda: DocumentGenerator("DigitalDocument", entity_id=entity_id)
     )
     return generator_factory()
 
@@ -71,7 +70,7 @@ def regenerate_schema(
     current_path: str,
     schema_type: str,
     existing_schema: Dict[str, Any],
-    enricher: MetadataEnricher
+    enricher: MetadataEnricher,
 ) -> Dict[str, Any]:
     """
     Regenerate Schema.org metadata for a file with @id.
@@ -91,7 +90,7 @@ def regenerate_schema(
     entity_id = file_iri(file_id, canonical_id)
 
     # Create generator with @id
-    generator = get_generator_for_type(schema_type or 'DigitalDocument', entity_id)
+    generator = get_generator_for_type(schema_type or "DigitalDocument", entity_id)
 
     # Try to get file stats if file exists
     file_path = Path(current_path) if current_path else None
@@ -102,42 +101,40 @@ def regenerate_schema(
             file_url = f"https://localhost/files/{quote(file_path.name)}"
 
             # Set basic info based on type
-            description = existing_schema.get('description', file_path.name)
-            if schema_type == 'ImageObject':
-                generator.set_property('name', file_path.name, PropertyType.TEXT)
-                generator.set_property('contentUrl', file_url, PropertyType.URL)
+            description = existing_schema.get("description", file_path.name)
+            if schema_type == "ImageObject":
+                generator.set_property("name", file_path.name, PropertyType.TEXT)
+                generator.set_property("contentUrl", file_url, PropertyType.URL)
                 generator.set_property(
-                    'encodingFormat', mime_type or 'image/png', PropertyType.TEXT
+                    "encodingFormat", mime_type or "image/png", PropertyType.TEXT
                 )
                 if description:
-                    generator.set_property('description', description, PropertyType.TEXT)
+                    generator.set_property("description", description, PropertyType.TEXT)
             else:
-                generator.set_property('name', file_path.name, PropertyType.TEXT)
+                generator.set_property("name", file_path.name, PropertyType.TEXT)
                 if description:
-                    generator.set_property('description', description, PropertyType.TEXT)
+                    generator.set_property("description", description, PropertyType.TEXT)
                 # Document-family types carry file-level metadata. This was
                 # previously gated on the presence of the deprecated
                 # set_file_info builder; gate on the concrete type instead so
                 # it survives removal of the builder methods.
                 if isinstance(generator, DocumentGenerator):
                     generator.set_property(
-                        'encodingFormat',
-                        mime_type or 'application/octet-stream',
+                        "encodingFormat",
+                        mime_type or "application/octet-stream",
                         PropertyType.TEXT,
                     )
-                    generator.set_property('url', file_url, PropertyType.URL)
-                    generator.set_property(
-                        'contentSize', f"{stats.st_size}B", PropertyType.TEXT
-                    )
+                    generator.set_property("url", file_url, PropertyType.URL)
+                    generator.set_property("contentSize", f"{stats.st_size}B", PropertyType.TEXT)
 
             # Set dates
             generator.set_dates(
                 created=datetime.fromtimestamp(stats.st_ctime),
-                modified=datetime.fromtimestamp(stats.st_mtime)
+                modified=datetime.fromtimestamp(stats.st_mtime),
             )
 
             # Add file path
-            generator.set_property('filePath', str(file_path.absolute()), PropertyType.TEXT)
+            generator.set_property("filePath", str(file_path.absolute()), PropertyType.TEXT)
 
         except Exception:
             # If we can't access the file, use existing schema data
@@ -151,9 +148,21 @@ def regenerate_schema(
     # FileProcessor.generate_schema now emits (identifier/sameAs/publisher for
     # ScholarlyArticle, description from CLIP/OCR) so re-running this script
     # doesn't silently strip them when the source file is missing/moved.
-    preserve_keys = ['abstract', 'text', 'keywords', 'author', 'creator',
-                     'width', 'height', 'duration', 'bitrate',
-                     'identifier', 'sameAs', 'publisher', 'description']
+    preserve_keys = [
+        "abstract",
+        "text",
+        "keywords",
+        "author",
+        "creator",
+        "width",
+        "height",
+        "duration",
+        "bitrate",
+        "identifier",
+        "sameAs",
+        "publisher",
+        "description",
+    ]
     for key in preserve_keys:
         if key in existing_schema and key not in schema:
             schema[key] = existing_schema[key]
@@ -165,7 +174,7 @@ def process_files(
     conn: sqlite3.Connection,
     dry_run: bool = False,
     limit: Optional[int] = None,
-    batch_size: int = 1000
+    batch_size: int = 1000,
 ) -> int:
     """Process all files and regenerate their schemas."""
     enricher = MetadataEnricher()
@@ -215,10 +224,10 @@ def process_files(
                 new_schema = regenerate_schema(
                     file_id=file_id,
                     canonical_id=canonical_id,
-                    current_path=current_path or '',
-                    schema_type=schema_type or 'DigitalDocument',
+                    current_path=current_path or "",
+                    schema_type=schema_type or "DigitalDocument",
                     existing_schema=existing_schema,
-                    enricher=enricher
+                    enricher=enricher,
                 )
 
                 if dry_run:
@@ -230,7 +239,7 @@ def process_files(
                     # Update database
                     conn.execute(
                         "UPDATE files SET schema_data = ? WHERE id = ?",
-                        (json.dumps(new_schema), file_id)
+                        (json.dumps(new_schema), file_id),
                     )
 
                 processed += 1
@@ -270,7 +279,7 @@ def verify_schemas(conn: sqlite3.Connection) -> bool:
     for (schema_data_json,) in cursor.fetchall():
         try:
             schema = json.loads(schema_data_json)
-            if '@id' in schema:
+            if "@id" in schema:
                 has_id += 1
             else:
                 missing_id += 1
@@ -307,27 +316,13 @@ def main():
         description="Regenerate Schema.org metadata with @id for all files"
     )
     parser.add_argument(
-        '--db-path',
-        default='results/file_organization.db',
-        help='Path to SQLite database'
+        "--db-path", default="results/file_organization.db", help="Path to SQLite database"
     )
     parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Show what would be done without making changes'
+        "--dry-run", action="store_true", help="Show what would be done without making changes"
     )
-    parser.add_argument(
-        '--limit',
-        type=int,
-        default=None,
-        help='Limit number of files to process'
-    )
-    parser.add_argument(
-        '--batch-size',
-        type=int,
-        default=1000,
-        help='Batch size for processing'
-    )
+    parser.add_argument("--limit", type=int, default=None, help="Limit number of files to process")
+    parser.add_argument("--batch-size", type=int, default=1000, help="Batch size for processing")
 
     args = parser.parse_args()
 
@@ -349,10 +344,7 @@ def main():
         print("\n=== Regenerating Schemas ===\n")
 
         processed = process_files(
-            conn,
-            dry_run=args.dry_run,
-            limit=args.limit,
-            batch_size=args.batch_size
+            conn, dry_run=args.dry_run, limit=args.limit, batch_size=args.batch_size
         )
 
         if not args.dry_run:
@@ -371,5 +363,5 @@ def main():
         conn.close()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

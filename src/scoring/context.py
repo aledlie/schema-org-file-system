@@ -255,9 +255,7 @@ class FileContext:
 
     @property
     def ocr_if_loaded(self) -> Optional[OcrResultLike]:
-        return None if self._ocr is _UNSET else cast(
-            Optional[OcrResultLike], self._ocr
-        )
+        return None if self._ocr is _UNSET else cast(Optional[OcrResultLike], self._ocr)
 
     @property
     def clip_if_loaded(self) -> Optional[Dict[str, float]]:
@@ -269,6 +267,4 @@ class FileContext:
 
     @property
     def kie_if_loaded(self) -> Optional[KieResultLike]:
-        return None if self._kie is _UNSET else cast(
-            Optional[KieResultLike], self._kie
-        )
+        return None if self._kie is _UNSET else cast(Optional[KieResultLike], self._kie)

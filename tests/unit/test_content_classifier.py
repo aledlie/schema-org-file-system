@@ -4,9 +4,11 @@ import pytest
 
 from src.classifiers import ContentClassifier
 
+
 @pytest.fixture()
 def clf() -> ContentClassifier:
     return ContentClassifier()
+
 
 class TestClassifyContent:
     def test_empty_text_returns_uncategorized(self, clf: ContentClassifier) -> None:
@@ -121,6 +123,7 @@ class TestClassifyContent:
         assert cat == "legal"
         assert subcat == "real_estate"
 
+
 class TestExtractCompanyNames:
     def test_extracts_llc(self, clf: ContentClassifier) -> None:
         text = "We signed a deal with Acme Solutions LLC today."
@@ -143,6 +146,7 @@ class TestExtractCompanyNames:
 
     def test_no_company_returns_empty(self, clf: ContentClassifier) -> None:
         assert clf.extract_company_names("the quick brown fox") == []
+
 
 class TestExtractPeopleNames:
     def test_extracts_name_from_resume_header(self, clf: ContentClassifier) -> None:
@@ -173,6 +177,7 @@ class TestExtractPeopleNames:
         for p in people:
             assert not p.isupper()
 
+
 class TestIsValidCompanyName:
     def test_valid_short_company_name(self, clf: ContentClassifier) -> None:
         assert clf.is_valid_company_name("Acme Solutions") is True
@@ -198,6 +203,7 @@ class TestIsValidCompanyName:
 
     def test_invalid_problematic_phrase(self, clf: ContentClassifier) -> None:
         assert clf.is_valid_company_name("Agreement between parties") is False
+
 
 class TestNormalizeCompanyName:
     def test_strips_llc_suffix(self, clf: ContentClassifier) -> None:

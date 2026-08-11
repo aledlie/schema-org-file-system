@@ -15,6 +15,7 @@ import json
 
 class ValidationLevel(Enum):
     """Validation message levels."""
+
     ERROR = "error"
     WARNING = "warning"
     INFO = "info"
@@ -24,9 +25,13 @@ class ValidationLevel(Enum):
 class ValidationMessage:
     """Represents a validation message."""
 
-    def __init__(self, level: ValidationLevel, message: str,
-                 property_name: Optional[str] = None,
-                 suggestion: Optional[str] = None):
+    def __init__(
+        self,
+        level: ValidationLevel,
+        message: str,
+        property_name: Optional[str] = None,
+        suggestion: Optional[str] = None,
+    ):
         """
         Initialize validation message.
 
@@ -47,7 +52,7 @@ class ValidationMessage:
         result = {
             "level": self.level.value,
             "message": self.message,
-            "timestamp": self.timestamp.isoformat()
+            "timestamp": self.timestamp.isoformat(),
         }
         if self.property_name:
             result["property"] = self.property_name
@@ -64,6 +69,7 @@ class ValidationMessage:
 
 class ReportDict(TypedDict):
     """``ValidationReport.to_dict()`` shape."""
+
     schema_type: str
     valid: bool
     statistics: Dict[str, int]
@@ -74,6 +80,7 @@ class ReportDict(TypedDict):
 
 class SummaryReport(TypedDict):
     """``SchemaValidator.generate_summary_report()`` shape."""
+
     total_schemas: int
     valid_schemas: int
     invalid_schemas: int
@@ -103,9 +110,13 @@ class ValidationReport:
         self.start_time = datetime.now()
         self.end_time: Optional[datetime] = None
 
-    def add_message(self, level: ValidationLevel, message: str,
-                   property_name: Optional[str] = None,
-                   suggestion: Optional[str] = None) -> None:
+    def add_message(
+        self,
+        level: ValidationLevel,
+        message: str,
+        property_name: Optional[str] = None,
+        suggestion: Optional[str] = None,
+    ) -> None:
         """
         Add validation message.
 
@@ -115,22 +126,23 @@ class ValidationReport:
             property_name: Property name
             suggestion: Suggested fix
         """
-        self.messages.append(
-            ValidationMessage(level, message, property_name, suggestion)
-        )
+        self.messages.append(ValidationMessage(level, message, property_name, suggestion))
 
-    def add_error(self, message: str, property_name: Optional[str] = None,
-                 suggestion: Optional[str] = None) -> None:
+    def add_error(
+        self, message: str, property_name: Optional[str] = None, suggestion: Optional[str] = None
+    ) -> None:
         """Add error message."""
         self.add_message(ValidationLevel.ERROR, message, property_name, suggestion)
 
-    def add_warning(self, message: str, property_name: Optional[str] = None,
-                   suggestion: Optional[str] = None) -> None:
+    def add_warning(
+        self, message: str, property_name: Optional[str] = None, suggestion: Optional[str] = None
+    ) -> None:
         """Add warning message."""
         self.add_message(ValidationLevel.WARNING, message, property_name, suggestion)
 
-    def add_info(self, message: str, property_name: Optional[str] = None,
-                suggestion: Optional[str] = None) -> None:
+    def add_info(
+        self, message: str, property_name: Optional[str] = None, suggestion: Optional[str] = None
+    ) -> None:
         """Add info message."""
         self.add_message(ValidationLevel.INFO, message, property_name, suggestion)
 
@@ -165,7 +177,7 @@ class ValidationReport:
             "errors": len(self.get_messages_by_level(ValidationLevel.ERROR)),
             "warnings": len(self.get_messages_by_level(ValidationLevel.WARNING)),
             "info": len(self.get_messages_by_level(ValidationLevel.INFO)),
-            "success": len(self.get_messages_by_level(ValidationLevel.SUCCESS))
+            "success": len(self.get_messages_by_level(ValidationLevel.SUCCESS)),
         }
 
     def get_duration(self) -> float:
@@ -182,7 +194,7 @@ class ValidationReport:
             "statistics": self.get_statistics(),
             "duration": self.get_duration(),
             "messages": [msg.to_dict() for msg in self.messages],
-            "timestamp": self.start_time.isoformat()
+            "timestamp": self.start_time.isoformat(),
         }
 
     def to_json(self, indent: int = 2) -> str:
@@ -194,7 +206,6 @@ class ValidationReport:
         if self.messages:
             for msg in self.messages:
                 print(f"  {msg}")
-
 
     def __str__(self) -> str:
         """String representation."""
@@ -220,10 +231,19 @@ class SchemaValidator:
         "DigitalDocument": {"required": ["name"], "recommended": ["author", "encodingFormat"]},
         "Article": {"required": ["headline"], "recommended": ["author", "datePublished", "image"]},
         "ImageObject": {"required": ["contentUrl"], "recommended": ["name", "description"]},
-        "VideoObject": {"required": ["name", "uploadDate"], "recommended": ["description", "thumbnailUrl"]},
+        "VideoObject": {
+            "required": ["name", "uploadDate"],
+            "recommended": ["description", "thumbnailUrl"],
+        },
         "AudioObject": {"required": ["name"], "recommended": ["contentUrl", "duration"]},
-        "SoftwareSourceCode": {"required": ["name"], "recommended": ["programmingLanguage", "codeRepository"]},
-        "Dataset": {"required": ["name", "description"], "recommended": ["creator", "distribution"]},
+        "SoftwareSourceCode": {
+            "required": ["name"],
+            "recommended": ["programmingLanguage", "codeRepository"],
+        },
+        "Dataset": {
+            "required": ["name", "description"],
+            "recommended": ["creator", "distribution"],
+        },
     }
 
     # Expected property types
@@ -247,17 +267,20 @@ class SchemaValidator:
     def __init__(self):
         """Initialize validator."""
         self.url_pattern = re.compile(
-            r'^https?://'  # http:// or https://
-            r'(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|'  # domain
-            r'localhost|'  # localhost
-            r'\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})'  # IP
-            r'(?::\d+)?'  # optional port
-            r'(?:/?|[/?]\S+)$', re.IGNORECASE
+            r"^https?://"  # http:// or https://
+            r"(?:(?:[A-Z0-9](?:[A-Z0-9-]{0,61}[A-Z0-9])?\.)+[A-Z]{2,6}\.?|"  # domain
+            r"localhost|"  # localhost
+            r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"  # IP
+            r"(?::\d+)?"  # optional port
+            r"(?:/?|[/?]\S+)$",
+            re.IGNORECASE,
         )
 
-        self.date_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}$')
-        self.datetime_pattern = re.compile(r'^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}')
-        self.duration_pattern = re.compile(r'^P(?:\d+Y)?(?:\d+M)?(?:\d+D)?(?:T(?:\d+H)?(?:\d+M)?(?:\d+(?:\.\d+)?S)?)?$')
+        self.date_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+        self.datetime_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}")
+        self.duration_pattern = re.compile(
+            r"^P(?:\d+Y)?(?:\d+M)?(?:\d+D)?(?:T(?:\d+H)?(?:\d+M)?(?:\d+(?:\.\d+)?S)?)?$"
+        )
 
     def validate(self, schema_data: Dict[str, Any]) -> ValidationReport:
         """
@@ -300,16 +323,14 @@ class SchemaValidator:
         """Validate basic structure."""
         if "@context" not in data:
             report.add_error(
-                "Missing @context property",
-                "@context",
-                "Add '@context': 'https://schema.org'"
+                "Missing @context property", "@context", "Add '@context': 'https://schema.org'"
             )
 
         if "@type" not in data:
             report.add_error(
                 "Missing @type property",
                 "@type",
-                "Specify the Schema.org type (e.g., 'DigitalDocument')"
+                "Specify the Schema.org type (e.g., 'DigitalDocument')",
             )
         else:
             schema_type = data["@type"]
@@ -317,7 +338,7 @@ class SchemaValidator:
                 report.add_warning(
                     f"Unknown Schema.org type: {schema_type}",
                     "@type",
-                    "Verify the type exists in Schema.org vocabulary"
+                    "Verify the type exists in Schema.org vocabulary",
                 )
             else:
                 report.add_success(f"Valid Schema.org type: {schema_type}")
@@ -332,13 +353,11 @@ class SchemaValidator:
                     report.add_error(
                         f"Missing required property: {prop}",
                         prop,
-                        f"Add the '{prop}' property with an appropriate value"
+                        f"Add the '{prop}' property with an appropriate value",
                     )
                 elif not data[prop]:
                     report.add_error(
-                        f"Required property is empty: {prop}",
-                        prop,
-                        f"Provide a value for '{prop}'"
+                        f"Required property is empty: {prop}", prop, f"Provide a value for '{prop}'"
                     )
 
     def _validate_property_types(self, data: Dict[str, Any], report: ValidationReport) -> None:
@@ -350,7 +369,7 @@ class SchemaValidator:
                     report.add_error(
                         f"Invalid type for {prop}: expected {expected_type.__name__}, got {type(value).__name__}",
                         prop,
-                        f"Convert {prop} to {expected_type.__name__}"
+                        f"Convert {prop} to {expected_type.__name__}",
                     )
 
     def _validate_formats(self, data: Dict[str, Any], report: ValidationReport) -> None:
@@ -363,7 +382,7 @@ class SchemaValidator:
                     report.add_error(
                         f"Invalid URL format: {prop}",
                         prop,
-                        "Use absolute URLs starting with http:// or https://"
+                        "Use absolute URLs starting with http:// or https://",
                     )
 
         # Validate dates
@@ -375,7 +394,7 @@ class SchemaValidator:
                     report.add_warning(
                         f"Date format may be invalid: {prop}",
                         prop,
-                        "Use ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)"
+                        "Use ISO 8601 format (YYYY-MM-DD or YYYY-MM-DDTHH:MM:SS)",
                     )
 
         # Validate duration
@@ -384,7 +403,7 @@ class SchemaValidator:
                 report.add_warning(
                     "Duration format may be invalid",
                     "duration",
-                    "Use ISO 8601 duration format (e.g., PT1H30M for 1 hour 30 minutes)"
+                    "Use ISO 8601 duration format (e.g., PT1H30M for 1 hour 30 minutes)",
                 )
 
     def _validate_nested_schemas(self, data: Dict[str, Any], report: ValidationReport) -> None:
@@ -397,7 +416,7 @@ class SchemaValidator:
                     report.add_warning(
                         f"Nested schema '{key}' has validation errors",
                         key,
-                        "Review nested schema validation"
+                        "Review nested schema validation",
                     )
             elif isinstance(value, list):
                 for i, item in enumerate(value):
@@ -407,7 +426,7 @@ class SchemaValidator:
                             report.add_warning(
                                 f"Nested schema in '{key}[{i}]' has validation errors",
                                 key,
-                                "Review nested schema validation"
+                                "Review nested schema validation",
                             )
 
     def _check_recommended_properties(self, data: Dict[str, Any], report: ValidationReport) -> None:
@@ -423,10 +442,12 @@ class SchemaValidator:
             if missing_recommended:
                 report.add_info(
                     f"Missing recommended properties: {', '.join(missing_recommended)}",
-                    suggestion="Adding these properties improves search visibility"
+                    suggestion="Adding these properties improves search visibility",
                 )
 
-    def _validate_rich_results_compatibility(self, data: Dict[str, Any], report: ValidationReport) -> None:
+    def _validate_rich_results_compatibility(
+        self, data: Dict[str, Any], report: ValidationReport
+    ) -> None:
         """Validate Google Rich Results compatibility."""
         schema_type = data.get("@type")
 
@@ -439,17 +460,16 @@ class SchemaValidator:
             if "author" not in data:
                 report.add_warning("Articles should include 'author' for Rich Results", "author")
             if "datePublished" not in data:
-                report.add_warning("Articles should include 'datePublished' for Rich Results", "datePublished")
+                report.add_warning(
+                    "Articles should include 'datePublished' for Rich Results", "datePublished"
+                )
 
         # Video requirements for Google
         if schema_type == "VideoObject":
             required_video = ["name", "description", "thumbnailUrl", "uploadDate"]
             for prop in required_video:
                 if prop not in data:
-                    report.add_error(
-                        f"Videos require '{prop}' for Rich Results",
-                        prop
-                    )
+                    report.add_error(f"Videos require '{prop}' for Rich Results", prop)
 
         # Image requirements
         if schema_type == "ImageObject":
@@ -490,5 +510,5 @@ class SchemaValidator:
             "success_rate": (valid_schemas / total_schemas * 100) if total_schemas > 0 else 0,
             "total_errors": total_errors,
             "total_warnings": total_warnings,
-            "reports": [r.to_dict() for r in reports]
+            "reports": [r.to_dict() for r in reports],
         }

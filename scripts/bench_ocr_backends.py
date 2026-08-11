@@ -61,6 +61,7 @@ IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}
 # Character Error Rate (CER)
 # ---------------------------------------------------------------------------
 
+
 def _cer(ref: str, hyp: str) -> float:
     """Compute character-level Levenshtein distance / len(ref).
 
@@ -89,13 +90,16 @@ def _cer(ref: str, hyp: str) -> float:
 # Backend wrappers
 # ---------------------------------------------------------------------------
 
+
 def _run_easyocr(image_path: Path) -> Optional[str]:
     from shared.ocr_easyocr import extract_text_easyocr
+
     return extract_text_easyocr(image_path)
 
 
 def _run_doctr(image_path: Path) -> Optional[str]:
     from shared.ocr_classifier import extract_ocr_text
+
     return extract_ocr_text(image_path)
 
 
@@ -108,6 +112,7 @@ BACKENDS = {
 # ---------------------------------------------------------------------------
 # Metrics accumulator
 # ---------------------------------------------------------------------------
+
 
 class _Metrics:
     def __init__(self) -> None:
@@ -145,10 +150,10 @@ class _Metrics:
 # Runner
 # ---------------------------------------------------------------------------
 
+
 def _collect_images(input_dir: Path) -> list[Path]:
     images = [
-        p for p in input_dir.rglob("*")
-        if p.is_file() and p.suffix.lower() in IMAGE_EXTENSIONS
+        p for p in input_dir.rglob("*") if p.is_file() and p.suffix.lower() in IMAGE_EXTENSIONS
     ]
     images.sort()
     return images
@@ -199,21 +204,34 @@ def run_benchmark(
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def _build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         description="Benchmark easyocr vs docTR on a screenshot test set.",
     )
-    p.add_argument("--input", required=True, type=Path,
-                   help="Directory of screenshot images to test.")
-    p.add_argument("--labels", type=Path, default=None,
-                   help="JSON file mapping filename -> ground-truth text (enables CER).")
-    p.add_argument("--output", type=Path, default=None,
-                   help="Write JSON results to this path.")
-    p.add_argument("--backends", nargs="+", default=list(BACKENDS),
-                   choices=list(BACKENDS),
-                   help="Which backends to benchmark (default: all).")
-    p.add_argument("--limit", type=int, default=None,
-                   help="Cap the number of images (useful for quick smoke tests).")
+    p.add_argument(
+        "--input", required=True, type=Path, help="Directory of screenshot images to test."
+    )
+    p.add_argument(
+        "--labels",
+        type=Path,
+        default=None,
+        help="JSON file mapping filename -> ground-truth text (enables CER).",
+    )
+    p.add_argument("--output", type=Path, default=None, help="Write JSON results to this path.")
+    p.add_argument(
+        "--backends",
+        nargs="+",
+        default=list(BACKENDS),
+        choices=list(BACKENDS),
+        help="Which backends to benchmark (default: all).",
+    )
+    p.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Cap the number of images (useful for quick smoke tests).",
+    )
     return p
 
 

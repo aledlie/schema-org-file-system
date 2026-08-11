@@ -29,7 +29,7 @@ class FileOrganizer:
         output_dir: Optional[Path] = None,
         dry_run: bool = True,
         find_images_fn: Optional[Callable] = None,
-        mode: str = 'folder',
+        mode: str = "folder",
     ):
         """
         Args:
@@ -55,16 +55,14 @@ class FileOrganizer:
 
     def _default_find_images(self) -> List[Path]:
         """Find all image files with standard extensions."""
-        extensions = {'.png', '.jpg', '.jpeg', '.webp', '.gif'}
+        extensions = {".png", ".jpg", ".jpeg", ".webp", ".gif"}
         images: list[Path] = []
         for ext in extensions:
-            images.extend(self.source_dir.glob(f'*{ext}'))
-            images.extend(self.source_dir.glob(f'*{ext.upper()}'))
+            images.extend(self.source_dir.glob(f"*{ext}"))
+            images.extend(self.source_dir.glob(f"*{ext.upper()}"))
         return sorted(images)
 
-    def organize(
-        self, limit: Optional[int] = None, min_confidence: float = 0.1
-    ) -> List[Dict]:
+    def organize(self, limit: Optional[int] = None, min_confidence: float = 0.1) -> List[Dict]:
         """
         Organize all images by analyzing, gating, and moving.
 
@@ -81,18 +79,18 @@ class FileOrganizer:
             images = images[:limit]
 
         total = len(images)
-        mode_str = 'IN-PLACE' if self.mode == 'in-place' else 'FOLDER'
+        mode_str = "IN-PLACE" if self.mode == "in-place" else "FOLDER"
         print(f"\n{'='*60}")
         print(f"File Organizer ({mode_str})")
         print(f"{'='*60}")
         print(f"Source: {self.source_dir}")
-        if self.mode == 'folder':
+        if self.mode == "folder":
             print(f"Output: {self.output_dir}")
         print(f"Images: {total}")
         print(f"Mode: {'DRY RUN' if self.dry_run else 'LIVE'}")
         print(f"{'='*60}\n")
 
-        self.stats['total'] = total
+        self.stats["total"] = total
 
         for i, image_path in enumerate(images, 1):
             print(f"[{i}/{total}] Processing: {image_path.name}")
@@ -101,49 +99,43 @@ class FileOrganizer:
                 result = self.analyzer.analyze_image(image_path)
 
                 # Check confidence gate
-                gate = check_confidence(
-                    result['category'], result['confidence'], min_confidence
-                )
+                gate = check_confidence(result["category"], result["confidence"], min_confidence)
                 if not gate.accepted:
-                    result['status'] = ProcessingStatus.LOW_CONFIDENCE
-                    result['error'] = gate.reason
-                    update_stats_from_status(self.stats, result['status'])
+                    result["status"] = ProcessingStatus.LOW_CONFIDENCE
+                    result["error"] = gate.reason
+                    update_stats_from_status(self.stats, result["status"])
                     print(f"  ⊘ {gate.reason}")
                     self.results.append(result)
                     continue
 
-                result['status'] = (
-                    ProcessingStatus.RENAMED
-                    if not self.dry_run
-                    else ProcessingStatus.WOULD_RENAME
+                result["status"] = (
+                    ProcessingStatus.RENAMED if not self.dry_run else ProcessingStatus.WOULD_RENAME
                 )
                 self.results.append(result)
 
                 # Update stats
-                self.stats['processed'] = self.stats.get('processed', 0) + 1
-                if 'folder' in result and self.mode == 'folder':
-                    self.stats[result['folder']] = (
-                        self.stats.get(result['folder'], 0) + 1
-                    )
+                self.stats["processed"] = self.stats.get("processed", 0) + 1
+                if "folder" in result and self.mode == "folder":
+                    self.stats[result["folder"]] = self.stats.get(result["folder"], 0) + 1
 
                 # Show result
                 conf_str = f"{result['confidence']*100:.1f}%"
-                if self.mode == 'folder':
-                    folder = result.get('folder', 'Uncategorized')
+                if self.mode == "folder":
+                    folder = result.get("folder", "Uncategorized")
                     print(f"  → {folder}/{result['new_name']} ({conf_str})")
                 else:
                     print(f"  → {result['new_name']} ({conf_str})")
 
                 # Actually move/rename if not dry run
                 if not self.dry_run:
-                    if self.mode == 'in-place':
+                    if self.mode == "in-place":
                         self._rename_in_place(image_path, result)
                     else:
                         self._move_to_folder(image_path, result)
 
             except Exception as e:
                 print(f"  ✗ Error: {e}")
-                self.stats['errors'] = self.stats.get('errors', 0) + 1
+                self.stats["errors"] = self.stats.get("errors", 0) + 1
 
         self.print_summary()
         return self.results
@@ -151,39 +143,39 @@ class FileOrganizer:
     def _rename_in_place(self, image_path: Path, result: Dict) -> None:
         """Rename file in its original location."""
         try:
-            new_path = image_path.parent / result['new_name']
+            new_path = image_path.parent / result["new_name"]
             image_path.rename(new_path)
-            self.stats['moved'] = self.stats.get('moved', 0) + 1
-            update_stats_from_status(self.stats, result['status'])
+            self.stats["moved"] = self.stats.get("moved", 0) + 1
+            update_stats_from_status(self.stats, result["status"])
         except FileExistsError:
             new_path = resolve_collision(new_path)
-            result['new_name'] = new_path.name
+            result["new_name"] = new_path.name
             try:
                 image_path.rename(new_path)
-                self.stats['moved'] = self.stats.get('moved', 0) + 1
-                update_stats_from_status(self.stats, result['status'])
+                self.stats["moved"] = self.stats.get("moved", 0) + 1
+                update_stats_from_status(self.stats, result["status"])
             except Exception as e:
-                result['error'] = str(e)
-                result['status'] = ProcessingStatus.ERROR
-                update_stats_from_status(self.stats, result['status'])
+                result["error"] = str(e)
+                result["status"] = ProcessingStatus.ERROR
+                update_stats_from_status(self.stats, result["status"])
         except Exception as e:
-            result['error'] = str(e)
-            result['status'] = ProcessingStatus.ERROR
-            update_stats_from_status(self.stats, result['status'])
+            result["error"] = str(e)
+            result["status"] = ProcessingStatus.ERROR
+            update_stats_from_status(self.stats, result["status"])
 
     def _move_to_folder(self, image_path: Path, result: Dict) -> None:
         """Move file to folder-based organization."""
         try:
-            dest_folder = Path(result['dest_folder'])
-            dest_path = Path(result['dest_path'])
+            dest_folder = Path(result["dest_folder"])
+            dest_path = Path(result["dest_path"])
             dest_folder.mkdir(parents=True, exist_ok=True)
             shutil.copy2(image_path, dest_path)
-            self.stats['moved'] = self.stats.get('moved', 0) + 1
-            update_stats_from_status(self.stats, result['status'])
+            self.stats["moved"] = self.stats.get("moved", 0) + 1
+            update_stats_from_status(self.stats, result["status"])
         except Exception as e:
-            result['error'] = str(e)
-            result['status'] = ProcessingStatus.ERROR
-            update_stats_from_status(self.stats, result['status'])
+            result["error"] = str(e)
+            result["status"] = ProcessingStatus.ERROR
+            update_stats_from_status(self.stats, result["status"])
 
     def print_summary(self):
         """Print organization summary."""
@@ -197,26 +189,26 @@ class FileOrganizer:
 
         print(f"Errors: {self.stats.get('errors', 0)}")
 
-        if self.mode == 'folder':
+        if self.mode == "folder":
             print("\nBy Category:")
             for key, count in sorted(self.stats.items()):
-                if key not in ('processed', 'moved', 'errors', 'total') and '/' in key:
+                if key not in ("processed", "moved", "errors", "total") and "/" in key:
                     print(f"  {key}: {count}")
 
     def save_results(self, output_file: Optional[Path] = None):
         """Save results to JSON file."""
         if output_file is None:
-            output_file = self.output_dir / 'organization_results.json'
+            output_file = self.output_dir / "organization_results.json"
 
-        with open(output_file, 'w') as f:
+        with open(output_file, "w") as f:
             json.dump(
                 {
-                    'timestamp': datetime.now().isoformat(),
-                    'source_dir': str(self.source_dir),
-                    'output_dir': str(self.output_dir),
-                    'dry_run': self.dry_run,
-                    'stats': dict(self.stats),
-                    'results': self.results,
+                    "timestamp": datetime.now().isoformat(),
+                    "source_dir": str(self.source_dir),
+                    "output_dir": str(self.output_dir),
+                    "dry_run": self.dry_run,
+                    "stats": dict(self.stats),
+                    "results": self.results,
                 },
                 f,
                 indent=2,

@@ -26,6 +26,7 @@ if TYPE_CHECKING:
 
 class NameOrganizerStats(TypedDict):
     """``NameBasedOrganizer.stats`` counters."""
+
     total_files: int
     moved_files: int
     skipped_files: int
@@ -35,6 +36,7 @@ class NameOrganizerStats(TypedDict):
 
 class GameAssetPatterns(TypedDict):
     """Regex buckets for the game-asset sub-classifier."""
+
     sprites: List[str]
     textures: List[str]
     ui: List[str]
@@ -45,6 +47,7 @@ class GameAssetPatterns(TypedDict):
 class FilenamePatterns(TypedDict):
     """``NameBasedOrganizer.filename_patterns`` shape (regex lists per
     category; ``game_assets`` is the one nested bucket)."""
+
     artifacts_trash: List[str]
     technical_build: List[str]
     license_files: List[str]
@@ -74,336 +77,392 @@ class FileNameOrganizer:
         self.base_path = Path(base_path).expanduser()
         self.dry_run = dry_run
         self.stats: NameOrganizerStats = {
-            'total_files': 0,
-            'moved_files': 0,
-            'skipped_files': 0,
-            'errors': 0,
-            'by_category': {}
+            "total_files": 0,
+            "moved_files": 0,
+            "skipped_files": 0,
+            "errors": 0,
+            "by_category": {},
         }
 
         # Extension mappings
         self.extension_map = {
             # Images
-            'images': {
-                'png', 'jpg', 'jpeg', 'gif', 'bmp', 'webp', 'ico',
-                'svg', 'heic', 'heif', 'tiff', 'tif', 'raw'
+            "images": {
+                "png",
+                "jpg",
+                "jpeg",
+                "gif",
+                "bmp",
+                "webp",
+                "ico",
+                "svg",
+                "heic",
+                "heif",
+                "tiff",
+                "tif",
+                "raw",
             },
             # Videos
-            'videos': {
-                'mp4', 'mov', 'avi', 'mkv', 'wmv', 'flv', 'webm',
-                'm4v', 'mpg', 'mpeg', '3gp'
+            "videos": {
+                "mp4",
+                "mov",
+                "avi",
+                "mkv",
+                "wmv",
+                "flv",
+                "webm",
+                "m4v",
+                "mpg",
+                "mpeg",
+                "3gp",
             },
             # Audio
-            'audio': {
-                'mp3', 'wav', 'flac', 'aac', 'm4a', 'ogg', 'wma',
-                'opus', 'aiff', 'ape'
-            },
+            "audio": {"mp3", "wav", "flac", "aac", "m4a", "ogg", "wma", "opus", "aiff", "ape"},
             # Documents
-            'documents': {
-                'pdf', 'doc', 'docx', 'txt', 'rtf', 'odt', 'pages',
-                'tex', 'md', 'markdown'
+            "documents": {
+                "pdf",
+                "doc",
+                "docx",
+                "txt",
+                "rtf",
+                "odt",
+                "pages",
+                "tex",
+                "md",
+                "markdown",
             },
             # Spreadsheets
-            'spreadsheets': {
-                'xls', 'xlsx', 'csv', 'tsv', 'ods', 'numbers'
-            },
+            "spreadsheets": {"xls", "xlsx", "csv", "tsv", "ods", "numbers"},
             # Presentations
-            'presentations': {
-                'ppt', 'pptx', 'key', 'odp'
-            },
+            "presentations": {"ppt", "pptx", "key", "odp"},
             # Code
-            'code': {
-                'py', 'js', 'ts', 'jsx', 'tsx', 'java', 'c', 'cpp',
-                'h', 'hpp', 'cs', 'go', 'rs', 'rb', 'php', 'swift',
-                'kt', 'scala', 'r', 'sh', 'bash', 'zsh', 'fish',
-                'html', 'css', 'scss', 'sass', 'less'
+            "code": {
+                "py",
+                "js",
+                "ts",
+                "jsx",
+                "tsx",
+                "java",
+                "c",
+                "cpp",
+                "h",
+                "hpp",
+                "cs",
+                "go",
+                "rs",
+                "rb",
+                "php",
+                "swift",
+                "kt",
+                "scala",
+                "r",
+                "sh",
+                "bash",
+                "zsh",
+                "fish",
+                "html",
+                "css",
+                "scss",
+                "sass",
+                "less",
             },
             # Data
-            'data': {
-                'json', 'xml', 'yaml', 'yml', 'toml', 'ini', 'cfg',
-                'conf', 'config', 'plist', 'sql', 'db', 'sqlite'
+            "data": {
+                "json",
+                "xml",
+                "yaml",
+                "yml",
+                "toml",
+                "ini",
+                "cfg",
+                "conf",
+                "config",
+                "plist",
+                "sql",
+                "db",
+                "sqlite",
             },
             # Archives
-            'archives': {
-                'zip', 'tar', 'gz', 'bz2', 'xz', 'rar', '7z', 'dmg',
-                'pkg', 'deb', 'rpm', 'iso'
+            "archives": {
+                "zip",
+                "tar",
+                "gz",
+                "bz2",
+                "xz",
+                "rar",
+                "7z",
+                "dmg",
+                "pkg",
+                "deb",
+                "rpm",
+                "iso",
             },
             # Certificates & Keys
-            'certificates': {
-                'pem', 'key', 'crt', 'cer', 'p12', 'pfx', 'pub'
-            },
+            "certificates": {"pem", "key", "crt", "cer", "p12", "pfx", "pub"},
             # Game files
-            'game_files': {
-                'sav', 'save', 'dat'
-            },
+            "game_files": {"sav", "save", "dat"},
             # Design
-            'design': {
-                'ai', 'psd', 'sketch', 'fig', 'xd', 'afdesign',
-                'afphoto', 'afpub'
-            },
+            "design": {"ai", "psd", "sketch", "fig", "xd", "afdesign", "afphoto", "afpub"},
             # 3D
-            '3d': {
-                'blend', 'obj', 'fbx', 'dae', 'stl', '3ds', 'max',
-                'c4d', 'ma', 'mb'
-            }
+            "3d": {"blend", "obj", "fbx", "dae", "stl", "3ds", "max", "c4d", "ma", "mb"},
         }
 
         # Filename pattern categories
         self.filename_patterns: FilenamePatterns = {
             # Artifact/build files (to be trashed)
-            'artifacts_trash': [
-                r'\.pyc$',
-                r'\.pyo$',
-                r'\.pyd$',
-                r'__pycache__',
-                r'\.egg-info$',
-                r'\.dist-info$',
-                r'\.so$',
-                r'\.dylib$',
-                r'\.dll$',
-                r'\.o$',
-                r'\.a$',
-                r'\.lib$',
-                r'\.node$',
-                r'\.bcmap$',
-                r'\.noe$',
-                r'\.pfb$',
-                r'\.otf$',
-                r'\.ttf$',
-                r'\.woff$',
-                r'\.woff2$',
-                r'\.eot$',
-                r'\.proto$',
-                r'\.def$',
-                r'\.lark$',
-                r'\.icns$',
-                r'\.pack$',
-                r'\.rev$',
-                r'\.sample$',
-                r'^\.DS_Store$',
-                r'^\.npmignore',
-                r'^\.gitignore',
-                r'^\.coveragerc',
-                r'^\.jshintrc',
-                r'^\.babelrc',
-                r'^\.hgeol$',
-                r'^\.flake8$',
-                r'\.cjs$',
-                r'\.mjs$',
-                r'\.d\.ts$',
-                r'\.d\.cts$',
-                r'\.d\.mts$',
-                r'\.min\.js$',
-                r'\.min\.css$',
-                r'\.umd\.js$',
-                r'\.esm\.js$',
-                r'\.browser\.js$',
-                r'\.worker\.js$',
-                r'\.webworker\.js$',
+            "artifacts_trash": [
+                r"\.pyc$",
+                r"\.pyo$",
+                r"\.pyd$",
+                r"__pycache__",
+                r"\.egg-info$",
+                r"\.dist-info$",
+                r"\.so$",
+                r"\.dylib$",
+                r"\.dll$",
+                r"\.o$",
+                r"\.a$",
+                r"\.lib$",
+                r"\.node$",
+                r"\.bcmap$",
+                r"\.noe$",
+                r"\.pfb$",
+                r"\.otf$",
+                r"\.ttf$",
+                r"\.woff$",
+                r"\.woff2$",
+                r"\.eot$",
+                r"\.proto$",
+                r"\.def$",
+                r"\.lark$",
+                r"\.icns$",
+                r"\.pack$",
+                r"\.rev$",
+                r"\.sample$",
+                r"^\.DS_Store$",
+                r"^\.npmignore",
+                r"^\.gitignore",
+                r"^\.coveragerc",
+                r"^\.jshintrc",
+                r"^\.babelrc",
+                r"^\.hgeol$",
+                r"^\.flake8$",
+                r"\.cjs$",
+                r"\.mjs$",
+                r"\.d\.ts$",
+                r"\.d\.cts$",
+                r"\.d\.mts$",
+                r"\.min\.js$",
+                r"\.min\.css$",
+                r"\.umd\.js$",
+                r"\.esm\.js$",
+                r"\.browser\.js$",
+                r"\.worker\.js$",
+                r"\.webworker\.js$",
             ],
             # Technical/build files
-            'technical_build': [
-                r'^tsserver$',
-                r'^tsc$',
-                r'^tsx$',
-                r'^esbuild$',
-                r'^node-which$',
-                r'^mammoth$',
-                r'^pdf-parse$',
-                r'^\.eslintrc',
-                r'^\.nycrc',
-                r'^\.editorconfig',
-                r'^\.travis\.yml$',
-                r'^makefile$',
-                r'\.tpl$',
+            "technical_build": [
+                r"^tsserver$",
+                r"^tsc$",
+                r"^tsx$",
+                r"^esbuild$",
+                r"^node-which$",
+                r"^mammoth$",
+                r"^pdf-parse$",
+                r"^\.eslintrc",
+                r"^\.nycrc",
+                r"^\.editorconfig",
+                r"^\.travis\.yml$",
+                r"^makefile$",
+                r"\.tpl$",
             ],
             # LICENSE files
-            'license_files': [
-                r'^LICENSE',
-                r'^license$',
+            "license_files": [
+                r"^LICENSE",
+                r"^license$",
             ],
             # README and documentation files
-            'readme_files': [
-                r'^README',
-                r'^readme',
-                r'^CHANGELOG',
-                r'^changelog',
-                r'^HISTORY',
-                r'^History',
-                r'^SECURITY\.md$',
-                r'^CONTRIBUTING',
-                r'^AUTHORS',
-                r'^CONTRIBUTORS',
+            "readme_files": [
+                r"^README",
+                r"^readme",
+                r"^CHANGELOG",
+                r"^changelog",
+                r"^HISTORY",
+                r"^History",
+                r"^SECURITY\.md$",
+                r"^CONTRIBUTING",
+                r"^AUTHORS",
+                r"^CONTRIBUTORS",
             ],
             # Technical documentation and templates
-            'technical_docs': [
-                r'^ISSUE_TEMPLATE',
-                r'^PULL_REQUEST_TEMPLATE',
-                r'^Bug_report',
-                r'exception.*\.txt$',
-                r'settings\.txt$',
-                r'credits\.txt$',
+            "technical_docs": [
+                r"^ISSUE_TEMPLATE",
+                r"^PULL_REQUEST_TEMPLATE",
+                r"^Bug_report",
+                r"exception.*\.txt$",
+                r"settings\.txt$",
+                r"credits\.txt$",
             ],
             # Log files
-            'log_files': [
-                r'\.log$',
-                r'^.*\.log\.',
+            "log_files": [
+                r"\.log$",
+                r"^.*\.log\.",
             ],
             # AI-Generated images
-            'ai_generated': [
-                r'^ChatGPT Image',
-                r'^DALL-E',
-                r'^Midjourney',
-                r'^Stable Diffusion',
-                r'^AI Generated',
+            "ai_generated": [
+                r"^ChatGPT Image",
+                r"^DALL-E",
+                r"^Midjourney",
+                r"^Stable Diffusion",
+                r"^AI Generated",
             ],
             # Screenshots
-            'screenshots': [
-                r'^screenshot[_\s]',
-                r'^screen[_\s]?shot',
-                r'^capture[_\s]',
-                r'^scrnshot',
-                r'^Screen Shot',
+            "screenshots": [
+                r"^screenshot[_\s]",
+                r"^screen[_\s]?shot",
+                r"^capture[_\s]",
+                r"^scrnshot",
+                r"^Screen Shot",
             ],
             # WhatsApp images
-            'whatsapp': [
-                r'^WhatsApp Image',
-                r'^WhatsApp Video',
-                r'^WA\d+',
+            "whatsapp": [
+                r"^WhatsApp Image",
+                r"^WhatsApp Video",
+                r"^WA\d+",
             ],
             # Camera photos — vendor prefixes single-homed in shared.constants;
             # use re.IGNORECASE at match time so lowercase patterns match the
             # uppercase filenames real cameras produce.
-            'camera_photos': [
+            "camera_photos": [
                 *CAMERA_VENDOR_PREFIX_PATTERNS,
-                r'^\d{8}_\d{6}',          # YYYYMMDD_HHMMSS
-                r'^\d{14}',               # YYYYMMDDHHMMSS
-                r'^\d{8}_[A-Za-z]+_\d{6}',  # YYYYMMDD_Location_HHMMSS
+                r"^\d{8}_\d{6}",  # YYYYMMDD_HHMMSS
+                r"^\d{14}",  # YYYYMMDDHHMMSS
+                r"^\d{8}_[A-Za-z]+_\d{6}",  # YYYYMMDD_Location_HHMMSS
             ],
             # Social media downloads
-            'social_media': [
-                r'^\d+_\d+_\d+_\d+_\d+_n\.(jpg|jpeg)',  # Facebook pattern
-                r'^unnamed\(\d+\)',
-                r'-EDIT\.jpg$',
-                r'-EDIT-EDIT',
+            "social_media": [
+                r"^\d+_\d+_\d+_\d+_\d+_n\.(jpg|jpeg)",  # Facebook pattern
+                r"^unnamed\(\d+\)",
+                r"-EDIT\.jpg$",
+                r"-EDIT-EDIT",
             ],
             # Web templates
-            'web_templates': [
-                r'-webflow-template',
-                r'-elderlycare-x-',
-                r'-icon-purple-',
-                r'-decoration-image-',
+            "web_templates": [
+                r"-webflow-template",
+                r"-elderlycare-x-",
+                r"-icon-purple-",
+                r"-decoration-image-",
             ],
             # Game assets
-            'game_assets': {
-                'sprites': [
-                    r'^\d+_f\.png$',      # Frame files
-                    r'^\d+_f_\d+\.png$',
-                    r'^char_[a-z]_\d+',   # Character sprites
-                    r'^l_[a-z]\d+',       # Leg sprites
-                    r'^c_[A-Z]{2}_',      # Compass sprites
-                    r'^c_rug_',           # Rug sprites
-                    r'^feet_',
-                    r'^drake_',
-                    r'^trap_',
-                    r'^frame\d+',         # Frame files
-                    r'^arm_',             # Arm sprites
-                    r'^leg',              # Leg sprites
-                    r'^legs_',
-                    r'^torso_',           # Torso sprites
-                    r'^wing_',            # Wing sprites
-                    r'^head_',            # Head sprites
-                    r'^tail_',            # Tail sprites
-                    r'^item\d+',          # Item sprites
-                    r'^grass_',           # Grass sprites
-                    r'^shoulders_',       # Shoulder sprites
+            "game_assets": {
+                "sprites": [
+                    r"^\d+_f\.png$",  # Frame files
+                    r"^\d+_f_\d+\.png$",
+                    r"^char_[a-z]_\d+",  # Character sprites
+                    r"^l_[a-z]\d+",  # Leg sprites
+                    r"^c_[A-Z]{2}_",  # Compass sprites
+                    r"^c_rug_",  # Rug sprites
+                    r"^feet_",
+                    r"^drake_",
+                    r"^trap_",
+                    r"^frame\d+",  # Frame files
+                    r"^arm_",  # Arm sprites
+                    r"^leg",  # Leg sprites
+                    r"^legs_",
+                    r"^torso_",  # Torso sprites
+                    r"^wing_",  # Wing sprites
+                    r"^head_",  # Head sprites
+                    r"^tail_",  # Tail sprites
+                    r"^item\d+",  # Item sprites
+                    r"^grass_",  # Grass sprites
+                    r"^shoulders_",  # Shoulder sprites
                 ],
-                'textures': [
-                    r'^shadingOcclusion',
-                    r'^bg_',
-                    r'^texture-',
+                "textures": [
+                    r"^shadingOcclusion",
+                    r"^bg_",
+                    r"^texture-",
                 ],
-                'ui': [
-                    r'^stat_',
-                    r'^hp_mp_',
-                    r'^book_',
-                    r'^cur_',
-                    r'^name_\d+',
-                    r'^drop_\d+',
-                    r'^medium_\d+',
-                    r'^settings_',
-                    r'^container_',
+                "ui": [
+                    r"^stat_",
+                    r"^hp_mp_",
+                    r"^book_",
+                    r"^cur_",
+                    r"^name_\d+",
+                    r"^drop_\d+",
+                    r"^medium_\d+",
+                    r"^settings_",
+                    r"^container_",
                 ],
-                'fonts': [
-                    r'^cp437-',
+                "fonts": [
+                    r"^cp437-",
                 ],
-                'items': [
-                    r'^boomerang',
-                    r'^cube',
-                    r'^magic_hater',
+                "items": [
+                    r"^boomerang",
+                    r"^cube",
+                    r"^magic_hater",
                 ],
             },
             # Location/timezone files
-            'location_data': [
-                r'^[A-Z][a-z]+_[A-Z][a-z]+$',  # Port_Moresby
-                r'^[A-Z][a-z]+_\d{8}_\d{6}$',  # City_timestamp
+            "location_data": [
+                r"^[A-Z][a-z]+_[A-Z][a-z]+$",  # Port_Moresby
+                r"^[A-Z][a-z]+_\d{8}_\d{6}$",  # City_timestamp
             ],
             # Generic numbered files
-            'numbered_generic': [
-                r'^\d+\.png$',
-                r'^\d+_\d+\.png$',
+            "numbered_generic": [
+                r"^\d+\.png$",
+                r"^\d+_\d+\.png$",
             ],
             # Logos (branding)
-            'logos': [
-                r'logo',
-                r'-logo',
-                r'_logo',
-                r'logo-',
-                r'logo_',
+            "logos": [
+                r"logo",
+                r"-logo",
+                r"_logo",
+                r"logo-",
+                r"logo_",
             ],
             # Icons
-            'icons': [
-                r'-icon-',
-                r'^icon[-_]',
-                r'fav\.png$',
+            "icons": [
+                r"-icon-",
+                r"^icon[-_]",
+                r"fav\.png$",
             ],
             # Calendar/date
-            'calendar': [
-                r'^calendar-',
-                r'-check-\d+\.svg$',
+            "calendar": [
+                r"^calendar-",
+                r"-check-\d+\.svg$",
             ],
             # Medical
-            'medical': [
-                r'^medication-',
+            "medical": [
+                r"^medication-",
             ],
             # Emoji
-            'emoji': [
-                r'^1f\d{3}\.png$',  # Unicode emoji
+            "emoji": [
+                r"^1f\d{3}\.png$",  # Unicode emoji
             ],
         }
 
         # Filepath pattern categories
         self.filepath_patterns = {
-            'game_assets': [
-                r'/GameAssets/',
-                r'/game[-_]assets/',
-                r'/games?/',
+            "game_assets": [
+                r"/GameAssets/",
+                r"/game[-_]assets/",
+                r"/games?/",
             ],
-            'downloads': [
-                r'/Downloads/',
-                r'/downloads/',
+            "downloads": [
+                r"/Downloads/",
+                r"/downloads/",
             ],
-            'documents': [
-                r'/Documents/',
-                r'/docs?/',
+            "documents": [
+                r"/Documents/",
+                r"/docs?/",
             ],
-            'pictures': [
-                r'/Pictures/',
-                r'/Photos/',
-                r'/images?/',
+            "pictures": [
+                r"/Pictures/",
+                r"/Photos/",
+                r"/images?/",
             ],
-            'desktop': [
-                r'/Desktop/',
+            "desktop": [
+                r"/Desktop/",
             ],
         }
 
@@ -413,44 +472,44 @@ class FileNameOrganizer:
         Returns (category, subcategory) or None.
         """
         # Check for .map files specifically (source maps)
-        if file_path.name.endswith('.js.map'):
-            return ('Technical', 'JavaScript')
-        elif file_path.name.endswith('.css.map'):
-            return ('Technical', 'JavaScript')
-        elif file_path.name.endswith('.ts.map'):
-            return ('Technical', 'JavaScript')
+        if file_path.name.endswith(".js.map"):
+            return ("Technical", "JavaScript")
+        elif file_path.name.endswith(".css.map"):
+            return ("Technical", "JavaScript")
+        elif file_path.name.endswith(".ts.map"):
+            return ("Technical", "JavaScript")
 
-        ext = file_path.suffix.lower().lstrip('.')
+        ext = file_path.suffix.lower().lstrip(".")
 
         for category, extensions in self.extension_map.items():
             if ext in extensions:
                 # Map to destination paths
-                if category == 'images':
-                    return ('Media/Photos', 'Other')
-                elif category == 'videos':
-                    return ('Media/Videos', 'Recordings')
-                elif category == 'audio':
-                    return ('Media/Audio', 'Other')
-                elif category == 'documents':
-                    return ('Documents', 'General')
-                elif category == 'spreadsheets':
-                    return ('Data', 'Spreadsheets')
-                elif category == 'presentations':
-                    return ('Documents', 'Presentations')
-                elif category == 'code':
-                    return ('Technical', 'Code')
-                elif category == 'data':
-                    return ('Data', 'Configs')
-                elif category == 'archives':
-                    return ('Data', 'Archives')
-                elif category == 'certificates':
-                    return ('Technical', 'Certificates')
-                elif category == 'game_files':
-                    return ('GameAssets', 'SaveFiles')
-                elif category == 'design':
-                    return ('Creative', 'Design')
-                elif category == '3d':
-                    return ('Creative', '3D')
+                if category == "images":
+                    return ("Media/Photos", "Other")
+                elif category == "videos":
+                    return ("Media/Videos", "Recordings")
+                elif category == "audio":
+                    return ("Media/Audio", "Other")
+                elif category == "documents":
+                    return ("Documents", "General")
+                elif category == "spreadsheets":
+                    return ("Data", "Spreadsheets")
+                elif category == "presentations":
+                    return ("Documents", "Presentations")
+                elif category == "code":
+                    return ("Technical", "Code")
+                elif category == "data":
+                    return ("Data", "Configs")
+                elif category == "archives":
+                    return ("Data", "Archives")
+                elif category == "certificates":
+                    return ("Technical", "Certificates")
+                elif category == "game_files":
+                    return ("GameAssets", "SaveFiles")
+                elif category == "design":
+                    return ("Creative", "Design")
+                elif category == "3d":
+                    return ("Creative", "3D")
 
         return None
 
@@ -462,137 +521,137 @@ class FileNameOrganizer:
         filename = file_path.name
 
         # Check artifacts/build files FIRST (highest priority - to be trashed)
-        for pattern in self.filename_patterns['artifacts_trash']:
+        for pattern in self.filename_patterns["artifacts_trash"]:
             if re.search(pattern, filename, re.IGNORECASE):
-                return ('.Trash', 'BuildArtifacts')
+                return (".Trash", "BuildArtifacts")
 
         # Check technical/build files (high priority)
-        for pattern in self.filename_patterns['technical_build']:
+        for pattern in self.filename_patterns["technical_build"]:
             if re.search(pattern, filename, re.IGNORECASE):
-                return ('Technical/Code', 'Other')
+                return ("Technical/Code", "Other")
 
         # Check LICENSE files
-        for pattern in self.filename_patterns['license_files']:
+        for pattern in self.filename_patterns["license_files"]:
             if re.search(pattern, filename, re.IGNORECASE):
-                return ('Technical/Code', 'Other')
+                return ("Technical/Code", "Other")
 
         # Check README and documentation files
-        for pattern in self.filename_patterns['readme_files']:
+        for pattern in self.filename_patterns["readme_files"]:
             if re.search(pattern, filename, re.IGNORECASE):
-                return ('Technical', 'ReadMes')
+                return ("Technical", "ReadMes")
 
         # Check log files (higher priority than technical docs)
-        for pattern in self.filename_patterns['log_files']:
+        for pattern in self.filename_patterns["log_files"]:
             if re.search(pattern, filename, re.IGNORECASE):
-                return ('Technical', 'Logs')
+                return ("Technical", "Logs")
 
         # Check technical documentation and templates
-        for pattern in self.filename_patterns['technical_docs']:
+        for pattern in self.filename_patterns["technical_docs"]:
             if re.search(pattern, filename, re.IGNORECASE):
-                return ('Technical', 'Other')
+                return ("Technical", "Other")
 
         # Check AI-generated images (highest priority for these)
-        for pattern in self.filename_patterns['ai_generated']:
+        for pattern in self.filename_patterns["ai_generated"]:
             if re.search(pattern, filename, re.IGNORECASE):
-                return ('AI-Generated', 'Images')
+                return ("AI-Generated", "Images")
 
         # Check screenshots
-        for pattern in self.filename_patterns['screenshots']:
+        for pattern in self.filename_patterns["screenshots"]:
             if re.search(pattern, filename, re.IGNORECASE):
-                return ('Media/Photos', 'Screenshots')
+                return ("Media/Photos", "Screenshots")
 
         # Check WhatsApp
-        for pattern in self.filename_patterns['whatsapp']:
+        for pattern in self.filename_patterns["whatsapp"]:
             if re.search(pattern, filename, re.IGNORECASE):
-                return ('Media/Photos', 'WhatsApp')
+                return ("Media/Photos", "WhatsApp")
 
         # Check camera photos — IGNORECASE because CAMERA_VENDOR_PREFIX_PATTERNS
         # uses lowercase patterns that must match uppercase camera filenames.
-        for pattern in self.filename_patterns['camera_photos']:
+        for pattern in self.filename_patterns["camera_photos"]:
             if re.search(pattern, filename, re.IGNORECASE):
-                return ('Media/Photos', 'Camera')
+                return ("Media/Photos", "Camera")
 
         # Check social media
-        for pattern in self.filename_patterns['social_media']:
+        for pattern in self.filename_patterns["social_media"]:
             if re.search(pattern, filename):
-                return ('Media/Photos', 'Social_Media')
+                return ("Media/Photos", "Social_Media")
 
         # Check web templates
-        for pattern in self.filename_patterns['web_templates']:
+        for pattern in self.filename_patterns["web_templates"]:
             if re.search(pattern, filename, re.IGNORECASE):
-                return ('Creative', 'WebTemplates')
+                return ("Creative", "WebTemplates")
 
         # Check game assets (priority order matters)
-        game_patterns = self.filename_patterns['game_assets']
+        game_patterns = self.filename_patterns["game_assets"]
 
         # Check if image extension (for Games subdirectory in Media/Photos)
-        is_image = file_path.suffix.lower() in ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp']
+        is_image = file_path.suffix.lower() in [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"]
 
-        for pattern in game_patterns['sprites']:
+        for pattern in game_patterns["sprites"]:
             if re.search(pattern, filename):
                 if is_image:
-                    return ('Media/Photos', 'Games')
-                return ('GameAssets', 'Sprites')
+                    return ("Media/Photos", "Games")
+                return ("GameAssets", "Sprites")
 
-        for pattern in game_patterns['textures']:
+        for pattern in game_patterns["textures"]:
             if re.search(pattern, filename):
                 if is_image:
-                    return ('Media/Photos', 'Games')
-                return ('GameAssets', 'Textures')
+                    return ("Media/Photos", "Games")
+                return ("GameAssets", "Textures")
 
-        for pattern in game_patterns['ui']:
+        for pattern in game_patterns["ui"]:
             if re.search(pattern, filename):
                 if is_image:
-                    return ('Media/Photos', 'Games')
-                return ('GameAssets', 'UI')
+                    return ("Media/Photos", "Games")
+                return ("GameAssets", "UI")
 
-        for pattern in game_patterns['fonts']:
+        for pattern in game_patterns["fonts"]:
             if re.search(pattern, filename):
                 if is_image:
-                    return ('Media/Photos', 'Games')
-                return ('GameAssets', 'Fonts')
+                    return ("Media/Photos", "Games")
+                return ("GameAssets", "Fonts")
 
-        for pattern in game_patterns['items']:
+        for pattern in game_patterns["items"]:
             if re.search(pattern, filename):
                 if is_image:
-                    return ('Media/Photos', 'Games')
-                return ('GameAssets', 'Items')
+                    return ("Media/Photos", "Games")
+                return ("GameAssets", "Items")
 
         # Check logos (higher priority than icons)
-        for pattern in self.filename_patterns['logos']:
+        for pattern in self.filename_patterns["logos"]:
             if re.search(pattern, filename, re.IGNORECASE):
-                return ('Creative', 'Branding')
+                return ("Creative", "Branding")
 
         # Check icons
-        for pattern in self.filename_patterns['icons']:
+        for pattern in self.filename_patterns["icons"]:
             if re.search(pattern, filename, re.IGNORECASE):
-                return ('Creative', 'Icons')
+                return ("Creative", "Icons")
 
         # Check calendar
-        for pattern in self.filename_patterns['calendar']:
+        for pattern in self.filename_patterns["calendar"]:
             if re.search(pattern, filename, re.IGNORECASE):
-                return ('Creative', 'Icons')
+                return ("Creative", "Icons")
 
         # Check medical
-        for pattern in self.filename_patterns['medical']:
+        for pattern in self.filename_patterns["medical"]:
             if re.search(pattern, filename, re.IGNORECASE):
-                return ('Medical', 'General')
+                return ("Medical", "General")
 
         # Check emoji
-        for pattern in self.filename_patterns['emoji']:
+        for pattern in self.filename_patterns["emoji"]:
             if re.search(pattern, filename):
-                return ('Creative', 'Emoji')
+                return ("Creative", "Emoji")
 
         # Check location data
-        for pattern in self.filename_patterns['location_data']:
+        for pattern in self.filename_patterns["location_data"]:
             if re.search(pattern, filename):
-                return ('Data', 'LocationData')
+                return ("Data", "LocationData")
 
         # Check generic numbered files (low priority)
-        for pattern in self.filename_patterns['numbered_generic']:
+        for pattern in self.filename_patterns["numbered_generic"]:
             if re.search(pattern, filename):
                 # Could be game assets
-                return ('GameAssets', 'Sprites')
+                return ("GameAssets", "Sprites")
 
         return None
 
@@ -606,8 +665,8 @@ class FileNameOrganizer:
         for category, patterns in self.filepath_patterns.items():
             for pattern in patterns:
                 if re.search(pattern, filepath_str):
-                    if category == 'game_assets':
-                        return ('GameAssets', 'Other')
+                    if category == "game_assets":
+                        return ("GameAssets", "Other")
                     # Add more filepath-based categorization as needed
 
         return None
@@ -634,7 +693,7 @@ class FileNameOrganizer:
             return result
 
         # Default: Uncategorized
-        return ('Uncategorized', 'Other')
+        return ("Uncategorized", "Other")
 
     def get_destination_path(self, category: str, subcategory: str, filename: str) -> Path:
         """Get the full destination path for a file."""
@@ -661,7 +720,9 @@ class FileNameOrganizer:
             print(f"  ✗ Error moving file: {e}")
             return False
 
-    def organize_directory(self, source_dir: str, recursive: bool = False, limit: Optional[int] = None):
+    def organize_directory(
+        self, source_dir: str, recursive: bool = False, limit: Optional[int] = None
+    ):
         """Organize files in a directory."""
         source_path = Path(source_dir).expanduser()
 
@@ -683,9 +744,9 @@ class FileNameOrganizer:
 
         # Collect files
         if recursive:
-            files = list(source_path.rglob('*'))
+            files = list(source_path.rglob("*"))
         else:
-            files = list(source_path.glob('*'))
+            files = list(source_path.glob("*"))
 
         # Filter to files only
         files = [f for f in files if f.is_file()]
@@ -694,7 +755,7 @@ class FileNameOrganizer:
         if limit:
             files = files[:limit]
 
-        self.stats['total_files'] = len(files)
+        self.stats["total_files"] = len(files)
 
         print(f"Found {len(files)} files to process")
         print()
@@ -715,22 +776,24 @@ class FileNameOrganizer:
                 # Skip if already in correct location
                 if file_path.parent == destination.parent:
                     print("  → Already in correct location")
-                    self.stats['skipped_files'] += 1
+                    self.stats["skipped_files"] += 1
                     continue
 
                 # Move file
                 if self.move_file(file_path, destination):
-                    self.stats['moved_files'] += 1
+                    self.stats["moved_files"] += 1
 
                     # Update category stats
                     cat_key = f"{category}/{subcategory}"
-                    self.stats['by_category'][cat_key] = self.stats['by_category'].get(cat_key, 0) + 1
+                    self.stats["by_category"][cat_key] = (
+                        self.stats["by_category"].get(cat_key, 0) + 1
+                    )
                 else:
-                    self.stats['errors'] += 1
+                    self.stats["errors"] += 1
 
             except Exception as e:
                 print(f"  ✗ Error processing file: {e}")
-                self.stats['errors'] += 1
+                self.stats["errors"] += 1
 
             print()
 
@@ -750,30 +813,30 @@ class FileNameOrganizer:
         print(f"Errors: {self.stats['errors']}")
         print()
 
-        if self.stats['by_category']:
+        if self.stats["by_category"]:
             print("Files by category:")
-            for category, count in sorted(self.stats['by_category'].items()):
+            for category, count in sorted(self.stats["by_category"].items()):
                 print(f"  {category}: {count}")
 
         # Save report
-        if not self.dry_run and self.stats['moved_files'] > 0:
+        if not self.dry_run and self.stats["moved_files"] > 0:
             self.save_report()
 
     def save_report(self):
         """Save organization report to JSON."""
-        results_dir = Path(__file__).resolve().parents[2] / 'results'
+        results_dir = Path(__file__).resolve().parents[2] / "results"
         results_dir.mkdir(exist_ok=True)
 
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        report_file = results_dir / f'name_organization_report_{timestamp}.json'
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        report_file = results_dir / f"name_organization_report_{timestamp}.json"
 
         report = {
-            'timestamp': timestamp,
-            'base_path': str(self.base_path),
-            'stats': self.stats,
+            "timestamp": timestamp,
+            "base_path": str(self.base_path),
+            "stats": self.stats,
         }
 
-        with open(report_file, 'w') as f:
+        with open(report_file, "w") as f:
             json.dump(report, f, indent=2)
 
         print()
@@ -787,16 +850,11 @@ def run(args: "NameInputs") -> None:
     from the options ``src.cli.add_name_arguments`` defines (the single
     source for this command, shared with the unified CLI).
     """
-    organizer = FileNameOrganizer(
-        base_path=args.base_path,
-        dry_run=args.dry_run
-    )
+    organizer = FileNameOrganizer(base_path=args.base_path, dry_run=args.dry_run)
 
     for source_dir in args.sources:
         organizer.organize_directory(
-            source_dir=source_dir,
-            recursive=args.recursive,
-            limit=args.limit
+            source_dir=source_dir, recursive=args.recursive, limit=args.limit
         )
 
 
@@ -807,9 +865,9 @@ def main():
     from src.cli_inputs import NameInputs
 
     parser = argparse.ArgumentParser(
-        description='Organize files by name and path patterns only',
+        description="Organize files by name and path patterns only",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog='''
+        epilog="""
 Examples:
   # Dry run (preview only)
   organize-files name --dry-run --source ~/Documents/Uncategorized
@@ -822,11 +880,11 @@ Examples:
 
   # Custom base path
   organize-files name --base-path ~/MyFiles --source ~/Downloads
-        '''
+        """,
     )
     add_name_arguments(parser)
     run(NameInputs.from_namespace(parser.parse_args()))
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

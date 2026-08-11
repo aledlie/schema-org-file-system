@@ -23,7 +23,6 @@ from src.storage.wikidata_enricher import (
     _KV_NAMESPACE,
 )
 
-
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -36,13 +35,7 @@ def _make_api_response(
     match: bool = True,
 ) -> bytes:
     """Return a minimal Reconciliation API response body."""
-    payload = {
-        "q0": {
-            "result": [
-                {"id": qid, "name": label, "score": score, "match": match}
-            ]
-        }
-    }
+    payload = {"q0": {"result": [{"id": qid, "name": label, "score": score, "match": match}]}}
     return json.dumps(payload).encode()
 
 

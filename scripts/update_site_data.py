@@ -24,7 +24,7 @@ def find_latest_report(results_dir: Path) -> Path:
     patterns = [
         "content_organization_report_labeled_*.json",
         "content_organization_report_merged_*.json",
-        "content_organization_report_*.json"
+        "content_organization_report_*.json",
     ]
 
     for pattern in patterns:
@@ -42,21 +42,21 @@ def extract_metadata(report_path: Path) -> list[dict]:
     with open(report_path) as f:
         report = json.load(f)
 
-    results = report.get('results', [])
+    results = report.get("results", [])
 
     # Transform results to metadata format
     metadata = []
     for r in results:
         item = {
-            'source': r.get('source'),
-            'destination': r.get('destination'),
-            'status': r.get('status'),
-            'category': r.get('category'),
-            'subcategory': r.get('subcategory'),
-            'schema': r.get('schema', {}),
-            'extracted_text_length': r.get('extracted_text_length', 0),
-            'company_name': r.get('company_name'),
-            'image_metadata': r.get('image_metadata', {})
+            "source": r.get("source"),
+            "destination": r.get("destination"),
+            "status": r.get("status"),
+            "category": r.get("category"),
+            "subcategory": r.get("subcategory"),
+            "schema": r.get("schema", {}),
+            "extracted_text_length": r.get("extracted_text_length", 0),
+            "company_name": r.get("company_name"),
+            "image_metadata": r.get("image_metadata", {}),
         }
         metadata.append(item)
 
@@ -66,18 +66,18 @@ def extract_metadata(report_path: Path) -> list[dict]:
 def calculate_stats(metadata: list[dict]) -> dict:
     """Calculate statistics from metadata."""
     total = len(metadata)
-    organized = sum(1 for m in metadata if m.get('status') == 'organized')
-    already = sum(1 for m in metadata if m.get('status') == 'already_organized')
+    organized = sum(1 for m in metadata if m.get("status") == "organized")
+    already = sum(1 for m in metadata if m.get("status") == "already_organized")
 
-    categories = Counter(m.get('category') for m in metadata if m.get('category'))
+    categories = Counter(m.get("category") for m in metadata if m.get("category"))
 
     return {
-        'total_files': total,
-        'organized': organized,
-        'already_organized': already,
-        'success_rate': round(((organized + already) / total * 100) if total > 0 else 0, 1),
-        'category_count': len(categories),
-        'top_categories': categories.most_common(5)
+        "total_files": total,
+        "organized": organized,
+        "already_organized": already,
+        "success_rate": round(((organized + already) / total * 100) if total > 0 else 0, 1),
+        "category_count": len(categories),
+        "top_categories": categories.most_common(5),
     }
 
 
@@ -94,20 +94,26 @@ def update_index_html(site_dir: Path, stats: dict):
     # Update stats values
     replacements = [
         # Files Processed
-        (r'<div class="stat-value">[\d,]+</div>\s*<div class="stat-label">Files Processed</div>',
-         f'<div class="stat-value">{stats["total_files"]:,}</div>\n                <div class="stat-label">Files Processed</div>'),
+        (
+            r'<div class="stat-value">[\d,]+</div>\s*<div class="stat-label">Files Processed</div>',
+            f'<div class="stat-value">{stats["total_files"]:,}</div>\n                <div class="stat-label">Files Processed</div>',
+        ),
         # Success Rate
-        (r'<div class="stat-value">[\d.]+%</div>\s*<div class="stat-label">Success Rate</div>',
-         f'<div class="stat-value">{stats["success_rate"]}%</div>\n                <div class="stat-label">Success Rate</div>'),
+        (
+            r'<div class="stat-value">[\d.]+%</div>\s*<div class="stat-label">Success Rate</div>',
+            f'<div class="stat-value">{stats["success_rate"]}%</div>\n                <div class="stat-label">Success Rate</div>',
+        ),
         # Categories
-        (r'<div class="stat-value">\d+</div>\s*<div class="stat-label">Categories</div>',
-         f'<div class="stat-value">{stats["category_count"]}</div>\n                <div class="stat-label">Categories</div>'),
+        (
+            r'<div class="stat-value">\d+</div>\s*<div class="stat-label">Categories</div>',
+            f'<div class="stat-value">{stats["category_count"]}</div>\n                <div class="stat-label">Categories</div>',
+        ),
         # Last Updated date
-        (r'Last Updated: \w+ \d+, \d+',
-         f'Last Updated: {datetime.now().strftime("%B %d, %Y")}'),
+        (r"Last Updated: \w+ \d+, \d+", f'Last Updated: {datetime.now().strftime("%B %d, %Y")}'),
     ]
 
     import re
+
     for pattern, replacement in replacements:
         content = re.sub(pattern, replacement, content)
 
@@ -152,7 +158,7 @@ def run(args: "UpdateSiteInputs") -> None:
     # Save metadata.json
     metadata_path = site_dir / "metadata.json"
     print(f"\nSaving {metadata_path}...")
-    with open(metadata_path, 'w') as f:
+    with open(metadata_path, "w") as f:
         json.dump(metadata, f)
     print(f"  Size: {metadata_path.stat().st_size / 1024 / 1024:.1f} MB")
 
@@ -163,6 +169,7 @@ def run(args: "UpdateSiteInputs") -> None:
     # Regenerate timeline data
     print("\nRegenerating timeline data...")
     import sys
+
     if str(base_dir) not in sys.path:
         sys.path.insert(0, str(base_dir))
     try:
@@ -191,7 +198,7 @@ def main():
     from src.cli import add_update_site_arguments
     from src.cli_inputs import UpdateSiteInputs
 
-    parser = argparse.ArgumentParser(description='Update _site data from latest report')
+    parser = argparse.ArgumentParser(description="Update _site data from latest report")
     add_update_site_arguments(parser)
     run(UpdateSiteInputs.from_namespace(parser.parse_args()))
 

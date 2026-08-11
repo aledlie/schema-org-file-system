@@ -29,6 +29,7 @@ Usage:
 <path> may be individual files or directories (scanned recursively for
 supported extensions). Writes redacted copies plus a manifest.json to DIR.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -54,10 +55,10 @@ _BOX_PAD_PX = 2
 # PII is not unless supplied via --name / --redact-terms (see module docstring).
 _TOKEN_PII = re.compile(
     r"("
-    r"\d{3,}"                              # 3+ digit run
-    r"|[\w.+-]+@[\w-]+\.[\w.-]+"          # email
-    r"|\d{3}[-.\s]?\d{2}[-.\s]?\d{4}"    # ssn / phone-ish
-    r"|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}"    # date
+    r"\d{3,}"  # 3+ digit run
+    r"|[\w.+-]+@[\w-]+\.[\w.-]+"  # email
+    r"|\d{3}[-.\s]?\d{2}[-.\s]?\d{4}"  # ssn / phone-ish
+    r"|\d{1,2}[/-]\d{1,2}[/-]\d{2,4}"  # date
     r")",
     re.I,
 )
@@ -136,7 +137,7 @@ def detect_and_cover_barcodes(png: Path) -> tuple[int, int]:
             y1 = min(float(im.height), max(ys) + _BOX_PAD_PX)
             draw.rectangle([x0, y0, x1, y1], fill="black")
             covered += 1
-        except (TypeError, ValueError):
+        except TypeError, ValueError:
             pass  # degenerate polygon — counted as unlocalized
 
     im.save(png, "PNG")
@@ -265,15 +266,20 @@ def redact(
                 text, n = redact_text(src, all_terms)
                 dst = out_dir / f"{stem}{ext}"
                 dst.write_text(text)
-                entry.update(status="redacted", outputs=[dst.name],
-                             text_subs=n, review_recommended=False)
+                entry.update(
+                    status="redacted", outputs=[dst.name], text_subs=n, review_recommended=False
+                )
             elif ext in RASTER_EXTS or ext in IMAGE_EXTS:
                 if model is None:
                     from doctr.models import ocr_predictor  # noqa: PLC0415
+
                     print("loading docTR model...", flush=True)
                     model = ocr_predictor(pretrained=True)
-                pngs = (rasterize_pdf(src, stem, out_dir, dpi) if ext in RASTER_EXTS
-                        else flatten_image(src, stem, out_dir))
+                pngs = (
+                    rasterize_pdf(src, stem, out_dir, dpi)
+                    if ext in RASTER_EXTS
+                    else flatten_image(src, stem, out_dir)
+                )
 
                 # --- barcode pass (before OCR so covered pixels don't confuse detector) ---
                 bc_detected = bc_covered = 0
@@ -317,17 +323,33 @@ def redact(
 def main() -> int:
     ap = argparse.ArgumentParser(description="Rasterize + OCR-redact PII before committing files.")
     ap.add_argument("paths", nargs="+", type=Path, help="Files or directories to redact.")
-    ap.add_argument("--output", type=Path, default=Path("results/redacted"),
-                    help="Output directory (default: results/redacted).")
-    ap.add_argument("--dpi", type=int, default=DEFAULT_DPI, help="Rasterization DPI (default: 170).")
-    ap.add_argument("--name", action="append", default=[], metavar="TERM",
-                    help="Proper-name substring to redact (repeatable). Matched case-insensitively"
-                         " against each OCR word token.")
-    ap.add_argument("--redact-terms", action="append", default=[], metavar="TERM",
-                    dest="redact_terms",
-                    help="Alphabetic sensitive term to redact (repeatable): health conditions,"
-                         " org names, etc. Matched identically to --name but documented"
-                         " separately for clarity.")
+    ap.add_argument(
+        "--output",
+        type=Path,
+        default=Path("results/redacted"),
+        help="Output directory (default: results/redacted).",
+    )
+    ap.add_argument(
+        "--dpi", type=int, default=DEFAULT_DPI, help="Rasterization DPI (default: 170)."
+    )
+    ap.add_argument(
+        "--name",
+        action="append",
+        default=[],
+        metavar="TERM",
+        help="Proper-name substring to redact (repeatable). Matched case-insensitively"
+        " against each OCR word token.",
+    )
+    ap.add_argument(
+        "--redact-terms",
+        action="append",
+        default=[],
+        metavar="TERM",
+        dest="redact_terms",
+        help="Alphabetic sensitive term to redact (repeatable): health conditions,"
+        " org names, etc. Matched identically to --name but documented"
+        " separately for clarity.",
+    )
     args = ap.parse_args()
 
     manifest = redact(args.paths, args.output, args.dpi, args.name, args.redact_terms)

@@ -6,6 +6,7 @@ Covers:
 - redact (integration): manifest fields, --redact-terms wiring, barcode flags,
   non-zero exit on unlocalized barcode
 """
+
 from __future__ import annotations
 
 import json
@@ -26,10 +27,10 @@ if str(_SCRIPTS_DIR) not in sys.path:
 
 import redact_pii  # noqa: E402
 
-
 # ---------------------------------------------------------------------------
 # is_pii_token
 # ---------------------------------------------------------------------------
+
 
 class TestIsPiiToken:
     def test_empty_string_is_not_pii(self):
@@ -86,6 +87,7 @@ class TestIsPiiToken:
 # detect_and_cover_barcodes — no barcode on blank image
 # ---------------------------------------------------------------------------
 
+
 class TestDetectAndCoverBarcodesNoBarcode:
     def test_blank_image_returns_zero(self, tmp_path):
         png = tmp_path / "blank.png"
@@ -113,6 +115,7 @@ class TestDetectAndCoverBarcodesNoBarcode:
 # ---------------------------------------------------------------------------
 # detect_and_cover_barcodes — mocked barcode detection
 # ---------------------------------------------------------------------------
+
 
 class TestDetectAndCoverBarcodesMocked:
     """Test barcode coverage logic without needing a real barcode image."""
@@ -175,9 +178,7 @@ class TestDetectAndCoverBarcodesMocked:
         png = self._make_png(tmp_path)
         # QRCodeDetector.detectMulti native (N,4,2) shape — ndim==2 per poly,
         # so the reshape branch is skipped and the polygon is used directly
-        fake_pts = np.array(
-            [[[10, 10], [110, 10], [110, 110], [10, 110]]], dtype=np.float32
-        )
+        fake_pts = np.array([[[10, 10], [110, 10], [110, 110], [10, 110]]], dtype=np.float32)
 
         mock_bd = MagicMock()
         mock_bd.detectMulti.return_value = (False, None)
@@ -235,6 +236,7 @@ class TestDetectAndCoverBarcodesMocked:
 # ---------------------------------------------------------------------------
 # redact() integration — manifest fields and --redact-terms wiring
 # ---------------------------------------------------------------------------
+
 
 class TestRedactIntegration:
     """Integration tests using stub docTR + blank PNG inputs."""
@@ -331,7 +333,9 @@ class TestRedactIntegration:
 
         with patch.dict(sys.modules, stubs):
             manifest = redact_pii.redact(
-                [src], out_dir, dpi=72,
+                [src],
+                out_dir,
+                dpi=72,
                 name_terms=[],
                 sensitive_terms=["diabetes"],
             )
@@ -388,13 +392,15 @@ class TestRedactIntegration:
 # main() exit code
 # ---------------------------------------------------------------------------
 
+
 class TestMainExitCode:
     def test_main_returns_zero_on_clean_run(self, tmp_path, monkeypatch):
         src = tmp_path / "clean.txt"
         src.write_text("no pii here")
         out_dir = tmp_path / "out"
         monkeypatch.setattr(
-            sys, "argv",
+            sys,
+            "argv",
             ["redact_pii.py", str(src), "--output", str(out_dir)],
         )
         assert redact_pii.main() == 0
@@ -404,11 +410,13 @@ class TestMainExitCode:
         Image.new("RGB", (200, 200), "white").save(src, "JPEG")
         out_dir = tmp_path / "out"
         monkeypatch.setattr(
-            sys, "argv",
+            sys,
+            "argv",
             ["redact_pii.py", str(src), "--output", str(out_dir)],
         )
 
         import types as _types
+
         doctr_io = _types.ModuleType("doctr.io")
         doctr_models = _types.ModuleType("doctr.models")
         doctr_io.DocumentFile = MagicMock()

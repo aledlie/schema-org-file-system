@@ -15,7 +15,6 @@ from src.error_tracking import (
     track_operation,
 )
 
-
 # ---------------------------------------------------------------------------
 # ErrorLevel
 # ---------------------------------------------------------------------------
@@ -120,8 +119,9 @@ class TestTrackOperationNoSentry:
         mock_sdk.start_span.return_value.__enter__.return_value = MagicMock()
         mock_sdk.start_span.return_value.__exit__.return_value = False
 
-        with patch("src.error_tracking.SENTRY_AVAILABLE", True), patch(
-            "src.error_tracking.sentry_sdk", mock_sdk
+        with (
+            patch("src.error_tracking.SENTRY_AVAILABLE", True),
+            patch("src.error_tracking.sentry_sdk", mock_sdk),
         ):
             executed = []
             with track_operation("my_op", op_type="task", file_path="/tmp/a"):

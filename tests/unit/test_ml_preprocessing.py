@@ -14,8 +14,7 @@ from src.ml import DataPreprocessor, FileFeatureExtractor
 from src.ml.feature_extractor import GAME_ASSET_PATTERNS
 
 
-def _record(filename, source="/inbox/x", category="media", subcategory="photos",
-            **extra):
+def _record(filename, source="/inbox/x", category="media", subcategory="photos", **extra):
     rec = {
         "schema": {"name": filename},
         "source": f"{source}/{filename}",
@@ -62,12 +61,15 @@ class TestFileFeatureExtractor:
         assert "beach" in tokens
         assert "2024" in tokens
 
-    @pytest.mark.parametrize("filename,expected", [
-        ("20240105_photo.jpg", True),
-        ("2024-01-05 report.pdf", True),
-        ("01-05-2024_scan.pdf", True),
-        ("vacation_photo.jpg", False),
-    ])
+    @pytest.mark.parametrize(
+        "filename,expected",
+        [
+            ("20240105_photo.jpg", True),
+            ("2024-01-05 report.pdf", True),
+            ("01-05-2024_scan.pdf", True),
+            ("vacation_photo.jpg", False),
+        ],
+    )
     def test_starts_with_date(self, extractor, filename, expected):
         features = extractor.extract_features(_record(filename))
         assert features["starts_with_date"] is expected
@@ -151,7 +153,9 @@ class TestScriptLauncher:
         script = Path(__file__).parent.parent.parent / "scripts" / "data_preprocessing.py"
         result = subprocess.run(
             [sys.executable, str(script), "--help"],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True,
+            text=True,
+            timeout=60,
         )
 
         assert result.returncode == 0

@@ -535,9 +535,7 @@ class ContentOrganizer(BaseOrganizer):
         """
         return detect_media_category(file_path, image_metadata)
 
-    def classify_by_filename_patterns(
-        self, file_path: Path
-    ) -> Optional[FilenameClassification]:
+    def classify_by_filename_patterns(self, file_path: Path) -> Optional[FilenameClassification]:
         """
         Classify file based on filename patterns before content extraction.
 

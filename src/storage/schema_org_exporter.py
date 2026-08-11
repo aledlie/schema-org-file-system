@@ -162,15 +162,21 @@ class SchemaOrgExporter:
             if pretty:
                 fh.write('{\n  "@context": ' + context + ',\n  "@graph": ')
                 count = self._stream_array(
-                    fh, self._iter_records(entity_classes),
-                    pretty=True, indent_level=2, strip_context=True,
+                    fh,
+                    self._iter_records(entity_classes),
+                    pretty=True,
+                    indent_level=2,
+                    strip_context=True,
                 )
                 fh.write("\n}")
             else:
                 fh.write('{"@context":' + context + ',"@graph":')
                 count = self._stream_array(
-                    fh, self._iter_records(entity_classes),
-                    pretty=False, indent_level=2, strip_context=True,
+                    fh,
+                    self._iter_records(entity_classes),
+                    pretty=False,
+                    indent_level=2,
+                    strip_context=True,
                 )
                 fh.write("}")
         return count
@@ -222,8 +228,10 @@ class SchemaOrgExporter:
         """
         with open(output_path, "w", encoding="utf-8") as fh:
             return self._stream_array(
-                fh, self._iter_filtered_records(entity_class, entity_ids),
-                pretty=pretty, indent_level=1,
+                fh,
+                self._iter_filtered_records(entity_class, entity_ids),
+                pretty=pretty,
+                indent_level=1,
             )
 
     # ------------------------------------------------------------------
@@ -327,9 +335,7 @@ class SchemaOrgExporter:
         """
         from . import models as m
 
-        iterators: Dict[
-            Type[SchemaOrgSerializable], Callable[[], Iterator[Dict[str, Any]]]
-        ] = {
+        iterators: Dict[Type[SchemaOrgSerializable], Callable[[], Iterator[Dict[str, Any]]]] = {
             m.File: lambda: self._iter_core_file_records(),
             m.Category: lambda: self._iter_core_category_records(),
             m.Company: lambda: self._iter_core_simple_records(m.Company, m.build_company_jsonld),
@@ -385,9 +391,7 @@ class SchemaOrgExporter:
         for row in self._session.execute(stmt).scalars():
             yield build_fn(row)
 
-    def _iter_core_file_records(
-        self, file_ids: Optional[set] = None
-    ) -> Iterator[Dict[str, Any]]:
+    def _iter_core_file_records(self, file_ids: Optional[set] = None) -> Iterator[Dict[str, Any]]:
         """Yield File records, streaming rows in batches to keep memory flat.
 
         Selects only the columns the JSON-LD builder reads (lightweight ``Row``s,
@@ -400,10 +404,23 @@ class SchemaOrgExporter:
 
         F = m.File
         columns = (
-            F.id, F.canonical_id, F.filename, F.schema_type, F.mime_type,
-            F.created_at, F.modified_at, F.file_size, F.original_path,
-            F.extracted_text, F.detected_language, F.image_width, F.image_height,
-            F.has_faces, F.exif_datetime, F.gps_latitude, F.gps_longitude,
+            F.id,
+            F.canonical_id,
+            F.filename,
+            F.schema_type,
+            F.mime_type,
+            F.created_at,
+            F.modified_at,
+            F.file_size,
+            F.original_path,
+            F.extracted_text,
+            F.detected_language,
+            F.image_width,
+            F.image_height,
+            F.has_faces,
+            F.exif_datetime,
+            F.gps_latitude,
+            F.gps_longitude,
             F.schema_data,
         )
 
@@ -435,9 +452,7 @@ class SchemaOrgExporter:
         """
         from . import models as m
 
-        rows = list(self._session.execute(
-            select(m.Category).order_by(m.Category.id)
-        ).scalars())
+        rows = list(self._session.execute(select(m.Category).order_by(m.Category.id)).scalars())
         ref = {r.id: _EntityRef(f"urn:uuid:{r.canonical_id}", r.name) for r in rows}
 
         children: Dict[int, List[_EntityRef]] = {}
@@ -497,6 +512,7 @@ class SchemaOrgExporter:
             Dict containing the standalone @context document.
         """
         from .schema_org_context import get_context_document
+
         return get_context_document()
 
     def export_context(
@@ -511,12 +527,14 @@ class SchemaOrgExporter:
             pretty: Whether to pretty-print (indent=2).
         """
         from .schema_org_context import export_context
+
         export_context(output_path, pretty=pretty)
 
     @staticmethod
     def _build_load_options() -> Dict[Type, List]:
         """Return per-entity selectinload options to avoid N+1 queries."""
         from .models import File, Category, Company, Person, Location
+
         return {
             File: [
                 selectinload(File.categories),
@@ -539,4 +557,5 @@ class SchemaOrgExporter:
         """Return the canonical set of entity classes for full exports."""
         # Import here to avoid circular imports at module load time
         from .models import File, Category, Company, Person, Location
+
         return [File, Category, Company, Person, Location]

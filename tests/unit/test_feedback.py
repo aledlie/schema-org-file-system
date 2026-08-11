@@ -54,7 +54,9 @@ class TestCorrectionFeedbackSystem:
         assert on_disk["statistics"]["total_corrections"] == 1
         assert on_disk["statistics"]["corrections_by_category"]["financial"] == 1
         assert on_disk["statistics"]["most_common_mistakes"][0] == {
-            "from": "media", "to": "financial", "count": 1,
+            "from": "media",
+            "to": "financial",
+            "count": 1,
         }
         # invoice keyword + extension both become learned patterns
         assert "financial_keyword" in on_disk["learned_patterns"]
@@ -179,10 +181,18 @@ class TestFeedbackIntegration:
     def test_batch_apply_corrections(self, integration):
         _add_sprite_correction(integration.feedback, n=4)
         results = [
-            {"schema": {"name": "enemy_sprite.png"}, "source": "/inbox/enemy_sprite.png",
-             "category": "media", "subcategory": "photos"},
-            {"schema": {"name": "vacation.jpg"}, "source": "/inbox/vacation.jpg",
-             "category": "media", "subcategory": "photos"},
+            {
+                "schema": {"name": "enemy_sprite.png"},
+                "source": "/inbox/enemy_sprite.png",
+                "category": "media",
+                "subcategory": "photos",
+            },
+            {
+                "schema": {"name": "vacation.jpg"},
+                "source": "/inbox/vacation.jpg",
+                "category": "media",
+                "subcategory": "photos",
+            },
         ]
 
         modified, stats = integration.batch_apply_corrections(results)
@@ -207,10 +217,15 @@ class TestFeedbackIntegration:
 
     def test_generate_correction_report(self, integration):
         _add_sprite_correction(integration.feedback, n=3)
-        report = integration.generate_correction_report([
-            {"schema": {"name": "enemy_sprite.png"}, "source": "/inbox/enemy_sprite.png",
-             "category": "media"},
-        ])
+        report = integration.generate_correction_report(
+            [
+                {
+                    "schema": {"name": "enemy_sprite.png"},
+                    "source": "/inbox/enemy_sprite.png",
+                    "category": "media",
+                },
+            ]
+        )
         assert "enemy_sprite.png" in report
         assert "game_assets" in report
 
@@ -228,7 +243,9 @@ class TestScriptLaunchers:
 
         return subprocess.run(
             [sys.executable, str(self._SCRIPTS_DIR / script), *argv],
-            capture_output=True, text=True, timeout=60,
+            capture_output=True,
+            text=True,
+            timeout=60,
             env={**os.environ, **(env or {})},
         )
 
@@ -241,9 +258,7 @@ class TestScriptLaunchers:
     def test_feedback_integration_demo(self, tmp_path):
         # The demo opens the default store under $HOME — point it at tmp_path
         # so the test never touches the real ~/.schema-org-file-system.
-        result = self._launch(
-            "feedback_integration.py", env={"HOME": str(tmp_path)}
-        )
+        result = self._launch("feedback_integration.py", env={"HOME": str(tmp_path)})
         assert result.returncode == 0
         assert "Feedback Integration System" in result.stdout
         assert "Corrections recorded: 0" in result.stdout

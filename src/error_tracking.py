@@ -53,23 +53,32 @@ except ImportError:
 try:
     import sentry_sdk
     from sentry_sdk import capture_exception, capture_message, set_tag, set_context
+
     SENTRY_AVAILABLE = True
 except ImportError:
     SENTRY_AVAILABLE = False
+
     # Stub implementations
-    def capture_exception(*args: Any, **kwargs: Any) -> None: pass
-    def capture_message(*args: Any, **kwargs: Any) -> None: pass
-    def set_tag(*args: Any, **kwargs: Any) -> None: pass
-    def set_context(*args: Any, **kwargs: Any) -> None: pass
+    def capture_exception(*args: Any, **kwargs: Any) -> None:
+        pass
+
+    def capture_message(*args: Any, **kwargs: Any) -> None:
+        pass
+
+    def set_tag(*args: Any, **kwargs: Any) -> None:
+        pass
+
+    def set_context(*args: Any, **kwargs: Any) -> None:
+        pass
 
 
 # Error severity levels
 class ErrorLevel:
-    FATAL = 'fatal'      # System unusable
-    ERROR = 'error'      # Operation failed
-    WARNING = 'warning'  # Recoverable issue
-    INFO = 'info'        # Informational
-    DEBUG = 'debug'      # Debug only
+    FATAL = "fatal"  # System unusable
+    ERROR = "error"  # Operation failed
+    WARNING = "warning"  # Recoverable issue
+    INFO = "info"  # Informational
+    DEBUG = "debug"  # Debug only
 
 
 def init_sentry(
@@ -77,7 +86,7 @@ def init_sentry(
     environment: Optional[str] = None,
     traces_sample_rate: float = DEFAULT_TRACES_SAMPLE_RATE,
     profiles_sample_rate: float = DEFAULT_PROFILES_SAMPLE_RATE,
-    enable_logs: bool = True
+    enable_logs: bool = True,
 ) -> bool:
     """
     Initialize Sentry error tracking.
@@ -97,12 +106,12 @@ def init_sentry(
         print("Install with: pip install sentry-sdk")
         return False
 
-    dsn = dsn or os.environ.get('SENTRY_DSN')
+    dsn = dsn or os.environ.get("SENTRY_DSN")
     if not dsn:
         print("Warning: SENTRY_DSN not set. Error tracking disabled.")
         return False
 
-    environment = environment or os.environ.get('NODE_ENV', 'development')
+    environment = environment or os.environ.get("NODE_ENV", "development")
 
     try:
         sentry_sdk.init(
@@ -113,12 +122,12 @@ def init_sentry(
             send_default_pii=False,  # Don't send PII by default
             attach_stacktrace=True,
             # Release tracking
-            release=os.environ.get('APP_VERSION', '1.2.0'),
+            release=os.environ.get("APP_VERSION", "1.2.0"),
         )
 
         # Set default tags
-        set_tag('service', 'schema-org-file-system')
-        set_tag('python_version', sys.version.split()[0])
+        set_tag("service", "schema-org-file-system")
+        set_tag("python_version", sys.version.split()[0])
 
         print(f"Sentry initialized for environment: {environment}")
         return True
@@ -133,7 +142,7 @@ def capture_error(
     level: str = ErrorLevel.ERROR,
     context: Optional[Dict[str, Any]] = None,
     tags: Optional[Dict[str, str]] = None,
-    user_id: Optional[str] = None
+    user_id: Optional[str] = None,
 ) -> Optional[str]:
     """
     Capture an error to Sentry with full context.
@@ -161,7 +170,7 @@ def capture_error(
 
         # Set user if provided
         if user_id:
-            scope.set_user({'id': user_id})
+            scope.set_user({"id": user_id})
 
         # Add tags
         if tags:
@@ -170,7 +179,7 @@ def capture_error(
 
         # Add context
         if context:
-            scope.set_context('error_context', context)
+            scope.set_context("error_context", context)
 
         # Capture the exception
         event_id = sentry_sdk.capture_exception(error)
@@ -178,9 +187,7 @@ def capture_error(
 
 
 def capture_warning(
-    message: str,
-    context: Optional[Dict[str, Any]] = None,
-    tags: Optional[Dict[str, str]] = None
+    message: str, context: Optional[Dict[str, Any]] = None, tags: Optional[Dict[str, str]] = None
 ) -> Optional[str]:
     """Capture a warning message to Sentry."""
     if not SENTRY_AVAILABLE:
@@ -193,15 +200,13 @@ def capture_warning(
             for key, value in tags.items():
                 scope.set_tag(key, value)
         if context:
-            scope.set_context('warning_context', context)
+            scope.set_context("warning_context", context)
         return sentry_sdk.capture_message(message)
 
 
 @contextmanager
 def track_operation(
-    operation_name: str,
-    op_type: str = 'task',
-    **attributes: Any
+    operation_name: str, op_type: str = "task", **attributes: Any
 ) -> Generator[Optional["Span"], None, None]:
     """
     Context manager for tracking operation performance.
@@ -225,15 +230,13 @@ def track_operation(
         try:
             yield span
         except Exception as e:
-            span.set_status('error')
-            capture_error(e, context={'operation': operation_name, **attributes})
+            span.set_status("error")
+            capture_error(e, context={"operation": operation_name, **attributes})
             raise
 
 
 def track_error(
-    operation: Optional[str] = None,
-    level: str = ErrorLevel.ERROR,
-    reraise: bool = True
+    operation: Optional[str] = None, level: str = ErrorLevel.ERROR, reraise: bool = True
 ) -> Callable[[Callable[P, R]], Callable[P, Optional[R]]]:
     """
     Decorator for automatic error tracking.
@@ -247,32 +250,36 @@ def track_error(
         def classify(image):
             # Errors are captured but not re-raised
     """
+
     def decorator(func: Callable[P, R]) -> Callable[P, Optional[R]]:
         @functools.wraps(func)
         def wrapper(*args: P.args, **kwargs: P.kwargs) -> Optional[R]:
             op_name = operation or func.__name__
             try:
-                with track_operation(op_name, op_type='function'):
+                with track_operation(op_name, op_type="function"):
                     return func(*args, **kwargs)
             except Exception as e:
                 capture_error(
                     e,
                     level=level,
                     context={
-                        'function': func.__name__,
-                        'args_count': len(args),
-                        'kwargs_keys': list(kwargs.keys())
-                    }
+                        "function": func.__name__,
+                        "args_count": len(args),
+                        "kwargs_keys": list(kwargs.keys()),
+                    },
                 )
                 if reraise:
                     raise
                 return None
+
         return wrapper
+
     return decorator
 
 
 class FileErrorInfo(TypedDict):
     """One failed file's error record (mirrored in src/utils/tracking.py)."""
+
     file_path: str
     error_type: str
     error_message: str
@@ -281,6 +288,7 @@ class FileErrorInfo(TypedDict):
 
 class ProcessingStats(TypedDict):
     """Aggregate counters for a file-processing run."""
+
     processed: int
     succeeded: int
     failed: int
@@ -309,26 +317,24 @@ class FileProcessingErrorTracker:
         self.errors: list[FileErrorInfo] = []
 
     @contextmanager
-    def track_file(self, file_path: str, category: Optional[str] = None) -> Generator[None, None, None]:
+    def track_file(
+        self, file_path: str, category: Optional[str] = None
+    ) -> Generator[None, None, None]:
         """Track processing of a single file."""
         self.processed += 1
-        context = {
-            'file_path': file_path,
-            'file_number': self.processed,
-            'category': category
-        }
+        context = {"file_path": file_path, "file_number": self.processed, "category": category}
 
         try:
-            with track_operation('process_file', op_type='file', **context):
+            with track_operation("process_file", op_type="file", **context):
                 yield
             self.succeeded += 1
         except Exception as e:
             self.failed += 1
             error_info: FileErrorInfo = {
-                'file_path': file_path,
-                'error_type': type(e).__name__,
-                'error_message': str(e),
-                'category': category
+                "file_path": file_path,
+                "error_type": type(e).__name__,
+                "error_message": str(e),
+                "category": category,
             }
             self.errors.append(error_info)
 
@@ -336,7 +342,7 @@ class FileProcessingErrorTracker:
                 e,
                 level=ErrorLevel.WARNING,  # File errors are usually recoverable
                 context=context,
-                tags={'error_type': type(e).__name__}
+                tags={"error_type": type(e).__name__},
             )
             # Don't re-raise - continue processing other files
 
@@ -351,7 +357,7 @@ class FileProcessingErrorTracker:
             # Group errors by type
             error_types: Dict[str, int] = {}
             for error in self.errors:
-                error_type = error['error_type']
+                error_type = error["error_type"]
                 error_types[error_type] = error_types.get(error_type, 0) + 1
 
             print("\nError breakdown:")
@@ -361,11 +367,11 @@ class FileProcessingErrorTracker:
     def get_stats(self) -> ProcessingStats:
         """Get processing statistics as dict."""
         return {
-            'processed': self.processed,
-            'succeeded': self.succeeded,
-            'failed': self.failed,
-            'success_rate': self.succeeded / max(self.processed, 1),
-            'errors': self.errors
+            "processed": self.processed,
+            "succeeded": self.succeeded,
+            "failed": self.failed,
+            "success_rate": self.succeeded / max(self.processed, 1),
+            "errors": self.errors,
         }
 
 
@@ -402,8 +408,7 @@ def test_sentry_connection() -> bool:
 
     try:
         event_id = sentry_sdk.capture_message(
-            "Test message from schema-org-file-system",
-            level="info"
+            "Test message from schema-org-file-system", level="info"
         )
         print(f"Test message sent to Sentry. Event ID: {event_id}")
         return True
@@ -417,12 +422,12 @@ if __name__ == "__main__":
     import argparse
 
     parser = argparse.ArgumentParser(description="Test Sentry error tracking")
-    parser.add_argument('--test', action='store_true', help="Send test message to Sentry")
-    parser.add_argument('--dsn', help="Sentry DSN (or set SENTRY_DSN env var)")
+    parser.add_argument("--test", action="store_true", help="Send test message to Sentry")
+    parser.add_argument("--dsn", help="Sentry DSN (or set SENTRY_DSN env var)")
     args = parser.parse_args()
 
     if args.dsn:
-        os.environ['SENTRY_DSN'] = args.dsn
+        os.environ["SENTRY_DSN"] = args.dsn
 
     if init_sentry():
         print("Sentry initialized successfully!")

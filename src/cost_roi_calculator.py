@@ -21,31 +21,34 @@ import pandas as pd
 
 class CostType(Enum):
     """Types of costs tracked."""
-    COMPUTE = "compute"      # CPU/GPU processing time
-    API_CALL = "api_call"    # External API calls
-    STORAGE = "storage"      # File storage costs
-    MEMORY = "memory"        # RAM usage
+
+    COMPUTE = "compute"  # CPU/GPU processing time
+    API_CALL = "api_call"  # External API calls
+    STORAGE = "storage"  # File storage costs
+    MEMORY = "memory"  # RAM usage
 
 
 @dataclass
 class ModelCostConfig:
     """Cost configuration for a specific model/feature."""
+
     name: str
     cost_type: CostType
-    cost_per_unit: float           # Cost per invocation or per second
-    unit_type: str                 # "invocation", "second", "mb", etc.
-    avg_processing_time_sec: float # Average time per file
-    success_rate: float = 1.0      # Expected success rate (0-1)
+    cost_per_unit: float  # Cost per invocation or per second
+    unit_type: str  # "invocation", "second", "mb", etc.
+    avg_processing_time_sec: float  # Average time per file
+    success_rate: float = 1.0  # Expected success rate (0-1)
     description: str = ""
 
     # Value metrics (for ROI calculation)
     files_correctly_classified: float = 0.0  # Average files correctly classified per use
-    manual_time_saved_sec: float = 0.0       # Manual time saved per use
+    manual_time_saved_sec: float = 0.0  # Manual time saved per use
 
 
 @dataclass
 class UsageRecord:
     """Record of a single feature/model usage."""
+
     feature_name: str
     timestamp: datetime
     processing_time_sec: float
@@ -59,6 +62,7 @@ class UsageRecord:
 @dataclass
 class CostSummary:
     """Summary of costs for a feature."""
+
     feature_name: str
     total_invocations: int
     total_processing_time_sec: float
@@ -71,6 +75,7 @@ class CostSummary:
 @dataclass
 class ROIMetrics:
     """ROI metrics for a feature."""
+
     feature_name: str
     total_cost: float
     total_value: float  # Estimated value generated
@@ -83,6 +88,7 @@ class ROIMetrics:
 
 class CostSummaryDict(TypedDict):
     """``asdict(CostSummary)`` mirror."""
+
     feature_name: str
     total_invocations: int
     total_processing_time_sec: float
@@ -94,6 +100,7 @@ class CostSummaryDict(TypedDict):
 
 class ROIMetricsDict(TypedDict):
     """``asdict(ROIMetrics)`` mirror; ``break_even_files`` may be inf."""
+
     feature_name: str
     total_cost: float
     total_value: float
@@ -106,6 +113,7 @@ class ROIMetricsDict(TypedDict):
 
 class TotalCostReport(TypedDict):
     """``calculate_total_cost()`` shape."""
+
     total_cost: float
     total_files_processed: int
     total_processing_time_sec: float
@@ -115,6 +123,7 @@ class TotalCostReport(TypedDict):
 
 class TotalROIReport(TypedDict):
     """``calculate_total_roi()`` shape."""
+
     total_cost: float
     total_value: float
     overall_roi_percentage: float
@@ -125,6 +134,7 @@ class TotalROIReport(TypedDict):
 
 class Recommendation(TypedDict):
     """One cost-optimization recommendation."""
+
     feature: str
     type: str
     severity: str
@@ -134,6 +144,7 @@ class Recommendation(TypedDict):
 
 class FeatureEstimate(TypedDict):
     """Per-feature slice of ``estimate_cost_for_files()``."""
+
     estimated_cost: float
     estimated_time_sec: float
     estimated_time_human: str
@@ -143,6 +154,7 @@ class FeatureEstimate(TypedDict):
 
 class CostEstimate(TypedDict):
     """``estimate_cost_for_files()`` shape."""
+
     file_count: int
     total_estimated_cost: float
     total_estimated_time_sec: float
@@ -154,6 +166,7 @@ class CostEstimate(TypedDict):
 
 class ReportMetadata(TypedDict):
     """``generate_report()['metadata']`` shape."""
+
     generated_at: str
     session_start: str
     session_duration_sec: float
@@ -162,6 +175,7 @@ class ReportMetadata(TypedDict):
 
 class CostReport(TypedDict):
     """``generate_report()`` shape; projections are added post-literal."""
+
     metadata: ReportMetadata
     cost_summary: TotalCostReport
     roi_summary: TotalROIReport
@@ -184,80 +198,74 @@ class CostROICalculator:
         "clip_vision": ModelCostConfig(
             name="CLIP Vision Model",
             cost_type=CostType.COMPUTE,
-            cost_per_unit=0.0001,          # ~$0.0001 per inference (local GPU)
+            cost_per_unit=0.0001,  # ~$0.0001 per inference (local GPU)
             unit_type="invocation",
-            avg_processing_time_sec=2.5,   # 2-3 seconds per image
+            avg_processing_time_sec=2.5,  # 2-3 seconds per image
             success_rate=0.95,
             description="OpenAI CLIP model for image content classification",
             files_correctly_classified=0.85,
-            manual_time_saved_sec=30.0     # 30 sec to manually classify an image
+            manual_time_saved_sec=30.0,  # 30 sec to manually classify an image
         ),
-
         # OCR (Tesseract)
         "tesseract_ocr": ModelCostConfig(
             name="Tesseract OCR",
             cost_type=CostType.COMPUTE,
-            cost_per_unit=0.00001,         # Very low cost (local processing)
+            cost_per_unit=0.00001,  # Very low cost (local processing)
             unit_type="invocation",
-            avg_processing_time_sec=1.5,   # 1-2 seconds per image
+            avg_processing_time_sec=1.5,  # 1-2 seconds per image
             success_rate=0.90,
             description="Tesseract OCR for text extraction",
             files_correctly_classified=0.75,
-            manual_time_saved_sec=60.0     # 1 min to manually read/transcribe
+            manual_time_saved_sec=60.0,  # 1 min to manually read/transcribe
         ),
-
         # OCR (docTR - neural network, local model)
         "doctr_ocr": ModelCostConfig(
             name="docTR OCR",
             cost_type=CostType.COMPUTE,
-            cost_per_unit=0.0,             # Local model, no API cost
+            cost_per_unit=0.0,  # Local model, no API cost
             unit_type="invocation",
-            avg_processing_time_sec=3.0,   # Slower than Tesseract; DL inference
+            avg_processing_time_sec=3.0,  # Slower than Tesseract; DL inference
             success_rate=0.92,
             description="docTR deep-learning OCR for text extraction",
             files_correctly_classified=0.82,
-            manual_time_saved_sec=60.0     # 1 min to manually read/transcribe
+            manual_time_saved_sec=60.0,  # 1 min to manually read/transcribe
         ),
-
         # Face Detection (OpenCV)
         "face_detection": ModelCostConfig(
             name="OpenCV Face Detection",
             cost_type=CostType.COMPUTE,
-            cost_per_unit=0.000005,        # Very low cost
+            cost_per_unit=0.000005,  # Very low cost
             unit_type="invocation",
-            avg_processing_time_sec=0.5,   # Very fast
+            avg_processing_time_sec=0.5,  # Very fast
             success_rate=0.85,
             description="Haar cascade face detection",
             files_correctly_classified=0.80,
-            manual_time_saved_sec=5.0      # Quick manual check
+            manual_time_saved_sec=5.0,  # Quick manual check
         ),
-
         # Geocoding (Nominatim API)
         "nominatim_geocoding": ModelCostConfig(
             name="Nominatim Geocoding",
             cost_type=CostType.API_CALL,
-            cost_per_unit=0.0,             # Free API (rate limited)
+            cost_per_unit=0.0,  # Free API (rate limited)
             unit_type="invocation",
-            avg_processing_time_sec=1.0,   # Network latency
-            success_rate=0.75,             # May timeout or fail
+            avg_processing_time_sec=1.0,  # Network latency
+            success_rate=0.75,  # May timeout or fail
             description="OpenStreetMap reverse geocoding",
             files_correctly_classified=0.90,
-            manual_time_saved_sec=120.0    # 2 min to manually look up location
+            manual_time_saved_sec=120.0,  # 2 min to manually look up location
         ),
-
         # Keyword Classification (Rule-based)
         "keyword_classifier": ModelCostConfig(
             name="Keyword Classification",
             cost_type=CostType.COMPUTE,
-            cost_per_unit=0.0,             # Essentially free
+            cost_per_unit=0.0,  # Essentially free
             unit_type="invocation",
-            avg_processing_time_sec=0.001, # Instant
+            avg_processing_time_sec=0.001,  # Instant
             success_rate=0.98,
             description="Rule-based keyword matching",
             files_correctly_classified=0.70,
-            manual_time_saved_sec=15.0     # Quick manual categorization
+            manual_time_saved_sec=15.0,  # Quick manual categorization
         ),
-
         # PDF Processing
         "pdf_extraction": ModelCostConfig(
             name="PDF Text Extraction",
@@ -268,9 +276,8 @@ class CostROICalculator:
             success_rate=0.85,
             description="pypdf + pdf2image for PDF processing",
             files_correctly_classified=0.80,
-            manual_time_saved_sec=120.0    # 2 min to manually read PDF
+            manual_time_saved_sec=120.0,  # 2 min to manually read PDF
         ),
-
         # Word Document Processing
         "docx_extraction": ModelCostConfig(
             name="Word Document Extraction",
@@ -281,9 +288,8 @@ class CostROICalculator:
             success_rate=0.95,
             description="python-docx for DOCX processing",
             files_correctly_classified=0.85,
-            manual_time_saved_sec=90.0     # 1.5 min to manually read
+            manual_time_saved_sec=90.0,  # 1.5 min to manually read
         ),
-
         # Excel Processing
         "xlsx_extraction": ModelCostConfig(
             name="Excel Extraction",
@@ -294,22 +300,20 @@ class CostROICalculator:
             success_rate=0.90,
             description="openpyxl for Excel processing",
             files_correctly_classified=0.80,
-            manual_time_saved_sec=180.0    # 3 min to manually review spreadsheet
+            manual_time_saved_sec=180.0,  # 3 min to manually review spreadsheet
         ),
-
         # EXIF Metadata Extraction
         "exif_extraction": ModelCostConfig(
             name="EXIF Metadata Extraction",
             cost_type=CostType.COMPUTE,
-            cost_per_unit=0.0,             # Free
+            cost_per_unit=0.0,  # Free
             unit_type="invocation",
             avg_processing_time_sec=0.1,
-            success_rate=0.70,             # Many images lack EXIF
+            success_rate=0.70,  # Many images lack EXIF
             description="PIL/piexif for image metadata",
             files_correctly_classified=0.95,
-            manual_time_saved_sec=45.0     # Time to manually check image properties
+            manual_time_saved_sec=45.0,  # Time to manually check image properties
         ),
-
         # Schema.org Generation
         "schema_generation": ModelCostConfig(
             name="Schema.org Generation",
@@ -320,9 +324,8 @@ class CostROICalculator:
             success_rate=0.99,
             description="Structured data generation",
             files_correctly_classified=0.99,
-            manual_time_saved_sec=300.0    # 5 min to manually create JSON-LD
+            manual_time_saved_sec=300.0,  # 5 min to manually create JSON-LD
         ),
-
         # Game Asset Detection
         "game_asset_detection": ModelCostConfig(
             name="Game Asset Detection",
@@ -333,7 +336,7 @@ class CostROICalculator:
             success_rate=0.95,
             description="Keyword-based game asset classification",
             files_correctly_classified=0.90,
-            manual_time_saved_sec=20.0
+            manual_time_saved_sec=20.0,
         ),
     }
 
@@ -361,37 +364,39 @@ class CostROICalculator:
 
     def _load_custom_config(self, config_path: str):
         """Load custom cost configuration from JSON."""
-        with open(config_path, 'r') as f:
+        with open(config_path, "r") as f:
             custom_config = json.load(f)
 
-        for name, config_dict in custom_config.get('models', {}).items():
+        for name, config_dict in custom_config.get("models", {}).items():
             self.cost_configs[name] = ModelCostConfig(
-                name=config_dict.get('name', name),
-                cost_type=CostType(config_dict.get('cost_type', 'compute')),
-                cost_per_unit=config_dict.get('cost_per_unit', 0.0),
-                unit_type=config_dict.get('unit_type', 'invocation'),
-                avg_processing_time_sec=config_dict.get('avg_processing_time_sec', 1.0),
-                success_rate=config_dict.get('success_rate', 1.0),
-                description=config_dict.get('description', ''),
-                files_correctly_classified=config_dict.get('files_correctly_classified', 0.0),
-                manual_time_saved_sec=config_dict.get('manual_time_saved_sec', 0.0)
+                name=config_dict.get("name", name),
+                cost_type=CostType(config_dict.get("cost_type", "compute")),
+                cost_per_unit=config_dict.get("cost_per_unit", 0.0),
+                unit_type=config_dict.get("unit_type", "invocation"),
+                avg_processing_time_sec=config_dict.get("avg_processing_time_sec", 1.0),
+                success_rate=config_dict.get("success_rate", 1.0),
+                description=config_dict.get("description", ""),
+                files_correctly_classified=config_dict.get("files_correctly_classified", 0.0),
+                manual_time_saved_sec=config_dict.get("manual_time_saved_sec", 0.0),
             )
 
     def _records_df(self) -> pd.DataFrame:
         """Return usage_records as a DataFrame for vectorized aggregation."""
         if not self.usage_records:
-            return pd.DataFrame(columns=[
-                "feature_name", "processing_time_sec", "files_processed", "success"
-            ])
-        return pd.DataFrame([
-            {
-                "feature_name": r.feature_name,
-                "processing_time_sec": r.processing_time_sec,
-                "files_processed": r.files_processed,
-                "success": r.success,
-            }
-            for r in self.usage_records
-        ])
+            return pd.DataFrame(
+                columns=["feature_name", "processing_time_sec", "files_processed", "success"]
+            )
+        return pd.DataFrame(
+            [
+                {
+                    "feature_name": r.feature_name,
+                    "processing_time_sec": r.processing_time_sec,
+                    "files_processed": r.files_processed,
+                    "success": r.success,
+                }
+                for r in self.usage_records
+            ]
+        )
 
     def record_usage(
         self,
@@ -401,7 +406,7 @@ class CostROICalculator:
         success: bool = True,
         error_message: Optional[str] = None,
         input_file_size_bytes: int = 0,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ) -> UsageRecord:
         """
         Record a usage event for a feature/model.
@@ -426,7 +431,7 @@ class CostROICalculator:
             success=success,
             error_message=error_message,
             input_file_size_bytes=input_file_size_bytes,
-            metadata=metadata or {}
+            metadata=metadata or {},
         )
         self.usage_records.append(record)
         return record
@@ -456,7 +461,7 @@ class CostROICalculator:
                 total_cost=0.0,
                 avg_cost_per_file=0.0,
                 success_rate=0.0,
-                total_files_processed=0
+                total_files_processed=0,
             )
 
         total_invocations = len(subset)
@@ -473,7 +478,7 @@ class CostROICalculator:
             total_cost=total_cost,
             avg_cost_per_file=avg_cost_per_file,
             success_rate=success_rate,
-            total_files_processed=total_files
+            total_files_processed=total_files,
         )
 
     def calculate_roi(self, feature_name: str) -> ROIMetrics:
@@ -506,7 +511,7 @@ class CostROICalculator:
                 manual_hours_saved=0.0,
                 cost_per_file=0.0,
                 value_per_file=0.0,
-                break_even_files=0
+                break_even_files=0,
             )
 
         # Calculate value generated
@@ -518,20 +523,30 @@ class CostROICalculator:
 
         # Calculate ROI
         if cost_summary.total_cost > 0:
-            roi_percentage = ((total_value - cost_summary.total_cost) / cost_summary.total_cost) * 100
+            roi_percentage = (
+                (total_value - cost_summary.total_cost) / cost_summary.total_cost
+            ) * 100
         else:
-            roi_percentage = float('inf') if total_value > 0 else 0.0
+            roi_percentage = float("inf") if total_value > 0 else 0.0
 
         # Calculate break-even point
         cost_per_file = cost_summary.avg_cost_per_file
-        value_per_file = (config.manual_time_saved_sec / 3600) * self.MANUAL_HOURLY_RATE * config.files_correctly_classified
+        value_per_file = (
+            (config.manual_time_saved_sec / 3600)
+            * self.MANUAL_HOURLY_RATE
+            * config.files_correctly_classified
+        )
 
         break_even_files: int | float
         if cost_per_file > 0 and value_per_file > cost_per_file:
             break_even_files = 1  # Already profitable per file
         elif cost_per_file > 0:
             # Need multiple files to break even
-            break_even_files = int(cost_summary.total_cost / value_per_file) + 1 if value_per_file > 0 else float('inf')
+            break_even_files = (
+                int(cost_summary.total_cost / value_per_file) + 1
+                if value_per_file > 0
+                else float("inf")
+            )
         else:
             break_even_files = 0  # No cost
 
@@ -543,7 +558,7 @@ class CostROICalculator:
             manual_hours_saved=total_time_saved_hours,
             cost_per_file=cost_per_file,
             value_per_file=value_per_file,
-            break_even_files=break_even_files
+            break_even_files=break_even_files,
         )
 
     def calculate_total_cost(self) -> TotalCostReport:
@@ -556,11 +571,11 @@ class CostROICalculator:
         df = self._records_df()
         if df.empty:
             return {
-                'total_cost': 0.0,
-                'total_files_processed': 0,
-                'total_processing_time_sec': 0.0,
-                'avg_cost_per_file': 0.0,
-                'feature_breakdown': {}
+                "total_cost": 0.0,
+                "total_files_processed": 0,
+                "total_processing_time_sec": 0.0,
+                "avg_cost_per_file": 0.0,
+                "feature_breakdown": {},
             }
 
         grouped = df.groupby("feature_name").agg(
@@ -598,11 +613,11 @@ class CostROICalculator:
             total_time += proc_time
 
         return {
-            'total_cost': total_cost,
-            'total_files_processed': total_files,
-            'total_processing_time_sec': total_time,
-            'avg_cost_per_file': total_cost / total_files if total_files > 0 else 0.0,
-            'feature_breakdown': feature_costs
+            "total_cost": total_cost,
+            "total_files_processed": total_files,
+            "total_processing_time_sec": total_time,
+            "avg_cost_per_file": total_cost / total_files if total_files > 0 else 0.0,
+            "feature_breakdown": feature_costs,
         }
 
     def calculate_total_roi(self) -> TotalROIReport:
@@ -613,7 +628,9 @@ class CostROICalculator:
             Dictionary with total ROI breakdown
         """
         df = self._records_df()
-        feature_names = list(self.cost_configs.keys()) if df.empty else list(df["feature_name"].unique())
+        feature_names = (
+            list(self.cost_configs.keys()) if df.empty else list(df["feature_name"].unique())
+        )
 
         feature_rois: Dict[str, ROIMetricsDict] = {}
         total_cost = 0.0
@@ -628,15 +645,17 @@ class CostROICalculator:
                 total_value += roi.total_value
                 total_hours_saved += roi.manual_hours_saved
 
-        overall_roi = ((total_value - total_cost) / total_cost * 100) if total_cost > 0 else float('inf')
+        overall_roi = (
+            ((total_value - total_cost) / total_cost * 100) if total_cost > 0 else float("inf")
+        )
 
         return {
-            'total_cost': total_cost,
-            'total_value': total_value,
-            'overall_roi_percentage': overall_roi,
-            'total_manual_hours_saved': total_hours_saved,
-            'hourly_rate_used': self.MANUAL_HOURLY_RATE,
-            'feature_breakdown': feature_rois
+            "total_cost": total_cost,
+            "total_value": total_value,
+            "overall_roi_percentage": overall_roi,
+            "total_manual_hours_saved": total_hours_saved,
+            "hourly_rate_used": self.MANUAL_HOURLY_RATE,
+            "feature_breakdown": feature_rois,
         }
 
     def get_optimization_recommendations(self) -> List[Recommendation]:
@@ -658,54 +677,68 @@ class CostROICalculator:
 
             # Check for low success rate
             if summary.success_rate < 0.7:
-                recommendations.append({
-                    'feature': feature_name,
-                    'type': 'low_success_rate',
-                    'severity': 'high',
-                    'message': f"{config.name} has a {summary.success_rate:.1%} success rate. "
-                              f"Consider improving error handling or fallback mechanisms.",
-                    'potential_savings': summary.total_cost * (1 - summary.success_rate)
-                })
+                recommendations.append(
+                    {
+                        "feature": feature_name,
+                        "type": "low_success_rate",
+                        "severity": "high",
+                        "message": f"{config.name} has a {summary.success_rate:.1%} success rate. "
+                        f"Consider improving error handling or fallback mechanisms.",
+                        "potential_savings": summary.total_cost * (1 - summary.success_rate),
+                    }
+                )
 
             # Check for negative ROI
             if roi.roi_percentage < 0:
-                recommendations.append({
-                    'feature': feature_name,
-                    'type': 'negative_roi',
-                    'severity': 'critical',
-                    'message': f"{config.name} has negative ROI ({roi.roi_percentage:.1f}%). "
-                              f"Cost (${roi.total_cost:.4f}) exceeds value (${roi.total_value:.4f}).",
-                    'potential_savings': roi.total_cost - roi.total_value
-                })
+                recommendations.append(
+                    {
+                        "feature": feature_name,
+                        "type": "negative_roi",
+                        "severity": "critical",
+                        "message": f"{config.name} has negative ROI ({roi.roi_percentage:.1f}%). "
+                        f"Cost (${roi.total_cost:.4f}) exceeds value (${roi.total_value:.4f}).",
+                        "potential_savings": roi.total_cost - roi.total_value,
+                    }
+                )
 
             # Check for high processing time
             avg_time = summary.total_processing_time_sec / summary.total_invocations
             if avg_time > config.avg_processing_time_sec * 2:
-                recommendations.append({
-                    'feature': feature_name,
-                    'type': 'slow_processing',
-                    'severity': 'medium',
-                    'message': f"{config.name} is taking {avg_time:.2f}s per invocation "
-                              f"(expected {config.avg_processing_time_sec:.2f}s). Consider optimization.",
-                    'potential_savings': 0.0  # Time savings, not cost
-                })
+                recommendations.append(
+                    {
+                        "feature": feature_name,
+                        "type": "slow_processing",
+                        "severity": "medium",
+                        "message": f"{config.name} is taking {avg_time:.2f}s per invocation "
+                        f"(expected {config.avg_processing_time_sec:.2f}s). Consider optimization.",
+                        "potential_savings": 0.0,  # Time savings, not cost
+                    }
+                )
 
             # Check if feature is underutilized
             total_files = sum(r.files_processed for r in self.usage_records)
             feature_files = summary.total_files_processed
-            if total_files > 100 and feature_files / total_files < 0.05 and roi.roi_percentage > 100:
-                recommendations.append({
-                    'feature': feature_name,
-                    'type': 'underutilized',
-                    'severity': 'low',
-                    'message': f"{config.name} is only used for {feature_files/total_files:.1%} of files "
-                              f"but has {roi.roi_percentage:.0f}% ROI. Consider expanding usage.",
-                    'potential_savings': 0.0  # Opportunity cost
-                })
+            if (
+                total_files > 100
+                and feature_files / total_files < 0.05
+                and roi.roi_percentage > 100
+            ):
+                recommendations.append(
+                    {
+                        "feature": feature_name,
+                        "type": "underutilized",
+                        "severity": "low",
+                        "message": f"{config.name} is only used for {feature_files/total_files:.1%} of files "
+                        f"but has {roi.roi_percentage:.0f}% ROI. Consider expanding usage.",
+                        "potential_savings": 0.0,  # Opportunity cost
+                    }
+                )
 
         # Sort by severity and potential savings
-        severity_order = {'critical': 0, 'high': 1, 'medium': 2, 'low': 3}
-        recommendations.sort(key=lambda x: (severity_order.get(x['severity'], 4), -x['potential_savings']))
+        severity_order = {"critical": 0, "high": 1, "medium": 2, "low": 3}
+        recommendations.sort(
+            key=lambda x: (severity_order.get(x["severity"], 4), -x["potential_savings"])
+        )
 
         return recommendations
 
@@ -739,14 +772,16 @@ class CostROICalculator:
 
             # Estimate value
             files_classified = file_count * config.files_correctly_classified * config.success_rate
-            value = (files_classified * config.manual_time_saved_sec / 3600) * self.MANUAL_HOURLY_RATE
+            value = (
+                files_classified * config.manual_time_saved_sec / 3600
+            ) * self.MANUAL_HOURLY_RATE
 
             estimates[feature_name] = {
-                'estimated_cost': cost,
-                'estimated_time_sec': time_sec,
-                'estimated_time_human': self._format_duration(time_sec),
-                'estimated_value': value,
-                'estimated_roi': ((value - cost) / cost * 100) if cost > 0 else float('inf')
+                "estimated_cost": cost,
+                "estimated_time_sec": time_sec,
+                "estimated_time_human": self._format_duration(time_sec),
+                "estimated_value": value,
+                "estimated_roi": ((value - cost) / cost * 100) if cost > 0 else float("inf"),
             }
 
             total_cost += cost
@@ -754,13 +789,15 @@ class CostROICalculator:
             total_value += value
 
         return {
-            'file_count': file_count,
-            'total_estimated_cost': total_cost,
-            'total_estimated_time_sec': total_time,
-            'total_estimated_time_human': self._format_duration(total_time),
-            'total_estimated_value': total_value,
-            'estimated_roi': ((total_value - total_cost) / total_cost * 100) if total_cost > 0 else float('inf'),
-            'feature_estimates': estimates
+            "file_count": file_count,
+            "total_estimated_cost": total_cost,
+            "total_estimated_time_sec": total_time,
+            "total_estimated_time_human": self._format_duration(total_time),
+            "total_estimated_value": total_value,
+            "estimated_roi": (
+                ((total_value - total_cost) / total_cost * 100) if total_cost > 0 else float("inf")
+            ),
+            "feature_estimates": estimates,
         }
 
     def _format_duration(self, seconds: float) -> str:
@@ -783,27 +820,27 @@ class CostROICalculator:
             Complete report dictionary
         """
         report: CostReport = {
-            'metadata': {
-                'generated_at': datetime.now().isoformat(),
-                'session_start': self.session_start.isoformat(),
-                'session_duration_sec': (datetime.now() - self.session_start).total_seconds(),
-                'total_usage_records': len(self.usage_records)
+            "metadata": {
+                "generated_at": datetime.now().isoformat(),
+                "session_start": self.session_start.isoformat(),
+                "session_duration_sec": (datetime.now() - self.session_start).total_seconds(),
+                "total_usage_records": len(self.usage_records),
             },
-            'cost_summary': self.calculate_total_cost(),
-            'roi_summary': self.calculate_total_roi(),
-            'recommendations': self.get_optimization_recommendations(),
-            'model_configs': {name: asdict(config) for name, config in self.cost_configs.items()},
+            "cost_summary": self.calculate_total_cost(),
+            "roi_summary": self.calculate_total_roi(),
+            "recommendations": self.get_optimization_recommendations(),
+            "model_configs": {name: asdict(config) for name, config in self.cost_configs.items()},
         }
 
         # Add projections for common file counts
-        report['projections'] = {
-            '1000_files': self.estimate_cost_for_files(1000),
-            '10000_files': self.estimate_cost_for_files(10000),
-            '100000_files': self.estimate_cost_for_files(100000)
+        report["projections"] = {
+            "1000_files": self.estimate_cost_for_files(1000),
+            "10000_files": self.estimate_cost_for_files(10000),
+            "100000_files": self.estimate_cost_for_files(100000),
         }
 
         if output_path:
-            with open(output_path, 'w') as f:
+            with open(output_path, "w") as f:
                 json.dump(report, f, indent=2, default=str)
 
         return report
@@ -820,7 +857,9 @@ class CostROICalculator:
         print(f"  Total Cost:              ${cost_summary['total_cost']:.4f}")
         print(f"  Total Files Processed:   {cost_summary['total_files_processed']:,}")
         print(f"  Avg Cost per File:       ${cost_summary['avg_cost_per_file']:.6f}")
-        print(f"  Total Processing Time:   {self._format_duration(cost_summary['total_processing_time_sec'])}")
+        print(
+            f"  Total Processing Time:   {self._format_duration(cost_summary['total_processing_time_sec'])}"
+        )
 
         # ROI summary
         roi_summary = self.calculate_total_roi()
@@ -840,8 +879,12 @@ class CostROICalculator:
             roi = self.calculate_roi(feature_name)
 
             if cost.total_invocations > 0:
-                roi_str = f"{roi.roi_percentage:.0f}%" if roi.roi_percentage != float('inf') else "∞"
-                print(f"{feature_name:<25} ${cost.total_cost:>9.4f} ${roi.total_value:>9.2f} {roi_str:>10} {cost.total_files_processed:>10,}")
+                roi_str = (
+                    f"{roi.roi_percentage:.0f}%" if roi.roi_percentage != float("inf") else "∞"
+                )
+                print(
+                    f"{feature_name:<25} ${cost.total_cost:>9.4f} ${roi.total_value:>9.2f} {roi_str:>10} {cost.total_files_processed:>10,}"
+                )
 
         # Recommendations
         recommendations = self.get_optimization_recommendations()
@@ -871,7 +914,7 @@ class CostTracker:
         feature_name: str,
         files_processed: int = 1,
         input_file_size_bytes: int = 0,
-        metadata: Optional[Dict[str, Any]] = None
+        metadata: Optional[Dict[str, Any]] = None,
     ):
         self.calculator = calculator
         self.feature_name = feature_name
@@ -882,7 +925,7 @@ class CostTracker:
         self.success = True
         self.error_message: Optional[str] = None
 
-    def __enter__(self) -> 'CostTracker':
+    def __enter__(self) -> "CostTracker":
         self.start_time = time.time()
         return self
 
@@ -906,7 +949,7 @@ class CostTracker:
             success=self.success,
             error_message=self.error_message,
             input_file_size_bytes=self.input_file_size_bytes,
-            metadata=self.metadata
+            metadata=self.metadata,
         )
 
         return False  # Don't suppress exceptions
@@ -927,40 +970,56 @@ def main() -> None:
 
     for i in range(1000):
         # Simulate different feature usage patterns
-        file_type = random.choice(['image', 'pdf', 'docx', 'xlsx', 'game_asset'])
+        file_type = random.choice(["image", "pdf", "docx", "xlsx", "game_asset"])
 
-        if file_type == 'image':
+        if file_type == "image":
             # Image processing uses CLIP, OCR, face detection
-            calculator.record_usage('clip_vision', random.uniform(2.0, 3.5), 1, random.random() > 0.05)
-            calculator.record_usage('tesseract_ocr', random.uniform(1.0, 2.0), 1, random.random() > 0.10)
-            calculator.record_usage('face_detection', random.uniform(0.3, 0.8), 1, random.random() > 0.15)
-            calculator.record_usage('exif_extraction', random.uniform(0.05, 0.15), 1, random.random() > 0.30)
+            calculator.record_usage(
+                "clip_vision", random.uniform(2.0, 3.5), 1, random.random() > 0.05
+            )
+            calculator.record_usage(
+                "tesseract_ocr", random.uniform(1.0, 2.0), 1, random.random() > 0.10
+            )
+            calculator.record_usage(
+                "face_detection", random.uniform(0.3, 0.8), 1, random.random() > 0.15
+            )
+            calculator.record_usage(
+                "exif_extraction", random.uniform(0.05, 0.15), 1, random.random() > 0.30
+            )
             if random.random() > 0.5:
-                calculator.record_usage('nominatim_geocoding', random.uniform(0.5, 1.5), 1, random.random() > 0.25)
+                calculator.record_usage(
+                    "nominatim_geocoding", random.uniform(0.5, 1.5), 1, random.random() > 0.25
+                )
 
-        elif file_type == 'pdf':
-            calculator.record_usage('pdf_extraction', random.uniform(2.0, 5.0), 1, random.random() > 0.15)
-            calculator.record_usage('keyword_classifier', random.uniform(0.001, 0.002), 1, True)
+        elif file_type == "pdf":
+            calculator.record_usage(
+                "pdf_extraction", random.uniform(2.0, 5.0), 1, random.random() > 0.15
+            )
+            calculator.record_usage("keyword_classifier", random.uniform(0.001, 0.002), 1, True)
 
-        elif file_type == 'docx':
-            calculator.record_usage('docx_extraction', random.uniform(0.3, 0.8), 1, random.random() > 0.05)
-            calculator.record_usage('keyword_classifier', random.uniform(0.001, 0.002), 1, True)
+        elif file_type == "docx":
+            calculator.record_usage(
+                "docx_extraction", random.uniform(0.3, 0.8), 1, random.random() > 0.05
+            )
+            calculator.record_usage("keyword_classifier", random.uniform(0.001, 0.002), 1, True)
 
-        elif file_type == 'xlsx':
-            calculator.record_usage('xlsx_extraction', random.uniform(0.5, 1.5), 1, random.random() > 0.10)
-            calculator.record_usage('keyword_classifier', random.uniform(0.001, 0.002), 1, True)
+        elif file_type == "xlsx":
+            calculator.record_usage(
+                "xlsx_extraction", random.uniform(0.5, 1.5), 1, random.random() > 0.10
+            )
+            calculator.record_usage("keyword_classifier", random.uniform(0.001, 0.002), 1, True)
 
-        elif file_type == 'game_asset':
-            calculator.record_usage('game_asset_detection', random.uniform(0.001, 0.002), 1, True)
+        elif file_type == "game_asset":
+            calculator.record_usage("game_asset_detection", random.uniform(0.001, 0.002), 1, True)
 
         # Schema generation for all files
-        calculator.record_usage('schema_generation', random.uniform(0.03, 0.08), 1, True)
+        calculator.record_usage("schema_generation", random.uniform(0.03, 0.08), 1, True)
 
     # Print summary
     calculator.print_summary()
 
     # Generate and save report
-    calculator.generate_report('results/cost_roi_report.json')
+    calculator.generate_report("results/cost_roi_report.json")
     print("\nFull report saved to: results/cost_roi_report.json")
 
     # Show projection for larger runs
@@ -974,5 +1033,5 @@ def main() -> None:
         print(f"  Projected ROI:   {estimate['estimated_roi']:.0f}%")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

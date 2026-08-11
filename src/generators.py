@@ -128,9 +128,7 @@ ARCHIVE_RECOMMENDED_PROPERTIES: Tuple[str, ...] = (
     "contentSize",
 )
 
-ORGANIZATION_REQUIRED_PROPERTIES: Tuple[str, ...] = (
-    "name",
-)
+ORGANIZATION_REQUIRED_PROPERTIES: Tuple[str, ...] = ("name",)
 
 ORGANIZATION_RECOMMENDED_PROPERTIES: Tuple[str, ...] = (
     "description",
@@ -147,9 +145,7 @@ ORGANIZATION_RECOMMENDED_PROPERTIES: Tuple[str, ...] = (
     "sameAs",
 )
 
-PERSON_REQUIRED_PROPERTIES: Tuple[str, ...] = (
-    "name",
-)
+PERSON_REQUIRED_PROPERTIES: Tuple[str, ...] = ("name",)
 
 PERSON_RECOMMENDED_PROPERTIES: Tuple[str, ...] = (
     "givenName",

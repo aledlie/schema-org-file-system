@@ -9,10 +9,10 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-
 # ---------------------------------------------------------------------------
 # Helpers to inject stub modules before the module under test is imported
 # ---------------------------------------------------------------------------
+
 
 def _make_pil_stub() -> Any:
     """Return a minimal PIL stub that satisfies the import in image_metadata."""
@@ -64,6 +64,7 @@ def _inject_stubs() -> None:
     class _Nominatim:  # minimal stub
         def __init__(self, *a, **kw):
             pass
+
         def reverse(self, *a, **kw):
             return None
 
@@ -118,6 +119,7 @@ else:
 # Fixtures
 # ---------------------------------------------------------------------------
 
+
 @pytest.fixture()
 def parser() -> ImageMetadataParser:
     """Return a parser with geocoder disabled (no network calls)."""
@@ -137,18 +139,23 @@ def dummy_path(tmp_path: Path) -> Path:
 # extract_exif_data
 # ---------------------------------------------------------------------------
 
+
 class TestExtractExifData:
     def test_returns_empty_when_metadata_unavailable(self, dummy_path: Path) -> None:
         parser = ImageMetadataParser()
         parser.metadata_available = False
         assert parser.extract_exif_data(dummy_path) == {}
 
-    def test_returns_empty_on_open_failure(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_returns_empty_on_open_failure(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         with patch("src.analyzers.image_metadata.Image.open", side_effect=OSError("bad file")):
             result = parser.extract_exif_data(dummy_path)
         assert result == {}
 
-    def test_returns_empty_when_no_exif(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_returns_empty_when_no_exif(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         mock_img = MagicMock()
         mock_img._getexif.return_value = None
         with patch("src.analyzers.image_metadata.Image.open", return_value=mock_img):
@@ -159,8 +166,10 @@ class TestExtractExifData:
         mock_img = MagicMock()
         mock_img._getexif.return_value = {0x0132: "2023:11:26 14:30:00"}  # tag 306 = DateTime
 
-        with patch("src.analyzers.image_metadata.TAGS", {0x0132: "DateTime"}), \
-             patch("src.analyzers.image_metadata.Image.open", return_value=mock_img):
+        with (
+            patch("src.analyzers.image_metadata.TAGS", {0x0132: "DateTime"}),
+            patch("src.analyzers.image_metadata.Image.open", return_value=mock_img),
+        ):
             result = parser.extract_exif_data(dummy_path)
 
         assert result == {"DateTime": "2023:11:26 14:30:00"}
@@ -217,9 +226,11 @@ class TestPublicAccessorExifPath:
             exif_ifd={0x9003: "2024:04:04 21:09:38"},
             gps_ifd={},
         )
-        with patch("src.analyzers.image_metadata.TAGS", _HEIF_TAGS), \
-             patch("src.analyzers.image_metadata.IFD", _StubIFD), \
-             patch("src.analyzers.image_metadata.Image.open", return_value=image):
+        with (
+            patch("src.analyzers.image_metadata.TAGS", _HEIF_TAGS),
+            patch("src.analyzers.image_metadata.IFD", _StubIFD),
+            patch("src.analyzers.image_metadata.Image.open", return_value=image),
+        ):
             result = parser.extract_exif_data(dummy_path)
 
         assert result == {
@@ -233,9 +244,11 @@ class TestPublicAccessorExifPath:
         """The regression that mattered: no date here means the renamer falls
         back to file mtime, i.e. download time rather than capture time."""
         image = _heif_like_image(top={}, exif_ifd={0x9003: "2024:03:21 19:10:38"}, gps_ifd={})
-        with patch("src.analyzers.image_metadata.TAGS", _HEIF_TAGS), \
-             patch("src.analyzers.image_metadata.IFD", _StubIFD), \
-             patch("src.analyzers.image_metadata.Image.open", return_value=image):
+        with (
+            patch("src.analyzers.image_metadata.TAGS", _HEIF_TAGS),
+            patch("src.analyzers.image_metadata.IFD", _StubIFD),
+            patch("src.analyzers.image_metadata.Image.open", return_value=image),
+        ):
             result = parser.extract_datetime(dummy_path)
 
         assert result == datetime(2024, 3, 21, 19, 10, 38)
@@ -248,10 +261,12 @@ class TestPublicAccessorExifPath:
             exif_ifd={},
             gps_ifd={1: "N", 2: (30.0, 15.0, 9.04), 3: "W", 4: (97.0, 42.0, 51.57)},
         )
-        with patch("src.analyzers.image_metadata.TAGS", _HEIF_TAGS), \
-             patch("src.analyzers.image_metadata.GPSTAGS", _HEIF_GPSTAGS), \
-             patch("src.analyzers.image_metadata.IFD", _StubIFD), \
-             patch("src.analyzers.image_metadata.Image.open", return_value=image):
+        with (
+            patch("src.analyzers.image_metadata.TAGS", _HEIF_TAGS),
+            patch("src.analyzers.image_metadata.GPSTAGS", _HEIF_GPSTAGS),
+            patch("src.analyzers.image_metadata.IFD", _StubIFD),
+            patch("src.analyzers.image_metadata.Image.open", return_value=image),
+        ):
             coords = parser.extract_gps_coordinates(dummy_path)
 
         assert coords is not None
@@ -264,9 +279,11 @@ class TestPublicAccessorExifPath:
         """An empty-but-truthy IFD object must not plant a bare ``{}`` -- that
         reads downstream as "this file carries GPS"."""
         image = _heif_like_image(top={0x0110: "iPhone 14 Pro"}, exif_ifd={}, gps_ifd={})
-        with patch("src.analyzers.image_metadata.TAGS", _HEIF_TAGS), \
-             patch("src.analyzers.image_metadata.IFD", _StubIFD), \
-             patch("src.analyzers.image_metadata.Image.open", return_value=image):
+        with (
+            patch("src.analyzers.image_metadata.TAGS", _HEIF_TAGS),
+            patch("src.analyzers.image_metadata.IFD", _StubIFD),
+            patch("src.analyzers.image_metadata.Image.open", return_value=image),
+        ):
             result = parser.extract_exif_data(dummy_path)
 
         assert "GPSInfo" not in result
@@ -280,9 +297,11 @@ class TestPublicAccessorExifPath:
             top={0x0110: "public"}, exif_ifd={}, gps_ifd={}, has_private_accessor=True
         )
         image._getexif.return_value = {0x0110: "private"}
-        with patch("src.analyzers.image_metadata.TAGS", _HEIF_TAGS), \
-             patch("src.analyzers.image_metadata.IFD", _StubIFD), \
-             patch("src.analyzers.image_metadata.Image.open", return_value=image):
+        with (
+            patch("src.analyzers.image_metadata.TAGS", _HEIF_TAGS),
+            patch("src.analyzers.image_metadata.IFD", _StubIFD),
+            patch("src.analyzers.image_metadata.Image.open", return_value=image),
+        ):
             result = parser.extract_exif_data(dummy_path)
 
         assert result == {"Model": "private"}
@@ -315,44 +334,58 @@ def _pil_no_exif() -> MagicMock:
 
 
 class TestPiexifFallback:
-    def test_normalizes_tags_and_decodes_bytes(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_normalizes_tags_and_decodes_bytes(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         piexif_data = {
             "0th": {0x0132: b"2023:11:26 14:30:00\x00"},
             "Exif": {0x9003: b"2023:11:26 14:30:00"},
             "GPS": {},
         }
-        with patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()), \
-             patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)), \
-             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
-             patch("src.analyzers.image_metadata.TAGS", _PIEXIF_TAGS):
+        with (
+            patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()),
+            patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)),
+            patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True),
+            patch("src.analyzers.image_metadata.TAGS", _PIEXIF_TAGS),
+        ):
             result = parser.extract_exif_data(dummy_path)
 
         assert result["DateTime"] == "2023:11:26 14:30:00"
         assert result["DateTimeOriginal"] == "2023:11:26 14:30:00"
 
-    def test_pil_exif_wins_when_present(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_pil_exif_wins_when_present(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         mock_img = MagicMock()
         mock_img._getexif.return_value = {0x0132: "2023:01:01 00:00:00"}
         piexif_mock = _piexif_stub({"0th": {0x0132: b"1999:01:01 00:00:00"}})
-        with patch("src.analyzers.image_metadata.Image.open", return_value=mock_img), \
-             patch("src.analyzers.image_metadata.piexif", piexif_mock), \
-             patch("src.analyzers.image_metadata.TAGS", _PIEXIF_TAGS):
+        with (
+            patch("src.analyzers.image_metadata.Image.open", return_value=mock_img),
+            patch("src.analyzers.image_metadata.piexif", piexif_mock),
+            patch("src.analyzers.image_metadata.TAGS", _PIEXIF_TAGS),
+        ):
             result = parser.extract_exif_data(dummy_path)
 
         assert result == {"DateTime": "2023:01:01 00:00:00"}
         piexif_mock.load.assert_not_called()
 
-    def test_datetime_end_to_end_via_fallback(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_datetime_end_to_end_via_fallback(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         piexif_data = {"Exif": {0x9003: b"2023:11:26 14:30:00"}}
-        with patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()), \
-             patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)), \
-             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
-             patch("src.analyzers.image_metadata.TAGS", _PIEXIF_TAGS):
+        with (
+            patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()),
+            patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)),
+            patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True),
+            patch("src.analyzers.image_metadata.TAGS", _PIEXIF_TAGS),
+        ):
             dt = parser.extract_datetime(dummy_path)
 
         assert dt == datetime(2023, 11, 26, 14, 30, 0)
 
-    def test_gps_end_to_end_via_fallback(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_gps_end_to_end_via_fallback(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         piexif_data = {
             "GPS": {
                 1: b"N",
@@ -361,10 +394,12 @@ class TestPiexifFallback:
                 4: ((122, 1), (25, 1), (0, 1)),
             }
         }
-        with patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()), \
-             patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)), \
-             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
-             patch("src.analyzers.image_metadata.GPSTAGS", _PIEXIF_GPSTAGS):
+        with (
+            patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()),
+            patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)),
+            patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True),
+            patch("src.analyzers.image_metadata.GPSTAGS", _PIEXIF_GPSTAGS),
+        ):
             coords = parser.extract_gps_coordinates(dummy_path)
 
         assert coords is not None
@@ -372,7 +407,9 @@ class TestPiexifFallback:
         assert abs(lat - (37 + 46 / 60 + 29.4 / 3600)) < 1e-6
         assert abs(lon - -(122 + 25 / 60)) < 1e-6
 
-    def test_gps_retry_when_pil_gpsinfo_is_bare_offset(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_gps_retry_when_pil_gpsinfo_is_bare_offset(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         """PIL EXIF present (so no whole-dict fallback) but GPSInfo is an IFD
         offset int — GPS should still resolve via the piexif retry."""
         mock_img = MagicMock()
@@ -385,70 +422,98 @@ class TestPiexifFallback:
                 4: ((122, 1), (25, 1), (0, 1)),
             }
         }
-        with patch("src.analyzers.image_metadata.Image.open", return_value=mock_img), \
-             patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)), \
-             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
-             patch("src.analyzers.image_metadata.TAGS", {**_PIEXIF_TAGS, 0x8825: "GPSInfo"}), \
-             patch("src.analyzers.image_metadata.GPSTAGS", _PIEXIF_GPSTAGS):
+        with (
+            patch("src.analyzers.image_metadata.Image.open", return_value=mock_img),
+            patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)),
+            patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True),
+            patch("src.analyzers.image_metadata.TAGS", {**_PIEXIF_TAGS, 0x8825: "GPSInfo"}),
+            patch("src.analyzers.image_metadata.GPSTAGS", _PIEXIF_GPSTAGS),
+        ):
             coords = parser.extract_gps_coordinates(dummy_path)
 
         assert coords is not None
         assert abs(coords[0] - (37 + 46 / 60 + 29.4 / 3600)) < 1e-6
 
-    def test_load_failure_returns_empty(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_load_failure_returns_empty(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         piexif_mock = MagicMock()
         piexif_mock.load.side_effect = ValueError("not a jpeg")
-        with patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()), \
-             patch("src.analyzers.image_metadata.piexif", piexif_mock), \
-             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True):
+        with (
+            patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()),
+            patch("src.analyzers.image_metadata.piexif", piexif_mock),
+            patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True),
+        ):
             assert parser.extract_exif_data(dummy_path) == {}
 
     def test_unavailable_returns_empty(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
-        with patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()), \
-             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", False):
+        with (
+            patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()),
+            patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", False),
+        ):
             assert parser.extract_exif_data(dummy_path) == {}
 
-    def test_piexif_loaded_at_most_once_when_no_gps(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_piexif_loaded_at_most_once_when_no_gps(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         """PIL empty + piexif has no GPS: piexif.load() must run once (extract),
         not twice (the old GPS retry re-loaded the same file)."""
         piexif_mock = _piexif_stub({"Exif": {0x9003: b"2023:11:26 14:30:00"}})
-        with patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()), \
-             patch("src.analyzers.image_metadata.piexif", piexif_mock), \
-             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
-             patch("src.analyzers.image_metadata.TAGS", _PIEXIF_TAGS):
+        with (
+            patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()),
+            patch("src.analyzers.image_metadata.piexif", piexif_mock),
+            patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True),
+            patch("src.analyzers.image_metadata.TAGS", _PIEXIF_TAGS),
+        ):
             coords = parser.extract_gps_coordinates(dummy_path)
         assert coords is None
         piexif_mock.load.assert_called_once()
 
-    def test_non_gps_pil_exif_never_loads_piexif(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_non_gps_pil_exif_never_loads_piexif(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         """A non-GPS image PIL can read (no GPSInfo key) must not touch piexif."""
         mock_img = MagicMock()
         mock_img._getexif.return_value = {0x0132: "2023:01:01 00:00:00"}
         piexif_mock = _piexif_stub({})
-        with patch("src.analyzers.image_metadata.Image.open", return_value=mock_img), \
-             patch("src.analyzers.image_metadata.piexif", piexif_mock), \
-             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
-             patch("src.analyzers.image_metadata.TAGS", _PIEXIF_TAGS):
+        with (
+            patch("src.analyzers.image_metadata.Image.open", return_value=mock_img),
+            patch("src.analyzers.image_metadata.piexif", piexif_mock),
+            patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True),
+            patch("src.analyzers.image_metadata.TAGS", _PIEXIF_TAGS),
+        ):
             coords = parser.extract_gps_coordinates(dummy_path)
         assert coords is None
         piexif_mock.load.assert_not_called()
 
-    def test_bare_offset_gpsinfo_normalized_to_dict_in_exif(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_bare_offset_gpsinfo_normalized_to_dict_in_exif(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         """extract_exif_data itself resolves a bare-offset GPSInfo into a dict,
         so callers reusing the returned exif_data get GPS without a re-read."""
         mock_img = MagicMock()
         mock_img._getexif.return_value = {0x8825: 746}  # GPSInfo as bare IFD offset
-        piexif_data = {"GPS": {1: b"N", 2: ((37, 1), (46, 1), (294, 10)),
-                               3: b"W", 4: ((122, 1), (25, 1), (0, 1))}}
-        with patch("src.analyzers.image_metadata.Image.open", return_value=mock_img), \
-             patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)), \
-             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
-             patch("src.analyzers.image_metadata.TAGS", {0x8825: "GPSInfo"}):
+        piexif_data = {
+            "GPS": {
+                1: b"N",
+                2: ((37, 1), (46, 1), (294, 10)),
+                3: b"W",
+                4: ((122, 1), (25, 1), (0, 1)),
+            }
+        }
+        with (
+            patch("src.analyzers.image_metadata.Image.open", return_value=mock_img),
+            patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)),
+            patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True),
+            patch("src.analyzers.image_metadata.TAGS", {0x8825: "GPSInfo"}),
+        ):
             exif_data = parser.extract_exif_data(dummy_path)
         assert isinstance(exif_data["GPSInfo"], dict)
         assert exif_data["GPSInfo"][1] == "N"
 
-    def test_gps_southern_eastern_hemisphere(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_gps_southern_eastern_hemisphere(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         """S latitude ref negates the latitude; E longitude ref leaves the
         longitude positive (covers the GPSLatitudeRef == 'S' branch)."""
         piexif_data = {
@@ -459,10 +524,12 @@ class TestPiexifFallback:
                 4: ((151, 1), (12, 1), (0, 1)),
             }
         }
-        with patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()), \
-             patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)), \
-             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
-             patch("src.analyzers.image_metadata.GPSTAGS", _PIEXIF_GPSTAGS):
+        with (
+            patch("src.analyzers.image_metadata.Image.open", return_value=_pil_no_exif()),
+            patch("src.analyzers.image_metadata.piexif", _piexif_stub(piexif_data)),
+            patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True),
+            patch("src.analyzers.image_metadata.GPSTAGS", _PIEXIF_GPSTAGS),
+        ):
             coords = parser.extract_gps_coordinates(dummy_path)
 
         assert coords is not None
@@ -470,13 +537,17 @@ class TestPiexifFallback:
         assert abs(lat - -(33 + 52 / 60)) < 1e-6
         assert abs(lon - (151 + 12 / 60)) < 1e-6
 
-    def test_metadata_unavailable_returns_empty(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_metadata_unavailable_returns_empty(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         """_extract_exif_via_piexif guards on METADATA_AVAILABLE (TAGS/GPSTAGS
         are undefined without PIL), returning {} before touching piexif."""
         piexif_mock = _piexif_stub({"Exif": {0x9003: b"2023:11:26 14:30:00"}})
-        with patch("src.analyzers.image_metadata.piexif", piexif_mock), \
-             patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True), \
-             patch("src.analyzers.image_metadata.METADATA_AVAILABLE", False):
+        with (
+            patch("src.analyzers.image_metadata.piexif", piexif_mock),
+            patch("src.analyzers.image_metadata.PIEXIF_AVAILABLE", True),
+            patch("src.analyzers.image_metadata.METADATA_AVAILABLE", False),
+        ):
             assert parser._extract_exif_via_piexif(dummy_path) == {}
         piexif_mock.load.assert_not_called()
 
@@ -485,18 +556,23 @@ class TestPiexifFallback:
 # extract_datetime
 # ---------------------------------------------------------------------------
 
+
 class TestExtractDatetime:
     def test_returns_none_when_no_exif(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
         with patch.object(parser, "extract_exif_data", return_value={}):
             assert parser.extract_datetime(dummy_path) is None
 
     def test_parses_DateTimeOriginal(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
-        with patch.object(parser, "extract_exif_data", return_value={"DateTimeOriginal": "2023:11:26 14:30:00"}):
+        with patch.object(
+            parser, "extract_exif_data", return_value={"DateTimeOriginal": "2023:11:26 14:30:00"}
+        ):
             result = parser.extract_datetime(dummy_path)
         assert result == datetime(2023, 11, 26, 14, 30, 0)
 
     def test_falls_back_to_DateTime(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
-        with patch.object(parser, "extract_exif_data", return_value={"DateTime": "2021:01:01 00:00:00"}):
+        with patch.object(
+            parser, "extract_exif_data", return_value={"DateTime": "2021:01:01 00:00:00"}
+        ):
             result = parser.extract_datetime(dummy_path)
         assert result == datetime(2021, 1, 1, 0, 0, 0)
 
@@ -506,7 +582,9 @@ class TestExtractDatetime:
             result = parser.extract_datetime(dummy_path)
         assert result == datetime(2022, 6, 15, 8, 0, 0)
 
-    def test_returns_none_when_all_tags_missing(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_returns_none_when_all_tags_missing(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         with patch.object(parser, "extract_exif_data", return_value={"Make": "Canon"}):
             assert parser.extract_datetime(dummy_path) is None
 
@@ -514,6 +592,7 @@ class TestExtractDatetime:
 # ---------------------------------------------------------------------------
 # get_metadata_summary
 # ---------------------------------------------------------------------------
+
 
 class TestGetMetadataSummary:
     def test_all_none_when_no_exif(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
@@ -538,35 +617,59 @@ class TestGetMetadataSummary:
         assert result["month"] == 11
         assert result["date_str"] == "2023-11"
 
-    def test_populates_location_when_gps_present(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_populates_location_when_gps_present(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         coords = (37.7749, -122.4194)
-        with patch.object(parser, "extract_exif_data", return_value={}), \
-             patch.object(parser, "_extract_gps_from_exif", return_value=coords), \
-             patch.object(parser, "get_location_name", return_value="San Francisco, CA, USA"):
+        with (
+            patch.object(parser, "extract_exif_data", return_value={}),
+            patch.object(parser, "_extract_gps_from_exif", return_value=coords),
+            patch.object(parser, "get_location_name", return_value="San Francisco, CA, USA"),
+        ):
             result = parser.get_metadata_summary(dummy_path)
 
         assert result["gps_coordinates"] == coords
         assert result["location_name"] == "San Francisco, CA, USA"
 
     def test_includes_text_metadata(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
-        with patch.object(parser, "extract_exif_data", return_value={}), \
-             patch.object(parser, "extract_text_metadata", return_value={"Software": "GIMP"}):
+        with (
+            patch.object(parser, "extract_exif_data", return_value={}),
+            patch.object(parser, "extract_text_metadata", return_value={"Software": "GIMP"}),
+        ):
             result = parser.get_metadata_summary(dummy_path)
         assert result["text_metadata"] == {"Software": "GIMP"}
 
-    def test_creation_time_used_as_datetime_fallback(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
-        with patch.object(parser, "extract_exif_data", return_value={}), \
-             patch.object(parser, "extract_text_metadata",
-                          return_value={"Creation Time": "2021-08-15T09:30:00"}):
+    def test_creation_time_used_as_datetime_fallback(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
+        with (
+            patch.object(parser, "extract_exif_data", return_value={}),
+            patch.object(
+                parser,
+                "extract_text_metadata",
+                return_value={"Creation Time": "2021-08-15T09:30:00"},
+            ),
+        ):
             result = parser.get_metadata_summary(dummy_path)
         assert result["datetime"] == datetime(2021, 8, 15, 9, 30, 0)
         assert result["year"] == 2021
         assert result["date_str"] == "2021-08"
 
-    def test_exif_datetime_wins_over_creation_time(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
-        with patch.object(parser, "extract_exif_data", return_value={"DateTimeOriginal": "2023:11:26 14:30:00"}), \
-             patch.object(parser, "extract_text_metadata",
-                          return_value={"Creation Time": "2021-08-15T09:30:00"}):
+    def test_exif_datetime_wins_over_creation_time(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
+        with (
+            patch.object(
+                parser,
+                "extract_exif_data",
+                return_value={"DateTimeOriginal": "2023:11:26 14:30:00"},
+            ),
+            patch.object(
+                parser,
+                "extract_text_metadata",
+                return_value={"Creation Time": "2021-08-15T09:30:00"},
+            ),
+        ):
             result = parser.get_metadata_summary(dummy_path)
         assert result["datetime"] == datetime(2023, 11, 26, 14, 30, 0)
 
@@ -574,6 +677,7 @@ class TestGetMetadataSummary:
 # ---------------------------------------------------------------------------
 # extract_text_metadata (GIF / PNG textual metadata)
 # ---------------------------------------------------------------------------
+
 
 def _mock_text_image(text: Optional[dict] = None, info: Optional[dict] = None) -> MagicMock:
     """Mock image usable as a context manager, exposing .text and .info dicts."""
@@ -591,28 +695,38 @@ class TestExtractTextMetadata:
         p.metadata_available = False
         assert p.extract_text_metadata(dummy_path) == {}
 
-    def test_returns_empty_on_open_failure(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_returns_empty_on_open_failure(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         with patch("src.analyzers.image_metadata.Image.open", side_effect=OSError("bad file")):
             assert parser.extract_text_metadata(dummy_path) == {}
 
-    def test_reads_png_text_chunks_and_strips(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_reads_png_text_chunks_and_strips(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         img = _mock_text_image(text={"Software": "GIMP", "Description": "  a render  "})
         with patch("src.analyzers.image_metadata.Image.open", return_value=img):
             result = parser.extract_text_metadata(dummy_path)
         assert result == {"Software": "GIMP", "Description": "a render"}
 
-    def test_reads_gif_comment_from_info_and_decodes_bytes(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_reads_gif_comment_from_info_and_decodes_bytes(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         img = _mock_text_image(info={"comment": b"Made with X", "duration": 100})
         with patch("src.analyzers.image_metadata.Image.open", return_value=img):
             result = parser.extract_text_metadata(dummy_path)
         assert result == {"comment": "Made with X"}
 
-    def test_ignores_unlisted_keys_and_empty_values(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_ignores_unlisted_keys_and_empty_values(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         img = _mock_text_image(text={"Title": "   ", "icc_profile": "x"}, info={"dpi": (72, 72)})
         with patch("src.analyzers.image_metadata.Image.open", return_value=img):
             assert parser.extract_text_metadata(dummy_path) == {}
 
-    def test_text_chunk_wins_over_info_duplicate(self, dummy_path: Path, parser: ImageMetadataParser) -> None:
+    def test_text_chunk_wins_over_info_duplicate(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
         img = _mock_text_image(text={"Comment": "from-text"}, info={"Comment": "from-info"})
         with patch("src.analyzers.image_metadata.Image.open", return_value=img):
             assert parser.extract_text_metadata(dummy_path) == {"Comment": "from-text"}
@@ -637,7 +751,9 @@ class TestNormalizeTextValue:
 
 class TestParseCreationTime:
     def test_iso_8601(self, parser: ImageMetadataParser) -> None:
-        assert parser._parse_creation_time({"Creation Time": "2021-08-15T09:30:00"}) == datetime(2021, 8, 15, 9, 30, 0)
+        assert parser._parse_creation_time({"Creation Time": "2021-08-15T09:30:00"}) == datetime(
+            2021, 8, 15, 9, 30, 0
+        )
 
     def test_date_only(self, parser: ImageMetadataParser) -> None:
         assert parser._parse_creation_time({"Creation Time": "2021-08-15"}) == datetime(2021, 8, 15)
@@ -652,6 +768,7 @@ class TestParseCreationTime:
 # ---------------------------------------------------------------------------
 # get_location_name
 # ---------------------------------------------------------------------------
+
 
 def _fake_geocoder(address: dict) -> MagicMock:
     """Geocoder stub whose reverse() returns a location with the given address."""
@@ -690,6 +807,7 @@ class TestGetLocationName:
 # ---------------------------------------------------------------------------
 # _convert_to_degrees
 # ---------------------------------------------------------------------------
+
 
 class TestConvertToDegrees:
     def test_none_input_returns_none(self, parser: ImageMetadataParser) -> None:

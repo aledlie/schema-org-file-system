@@ -248,12 +248,14 @@ class TestClipOcrGate:
             path=Path("/tmp/landscape.png"),
             schema_type="ImageObject",
             ocr_provider=ocr,
-            clip_provider=self._make_clip({
-                "a natural landscape": 0.8,
-                "a portrait": 0.1,
-                "a product or object": 0.05,
-                "a document or text": 0.02,
-            }),
+            clip_provider=self._make_clip(
+                {
+                    "a natural landscape": 0.8,
+                    "a portrait": 0.1,
+                    "a product or object": 0.05,
+                    "a document or text": 0.02,
+                }
+            ),
             ocr_clip_topk=3,
             clip_text_labels=self._TEXT_LABELS,
         )
@@ -282,11 +284,13 @@ class TestClipOcrGate:
             path=Path("/tmp/scan.png"),
             schema_type="ImageObject",
             ocr_provider=ocr,
-            clip_provider=self._make_clip({
-                "a document or text": 0.7,
-                "a natural landscape": 0.2,
-                "a portrait": 0.1,
-            }),
+            clip_provider=self._make_clip(
+                {
+                    "a document or text": 0.7,
+                    "a natural landscape": 0.2,
+                    "a portrait": 0.1,
+                }
+            ),
             ocr_clip_topk=3,
             clip_text_labels=self._TEXT_LABELS,
         )
@@ -299,12 +303,14 @@ class TestClipOcrGate:
             path=Path("/tmp/screen.png"),
             schema_type="ImageObject",
             ocr_provider=ocr,
-            clip_provider=self._make_clip({
-                "a natural landscape": 0.4,
-                "a portrait": 0.3,
-                "screenshot: a computer screen": 0.25,
-                "a product or object": 0.05,
-            }),
+            clip_provider=self._make_clip(
+                {
+                    "a natural landscape": 0.4,
+                    "a portrait": 0.3,
+                    "screenshot: a computer screen": 0.25,
+                    "a product or object": 0.05,
+                }
+            ),
             ocr_clip_topk=3,
             clip_text_labels=self._TEXT_LABELS,
         )
@@ -318,12 +324,14 @@ class TestClipOcrGate:
             path=Path("/tmp/img.png"),
             schema_type="ImageObject",
             ocr_provider=ocr,
-            clip_provider=self._make_clip({
-                "a natural landscape": 0.5,
-                "a portrait": 0.3,
-                "a document or text": 0.15,   # rank 3 of 4
-                "a product or object": 0.05,
-            }),
+            clip_provider=self._make_clip(
+                {
+                    "a natural landscape": 0.5,
+                    "a portrait": 0.3,
+                    "a document or text": 0.15,  # rank 3 of 4
+                    "a product or object": 0.05,
+                }
+            ),
             ocr_clip_topk=3,
             clip_text_labels=self._TEXT_LABELS,
         )
@@ -336,12 +344,14 @@ class TestClipOcrGate:
             path=Path("/tmp/img.png"),
             schema_type="ImageObject",
             ocr_provider=ocr,
-            clip_provider=self._make_clip({
-                "a natural landscape": 0.5,
-                "a portrait": 0.3,
-                "a product or object": 0.15,   # rank 3
-                "a document or text": 0.05,    # rank 4 — outside top-3
-            }),
+            clip_provider=self._make_clip(
+                {
+                    "a natural landscape": 0.5,
+                    "a portrait": 0.3,
+                    "a product or object": 0.15,  # rank 3
+                    "a document or text": 0.05,  # rank 4 — outside top-3
+                }
+            ),
             ocr_clip_topk=3,
             clip_text_labels=self._TEXT_LABELS,
         )

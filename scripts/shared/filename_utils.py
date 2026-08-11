@@ -52,10 +52,10 @@ def is_generic_filename(filename: str) -> bool:
 
 # Title-snippet selection (ported from the retired image_renamer_metadata.py):
 # scan the first few OCR lines for one sized like a window/page title.
-_TITLE_SNIPPET_WINDOW = 3     # only the first N lines can hold a title
+_TITLE_SNIPPET_WINDOW = 3  # only the first N lines can hold a title
 _TITLE_SNIPPET_MIN_CHARS = 10  # exclusive — shorter lines are UI fragments
 _TITLE_SNIPPET_MAX_CHARS = 50  # exclusive — longer lines are body text
-_TITLE_SNIPPET_CAP = 40        # hard cap after sanitization
+_TITLE_SNIPPET_CAP = 40  # hard cap after sanitization
 
 
 def title_snippet_from_lines(lines: list[str] | None) -> str | None:

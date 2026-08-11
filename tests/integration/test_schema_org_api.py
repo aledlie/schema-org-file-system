@@ -73,8 +73,13 @@ class TestSmokeImport:
     def test_models_are_pydantic(self):
         from pydantic import BaseModel
 
-        for name in ("FileSchemaOrg", "CompanySchemaOrg", "BulkExportParams",
-                     "ErrorResponse", "PaginationParams"):
+        for name in (
+            "FileSchemaOrg",
+            "CompanySchemaOrg",
+            "BulkExportParams",
+            "ErrorResponse",
+            "PaginationParams",
+        ):
             model = getattr(schema_org_models, name)
             assert issubclass(model, BaseModel)
 

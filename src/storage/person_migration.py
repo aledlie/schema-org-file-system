@@ -185,6 +185,7 @@ PERSONAL_SUBCAT_FOLDER: Dict[str, str] = {
 
 class MigrationEntryDict(TypedDict):
     """``MigrationEntry.to_dict()`` shape."""
+
     src: str
     dst: str
     subcat: str
@@ -196,6 +197,7 @@ class MigrationEntryDict(TypedDict):
 class MigrationSummary(TypedDict, total=False):
     """``migrate_person_files()`` shape; ``planned`` on dry-run,
     ``migrated`` on apply."""
+
     dry_run: bool
     planned: int
     migrated: int
@@ -206,6 +208,7 @@ class MigrationSummary(TypedDict, total=False):
 
 class PersonIndexSummary(TypedDict, total=False):
     """``index_person_files()`` shape; ``edges`` only on apply."""
+
     dry_run: bool
     attributed: int
     edges: int
