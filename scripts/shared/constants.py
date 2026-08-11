@@ -192,6 +192,19 @@ CLIP_OCR_FALLBACK_THRESHOLD = 0.10  # min CLIP confidence before OCR fallback
 CLIP_REFINEMENT_MIN_CONFIDENCE = 0.15  # min confidence to attempt refinement
 CLIP_REFINEMENT_ACCEPT_CONFIDENCE = 0.30  # min confidence to accept refinement
 
+# Minimum top-1/top-2 ratio for a CLIP label to be trusted as a *filename*.
+# Absolute confidence cannot serve here: scores are a softmax over raw cosine
+# similarities with no logit scaling, so they sit just above the uniform floor
+# (94-label photo vocab: floor 1.064%, winners 1.13-1.16%) and every label
+# clears or misses an absolute gate together. The *relative* separation does
+# discriminate -- measured on 8 hand-labelled Downloads photos, correct labels
+# scored 1.0154-1.0376 and wrong/marginal ones 1.0020-1.0088, so 1.012 sits in
+# the gap and separated all 8. Only applied per-profile via
+# RenamerProfile.min_label_margin: the screenshot vocab puts 75% of a 20-file
+# sample below this ratio while still agreeing with their filed folders, so
+# enabling it there needs its own labelled eval first.
+CLIP_MIN_LABEL_MARGIN_RATIO = 1.012
+
 CLIP_ENHANCE_THRESHOLD = CLIP_REFINEMENT_MIN_CONFIDENCE  # min confidence to use CLIP result
 CLIP_ENHANCE_HIGH_THRESHOLD = CLIP_REFINEMENT_ACCEPT_CONFIDENCE  # confidence to skip OCR fallback
 

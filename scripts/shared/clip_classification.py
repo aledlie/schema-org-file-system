@@ -26,6 +26,14 @@ class CLIPResult(NamedTuple):
     category: str
     confidence: float
     all_scores: dict[str, float]
+    # Top-1/top-2 ratio of the prompt-prefixed distribution that *chose*
+    # ``category`` — the only usable measure of how decided this label is, since
+    # the unscaled softmax leaves absolute confidences pinned near the uniform
+    # floor. ``None`` means ``category`` did not come from that ranking (OCR
+    # fallback or an accepted refinement won instead), so callers must not apply
+    # a margin gate to it. Note this is *not* the margin of ``all_scores``:
+    # those are scored from unprefixed prompts and can rank differently.
+    margin: float | None = None
 
 
 def refine_classification(
@@ -145,8 +153,14 @@ def classify_image(
         prefixed = classifier.score_embedding(image_emb, labels, "a photo of ")
         best_category, confidence = prefixed[0] if prefixed else ("unknown", 0.0)
 
+        # How decided that top match was, before refinement can replace it.
+        # score_embedding returns descending order, so [1] is the runner-up.
+        margin: float | None = None
+        if len(prefixed) > 1 and prefixed[1][1] > 0:
+            margin = prefixed[0][1] / prefixed[1][1]
+
         # Refine with more specific terms if available
-        best_category, confidence = refine_classification(
+        refined_category, confidence = refine_classification(
             classifier,
             image_emb,
             best_category,
@@ -155,12 +169,17 @@ def classify_image(
             refinement_min_confidence=refinement_min_confidence,
             refinement_accept_confidence=refinement_accept_confidence,
         )
+        if refined_category != best_category:
+            # The refinement vocabulary chose the label, so the margin computed
+            # over `labels` no longer describes this decision.
+            margin = None
+        best_category = refined_category
 
         # Collect all scores (matches classify_raw: no prefix)
         raw_results = classifier.score_embedding(image_emb, labels, "")
         all_scores = {prompt: conf for prompt, conf in raw_results}
 
-        return CLIPResult(best_category, confidence, all_scores)
+        return CLIPResult(best_category, confidence, all_scores, margin)
 
     except Exception as e:
         print(f"  CLIP classification error for {image_path.name}: {e}")
@@ -206,17 +225,23 @@ def classify_with_ocr_fallback(
     if not clip_result:
         return None
 
-    clip_category, clip_confidence, clip_scores = clip_result
+    # Attribute access, not tuple unpacking: CLIPResult carries a margin field
+    # that unpacking here would silently reject on arity.
+    clip_category = clip_result.category
 
     # Step 2: Apply OCR fallback if needed
     final_category, final_confidence, final_scores, _ = apply_ocr_fallback_logic(
         clip_category,
-        clip_confidence,
-        clip_scores,
+        clip_result.confidence,
+        clip_result.all_scores,
         image_path,
         clip_threshold=ocr_threshold,
         content_classifier=content_classifier,
         verbose=verbose,
     )
 
-    return CLIPResult(final_category, final_confidence, final_scores)
+    # The CLIP margin only describes the label CLIP itself picked; when OCR
+    # supplies a better one, there is no CLIP separation to gate on.
+    margin = clip_result.margin if final_category == clip_category else None
+
+    return CLIPResult(final_category, final_confidence, final_scores, margin)

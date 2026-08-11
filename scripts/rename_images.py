@@ -26,6 +26,7 @@ from shared.clip_classification import (
 )
 from shared.clip_classification import generate_filename as generate_clip_filename
 from shared.constants import (
+    CLIP_MIN_LABEL_MARGIN_RATIO,
     CLIP_OCR_FALLBACK_THRESHOLD,
     CLIP_REFINEMENT_ACCEPT_CONFIDENCE,
     CLIP_REFINEMENT_MIN_CONFIDENCE,
@@ -75,6 +76,10 @@ class RenamerProfile:
     image_extensions: set = field(default_factory=lambda: set(IMAGE_EXTENSIONS_WIDE))
     skip_descriptive_names: bool = True  # photo profile skips already-named files
     verbose: bool = True
+    # Min CLIP top-1/top-2 ratio to name a file from the label; 1.0 disables the
+    # gate. See CLIP_MIN_LABEL_MARGIN_RATIO for why the gate is relative and why
+    # it is opt-in per profile.
+    min_label_margin: float = 1.0
 
 
 PHOTO_PROFILE = RenamerProfile(
@@ -82,6 +87,7 @@ PHOTO_PROFILE = RenamerProfile(
     default_mode="in-place",
     skip_descriptive_names=True,
     verbose=True,
+    min_label_margin=CLIP_MIN_LABEL_MARGIN_RATIO,
     categories=[
         # Furniture & Home
         "sofa",
@@ -431,14 +437,35 @@ class ImageAnalyzer:
             result["error"] = "Could not analyze content"
             return result
 
-        category, confidence, all_scores = clip_result
+        # Attribute access, not tuple unpacking: CLIPResult carries a margin field.
+        category = clip_result.category
+        all_scores = clip_result.all_scores
         result["category"] = category
-        result["confidence"] = confidence
+        result["confidence"] = clip_result.confidence
         result["all_scores"] = all_scores
+        result["margin"] = clip_result.margin
         result["top_scores"] = dict(
             sorted(all_scores.items(), key=lambda x: x[1], reverse=True)[:5]
         )
         result["status"] = ProcessingStatus.PENDING
+
+        # An undecided label makes a worse filename than the original name: at
+        # the softmax floor the runner-up is a different room entirely, so the
+        # argmax is close to arbitrary (a hallway named "bedroom", a kitchen
+        # island named "desk"). Diagnostics above stay populated so the near-tie
+        # is inspectable; only the naming is withheld.
+        margin = clip_result.margin
+        if (
+            self.profile.min_label_margin > 1.0
+            and margin is not None
+            and margin < self.profile.min_label_margin
+        ):
+            result["status"] = ProcessingStatus.SKIPPED
+            result["error"] = (
+                f"CLIP label '{category}' undecided: top-1/top-2 margin "
+                f"{margin:.4f} < {self.profile.min_label_margin:.4f}"
+            )
+            return result
 
         if self.profile.category_folders:
             result["folder"] = self.profile.category_folders.get(category, "Uncategorized")

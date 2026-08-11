@@ -29,7 +29,7 @@ if TYPE_CHECKING:
 # PIL / geopy are optional
 try:
     from PIL import Image
-    from PIL.ExifTags import GPSTAGS, TAGS
+    from PIL.ExifTags import GPSTAGS, IFD, TAGS
     from geopy.geocoders import Nominatim
     from geopy.exc import GeocoderServiceError, GeocoderTimedOut
     from geopy.extra.rate_limiter import RateLimiter
@@ -44,6 +44,10 @@ try:
     METADATA_AVAILABLE = True
 except ImportError:
     METADATA_AVAILABLE = False
+
+# EXIF tag name under which the GPS sub-IFD is nested, in every shape this
+# module produces (PIL legacy, PIL public accessor, piexif fallback).
+GPS_INFO_TAG = "GPSInfo"
 
 # Forward-geocoding rate limit / retries (OSM Nominatim policy: <=1 req/s) and
 # the on-disk result cache shared across runs (keyed by normalized address).
@@ -165,6 +169,8 @@ class ImageMetadataParser:
                 for tag_id, value in exif.items():
                     tag = TAGS.get(tag_id, tag_id)
                     exif_data[tag] = value
+            else:
+                exif_data = self._extract_exif_via_public_accessor(image)
         except Exception as e:
             print(f"  EXIF extraction error: {e}")
 
@@ -175,15 +181,59 @@ class ImageMetadataParser:
         #    left the GPS IFD undecoded; recover just that from piexif.
         # A missing GPSInfo key means the file carries no GPS, so piexif is
         # skipped entirely for non-GPS images.
-        gps_is_bare_offset = "GPSInfo" in exif_data and not isinstance(exif_data["GPSInfo"], dict)
+        gps_is_bare_offset = GPS_INFO_TAG in exif_data and not isinstance(
+            exif_data[GPS_INFO_TAG], dict
+        )
         if not exif_data or gps_is_bare_offset:
             piexif_data = self._extract_exif_via_piexif(image_path)
             if not exif_data:
                 exif_data = piexif_data
-            elif isinstance(piexif_data.get("GPSInfo"), dict):
-                exif_data["GPSInfo"] = piexif_data["GPSInfo"]
+            elif isinstance(piexif_data.get(GPS_INFO_TAG), dict):
+                exif_data[GPS_INFO_TAG] = piexif_data[GPS_INFO_TAG]
 
         return exif_data
+
+    @staticmethod
+    def _extract_exif_via_public_accessor(image: "Image.Image") -> Dict[str, Any]:
+        """EXIF via PIL's public ``getexif()``, with the Exif/GPS sub-IFDs merged in.
+
+        Required for HEIF/AVIF: ``pillow_heif``'s ``HeifImageFile`` implements only
+        the public accessor, so the ``_getexif`` probe finds nothing, and the piexif
+        fallback then rejects the container outright (``InvalidImageDataError:
+        Given file is neither JPEG nor TIFF``). Every HEIC therefore came back with
+        no EXIF at all -- losing capture date (dates fell back to file mtime, i.e.
+        download time) and GPS (no ``file->location`` edge), and degrading
+        MediaHeuristicSignal from its GPS branch to ``photos/other``, which then
+        outvoted SceneSignal and misfiled interiors/exteriors under Media/Photos.
+
+        Not a substitute for ``_getexif`` where that exists: on JPEG ``getexif()``
+        returns only the top-level IFD (11 tags vs 54, no ``DateTimeOriginal``), so
+        the sub-IFDs are merged explicitly rather than swapping the accessors.
+        """
+        exif = image.getexif()
+        if not exif:
+            return {}
+
+        # cast: an unrecognized tag falls back to its numeric id as the key, the
+        # same shape the two older paths produce (their loops are over Any, so
+        # only this typed path surfaces the int-vs-str key to mypy).
+        def tag_name(tag_id: int) -> str:
+            return cast(str, TAGS.get(tag_id, tag_id))
+
+        merged: Dict[str, Any] = {tag_name(tag_id): value for tag_id, value in exif.items()}
+        # Sub-IFD values lose to the top-level IFD only when a tag is in both.
+        for tag_id, value in dict(exif.get_ifd(IFD.Exif) or {}).items():
+            merged.setdefault(tag_name(tag_id), value)
+
+        # Kept keyed by numeric GPS tag id: the shape _extract_gps_from_exif's
+        # GPSTAGS lookup and the piexif fallback both already produce. Tested for
+        # emptiness *after* materializing, so an empty-but-truthy IFD object does
+        # not plant a bare {} that reads as "this file carries GPS".
+        gps_ifd = dict(exif.get_ifd(IFD.GPSInfo) or {})
+        if gps_ifd:
+            merged[GPS_INFO_TAG] = gps_ifd
+
+        return merged
 
     def _extract_exif_via_piexif(self, image_path: Path) -> Dict[str, Any]:
         """Fallback EXIF read via piexif, normalized to the same shape as the
@@ -215,7 +265,7 @@ class ImageMetadataParser:
 
         gps = exif_dict.get("GPS") or {}
         if gps:
-            exif_data["GPSInfo"] = {tag_id: decode(value) for tag_id, value in gps.items()}
+            exif_data[GPS_INFO_TAG] = {tag_id: decode(value) for tag_id, value in gps.items()}
 
         return exif_data
 
@@ -334,7 +384,7 @@ class ImageMetadataParser:
 
     def _extract_gps_from_exif(self, exif_data: Dict[str, Any]) -> Optional[Tuple[float, float]]:
         try:
-            raw_gps = exif_data.get("GPSInfo")
+            raw_gps = exif_data.get(GPS_INFO_TAG)
             # GPSInfo can be a bare IFD offset (int) on some files; only a
             # dict payload is usable. Non-dict values are skipped silently.
             if not raw_gps or not isinstance(raw_gps, dict):

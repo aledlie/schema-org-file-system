@@ -31,6 +31,16 @@ def _make_pil_stub() -> Any:
     exif_tags_mod.TAGS = {}
     exif_tags_mod.GPSTAGS = {}
 
+    # IFD is imported alongside TAGS/GPSTAGS, and that import is all-or-nothing:
+    # omitting a symbol here doesn't just hide that symbol, it fails the whole
+    # optional-import block and silently flips METADATA_AVAILABLE to False, so
+    # every EXIF test then errors on an unrelated missing attribute.
+    class _IFD:
+        Exif = 0x8769
+        GPSInfo = 0x8825
+
+    exif_tags_mod.IFD = _IFD
+
     pil.Image = image_mod
     pil.ExifTags = exif_tags_mod
     sys.modules.setdefault("PIL", pil)
@@ -154,6 +164,129 @@ class TestExtractExifData:
             result = parser.extract_exif_data(dummy_path)
 
         assert result == {"DateTime": "2023:11:26 14:30:00"}
+
+
+# ---------------------------------------------------------------------------
+# Public-accessor (getexif) path -- HEIF/AVIF
+# ---------------------------------------------------------------------------
+
+_HEIF_TAGS = {0x0110: "Model", 0x9003: "DateTimeOriginal"}
+_HEIF_GPSTAGS = {
+    1: "GPSLatitudeRef",
+    2: "GPSLatitude",
+    3: "GPSLongitudeRef",
+    4: "GPSLongitude",
+}
+
+
+class _StubIFD:
+    Exif = 0x8769
+    GPSInfo = 0x8825
+
+
+def _heif_like_image(
+    top: dict, exif_ifd: dict, gps_ifd: dict, *, has_private_accessor: bool = False
+) -> MagicMock:
+    """An image exposing only PIL's public ``getexif()``, as HeifImageFile does.
+
+    ``spec`` is what makes this faithful: a bare MagicMock answers ``_getexif``
+    with a truthy mock, so the legacy branch would swallow the call and the
+    public path under test would never run.
+    """
+    attrs = ["getexif"] + (["_getexif"] if has_private_accessor else [])
+    image = MagicMock(spec=attrs)
+    exif = MagicMock()
+    exif.__bool__ = lambda self: True
+    exif.items.return_value = top.items()
+    exif.get_ifd.side_effect = lambda ifd: {
+        _StubIFD.Exif: exif_ifd,
+        _StubIFD.GPSInfo: gps_ifd,
+    }.get(ifd, {})
+    image.getexif.return_value = exif
+    return image
+
+
+class TestPublicAccessorExifPath:
+    """HEIC carries EXIF that ``_getexif`` cannot reach; ``getexif`` can."""
+
+    def test_merges_exif_sub_ifd_when_private_accessor_absent(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
+        image = _heif_like_image(
+            top={0x0110: "iPhone 14 Pro"},
+            exif_ifd={0x9003: "2024:04:04 21:09:38"},
+            gps_ifd={},
+        )
+        with patch("src.analyzers.image_metadata.TAGS", _HEIF_TAGS), \
+             patch("src.analyzers.image_metadata.IFD", _StubIFD), \
+             patch("src.analyzers.image_metadata.Image.open", return_value=image):
+            result = parser.extract_exif_data(dummy_path)
+
+        assert result == {
+            "Model": "iPhone 14 Pro",
+            "DateTimeOriginal": "2024:04:04 21:09:38",
+        }
+
+    def test_capture_datetime_reaches_extract_datetime(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
+        """The regression that mattered: no date here means the renamer falls
+        back to file mtime, i.e. download time rather than capture time."""
+        image = _heif_like_image(top={}, exif_ifd={0x9003: "2024:03:21 19:10:38"}, gps_ifd={})
+        with patch("src.analyzers.image_metadata.TAGS", _HEIF_TAGS), \
+             patch("src.analyzers.image_metadata.IFD", _StubIFD), \
+             patch("src.analyzers.image_metadata.Image.open", return_value=image):
+            result = parser.extract_datetime(dummy_path)
+
+        assert result == datetime(2024, 3, 21, 19, 10, 38)
+
+    def test_gps_sub_ifd_survives_as_a_dict(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
+        image = _heif_like_image(
+            top={},
+            exif_ifd={},
+            gps_ifd={1: "N", 2: (30.0, 15.0, 9.04), 3: "W", 4: (97.0, 42.0, 51.57)},
+        )
+        with patch("src.analyzers.image_metadata.TAGS", _HEIF_TAGS), \
+             patch("src.analyzers.image_metadata.GPSTAGS", _HEIF_GPSTAGS), \
+             patch("src.analyzers.image_metadata.IFD", _StubIFD), \
+             patch("src.analyzers.image_metadata.Image.open", return_value=image):
+            coords = parser.extract_gps_coordinates(dummy_path)
+
+        assert coords is not None
+        assert coords[0] == pytest.approx(30.2525, abs=1e-4)
+        assert coords[1] == pytest.approx(-97.7143, abs=1e-4)
+
+    def test_empty_gps_ifd_does_not_claim_gps(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
+        """An empty-but-truthy IFD object must not plant a bare ``{}`` -- that
+        reads downstream as "this file carries GPS"."""
+        image = _heif_like_image(top={0x0110: "iPhone 14 Pro"}, exif_ifd={}, gps_ifd={})
+        with patch("src.analyzers.image_metadata.TAGS", _HEIF_TAGS), \
+             patch("src.analyzers.image_metadata.IFD", _StubIFD), \
+             patch("src.analyzers.image_metadata.Image.open", return_value=image):
+            result = parser.extract_exif_data(dummy_path)
+
+        assert "GPSInfo" not in result
+
+    def test_private_accessor_still_wins_when_present(
+        self, dummy_path: Path, parser: ImageMetadataParser
+    ) -> None:
+        """JPEG must keep using ``_getexif``: ``getexif()`` returns only the
+        top-level IFD there (11 tags vs 54, no DateTimeOriginal)."""
+        image = _heif_like_image(
+            top={0x0110: "public"}, exif_ifd={}, gps_ifd={}, has_private_accessor=True
+        )
+        image._getexif.return_value = {0x0110: "private"}
+        with patch("src.analyzers.image_metadata.TAGS", _HEIF_TAGS), \
+             patch("src.analyzers.image_metadata.IFD", _StubIFD), \
+             patch("src.analyzers.image_metadata.Image.open", return_value=image):
+            result = parser.extract_exif_data(dummy_path)
+
+        assert result == {"Model": "private"}
+        image.getexif.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

@@ -20,9 +20,14 @@ for p in (str(_ROOT), str(_SCRIPTS_DIR)):
 
 import rename_images  # noqa: E402
 from rename_images import PHOTO_PROFILE, SCREENSHOT_PROFILE, ImageAnalyzer  # noqa: E402
+from shared.clip_classification import CLIPResult  # noqa: E402
 from shared.status import ProcessingStatus  # noqa: E402
 
-_CLIP_RESULT = ("a web browser or website", 0.82, {"a web browser or website": 0.82})
+# A real CLIPResult, not a bare tuple: analyze_image reads .margin, so a 3-tuple
+# stub would pass while the production 4-field result path went unexercised.
+_CLIP_RESULT = CLIPResult(
+    "a web browser or website", 0.82, {"a web browser or website": 0.82}, margin=2.0
+)
 
 
 @pytest.fixture()
@@ -32,9 +37,16 @@ def screenshot(tmp_path: Path) -> Path:
     return path
 
 
-def _analyze(image_path: Path, *, profile=SCREENSHOT_PROFILE, lines, detected_number=None):
+def _analyze(
+    image_path: Path,
+    *,
+    profile=SCREENSHOT_PROFILE,
+    lines,
+    detected_number=None,
+    clip_result=_CLIP_RESULT,
+):
     analyzer = ImageAnalyzer(profile)
-    with patch.object(rename_images, "classify_with_ocr_fallback", return_value=_CLIP_RESULT), \
+    with patch.object(rename_images, "classify_with_ocr_fallback", return_value=clip_result), \
          patch.object(rename_images, "extract_screenshot_lines", return_value=lines), \
          patch.object(ImageAnalyzer, "_detect_number", return_value=detected_number), \
          patch.object(
@@ -68,3 +80,74 @@ class TestScreenshotTitleSnippetNaming:
         result = _analyze(screenshot, lines=["Order Confirmation - Amazon"])
         assert result["category"] == "a web browser or website"
         assert result["confidence"] == 0.82
+
+
+def _photo(tmp_path: Path) -> Path:
+    path = tmp_path / "IMG_1234.jpg"
+    path.write_bytes(b"\xff\xd8")
+    return path
+
+
+def _result_with_margin(margin) -> CLIPResult:
+    return CLIPResult("desk", 0.0114, {"desk": 0.0114, "bookshelf": 0.0113}, margin)
+
+
+class TestLabelMarginGate:
+    """A CLIP label only names a file when it beat the runner-up by enough.
+
+    Absolute confidence can't gate this: the unscaled softmax pins every label
+    near the uniform floor, so the argmax over a 94-label vocab is close to
+    arbitrary in a near-tie (a hallway named "bedroom", a kitchen named "desk").
+    """
+
+    def test_undecided_label_does_not_rename(self, tmp_path: Path) -> None:
+        result = _analyze(
+            _photo(tmp_path),
+            profile=PHOTO_PROFILE,
+            lines=None,
+            clip_result=_result_with_margin(1.001),
+        )
+        assert result.get("new_name") is None
+        assert result["status"] == ProcessingStatus.SKIPPED
+        assert "undecided" in result["error"]
+
+    def test_decided_label_renames(self, tmp_path: Path) -> None:
+        result = _analyze(
+            _photo(tmp_path),
+            profile=PHOTO_PROFILE,
+            lines=None,
+            clip_result=_result_with_margin(1.05),
+        )
+        assert result["new_name"] == "20260101_desk.jpg"
+        assert result["status"] == ProcessingStatus.PENDING
+
+    def test_diagnostics_survive_the_gate(self, tmp_path: Path) -> None:
+        """The near-tie has to stay inspectable, or the skip is unexplainable."""
+        result = _analyze(
+            _photo(tmp_path),
+            profile=PHOTO_PROFILE,
+            lines=None,
+            clip_result=_result_with_margin(1.001),
+        )
+        assert result["category"] == "desk"
+        assert result["margin"] == 1.001
+        assert result["top_scores"]
+
+    def test_absent_margin_is_not_gated(self, tmp_path: Path) -> None:
+        """``None`` means an OCR fallback or refinement chose the label, so there
+        is no CLIP separation to judge -- gating it would suppress a good name."""
+        result = _analyze(
+            _photo(tmp_path),
+            profile=PHOTO_PROFILE,
+            lines=None,
+            clip_result=_result_with_margin(None),
+        )
+        assert result["new_name"] == "20260101_desk.jpg"
+
+    def test_screenshot_profile_is_ungated(self, screenshot: Path) -> None:
+        """Enabling the gate here needs its own labelled eval: 75% of a sampled
+        20 screenshots fall below the photo threshold while still agreeing with
+        the folder they were filed into."""
+        assert SCREENSHOT_PROFILE.min_label_margin == 1.0
+        result = _analyze(screenshot, lines=None, clip_result=_result_with_margin(1.001))
+        assert result["new_name"] == "20260101_desk.png"
