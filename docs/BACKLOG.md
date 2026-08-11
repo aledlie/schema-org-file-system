@@ -1,7 +1,7 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-08-11 (added 3 items from a test-maintenance session — hardcoded E2E dashboard card assertions, stale `package.json` version + missing unit-test script, and `/git-commit-smart` blanket-staging another session's work in the shared checkout; no code written for any of them beyond the 5-line `dashboard.spec.ts` fix already committed in `58f7659`). Prior update 2026-08-10 (added 4 items from the facebookresearch library audit — faiss near-dupe index + SSCD descriptors as two halves of one feature, nevergrad joint weight search, and a PE-Core-vs-`ViT-B-32` backbone A/B; library viability, licensing, and py3.14/arm64 wheel availability verified on this machine, no code written for any of them). Prior update 2026-07-25 (migrated 3 Done items to `docs/changelog/2.2.0/CHANGELOG.md`; resolved the census-gazetteer setup gap — `scripts/download_census_names.py` verified + documented in QUICK_START/CLAUDE.md; shipped the `--ocr-doctr-fallback` config flag for the P2 docTR-fallback gate, closing the OCR-bound item's last work item). Prior update 2026-07-18 (added [Repo Snapshot](#repo-snapshot--2026-07-18) — repomix token census, top-churn gitlog, and the uncommitted InteriorSignal→SceneSignal retirement inventory; added identity-detection license-back item + partial fix — `corrective lenses` keyword added to `ID_KEYWORDS` (`restrictions`/`endorsements` trialed then dropped after backtest showed insurance-doc collision), front/back fixtures, 23 tests pass; added `redact_pii.py` barcode/alphabetic-PII blind-spot item — OCR-token redaction silently no-ops on ID barcodes + health terms; added trained graphic-vs-photograph probe item — opaque AI graphics/logos leak past the cheap `GraphicDetectionSignal` gate (code path since closed by `c327877` — `graphic` scene-probe class wired end-to-end, pending corpus + retrain); corrected `PHOTO_PROPERTY_CONFIDENCE` item post-f6488b9 — two-signal case resolved, residual is probe-absence only; probe now health-checked; fixed person-name false positive — ambiguous Census given names (summer/spring/autumn/winter, month names, virtue words) were auto_accepted when paired with a Census surname; new `_AMBIGUOUS_GIVEN_NAMES` hard rule + 41-test suite; closed `redact_pii.py` barcode item — cv2 barcode+QR detection, `--redact-terms` flag, `barcode_unredacted` manifest field, non-zero exit, 27-test suite).
+Last updated: 2026-08-11 (closed HEIC OCR `_PREPROCESS_AVAILABLE` bug via `/backlog-implementer` — `7899442`; one recall-measurement residual remains open. Earlier same day: migrated 11 Done items out via `/backlog-migrate` — 6 to [`docs/changelog/2.2.0/CHANGELOG.md`](changelog/2.2.0/CHANGELOG.md), 5 to the new [`docs/changelog/2.3.0/CHANGELOG.md`](changelog/2.3.0/CHANGELOG.md), with [`docs/CHANGELOG.md`](CHANGELOG.md) added as the version index. **Four of the migrated items carried open residuals that the migration left recorded only as changelog prose; they were re-opened the same day as four standalone items** — near-dupe `reconcile` integration + synthetic scale numbers, the unvalidated `DEFAULT_SIMILARITY_THRESHOLD = 0.85`, the 164-row calibration corpus, and the HEIC OCR verification gaps (recall never measured; docTR `_PREPROCESS_AVAILABLE` gate now fixed in `7899442`). **The general hazard is worth remembering: a "Done" item whose residuals live in bullets is fully migratable by shape, and the residuals leave the worklist with it** — a changelog records what shipped, not what remains. Separately, the P2 `/git-commit-smart` blanket-staging item was **moved to [`~/.claude/docs/BACKLOG.md`](~/.claude/docs/BACKLOG.md) as GCS1** — the defect is in the skill, not this project). Prior update 2026-08-11 (closed 2 items via `/backlog-implementer` — P4 `package.json` version/`test:unit` script in `04a9ba7`, and the P2 HEIC-OCR decode hand-off in `e9fb0a8`+`41ee326`+`1c32fe7`. **The HEIC item is Done for the decode path only**: two residuals were found during verification and appended to it — recall was never measured on text-bearing HEICs, and the docTR branch was gated on `_PREPROCESS_AVAILABLE`; the gate was removed in `7899442`). Prior update 2026-08-11 (added 3 items from a test-maintenance session — hardcoded E2E dashboard card assertions, stale `package.json` version + missing unit-test script, and `/git-commit-smart` blanket-staging another session's work in the shared checkout; no code written for any of them beyond the 5-line `dashboard.spec.ts` fix already committed in `58f7659`). Prior update 2026-08-10 (added 4 items from the facebookresearch library audit — faiss near-dupe index + SSCD descriptors as two halves of one feature, nevergrad joint weight search, and a PE-Core-vs-`ViT-B-32` backbone A/B; library viability, licensing, and py3.14/arm64 wheel availability verified on this machine, no code written for any of them). Prior update 2026-07-25 (migrated 3 Done items to `docs/changelog/2.2.0/CHANGELOG.md`; resolved the census-gazetteer setup gap — `scripts/download_census_names.py` verified + documented in QUICK_START/CLAUDE.md; shipped the `--ocr-doctr-fallback` config flag for the P2 docTR-fallback gate, closing the OCR-bound item's last work item). Prior update 2026-07-18 (added [Repo Snapshot](#repo-snapshot--2026-07-18) — repomix token census, top-churn gitlog, and the uncommitted InteriorSignal→SceneSignal retirement inventory; added identity-detection license-back item + partial fix — `corrective lenses` keyword added to `ID_KEYWORDS` (`restrictions`/`endorsements` trialed then dropped after backtest showed insurance-doc collision), front/back fixtures, 23 tests pass; added `redact_pii.py` barcode/alphabetic-PII blind-spot item — OCR-token redaction silently no-ops on ID barcodes + health terms; added trained graphic-vs-photograph probe item — opaque AI graphics/logos leak past the cheap `GraphicDetectionSignal` gate (code path since closed by `c327877` — `graphic` scene-probe class wired end-to-end, pending corpus + retrain); corrected `PHOTO_PROPERTY_CONFIDENCE` item post-f6488b9 — two-signal case resolved, residual is probe-absence only; probe now health-checked; fixed person-name false positive — ambiguous Census given names (summer/spring/autumn/winter, month names, virtue words) were auto_accepted when paired with a Census surname; new `_AMBIGUOUS_GIVEN_NAMES` hard rule + 41-test suite; closed `redact_pii.py` barcode item — cv2 barcode+QR detection, `--redact-terms` flag, `barcode_unredacted` manifest field, non-zero exit, 27-test suite).
 
 ## Open Items
 
@@ -103,91 +103,6 @@ Profiling `organize-files content` (unified scorer, dry-run) on 2026-07-17 showe
 2. **P2 docTR-fallback gate — recall tradeoff to monitor.** The shipped gate (`extract_ocr_with_confidence`: skip the docTR fallback when easyocr cleanly finds no text) was eval'd over 7 text images at varying difficulty: **1/7 recall loss — very-low-contrast text** (easyocr's detector found nothing; docTR would have caught it). Clean, dark-mode, and rotated text were all gate-safe. So P2 trades a rare miss on near-invisible text for eliminating the docTR fallback. For a screenshot/photo-dominated 265k-file library this is very likely a net win, but it is a real behavior change — put it behind a config flag or revert if faint-text recall matters. **Config flag shipped 2026-07-25:** `--ocr-doctr-fallback` (store_true, default off = gate on; constant `OCR_FORCE_DOCTR_FALLBACK` in `src/scoring/weights.py`) forces the docTR pass after a clean easyocr negative. Plumbed `force_doctr_fallback` through `extract_ocr_with_confidence`, `TextExtractor`, `ContentOrganizer` (all 3 call sites incl. the FileContext `ocr_provider`), `ContentBasedFileOrganizer`, `ContentInputs`, and the CLI — same pattern as `--ocr-clip-topk`. 5 gate tests in `tests/unit/test_shared.py::TestDoctrFallbackGate`; CLI-inputs contract + integration suites pass.
 
 
-### `copy_to_site.sh` clobbers `_site/index.html` with a stale `results/` copy
-
-Every `organize-files content` run ends with "✓ Updated _site directory with latest
-HTML files", which runs `scripts/copy_to_site.sh` → `cp results/index.html
-_site/index.html` (line 23). `results/index.html` is an older snapshot, so the copy
-**silently deletes newer dashboard content**. Observed 2026-07-26: a content run
-removed the "Residence Galleries" feature card (13 lines) from `_site/index.html`
-while `_site/residence_gallery.html` itself still existed — i.e. the page was
-orphaned from navigation. Reverted by hand (`git checkout -- _site/index.html`).
-
-The copy direction is backwards for `index.html`: `_site/` is the maintained
-artifact (committed, e.g. `7ef99a5`), `results/` is scratch output. Either stop
-copying `index.html` at all, regenerate it from the same source that produces the
-`_site` version, or make the copy additive. Until then, check
-`git diff _site/` after any content run.
-
-**FIXED 2026-07-26 (`1d3b262`).** `scripts/copy_to_site.sh` no longer copies
-`results/index.html` to `_site/`. The line that ran `cp results/index.html _site/`
-is replaced with an explanatory warning. `_site/index.html` stays the committed
-source; regenerate it with `organize-files update-site`.
-
-**Status:** Done — fixed in `1d3b262`.
-**Priority:** ~~P3~~ resolved
-**Source:** `~/Desktop/Uncategorized` ingestion, 2026-07-26
-
-### `categories.name` UNIQUE silently drops category edges for 26% of files
-
-`categories.name` carries a **UNIQUE index** (`ix_categories_name`), but
-`CONTENT_CATEGORY_PATHS` reuses leaf names across parents — `other` appears under
-**15** different categories, plus `records` (3), `events`, `insurance`, `photos`,
-`clients`, `audio`, `web`, `meeting_notes` (2 each). Only the first row to claim a
-leaf name can exist; every later `(category, subcategory)` sharing that leaf hits
-an `IntegrityError` in `get_or_create_category`, whose handler rolls back and
-returns `session.query(...).filter(full_path == ...).first()` — **`None`**, because
-the row that owns the name has a *different* `full_path`. `add_file_to_category`
-then hits `if category is None: return False` (`graph_store.py:405`) and the caller
-in `_persist_to_graph_store` never checks the return value, so **the file is
-persisted with no category edge at all and nothing is logged**.
-
-Measured 2026-07-26: **125 of 488 file rows (26%) have zero category edges** while
-being physically organized correctly on disk. They are invisible to category
-queries, the dashboard category breakdown, category edges in the JSON-LD export,
-and the backtest oracle (`_stored_pair` returns `(None, None)`, so they are skipped
-from agreement entirely). 24 taxonomy pairs are currently unsatisfiable, including
-`medical/other`, `technical/other`, `personal/legal`, `personal/records`,
-`financial/insurance`, `education/research`, `media/photos`, and `zouk/events`.
-
-Two concrete instances already hit this session: `Burning_Flipside_Map.pdf`
-organized to `Events/Burning Flipside/` on disk but kept a stale
-`legal/real_estate` edge because `events/other` could not be created; and two
-bloodwork PDFs found with `cats: None` during the medical audit.
-
-**FIXED 2026-07-26.** Identity is now `full_path`, matching
-`Category.generate_canonical_id` (which already hashed `full_path`):
-
-1. **Model** (`models.py`) — `name` lost `unique=True` (plain index), `full_path`
-   gained it; `generate_canonical_id`'s parameter renamed `name` → `full_path` so
-   the signature states what callers already passed.
-2. **Store** (`graph_store.py`) — every lookup in `get_or_create_category` now
-   keys on `full_path`: the existence check, the **parent resolution** (which
-   queried `Category.name == parent_name` and could adopt an unrelated leaf as
-   parent — a second latent bug), and the post-`IntegrityError` recovery. The
-   handler adopts a concurrent-insert winner but otherwise **re-raises** instead
-   of returning `None`.
-3. **Caller** (`file_processor.py`) — a `False` from `add_file_to_category` is
-   now reported instead of ignored.
-4. **Migration** — `organize-files migrate-category-identity` swaps the indexes,
-   realigns canonical ids, aborts (untouched) if duplicate `full_path` values
-   would block UNIQUE, and reports orphaned rows. Idempotent.
-5. **Backfill** — `organize-files reconcile --backfill-categories` attaches the
-   missing edge derived from each file's on-disk folder via
-   `build_path_to_category_map` (reversed taxonomy). Needed because a plain
-   `organize-files content` re-run *cannot* repair these: a correctly-placed file
-   short-circuits at `already_organized` before persistence. Entity-named folders
-   (`Organization/{Name}`, `Events/{Name}`) are reported unresolved, never guessed.
-
-Applied to the live database: all 91 taxonomy pairs now resolve (was 24 blocked),
-and orphaned rows went **125 → 3** (the 3 are `Events/Burning Flipside/*`,
-correctly left for manual assignment). 20 tests in
-`tests/unit/test_category_identity.py`.
-
-**Status:** Done — fixed, migrated, backfilled, tested.
-**Priority:** ~~P2~~ resolved
-**Source:** `~/Desktop/Uncategorized` ingestion, 2026-07-26
-
 ### DB↔filesystem provenance drift (`original_path` / `current_path` integrity)
 
 A 2026-07-26 audit of `results/file_organization.db` (495 rows) found 50 rows whose
@@ -267,127 +182,6 @@ provenance record (items 2–3).
      `Organization/{Name}` → `organization/vendors` follows the taxonomy's declaration of
      that folder as the vendor/partner root.
 
-### `file_count` caches drift silently and are exported
-
-`Category`, `Company`, `Person` and `Location` each cache a denormalized
-`file_count` that the edge-mutating methods increment and decrement by hand. Any write
-that bypasses those methods leaves the cache disagreeing with the association table, and
-the stale number is **exported**: it becomes `fileCount` / `mentionCount` in the JSON-LD
-(`build_*_jsonld` in `models.py`) and feeds the dashboard.
-
-Found 2026-07-26: 4 categories had drifted (`game_assets/textures` stored 4 with 0 real
-edges, `financial/invoices` 4 vs 6, `personal/identification` 3 vs 4, `medical/bloodtest`
-6 vs 8) — all caused by that session's own raw-SQL edge repairs (the loan-screenshot
-retarget and the orphan-bloodwork categorization), which inserted and deleted
-`file_categories` rows directly without touching the counters. Companies/people/locations
-were clean only because nothing had hand-edited their edges.
-
-**Repair tool shipped 2026-07-26** — `GraphStore.recount_entity_file_counts` recomputed
-every entity's count as the true `COUNT(association rows)`, surfaced as
-`organize-files reconcile --recount-file-counts`. Applied to the live database: 4 of 188
-corrected. That was a repair tool, not a guard: the counters were still maintained by hand
-on every edge write, so drift could recur.
-
-**RESOLVED 2026-07-27 by deleting the cache** — see the next item for the decision. The
-recount tool and its CLI flag are gone with the column they repaired; nothing is cached,
-so nothing can drift.
-
-**Status:** Done — superseded by the derived count; the repair tool was retired with it.
-**Priority:** ~~P3~~ resolved
-**Source:** verification of the 2026-07-26 agent commits
-
-### Enforce `file_count` maintenance at every edge write
-
-`reconcile --recount-file-counts` (previous item) repairs drift after the fact. The drift
-should not be possible in the first place. Today every increment/decrement is written by
-hand at the call site — **12 sites across 3 modules**, with no mechanism that fails when a
-new edge-writing path forgets:
-
-- `src/storage/graph_store.py` — 9 sites: `add_file_to_category` (+1),
-  `add_file_to_company` (+1), `add_file_to_person` (+1), `add_file_to_location` (+1),
-  `remove_person_edge` (−1), `prune_missing_person_edges` (−1), `set_file_category` (−1),
-  and `prune_missing_files` (−1 for both category and person edges).
-- `src/pipeline/file_processor.py` — 1 site: the category-replacement loop in
-  `_persist_to_graph_store`.
-- `src/storage/migration.py` — 2 sites: the person and location backfills.
-
-That `file_processor.py` site was added on 2026-07-26 by the edge-replacement fix, which
-is the point: a brand-new edge-writing path had to remember the decrement, and nothing
-would have caught it if it hadn't. The 4 drifted counts found that day came from raw-SQL
-repairs, which no amount of call-site discipline can cover.
-
-Options, roughly in order of how much they actually guarantee:
-
-1. **SQLite triggers on the association tables** — `AFTER INSERT`/`AFTER DELETE` on
-   `file_categories`/`file_companies`/`file_people`/`file_locations` adjusting the parent's
-   `file_count`. The only option that also covers **raw-SQL writes**, i.e. the observed
-   cause. Costs: DDL must be attached for fresh databases (`event.listens_for(table,
-   "after_create")` so `Base.metadata.create_all` installs them) *and* shipped as a
-   migration for existing ones, in the established hand-rolled pattern
-   (cf. `category_migration.py`); SQLite-specific, so it would need revisiting if the
-   store ever moves to another backend (the D1 export already targets one — see
-   `scripts/d1/schema.sql`).
-2. **SQLAlchemy `after_insert`/`after_delete` events** on the association tables — removes
-   all 12 call sites, portable across backends, no migration. But it is blind to writes
-   that bypass the ORM, so it would *not* have prevented the drift actually observed.
-   Reasonable as defence-in-depth, not as the guarantee.
-3. **Drop the cache; count on read** — strictly correct and deletes the whole failure
-   mode. Costs a `COUNT` per read in `build_*_jsonld`, the dashboard, and
-   `get_category_tree`; note `get_category_tree` was already optimized once for N+1
-   queries (`f410177`), so this needs a benchmark before adopting, and `file_count` is
-   part of the exported JSON-LD contract (`fileCount`/`mentionCount`).
-
-Recommendation: (1) for the guarantee, with (3) considered first if the read cost measures
-as negligible on the 265k-file target — fewer moving parts beats a trigger that has to be
-migrated into every existing database.
-
-**Acceptance:** after an arbitrary edge-mutating workload *including a raw-SQL insert and
-delete*, `organize-files reconcile --recount-file-counts` reports 0 corrections. Add that
-as a test alongside the existing 6 in `tests/unit/test_graph_store_reconcile.py`, and
-delete the hand-maintained call sites the chosen option makes redundant.
-
-**FIXED 2026-07-27 — option (3): the cache is gone.**
-
-Option (2) was implemented first (`68d8304`, eight relationship-level append/remove
-listeners, all 12 call sites deleted) and then superseded: its own acceptance test only
-exercised ORM operations, so it passed by construction while remaining blind to the
-raw-SQL writes that caused the drift. The listeners are removed.
-
-`file_count` is now a correlated `COUNT` over the entity's association table, evaluated by
-the database in the same SELECT that loads the entity
-(`models._edge_count_property`, applied to all four entities via `declared_attr`).
-Every read site is unchanged — `to_dict`, `build_*_jsonld`, the dashboard and the Pydantic
-API surface all still read `entity.file_count`, and `fileCount`/`mentionCount` stay in the
-JSON-LD. `correlate_except(assoc_table)` is required, or the subquery's FROM is correlated
-away when an entity is loaded *through* the association table.
-
-The read cost was measured, not assumed:
-
-| | plain SELECT | + derived count |
-|---|---|---|
-| live DB (129 categories / 496 edges) | 0.042 ms | 0.076 ms |
-| synthetic 265k target (2,000 / 265,000) **with** index | 0.633 ms | **7.2 ms** |
-| synthetic 265k target **without** index | 0.596 ms | **20,510 ms** |
-
-**The association index is load-bearing, not an optimization — 2,860× at target scale.**
-`ix_file_categories_category_id` and its three siblings were declared in `models.py` but
-absent from the live database, because `create_all` skips tables that already exist. So
-`organize-files migrate-file-counts` creates them *and* drops the four `file_count`
-columns (leaving them would keep serving stale numbers to anything reading the tables
-directly). Verified on a copy of the live DB: 188/188 entities derive exactly the values
-the cache held, all 185 exported counts match raw SQL, and the export path is 15.3 ms.
-`scripts/d1/schema.sql` was regenerated, which also picked up three earlier model changes
-nobody had regenerated (see the next item).
-
-The acceptance criterion above is satisfied structurally rather than by a recount: a
-raw-SQL insert and a raw-SQL delete are both reflected immediately, pinned by
-`TestDerivedFileCount` in `tests/unit/test_graph_store_reconcile.py` (8 tests) plus 8
-migration tests in `tests/unit/test_file_count_migration.py`.
-
-**Status:** Done — cache deleted, migration shipped and verified against the live DB.
-**Priority:** ~~P3~~ resolved
-**Source:** follow-up to the `file_count` drift fix, 2026-07-26; resolved 2026-07-27
-
 ### `scripts/d1/schema.sql` silently drifts from the model
 
 `scripts/d1/schema.sql` is generated from `Base.metadata` by
@@ -417,86 +211,6 @@ the repo already has hand-rolled golden-file comparisons (`tests/unit/golden/`).
 **Status:** Open — regenerated 2026-07-27, but nothing prevents the next drift.
 **Priority:** P3 (no live consumer today; blocks or corrupts a future D1 deploy)
 **Source:** `file_count` cache removal, 2026-07-27
-
-### Filename rules still route images by name when content disagrees
-
-`FilenamePatternSignal` graduates several naming traps so content evidence can outscore
-them (weak-shape sprite stems, source-provenance stems, camera/scanner stems — see
-`graduated_filename_confidence`). Two more traps of the same family are **not** graduated
-and were observed misfiling real files during the 2026-07-26 `~/Desktop/Uncategorized`
-ingestion:
-
-1. **Person-name stems send photos to `personal/contacts`.** Four couple photos
-   (`sumedh_alyshia*.jpg`) matched the shared module's "Person (Alyshia Ledlie)" rule and
-   filed as `Personal/Contacts` — a folder for vCards, resumes and address records, not
-   pictures of people. Visually confirmed (photobooth couple shots) and re-filed by hand
-   to `media/photos_social` with their `file→person` edges kept (Option C keeps person
-   attribution independent of the filing category). The classifier is unchanged, so the
-   next such filename repeats it. Fix shape is known and proven: add the
-   `personal/contacts` result on an **image** `schema_type` to the graduation table so
-   `PhotoCompositionSignal`/`MediaHeuristicSignal`/CLIP decide, while leaving
-   document-typed resumes at full confidence. Note the sibling stems that behaved
-   correctly (`sumedh_teresa.jpg`, `love_sumedh.jpg`) only did so because they miss the
-   curated known-person pattern — i.e. the trap fires precisely on *known* people.
-2. **`stock-vector-*` / `pngtree-*` stock-asset stems.** `stock-vector-modeling-blue-red-
-   four-color-minimal-icon-set.jpeg` filed as `media/photos_other` although the stem says
-   it is a vector icon set (`media/graphics_*`). Lower impact than #1 — the destination is
-   at least within `media/` — but the same "filename asserts the format, content never
-   checked" shape.
-
-**FIXED 2026-07-26 (`1d3b262`).** Both traps are now graduated in
-`FilenamePatternSignal.run()`:
-
-1. `("personal", "contacts")` on `ctx.is_image` files → `FILENAME_WEAK_CONFIDENCE`
-   (document-typed resumes keep full confidence). 2 new tests.
-2. `game_assets/sprites` on `stock-vector-*` / `pngtree-*` stems → `("media",
-   "graphics_other")` at `FILENAME_WEAK_CONFIDENCE`. 2 new tests. Constant
-   `_STOCK_ASSET_STEM_PREFIXES` and helper `_is_stock_asset_stem` added.
-
-**Status:** Done — fixed in `1d3b262`; 4 new tests.
-**Priority:** ~~P2/P3~~ resolved
-**Source:** `~/Desktop/Uncategorized` ingestion, 2026-07-26
-
-### Re-organizing a file does not reconcile its graph edges
-
-Two independent gaps in `FileProcessor.organize_file` mean the graph does not converge on
-the filesystem when a file is organized a second time. Both were hit during the
-2026-07-26 ingestion and worked around by hand or by new tooling.
-
-1. **`add_file_to_category` appends; it never replaces.** Re-organizing a file adds the
-   new `(category, subcategory)` edge alongside every historical one, so a file can claim
-   two contradictory categories at once. After the ingestion, 21 of the 43 re-organized
-   rows carried both a stale June `game_assets/sprites` edge and the correct new
-   `media/photos_*` edge; they were collapsed by hand via `GraphStore.set_file_category`
-   (which *does* replace) using the run's own report as the authority. This matters beyond
-   tidiness: `backtest_scoring._stored_pair` reads `record.categories[0]`, so a stale
-   first edge silently becomes "the" stored label in the calibration oracle. **11
-   multi-edge rows outside that batch remain** (verified 2026-07-26), e.g. 8 screenshots
-   holding
-   `game_assets/sprites` + `media/graphics_other`, the Texas license back holding
-   `game_assets/sprites` + `personal/identification`, and `HOOKS_ARCHITECTURE.md` holding
-   `filepath/Technical/Documentation/alyshialedlie` + `technical/architecture`. Decide
-   whether a content run should replace the category edge (probably yes, with the old
-   edge preserved in `signal_evidence`) or whether multi-category is legitimate and the
-   oracle should stop trusting `categories[0]`.
-2. **`already_organized` short-circuits before persistence.** When `physical_path ==
-   dest_path` and `force` is False, `organize_file` returns at `file_processor.py:569`
-   *before* `_persist_to_graph_store`, so a file that is already in the right place can
-   never gain a DB row, a category edge, or updated `signal_evidence` from a re-run. That
-   is why the 125 category-less rows could not be repaired by re-running the organizer and
-   needed the new `organize-files reconcile --backfill-categories` instead. `--force`
-   is not a workaround: it proceeds into `shutil.move(x, x)`.
-
-**Status:** Fixed 2026-07-26 — both gaps closed in `src/pipeline/file_processor.py`:
-(1) `_persist_to_graph_store` now clears all existing `file.categories` edges before
-calling `add_file_to_category`, so a re-run always produces exactly one category edge;
-(2) the `already_organized` branch now calls `_persist_to_graph_store` when `not dry_run
-and self.graph_store`, reconciling the DB row and its edges without moving the file;
-(3) `shutil.move` is now guarded by `if physical_path != dest_path` so `force=True` on
-an already-placed file no longer attempts a same-source/dest move.
-Four new tests in `tests/unit/test_pipeline.py` cover all three behaviours.
-**Priority:** P2 (silently corrupts the calibration oracle via `categories[0]`)
-**Source:** `~/Desktop/Uncategorized` ingestion + category backfill, 2026-07-26
 
 ### Persisted-text PII redaction is medical-only and best-effort
 
@@ -569,57 +283,43 @@ should get `# noqa: E402` rather than reordering.
 **Priority:** P3 (no behaviour at stake; mechanical but a large diff)
 **Source:** mypy cleanup pass, 2026-07-26
 
-### Near-duplicate detection: faiss index over SSCD descriptors
+### Near-dupe report is not wired into `reconcile`, and its scale numbers are synthetic
 
-`GraphStore.find_duplicates` (`src/storage/graph_store.py:1722`) groups on exact `content_hash` only. That is structurally blind to the split-document case CLAUDE.md already documents as intended-but-lossy filing: `Documents/Events/Burning Flipside/PlacementMap.pdf` and `Documents/Personal/Events/PlacementMap_300dpi.png` are the same document at different resolution in a different container — different bytes, so no group. Nothing in the system can currently surface that pair.
+`organize-files find-duplicates` shipped 2026-08-10 (`src/similarity/`, 30 tests) and stands alone: `src/cli.py:455` registers `cmd_find_duplicates`, and nothing in `cmd_reconcile` consumes its groups. That leaves the read-side view unbuilt for the case that motivated the feature. `reconcile --backfill-categories` deliberately answers "where does this file *sit*", never "what is this file", so it files a split document family to two different categories by design (`Documents/Events/Burning Flipside/PlacementMap.pdf` → `events/other`; `Documents/Personal/Events/PlacementMap_300dpi.png` → `personal/events`). Both edges are individually correct, and the split is intended — but today it is also **silent**. A near-dupe report is what would make it visible.
 
-**This item and the SSCD item below are two halves of one feature.** Split only so the descriptor choice can be evaluated on its own; neither ships alone.
-
-**Status:** **Done 2026-08-10** — shipped as `organize-files find-duplicates` (`src/similarity/`, 30 tests). Read-only report; no moves, no graph writes. Residual follow-ups below.
+**Status:** Open — feature shipped, integration and scale verification did not.
 **Priority:** P3
-**Source:** facebookresearch library audit, 2026-08-10
+**Source:** faiss/SSCD near-dupe build, 2026-08-10; re-opened 2026-08-11 after `/backlog-migrate` moved the parent items to [`docs/changelog/2.3.0/CHANGELOG.md`](changelog/2.3.0/CHANGELOG.md) with these residuals recorded only as changelog prose
 
-- **`faiss-cpu` is viable on this platform — measured, not assumed.** `faiss-cpu 1.15.0` ships a `cp310-abi3-macosx_14_0_arm64` wheel; verified importing on the pyenv 3.14.0 venv. Runtime deps are `numpy` + `packaging` only. Upstream `facebookresearch/faiss` is MIT.
-- **Benchmarked on this machine, 2026-08-10.** Current cache (3,692 × 512 `.npy`, 14 MB): self-kNN k=5 in **26 ms**. Synthetic at the 265k-file target (265,000 × 512, `IndexFlatIP`): **543 MB** resident, 5,000 queries k=5 in **1.13 s** → full self-kNN ≈ 60 s brute force. **Do not reach for IVF/PQ** — exact flat search is already fast enough at this corpus size, and approximate indices would add recall tuning for no gain.
-- **Do not build the index over the cached CLIP embeddings.** They are semantic: two *different* event flyers sit close together, so a CLIP-keyed dupe report would be dominated by false pairs. The index needs copy-detection descriptors (next item). The CLIP cache is the wrong input for this feature even though it is the convenient one.
-- **Landing shape is a report, not a scorer signal.** First cut is an offline pass (sibling of `reconcile`) emitting candidate groups for review — no moves, no graph writes. A `SimilarityIndexSignal` inside the unified scorer is a separate, later question and would need its own weight calibration; do not conflate the two.
-- **Feeds `reconcile`.** The backfill deliberately answers "where does this file sit", never "what is this file", so it files split families to different categories by design. A near-dupe report is the missing read-side view that makes that split visible instead of silent. **Not yet wired** — `find-duplicates` stands alone today; consuming its groups inside `reconcile` is still open.
-- **faiss and torch cannot share a process — the single largest surprise in the build.** Both bundle their own `libomp.dylib`; on macOS the second to initialise kills the process with `OMP: Error #15`, and the abort fires on faiss's **first parallel region** (`IndexFlat.search`), not at import — so it passes a smoke test and dies on real work. Import order does not help (both orders abort), nor `OMP_NUM_THREADS=1`, nor `faiss.omp_set_num_threads(1)`. The universally-cited `KMP_DUPLICATE_LIB_OK=TRUE` workaround is *worse than the error here*: it **segfaults** (exit 139) instead of degrading. Resolved by process separation — `src/similarity/worker.py` runs the faiss stage in a clean interpreter, handing descriptors over as `.npy` + JSON. **Consequences for anyone touching this:** `src/similarity/__init__.py` resolves attributes lazily (PEP 562) so importing the package never drags torch into the faiss child; `finder.py` probes faiss with `importlib.util.find_spec`, never an import; `health_check._check_similarity` reads the version from `importlib.metadata` for the same reason; and the unit tests exercise grouping *through the subprocess* rather than importing `src.similarity.index`, because an in-process faiss call in the pytest process would abort the whole run depending on collection order. `TestProcessIsolation::test_runs_with_torch_already_loaded` is the regression guard — if isolation is undone it fails by killing the run, not by assertion.
-- **Open: no `reconcile`/graph integration, and no scale measurement.** Verified end-to-end only on small synthetic corpora (8, 3 and 3 files). The 265k/543 MB figures remain synthetic — a real full-corpus run has not been done, and the descriptor pass at ~45 ms/image implies roughly 3.3 CPU-hours to describe 265k files cold.
+- **End-to-end verification was on 8, 3 and 3 files.** No real full-corpus run has been done. Everything below the small-corpus level is projection.
+- **The 265k figures are synthetic, and one of them is a schedule risk.** `IndexFlatIP` at 265,000 × 512 measured **543 MB** resident with 5,000 queries k=5 in 1.13 s (→ full self-kNN ≈ 60 s brute force) — but on *random vectors*, not descriptors. The cost that matters is the descriptor pass: **~45 ms/image implies roughly 3.3 CPU-hours to describe 265k files cold.** Budget that before promising a full-corpus run; it is the reason this has not simply been run once.
+- **Do not reach for IVF/PQ when you do wire it.** Exact flat search is already fast enough at this corpus size; an approximate index would add recall tuning for no gain. Recorded because "265k vectors" reads like an ANN problem and is not one.
+- **Integration shape is a read-side view, not a scorer signal.** Consuming groups inside `reconcile` is the open work. A `SimilarityIndexSignal` inside the unified scorer is a separate, later question needing its own weight calibration — do not conflate them.
 
-### SSCD descriptors as the copy-detection input for near-dupe
+### `find-duplicates` similarity threshold is unvalidated on real data
 
-`facebookresearch/sscd-copy-detection` (MIT) — self-supervised descriptors trained for "same image, re-encoded / resized / cropped", which is exactly the near-dupe question and exactly what CLIP embeddings are wrong for. Pairs with the faiss item above.
+`DEFAULT_SIMILARITY_THRESHOLD = 0.85` (`src/similarity/constants.py:58`) was chosen to keep a review queue readable, **not measured against a labelled duplicate set**. The only evidence behind it is synthetic: transforms of a single image put the true group at 0.926 with no false pairs. That establishes the transform survives the descriptor, and says nothing about precision or recall across the real corpus.
 
-**Status:** **Done 2026-08-10** — shipped in `src/similarity/descriptors.py` as the descriptor half of `find-duplicates`. Residual follow-ups below.
+**Status:** Open — number is a placeholder wearing a constant's clothes.
 **Priority:** P3
-**Source:** facebookresearch library audit, 2026-08-10
+**Source:** SSCD descriptor work, 2026-08-10; re-opened 2026-08-11 (see the item above for why)
 
-- **No install, no hosting.** The TorchScript checkpoints are standalone `.pt` files served from `dl.fbaipublicfiles.com`; `torch.jit.load` is the entire integration. Verified 2026-08-10: `sscd_disc_mixup.torchscript.pt` (94 MB) loads on the project's **torch 2.13.0**, emits 512-d **L2-normalised** descriptors, ~45 ms/image on CPU. No `classy_vision`, no `augly`, no conda env — those are only for training/eval.
-- **Take `sscd_disc_*`, not `sscd_imagenet_*`.** The `imagenet` variants are ImageNet-trained and reopen the research-only-dataset question already settled against adoption elsewhere in this project. The DISC-trained variants sidestep it. Same descriptor dimensionality (512), so this costs nothing.
-- **Repo is archived (last push 2022-08).** Acceptable *because* the dependency is a frozen TorchScript artifact rather than a maintained package — there is no API to drift. Re-verify the load after any major torch bump; that is the whole maintenance surface.
-- **Needs its own embedding cache.** Descriptors are 512-d like the CLIP cache but are not interchangeable with it. Reuse the `clip_cache.py` file-identity/sharding pattern under a distinct directory rather than versioning the CLIP cache — the two are populated on different schedules.
-- **PDFs are rasterised, first page only** (`pdf2image`, 100 dpi, `--no-pdfs` to skip). This closes the motivating example: a synthetic `PlacementMap.pdf` ↔ `PlacementMap_300dpi.png` pair matches at **0.998**. First-page-only is a deliberate limit — it matches multi-page documents on their cover, which is right for "same document" and wrong for "same content buried on page 7".
-- **Upstream's aspect-preserving transform cannot batch — use `skew_320`.** The README's headline `small_288` (resize small edge to 288) yields ragged tensors (`[3,339,288]` vs `[3,340,288]`) that `torch.stack` rejects, so it silently forces batch size 1; the failure surfaces as "N could not be read or encoded" for the *whole batch*, not as a crash. Upstream publishes `skew_320` (square 320×320, deliberately skewing) precisely for batched inference — that is what shipped. Both sides of a comparison get the same skew, so detection is unaffected. **Changing the transform invalidates the descriptor cache**; bump `DESCRIPTOR_CACHE_DIR`.
-- **HEIC needs `register_heif_opener()` in this module too.** It is registered per-module across the codebase, so a new entry point that opens images gets no HEIC support for free — and the failure is silent (files drop out of the scan rather than erroring). Caught only because `.heic` was advertised in `IMAGE_EXTENSIONS`; verified afterwards with a real `.heic` ↔ `.png` pair at 0.999.
-- **Open: threshold is unvalidated on real data.** `DEFAULT_SIMILARITY_THRESHOLD = 0.85` was chosen to keep a review queue readable, not measured against a labelled duplicate set. On synthetic transforms of one image the true group scored 0.926 with no false pairs, which says nothing about precision/recall across the real corpus.
+- **The failure modes are asymmetric.** Too low floods the review queue and the feature gets ignored; too high silently reports nothing and looks like a clean corpus. The second is the dangerous one because it is indistinguishable from success.
+- **A labelled set is cheap here** — the split-document families the backfill already produces are known-positive pairs, and `find-duplicates` output on the real corpus supplies candidates to hand-judge. This does not need a public benchmark.
+- **First-page-only PDF rasterisation bounds what can be validated.** Multi-page documents match on their cover, which is right for "same document" and wrong for "same content buried on page 7" — so a labelled set should record which kind of match it is testing.
 
-### nevergrad for joint weight search in the calibration harness
+### Scoring calibration is corpus-bound: 164 labelled non-media rows
 
-`scripts/weight_grid_search.py` perturbs one prior at a time by a fixed factor set (`DEFAULT_FACTORS = (0.8, 0.9, 1.1, 1.2)`) and sweeps `MIN_DECISION_CONFIDENCE` / `MIN_DECISION_MARGIN` separately. That is coordinate search: it cannot see interactions between the 20 correlated priors, and the thresholds are tuned in a different pass from the weights they gate. `nevergrad` (MIT, pure-Python wheel, verified installing on the 3.14.0 venv) optimises the joint space under a fixed evaluation budget using the fix/break objective the harness already computes.
+`make weight-search` (nevergrad, joint search over 19 priors + both thresholds) ran 2026-08-11 across `NGOpt`/`CMA`/`TwoPointsDE` at budgets 120–250 and **found nothing**: train non-media agreement never moved off the shipped 59/164, and every best candidate was flat or −1 on the holdout. The correct reading is not "the weights are optimal" — it is that **488 rows / 164 non-media with a stored label cannot resolve the difference**, and the oracle itself carries manual corrections and pre-unified placements.
 
-**Status:** **Done 2026-08-11** — shipped as `scripts/weight_search.py` / `make weight-search` (17 tests). **It searched and found nothing**: across `NGOpt` (seeds 0/1/2), `CMA` and `TwoPointsDE`, at budgets 120–250, train non-media agreement never moved off the shipped 59/164, and every best-found candidate was flat or **−1** on the holdout slice. Read that as corroboration of the 2026-07-26 calibration, not as a broken tool — and note the negative result is exactly what the holdout guard exists to produce.
-**Priority:** P3 — efficiency play. The shipped weights are a measured local optimum (`docs/architecture/scoring-calibration-20260726.md`); this is about reaching a *better* optimum, not repairing a bad one.
-**Source:** facebookresearch library audit, 2026-08-10; implemented 2026-08-11
+**Status:** Open — the binding constraint is labelled data, not optimiser budget.
+**Priority:** P3
+**Source:** nevergrad joint weight search, 2026-08-11; re-opened 2026-08-11 (see the near-dupe item above for why)
 
-- **Joint search overfits the biased oracle harder than coordinate search does.** Stored decisions include manual corrections and pre-unified placements, and media rows disagree for replay-fidelity reasons rather than weight reasons. One-at-a-time perturbation is accidentally regularised by its own narrowness; a joint optimiser will happily exploit oracle noise. **`make golden` (43/43) stays the gate, and the non-media slice stays the reported objective** — an optimiser scored on the overall slice will chase media fidelity artifacts.
-- **The known invariants are hard constraints, not preferences.** `W_ORG > W_PERSON > W_LEGAL`; `W_MIME < MIN_DECISION_CONFIDENCE + MIN_DECISION_MARGIN` (locked by `tests/unit/scoring/test_mime_commit_gap.py`); `W_FILENAME` has no downward headroom. An unconstrained parametrization will violate all three. Encode them in the `ng.p.Instrumentation` (or reject-and-resample) rather than filtering after the fact.
-- **Budget the replay, not the optimiser.** Each candidate costs a full DB replay; the honest comparison against today's grid is fix/break *per replay*, not per wall-clock second. Report the budget alongside any proposed re-tune.
-- **Any accepted re-tune still ships as a calibration doc + backtest report**, same as the 2026-07-26 pass. A weight change sourced from an optimiser is not exempt from the evidence requirement — arguably it needs more, since the search is less inspectable. Enforced structurally: the script never writes `weights.py`, it only reports.
-- **Deliberately NOT in `make calibrate`.** `calibrate` is the reproducible gate; this is exploratory and budget-priced. `make weight-search` (`BUDGET=250 make weight-search` to widen).
-- **`--seed` is a no-op under the default `NGOpt`** — it is a meta-optimiser that selects a deterministic local algorithm from the shipped init at this budget/dimension, so seeds 0/1/2 give byte-identical runs. Anyone "re-running with a different seed" to sample another search is measuring nothing; vary `--optimizer` instead. Found the hard way by getting identical fix/break counts from three seeds and checking whether the seeding worked (it does — `build_parametrization` draws differ per seed; the optimiser just ignores them).
-- **Two bugs worth remembering from the build.** (1) `hash()` is randomised per process (`PYTHONHASHSEED`), so the first train/holdout split silently reshuffled every run — two runs reported *different baselines off different row sets*, making the generalisation check compare nothing. Now `hashlib.sha1`; regression-tested across subprocesses. (2) nevergrad's default mutation sigma is 1.0 regardless of bounds, which dwarfs these bands (W_MIME spans 0.24) and clips nearly every mutation to the boundary; sigma is now sized to span/6, and **`set_mutation` must precede `set_bounds`** or nevergrad emits a spurious "bounds are 0.32 sigma away" warning against the sigma it is about to replace — easy to filter out of a log and then misread as proof the sigma never applied.
-- **Open: the corpus is the binding constraint, not the optimiser.** 488 rows / 164 non-media with a stored label, and the oracle carries manual corrections plus pre-unified placements. A search that cannot beat the incumbent on 164 rows has not shown the incumbent is optimal — it has shown this corpus cannot resolve the difference. More labelled rows would do more than a bigger budget.
+- **More budget is the wrong lever and will look like progress.** A larger budget on this corpus buys more overfitting to oracle noise, and the holdout guard will keep reporting flat-or-−1 — which is the guard working, not a tuning problem.
+- **Media rows are excluded for a reason.** They disagree for replay-fidelity reasons rather than weight reasons, so the non-media slice stays the reported objective; an optimiser scored on the overall slice chases fidelity artifacts.
+- **Adding labels means adding *correct* ones.** Some stored labels are simply wrong — inspect `winning_signals` and OCR text on actual rows before treating a disagreement as a signal defect. A larger corpus of the same biased oracle does not help.
+- **`make golden` (43/43) stays the gate** for any re-tune this eventually enables, and any accepted change still ships as a calibration doc + backtest report. The script never writes `weights.py` by design.
 
 ### A/B trial: Perception Encoder (PE-Core) vs `ViT-B-32` as the CLIP backbone
 
@@ -648,42 +348,6 @@ should get `# noqa: E402` rather than reordering.
 - **Cheapest durable fix:** hoist the expected titles into one fixture array, then assert `toHaveCount(EXPECTED.length)` and loop the title checks. Adding a card becomes a one-line data change that cannot leave a card uncovered.
 - **Keep both assertion kinds.** The count is the only thing that catches an *added* card; the title filters only catch a *removed or renamed* one. Dropping either reintroduces a blind spot.
 - **The card set has changed without human intent before,** which is the real case for the count assertion: the resolved [`copy_to_site.sh` item](#copy_to_sitesh-clobbers-_siteindexhtml-with-a-stale-results-copy) records a content run *silently deleting* this same "Residence Galleries" card from `_site/index.html` on 2026-07-26, orphaning `_site/residence_gallery.html` from navigation. That clobber path is fixed (`1d3b262`), so the count is not currently load-bearing against it — but it was the only assertion that would have caught it.
-
-### `package.json` version is stale and there is no unit-test script
-
-`package.json:3` declares `"version": "1.3.0"` while `pyproject.toml` and `CLAUDE.md` both carry **2.1.0** — the JS metadata stopped tracking the project at some point and nothing flagged it. Separately, `package.json:5-15` defines only Playwright scripts (`test:e2e` plus five variants); the unit suite is pytest (`pytest tests/unit/`, 2,357 passing) with no npm entry point, so `npm run test:unit` fails with `Missing script: "test:unit"` — the exact wrong-runner mistake the `test:*` namespace invites.
-
-**Status:** Done — version bumped to 2.1.0 and `"test:unit": "pytest tests/unit/"` added; kept `test:e2e` name intact (referenced in `.claude/settings.local.json` permission grants). 2026-08-11
-**Priority:** P4
-**Source:** test-suite run + `package.json` read, 2026-08-11
-
-- **The version field is cosmetic today** — nothing reads it — but it is actively misleading to anyone who treats it as the project version. Either sync it to 2.1.0 or delete the field rather than leaving a third, wrong source of truth.
-- **Two ways to close the script asymmetry,** with opposite trade-offs: add `"test:unit": "pytest tests/unit/"` (discoverable, but implies npm owns the Python suite), or rename `test:e2e` → `e2e` so no `test:*` namespace is implied at all.
-
-### `/git-commit-smart` blanket-stages the working tree in a shared checkout
-
-Run on 2026-08-11, the skill staged all 9 modified files and split them across 3 commits (`58f7659`, `ad1b5ff`, `e38565a`). Exactly one file — `tests/e2e/dashboard.spec.ts`, 5 lines — belonged to the session that invoked it; the other 8 (`.gitignore`, `Makefile`, `src/cli.py`, `src/health_check.py`, `tests/unit/test_health_check.py`, `pyproject.toml`, `CLAUDE.md`, `docs/BACKLOG.md`) were a **concurrent session's in-flight work**. The result is that `58f7659` carries +73 lines of `src/cli.py`, +35 of `src/health_check.py`, and a 107-line `.gitignore` deletion under the message `refactor(tests): refactor 6 files in tests`, which describes none of it. The skill did warn that two sessions share the checkout — after the commits existed.
-
-**Status:** Open — history stands as committed; no reset was performed.
-**Priority:** P2
-**Source:** `/git-commit-smart` run, 2026-08-11
-
-- **Nothing was lost** — every change is in git, and the tree was clean afterward. The residue is an inaccurate commit message and a squashed authorship boundary, not missing work. `git reset --soft 4316af4` was offered and declined at the time.
-- **The existing rule does not cover this case.** `CLAUDE.md` mandates separate worktrees for parallel *agents*; the same clobbering hazard applies to concurrent *interactive sessions* in the primary checkout, which the rule never names. Widen the wording or the guard keeps missing the common case.
-- **The warning fires too late to function as a guard.** To prevent rather than annotate, it has to gate staging — prompt or abort before `git add` when the tree contains files the session did not touch — instead of reporting after the fact.
-- **Mitigation available today with no skill change:** in a shared checkout, commit by explicit path and never blanket-stage.
-
-### HEIC never reaches OCR — both readers decode the file themselves
-
-`register_heif_opener()` teaches *PIL* to open HEIC, and nothing else. Both OCR providers read the file themselves, so neither benefits: easyocr fails `'NoneType' object has no attribute 'shape'` (its `cv2.imread` returns `None` for the container) and docTR fails `ValueError: unable to read file`. Every `.heic` therefore yields zero extracted text — silently, since the pipeline logs the error and carries on with CLIP-only classification. Harmless for camera photos, but a HEIC screenshot or document scan loses its entire text layer, and with it `screenshot_ocr`, `text_content`, and `kie_structured` as voters.
-
-**Status:** Done — fixed in `e9fb0a8` + `41ee326` (2026-08-11). 9 tests in `tests/unit/test_ocr_heic_decode.py`.
-**Priority:** ~~P2~~ resolved
-**Source:** `organize-files content --dry-run` on `~/Downloads`, 2026-08-11
-
-- **Reproduces on every HEIC in the batch** (`IMG_7645.HEIC`, `IMG_9421.HEIC`); both errors appear in the run output above the classification lines, so they are visible but non-fatal.
-- **The fix is a decode hand-off, not another registration call.** Both readers accept arrays/tensors; the durable shape is to decode once via PIL (already HEIF-capable) and pass pixels down, rather than passing a path each provider must parse. That also removes the per-module `register_heif_opener()` pattern's remaining blind spots — same hazard already noted under the SSCD item above.
-- **Check the gate interaction before measuring recall.** The CLIP OCR gate (`--ocr-clip-topk`, K=3) can skip OCR before either reader is reached, so a naive before/after on a photo-heavy corpus will show no change. Evaluate on text-bearing HEICs specifically.
 
 ### CLIP scores are a softmax over raw cosines — no logit scaling
 
@@ -719,6 +383,19 @@ Run on 2026-08-11, the skill staged all 9 modified files and split them across 3
 - **The folder agreement is circular evidence** — those folders were produced by this same classifier, so it cannot distinguish "the label is right" from "the label is consistently wrong". A real eval needs hand labels, as the photo threshold got.
 - **Screenshots mostly bypass the CLIP label anyway.** `analyze_image` prefers an OCR title snippet (`Screenshot_<title>`) and only falls through to `generate_clip_filename` when no line qualifies, so the gate would apply to a minority of screenshots — measure that slice, not the whole folder.
 - **A smaller vocab may want a different number,** not the same one: 36 labels put the uniform floor at 2.78% versus the photo vocab's 1.06%.
+
+### HEIC OCR: decode verified, recall never measured — and docTR still raises without preprocessing deps
+
+The HEIC decode hand-off shipped 2026-08-11 (`e9fb0a8` + `41ee326` + `1c32fe7`, 10 tests in `tests/unit/test_ocr_heic_decode.py`). Both residuals found during its verification are unclosed, and the second is a live failure path, not a measurement gap.
+
+**Status:** Done (partial) — the `_PREPROCESS_AVAILABLE` bug closed `7899442` (2026-08-11, 12 tests). Recall measurement remains open; see residuals below.
+**Priority:** P3
+**Source:** `/backlog-implementer` hand-off verification, 2026-08-11; re-opened 2026-08-11 after `/backlog-migrate` moved the parent item to [`docs/changelog/2.3.0/CHANGELOG.md`](changelog/2.3.0/CHANGELOG.md) with these residuals recorded only as changelog prose
+
+- **~~The docTR branch is gated on an unrelated capability flag.~~** Fixed `7899442`: removed `_PREPROCESS_AVAILABLE` from the condition in `_run_image_ocr`. The decode uses `_load_rgb` (PIL only), not `preprocess_for_ocr`; `_load_rgb`'s `except Exception` guard returns None when PIL is absent, so the HEIC early-return fires instead of falling through to `DocumentFile.from_images`. A defensive `except (ImportError, NameError, AttributeError)` also wraps `np.asarray` for the unusual case where PIL is present but numpy is not. 12 tests (2 new regression guards).
+- **Recall was never measured.** The fix shipped on 12 unit tests that assert the *hand-off shape* (an ndarray reaches each backend instead of a path), with no end-to-end run over text-bearing HEICs. `scripts/eval_ocr_gate.py` on a HEIC-only labelled slice closes it.
+- **Measure on text-bearing HEICs specifically, or measure nothing.** The CLIP OCR gate (`--ocr-clip-topk`, K=3) can skip OCR before either reader is reached, so a naive before/after on a photo-heavy corpus shows no change and reads as "the fix did nothing". This precondition was written before the fix shipped and is the reason the measurement was skipped rather than done — it needs a corpus built for it.
+- **What the fix does buy, unmeasured:** `screenshot_ocr`, `text_content` and `kie_structured` become available as voters on HEIC screenshots and document scans, which previously classified CLIP-only. Harmless for camera photos, which is most HEICs.
 
 ### HEIC files already filed keep their mtime-derived names
 
