@@ -1,2 +1,105 @@
-# Created by venv; see https://docs.python.org/3/library/venv.html
-*
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+/lib/
+/lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environment
+venv/
+ENV/
+env/
+.venv/
+/bin/
+pyvenv.cfg
+
+# IDE
+.idea/
+.vscode/
+*.sw[po]
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Results (large JSON files, keep HTML for GitHub Pages)
+results/*.json
+results/*.db*
+results/*.bak
+results/*.bak-*
+results/*.txt
+results/*.jsonl
+results/ml_data*/
+# Derived scene-probe corpus: encoding-normalized copies of the class dirs
+# (scripts/normalize_scene_corpus.py) plus its gather manifest. Regenerable,
+# and it carries the same personal/third-party images as the source tree.
+results/scene_labels_norm/
+results/scene_labels_norm.csv
+
+# Corrections data (user-specific)
+corrections.json
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Node.js
+node_modules/
+package-lock.json
+
+# Playwright
+playwright-report/
+test-results/
+
+# Claude Code local/transient state (tracked config under .claude/ stays visible)
+.claude/settings.local.json
+.claude/py-cache/
+# session worktrees (never tracked)
+.claude/worktrees/
+# local hook tooling: own node_modules/dist/package-lock, nothing tracked here
+.claude/hooks/
+# session scheduler lock
+.claude/scheduled_tasks.lock
+# nested .claude dirs from running claude in subdirectories
+.claude/**/.claude/
+
+# CLIP embedding cache
+.cache/
+
+# Repomix
+repomix-output.xml
+docs/repomix/
+
+# Coverage
+.coverage
+.coverage.*
+htmlcov/
+
+# Run artifacts (stay local; untracked 2026-07-13)
+/path.json
+/person-migrate-manifest.json
+
+# Session-local TypeScript hook cache (ephemeral, per-session)
+.claude/tsc-cache/
+
+# Census surname list (large data file)
+src/classifiers/data/census_names/surnames.txt
