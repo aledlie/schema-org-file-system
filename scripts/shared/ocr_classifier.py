@@ -10,6 +10,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, TYPE_CHECKING, Optional, Protocol
 
+from shared.constants import HEIC_HEIF_EXTENSIONS
+from shared.ocr_easyocr import (
+    EASYOCR_AVAILABLE,
+    extract_lines_easyocr,
+    extract_text_easyocr,
+    extract_text_easyocr_with_status,
+)
+
 if TYPE_CHECKING:
     from PIL.Image import Image as PILImage
 
@@ -29,13 +37,6 @@ class DocTRResult(Protocol):
     @property
     def pages(self) -> list[Any]: ...
 
-from shared.constants import HEIC_HEIF_EXTENSIONS
-from shared.ocr_easyocr import (
-    EASYOCR_AVAILABLE,
-    extract_lines_easyocr,
-    extract_text_easyocr,
-    extract_text_easyocr_with_status,
-)
 
 OCR_AVAILABLE = False
 _predictor = None
