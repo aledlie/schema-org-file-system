@@ -677,8 +677,8 @@ Run on 2026-08-11, the skill staged all 9 modified files and split them across 3
 
 `register_heif_opener()` teaches *PIL* to open HEIC, and nothing else. Both OCR providers read the file themselves, so neither benefits: easyocr fails `'NoneType' object has no attribute 'shape'` (its `cv2.imread` returns `None` for the container) and docTR fails `ValueError: unable to read file`. Every `.heic` therefore yields zero extracted text — silently, since the pipeline logs the error and carries on with CLIP-only classification. Harmless for camera photos, but a HEIC screenshot or document scan loses its entire text layer, and with it `screenshot_ocr`, `text_content`, and `kie_structured` as voters.
 
-**Status:** Open — diagnosed while fixing the HEIC EXIF loss in `4b56759`; not attempted.
-**Priority:** P2
+**Status:** Done — fixed in `e9fb0a8` + `41ee326` (2026-08-11). 9 tests in `tests/unit/test_ocr_heic_decode.py`.
+**Priority:** ~~P2~~ resolved
 **Source:** `organize-files content --dry-run` on `~/Downloads`, 2026-08-11
 
 - **Reproduces on every HEIC in the batch** (`IMG_7645.HEIC`, `IMG_9421.HEIC`); both errors appear in the run output above the classification lines, so they are visible but non-fatal.
