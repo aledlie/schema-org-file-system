@@ -1,0 +1,17 @@
+# Minimal toolchain for the D1 schema-drift check
+# (tests/unit/test_d1_schema_drift.py).
+#
+# Same reasoning as requirements-lint.txt: installing the package would pull
+# torch via `python-doctr`, and this check only needs to import
+# `src.storage.models` and render DDL. Verified sufficient in a clean venv —
+# SQLAlchemy for the models, pydantic because src/storage imports it, pytest to
+# run the assertions. No torch, no Pillow, no doctr.
+#
+# Unbounded on purpose, unlike the lint pins: this check asserts the generator
+# agrees with the committed file, and both sides move together under a
+# SQLAlchemy upgrade. A DDL-rendering change would legitimately require
+# regenerating schema.sql, and pinning would hide that until a manual bump.
+# Keep the lower bounds in step with `dependencies` in pyproject.toml.
+SQLAlchemy>=2.0.51
+pydantic>=2.13.4
+pytest>=9.1.1

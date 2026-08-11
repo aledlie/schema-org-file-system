@@ -6,6 +6,8 @@
     "test:unit": "pytest tests/unit/",
     "lint": "make lint",
     "format": "make format",
+    "schema:check": "make schema-check",
+    "schema:generate": "make d1-schema",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",

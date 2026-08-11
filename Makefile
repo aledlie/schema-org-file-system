@@ -6,7 +6,7 @@ PYTHONPATH := src:scripts:.
 RESULTS := results
 LINT_PATHS := src/ scripts/ tests/
 
-.PHONY: calibrate clip-backfill backtest weight-grid threshold-sweeps weight-search golden lint format
+.PHONY: calibrate clip-backfill backtest weight-grid threshold-sweeps weight-search golden lint format schema-check d1-schema
 
 ## Full calibration pass: backfill CLIP scores, replay + sensitivity,
 ## directional weight grid, threshold sweeps, golden-corpus gate.
@@ -59,3 +59,14 @@ lint:
 format:
 	$(PYTHON) -m black $(LINT_PATHS)
 	-$(PYTHON) -m flake8 $(LINT_PATHS)
+
+## Assert scripts/d1/schema.sql still matches src/storage/models.py. Same check
+## .github/workflows/checks.yml runs; fix a failure with `make d1-schema`.
+schema-check:
+	$(PYTHON) -m pytest tests/unit/test_d1_schema_drift.py -q
+
+## Regenerate scripts/d1/schema.sql from the models. Run after ANY change to
+## src/storage/models.py and commit the result — the file is generated, and
+## nothing else keeps it honest.
+d1-schema:
+	$(PYTHON) scripts/d1/generate_schema.py
