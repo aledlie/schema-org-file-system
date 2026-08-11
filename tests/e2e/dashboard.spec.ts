@@ -21,6 +21,22 @@ export const DASHBOARD_STATS = [
   'ML Accuracy',
 ] as const;
 
+export const TECH_BADGES = [
+  'Python 3.14',
+  'CLIP Vision AI',
+  'Tesseract OCR',
+  'Schema.org',
+  'PyTorch',
+  'EXIF Metadata',
+  'Geolocation',
+  'JSON-LD',
+] as const;
+
+// Entry stagger in _site/index.html: .feature-card:nth-child(N) sets
+// animation-delay to N * this. CSS cannot compute a sibling index across the
+// browsers this suite runs, so the rules are enumerated there and asserted here.
+const CARD_STAGGER_STEP_SECONDS = 0.1;
+
 test.describe('Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
@@ -82,10 +98,21 @@ test.describe('Dashboard', () => {
     const footer = page.locator('.footer');
     await expect(footer).toBeVisible();
 
-    // Verify tech badges
-    await expect(page.locator('.tech-badge').filter({ hasText: 'Python 3.14' })).toBeVisible();
-    await expect(page.locator('.tech-badge').filter({ hasText: 'CLIP Vision AI' })).toBeVisible();
-    await expect(page.locator('.tech-badge').filter({ hasText: 'Schema.org' })).toBeVisible();
+    await expect(page.locator('.tech-badge')).toHaveText([...TECH_BADGES]);
+  });
+
+  test('every feature card has its own entry-animation delay', async ({ page }) => {
+    // The stagger is enumerated per card in CSS, so a new card silently gets no
+    // delay unless a rule is added with it. Nothing else in this suite can see
+    // that — it is presentation-only — so assert it here.
+    const delays = await page
+      .locator('.feature-card')
+      .evaluateAll((cards) => cards.map((card) => window.getComputedStyle(card).animationDelay));
+
+    const expected = DASHBOARD_CARDS.map(
+      (_card, index) => `${((index + 1) * CARD_STAGGER_STEP_SECONDS).toFixed(1)}s`,
+    );
+    expect(delays).toEqual(expected);
   });
 
   test('should have responsive layout on mobile', async ({ page }) => {
