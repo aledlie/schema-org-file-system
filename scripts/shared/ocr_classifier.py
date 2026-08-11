@@ -8,7 +8,26 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional
+from typing import Any, TYPE_CHECKING, Optional, Protocol
+
+if TYPE_CHECKING:
+    from PIL.Image import Image as PILImage
+
+
+class DocTRResult(Protocol):
+    """Structural type for the docTR predictor result object.
+
+    Captures the two attributes used by this module (.render and .pages).
+    Defined here to avoid importing docTR at type-check time when it may
+    not be installed.  Not @runtime_checkable — we use this for static
+    analysis only and trust docTR's API stability (it is a vendor-controlled,
+    pinned dependency); adding isinstance guards at every call site would add
+    maintenance burden with no benefit given the existing outer try/except.
+    """
+
+    def render(self) -> str: ...
+    @property
+    def pages(self) -> list[Any]: ...
 
 from shared.constants import HEIC_HEIF_EXTENSIONS
 from shared.ocr_easyocr import (
@@ -195,7 +214,7 @@ def is_ocr_available() -> bool:
 # ---------------------------------------------------------------------------
 
 
-def _load_rgb(image_path: Path):
+def _load_rgb(image_path: Path) -> PILImage | None:
     """Load an image as an EXIF-oriented RGB PIL image, or None on failure.
 
     IMPORTANT: This function must never raise — it must always return a PIL
@@ -268,7 +287,7 @@ def preprocess_for_ocr(image_path: Path, *, enhance: bool = False):
     return rgb
 
 
-def _run_image_ocr(image_path: Path):
+def _run_image_ocr(image_path: Path) -> DocTRResult | None:
     """Run docTR on an image with dark-background inversion and a CLAHE retry.
 
     The retry fires only when the first pass barely reads anything AND the image
