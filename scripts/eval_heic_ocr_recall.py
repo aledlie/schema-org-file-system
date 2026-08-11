@@ -203,9 +203,31 @@ class Summary:
 def load_ground_truth(path: Optional[str]) -> dict[str, bool]:
     if not path:
         return {}
-    data = json.loads(Path(path).read_text())
+    gt_path = Path(path)
+    try:
+        raw = gt_path.read_text(encoding="utf-8")
+    except FileNotFoundError:
+        print(f"error: ground-truth file not found: {gt_path}", file=sys.stderr)
+        sys.exit(1)
+    except PermissionError:
+        print(
+            f"error: cannot read ground-truth file (permission denied): {gt_path}", file=sys.stderr
+        )
+        sys.exit(1)
+    except UnicodeDecodeError as exc:
+        print(f"error: ground-truth file is not valid UTF-8: {exc}", file=sys.stderr)
+        sys.exit(1)
+    try:
+        data = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        print(f"error: ground-truth file contains invalid JSON: {exc}", file=sys.stderr)
+        sys.exit(1)
     if not isinstance(data, dict):
-        raise ValueError(f"ground-truth file must be a JSON object, got {type(data).__name__}")
+        print(
+            f"error: ground-truth file must be a JSON object, got {type(data).__name__}",
+            file=sys.stderr,
+        )
+        sys.exit(1)
     return {k.lower(): bool(v) for k, v in data.items()}
 
 
@@ -213,7 +235,7 @@ def gather_heic_files(source: Path) -> list[Path]:
     return sorted(
         p
         for p in source.rglob("*")
-        if p.suffix.lower() in HEIC_HEIF_EXTENSIONS and not p.name.startswith(".")
+        if p.is_file() and p.suffix.lower() in HEIC_HEIF_EXTENSIONS and not p.name.startswith(".")
     )
 
 
@@ -270,6 +292,9 @@ def build_parser() -> argparse.ArgumentParser:
 
 def main(argv: Optional[list[str]] = None) -> None:
     args = build_parser().parse_args(argv)
+    if args.max_chars < 0:
+        print(f"error: --max-chars must be >= 0, got {args.max_chars}", file=sys.stderr)
+        sys.exit(1)
     source = Path(args.source).expanduser()
     if not source.exists():
         print(f"error: source directory does not exist: {source}", file=sys.stderr)
