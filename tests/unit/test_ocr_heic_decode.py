@@ -218,6 +218,32 @@ class TestRunImageOcrHeic:
 
         assert document_file_called, "DocumentFile.from_images must be called for PNG"
 
+    def test_heic_decode_failure_returns_none_without_calling_document_file(
+        self, tmp_path: Path, monkeypatch
+    ) -> None:
+        """Corrupted HEIC where _load_rgb returns None must not reach DocumentFile."""
+        heic_path = tmp_path / "corrupt.heic"
+        heic_path.write_bytes(b"not-valid-heic")
+
+        monkeypatch.setattr(ocr_mod, "preprocess_for_ocr", lambda path, **_: None)
+        monkeypatch.setattr(ocr_mod, "_PREPROCESS_AVAILABLE", True)
+        # Simulate decode failure
+        monkeypatch.setattr(ocr_mod, "_load_rgb", lambda path: None)
+
+        self._setup_predictor(monkeypatch)
+
+        class _GuardedDocumentFile:
+            @staticmethod
+            def from_images(paths):
+                raise AssertionError(
+                    "DocumentFile.from_images must not be called when HEIC decode fails"
+                )
+
+        monkeypatch.setattr(ocr_mod, "DocumentFile", _GuardedDocumentFile)
+
+        result = ocr_mod._run_image_ocr(heic_path)
+        assert result is None  # fails gracefully, no exception propagated
+
     def test_dark_heic_uses_preprocess_result(
         self, tmp_path: Path, monkeypatch
     ) -> None:

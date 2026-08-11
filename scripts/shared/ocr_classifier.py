@@ -283,8 +283,12 @@ def _run_image_ocr(image_path: Path):
             # PIL (already HEIF-capable via pillow_heif) can decode the file;
             # pass a pixel array so docTR never touches the container path.
             heic_img = _load_rgb(image_path)
-            if heic_img is not None:
-                page = np.asarray(heic_img)
+            if heic_img is None:
+                # Corrupted or unsupported HEIC — cannot fall through to
+                # DocumentFile.from_images (it would also fail). Return early.
+                print(f"  OCR warning: HEIC decode failed for {image_path.name}")
+                return None
+            page = np.asarray(heic_img)
         doc = [page] if page is not None else DocumentFile.from_images([str(image_path)])
         result = predictor(doc)
         chars = len(result.render().strip())
