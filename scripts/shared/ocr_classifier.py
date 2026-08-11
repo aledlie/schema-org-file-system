@@ -63,6 +63,14 @@ _HEIC_EXTENSIONS = HEIC_HEIF_EXTENSIONS
 
 # Image preprocessing (dark-background inversion + CLAHE) needs PIL + numpy;
 # CLAHE additionally needs OpenCV. Each is optional and degrades gracefully.
+#
+# Import-order note: numpy MUST be imported before PIL in this block.  The
+# np.asarray guard in _run_image_ocr relies on the fact that a missing numpy
+# also leaves PIL unbound (because the import error fires before `from PIL`
+# executes), so _load_rgb returns None and _run_image_ocr exits early —
+# never reaching the np.asarray call.  See that guard's comment for the full
+# explanation.  Splitting these into separate try blocks or reordering them
+# would make the guard reachable and change its semantics.
 _PREPROCESS_AVAILABLE = False
 try:
     import numpy as np
@@ -324,10 +332,16 @@ def _run_image_ocr(image_path: Path) -> DocTRResult | None:
             try:
                 page = np.asarray(heic_img)
             except ImportError, NameError, AttributeError:
-                # numpy absent (unusual: PIL available but numpy not installed).
-                # NameError/AttributeError cover the missing-module access paths;
-                # other exceptions (OOM, value errors) are intentionally left to
-                # the outer try/except for visibility.
+                # Defense-in-depth against future import reordering: today
+                # numpy is imported before PIL in the _PREPROCESS_AVAILABLE
+                # block, so "PIL available but numpy absent" cannot occur — a
+                # missing numpy aborts the block before PIL is bound, _load_rgb
+                # catches the NameError and returns None, and the `heic_img is
+                # None` check above fires first.  The guard is here because
+                # splitting or reordering those imports looks safe but would
+                # make this line reachable; the guard and the import-order note
+                # above belong together.  OOM and other hard errors propagate
+                # to the outer try/except for visibility.
                 print(f"  OCR warning: HEIC array conversion failed for {image_path.name}")
                 return None
         doc = [page] if page is not None else DocumentFile.from_images([str(image_path)])

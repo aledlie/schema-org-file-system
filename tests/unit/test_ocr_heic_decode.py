@@ -300,9 +300,14 @@ class TestRunImageOcrHeic:
         assert result is None
 
     def test_heic_array_conversion_failure_returns_none(self, tmp_path: Path, monkeypatch) -> None:
-        """When PIL succeeds but numpy raises (unusual: PIL present, numpy absent),
-        the np.asarray guard must return None instead of propagating or falling
-        through to DocumentFile.from_images."""
+        """np.asarray guard returns None instead of propagating or falling through.
+
+        The scenario "PIL present, numpy raises" cannot occur in production today
+        because numpy is imported before PIL in the same try block — a missing
+        numpy leaves PIL unbound too and _load_rgb returns None first.  The guard
+        is defense-in-depth against future import reordering; this test verifies
+        its behaviour by monkeypatching np directly.
+        """
         heic_path = tmp_path / "photo.heic"
         heic_path.write_bytes(b"fake-heic")
 
