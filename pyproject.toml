@@ -139,6 +139,10 @@ dev = [
     # threshold search over the DB replay). Calibration-only — nothing at
     # runtime imports it, and scripts/weight_search.py imports it lazily.
     "nevergrad>=1.0.12",
+    # API-doc generator for `npm run docs:api`. Must be pdoc3, NOT the unrelated
+    # `pdoc` project — their CLIs are incompatible (`--html --force` vs `-o`),
+    # so an undeclared `pdoc` inherited from PATH silently breaks the script.
+    "pdoc3>=0.11.6",
 ]
 
 [project.scripts]
