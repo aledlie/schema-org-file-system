@@ -96,6 +96,16 @@ geo = [
     "us>=3.2.0",
 ]
 
+# Near-duplicate detection — faiss index over SSCD copy-detection descriptors
+# (`organize-files find-duplicates`). Exact IndexFlatIP is sufficient at this
+# project's corpus size (265k x 512 = ~543 MB resident, full self-kNN ~60s), so
+# no GPU/IVF build is needed. The SSCD descriptor model is a TorchScript
+# checkpoint fetched at first use — it needs torch/torchvision from the `ai`
+# extra, which is why this extra is additive to `ai` rather than standalone.
+similarity = [
+    "faiss-cpu>=1.15.0",
+]
+
 # Classical ML (scikit-learn) — backs src/ml (data_preprocessor: train/test
 # split, CountVectorizer, LabelEncoder) for `organize-files preprocess` /
 # `evaluate`, and the interior-probe prototype. Floor tracks the tested build
@@ -106,7 +116,7 @@ ml = [
 
 # All optional features
 all = [
-    "schema-org-file-system[ai,docs,monitoring,ml,names,geo]",
+    "schema-org-file-system[ai,docs,monitoring,ml,names,geo,similarity]",
 ]
 
 # Development dependencies
@@ -125,6 +135,10 @@ dev = [
     "mypy>=1.5.0",
     "isort>=5.12.0",
     "jsonschema>=4.26.0",
+    # Derivative-free optimiser backing `make weight-search` (joint weight +
+    # threshold search over the DB replay). Calibration-only — nothing at
+    # runtime imports it, and scripts/weight_search.py imports it lazily.
+    "nevergrad>=1.0.12",
 ]
 
 [project.scripts]
@@ -136,7 +150,14 @@ Repository = "https://github.com/aledlie/schema-org-file-system.git"
 Issues = "https://github.com/aledlie/schema-org-file-system/issues"
 
 [tool.setuptools]
-packages = ["src", "src.storage", "src.scoring", "src.scoring.signals", "src.classifiers"]
+packages = [
+    "src",
+    "src.storage",
+    "src.scoring",
+    "src.scoring.signals",
+    "src.classifiers",
+    "src.similarity",
+]
 package-dir = {"" = "."}
 
 [tool.setuptools.package-data]
