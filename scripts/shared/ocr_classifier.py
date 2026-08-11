@@ -36,6 +36,10 @@ try:
 except ImportError:
     pass
 
+# Container formats that docTR's DocumentFile.from_images cannot parse.
+# For these, _run_image_ocr decodes via PIL and passes a pixel array instead.
+_HEIC_EXTENSIONS = frozenset({".heic", ".heif"})
+
 # Image preprocessing (dark-background inversion + CLAHE) needs PIL + numpy;
 # CLAHE additionally needs OpenCV. Each is optional and degrades gracefully.
 _PREPROCESS_AVAILABLE = False
@@ -263,12 +267,23 @@ def _run_image_ocr(image_path: Path):
     The retry fires only when the first pass barely reads anything AND the image
     was dark (inverted) or partially read — so textless bright photos are not
     charged a second model pass. Returns the docTR result object, or None.
+
+    HEIC/HEIF images that are not dark (i.e. preprocess_for_ocr returns None)
+    are decoded via PIL before reaching DocumentFile.from_images, which cannot
+    parse those containers and would raise ValueError.
     """
     if not OCR_AVAILABLE:
         return None
     try:
         predictor = _get_predictor()
         page = preprocess_for_ocr(image_path, enhance=False)
+        if page is None and _PREPROCESS_AVAILABLE and image_path.suffix.lower() in _HEIC_EXTENSIONS:
+            # docTR's DocumentFile.from_images raises ValueError for HEIC/HEIF.
+            # PIL (already HEIF-capable via pillow_heif) can decode the file;
+            # pass a pixel array so docTR never touches the container path.
+            _heic_img = _load_rgb(image_path)
+            if _heic_img is not None:
+                page = np.asarray(_heic_img)
         doc = [page] if page is not None else DocumentFile.from_images([str(image_path)])
         result = predictor(doc)
         chars = len(result.render().strip())

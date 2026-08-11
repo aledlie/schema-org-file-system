@@ -42,6 +42,23 @@ logger = logging.getLogger(__name__)
 # Detect availability without importing the heavy module at load time.
 EASYOCR_AVAILABLE = importlib.util.find_spec("easyocr") is not None
 
+# HEIC/HEIF support — registered here so _readtext_input's PIL decode path
+# works even when this module is used standalone (without ocr_classifier).
+# Per-module registration is the established pattern in this codebase; a
+# module that opens images must call this itself, not rely on import order.
+try:
+    from pillow_heif import register_heif_opener as _register_heif_easyocr
+
+    _register_heif_easyocr()
+except ImportError:
+    pass
+
+# Container formats that cv2.imread cannot read — easyocr's CRAFT detector
+# calls cv2.imread internally and returns None for these, crashing with
+# 'NoneType has no attribute shape'. PIL (already HEIF-capable) can decode
+# them; _readtext_input passes pixel arrays for these extensions.
+_HEIC_EXTENSIONS = frozenset({".heic", ".heif"})
+
 
 def _resolve_languages() -> list[str]:
     """Read OCR_EASYOCR_LANGS env var (comma-separated ISO codes) or return default.
@@ -188,6 +205,11 @@ def _readtext_input(image_path: Path):
     float — multi-GB for long animations, enough to OOM-kill the process. For
     animated images, decode only the first frame and pass it as an RGB array
     (readtext accepts ndarray input); otherwise pass the path through unchanged.
+
+    HEIC/HEIF files are also decoded to an array: cv2.imread (called internally
+    by easyocr's CRAFT detector) returns None for these containers, causing
+    'NoneType has no attribute shape'. PIL already decoded the file during this
+    check, so the array is free to produce here.
     """
     try:
         from PIL import Image
@@ -196,6 +218,11 @@ def _readtext_input(image_path: Path):
         with Image.open(image_path) as img:
             if getattr(img, "n_frames", 1) > 1:
                 img.seek(0)
+                return np.asarray(img.convert("RGB"))
+            # HEIC/HEIF: cv2.imread can't open these containers.  PIL already
+            # has the decoded image from the animated-frame check above — pass
+            # pixels so easyocr never sees the path.
+            if image_path.suffix.lower() in _HEIC_EXTENSIONS:
                 return np.asarray(img.convert("RGB"))
     except Exception as e:
         logger.debug("animated-image check failed on %s: %s", image_path, e)
