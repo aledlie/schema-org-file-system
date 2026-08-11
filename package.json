@@ -4,6 +4,8 @@
   "description": "AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and entity detection",
   "scripts": {
     "test:unit": "pytest tests/unit/",
+    "lint": "make lint",
+    "format": "make format",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "test:e2e:report": "playwright show-report",

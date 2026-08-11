@@ -1,0 +1,13 @@
+# Lint toolchain, kept separate from the package so CI can install it without
+# the base dependencies — `python-doctr[torch]` pulls torch, which a lint job
+# has no use for.
+#
+# Upper bounds are load-bearing, not caution. Black changes its stable style
+# once a year at the first release of a new major, so an unpinned `pip install
+# black` would eventually demand a reformat of correctly-formatted code and the
+# gate would fail on an untouched tree. Same reasoning for flake8, whose
+# pycodestyle/pyflakes bumps can introduce new checks.
+#
+# Keep these ranges in step with the `dev` extra in pyproject.toml.
+black>=26.5.1,<27
+flake8>=7.3.0,<8

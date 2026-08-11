@@ -41,13 +41,15 @@ organize-files health                    # Should report 12/12 features
 
 ```bash
 uvicorn src.api.schema_org_api:app --reload   # Start REST API (FastAPI)
-black src/ scripts/                            # format
-flake8 src/ scripts/                           # lint
-mypy src/ scripts/                             # type check
+make lint                                      # style gate: black --check + flake8 over src/ scripts/ tests/ (also `npm run lint`)
+make format                                    # black in place, then report the findings black cannot fix (also `npm run format`)
+mypy src/ scripts/                             # type check (not in the gate — see below)
 npm run docs:api                               # regenerate pdoc3 API docs (docs/api submodule)
 make calibrate                                 # scoring calibration harness (backfill -> backtest -> grid -> sweeps -> goldens); stages: make clip-backfill|backtest|weight-grid|threshold-sweeps|golden
 BUDGET=250 make weight-search                  # nevergrad joint weight+threshold search; NOT part of `calibrate` (exploratory, budget-priced). Reports a proposal only — never writes weights.py
 ```
+
+**The style gate is CI-enforced, and its version bounds are load-bearing.** `.github/workflows/lint.yml` runs the same two commands as `make lint` on every push and PR, installing from `requirements-lint.txt` rather than `pip install -e ".[dev]"` — the base deps pull torch via `python-doctr`, which a lint job has no use for. The `<27` bound on black is not caution: **black changes its stable style once a year at the first release of a new major**, so an unpinned install would eventually demand a reformat of correctly-formatted code and fail the gate on an untouched tree. Keep `requirements-lint.txt` and the `dev` extra in `pyproject.toml` in step. `mypy` is deliberately *not* in the gate — it needs the full dependency set (and therefore torch) to resolve imports, so it stays a local/pre-merge check; a stray `no-any-return` is instead caught by the Stop hook.
 
 **Profiling the classification hot path:** `scripts/profile_pipeline.py` cProfiles the unified scorer over a dir/file set and prints wall + per-file, a grouped hotspot summary (OCR-CNN / image-decode / face / CLIP), top-N functions, and OCR-invocation + gate-skip counts. Use it for before/after comparisons of any classification-cost change (OCR gating, signal reordering). Companion `scripts/eval_ocr_gate.py` evaluates the CLIP OCR gate (`--ocr-clip-topk`) on a folder-labeled corpus, sweeping top-k/margin for recall vs OCR-skip.
 

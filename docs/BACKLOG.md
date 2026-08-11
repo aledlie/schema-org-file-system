@@ -315,9 +315,24 @@ should get `# noqa: E402` rather than reordering.
   (performance), mypy clean on 148 files, `organize-files health` 12/12,
   `compileall` clean. `scripts/d1/schema.sql` regenerates unchanged, confirming
   the `models.py` edits do not reach `Base.metadata`.
-- **Nothing prevents the next drift.** There is no `black --check` or `flake8` gate
-  in CI or in a pre-commit hook, so 0 is a moment in time, not an invariant — the
-  same shape as the `scripts/d1/schema.sql` item above. A gate is the follow-up.
+- **~~Nothing prevents the next drift.~~ Gate shipped** — `.github/workflows/lint.yml`
+  runs `black --check --diff` + `flake8` over `src/ scripts/ tests/` on every push and
+  PR, with `make lint` / `npm run lint` as the identical local command so a green run
+  locally means a green CI job. Verified to actually fail, both legs independently: a
+  misformatted-but-valid function exits 2 on black, and an unused import that **black
+  accepts** exits 2 on flake8 — neither tool subsumes the other.
+- **The version bounds are the subtle part, and an unpinned gate would have rotted.**
+  `black` changes its stable style once a year at the first release of a new major, so
+  a plain `pip install black` in CI would eventually demand a reformat of
+  correctly-formatted code and fail on an untouched tree. Bounded `<27` in both
+  `requirements-lint.txt` (what CI installs) and the `dev` extra; keep them in step.
+- **CI installs `requirements-lint.txt`, never `pip install -e ".[dev]"`** — the base
+  dependencies pull torch via `python-doctr`, which would dominate a lint job. This is
+  also why **`mypy` is not in the gate**: it needs the full dependency set to resolve
+  imports, so it stays a local check.
+- **Still ungated, and the closer analogue to this item's original complaint:**
+  `scripts/d1/schema.sql` regeneration (the item above) — the drift there is silent in
+  the same way, and a lint workflow now exists to hang that check on.
 
 ### Near-dupe report is not wired into `reconcile`, and its scale numbers are synthetic
 

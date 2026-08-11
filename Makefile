@@ -4,8 +4,9 @@
 PYTHON := venv/bin/python
 PYTHONPATH := src:scripts:.
 RESULTS := results
+LINT_PATHS := src/ scripts/ tests/
 
-.PHONY: calibrate clip-backfill backtest weight-grid threshold-sweeps weight-search golden
+.PHONY: calibrate clip-backfill backtest weight-grid threshold-sweeps weight-search golden lint format
 
 ## Full calibration pass: backfill CLIP scores, replay + sensitivity,
 ## directional weight grid, threshold sweeps, golden-corpus gate.
@@ -45,3 +46,16 @@ weight-search:
 ## Golden corpus — the correctness gate any weight change must hold.
 golden:
 	$(PYTHON) -m pytest tests/integration/test_unified_scoring_golden.py -q
+
+## Style gate — the same two commands .github/workflows/lint.yml runs, so a
+## green `make lint` locally means a green CI job. Read-only; use `make format`
+## to actually rewrite files.
+lint:
+	$(PYTHON) -m black --check --diff $(LINT_PATHS)
+	$(PYTHON) -m flake8 $(LINT_PATHS)
+
+## Apply black in place, then report whatever flake8 findings black cannot fix
+## (unused imports, long strings, E402). Non-fatal so the report always prints.
+format:
+	$(PYTHON) -m black $(LINT_PATHS)
+	-$(PYTHON) -m flake8 $(LINT_PATHS)
