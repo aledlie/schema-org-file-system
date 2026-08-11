@@ -1,7 +1,7 @@
 # Backlog
 
 Derived from session work, uncommitted changes, and codebase state.
-Last updated: 2026-08-10 (added 4 items from the facebookresearch library audit — faiss near-dupe index + SSCD descriptors as two halves of one feature, nevergrad joint weight search, and a PE-Core-vs-`ViT-B-32` backbone A/B; library viability, licensing, and py3.14/arm64 wheel availability verified on this machine, no code written for any of them). Prior update 2026-07-25 (migrated 3 Done items to `docs/changelog/2.2.0/CHANGELOG.md`; resolved the census-gazetteer setup gap — `scripts/download_census_names.py` verified + documented in QUICK_START/CLAUDE.md; shipped the `--ocr-doctr-fallback` config flag for the P2 docTR-fallback gate, closing the OCR-bound item's last work item). Prior update 2026-07-18 (added [Repo Snapshot](#repo-snapshot--2026-07-18) — repomix token census, top-churn gitlog, and the uncommitted InteriorSignal→SceneSignal retirement inventory; added identity-detection license-back item + partial fix — `corrective lenses` keyword added to `ID_KEYWORDS` (`restrictions`/`endorsements` trialed then dropped after backtest showed insurance-doc collision), front/back fixtures, 23 tests pass; added `redact_pii.py` barcode/alphabetic-PII blind-spot item — OCR-token redaction silently no-ops on ID barcodes + health terms; added trained graphic-vs-photograph probe item — opaque AI graphics/logos leak past the cheap `GraphicDetectionSignal` gate (code path since closed by `c327877` — `graphic` scene-probe class wired end-to-end, pending corpus + retrain); corrected `PHOTO_PROPERTY_CONFIDENCE` item post-f6488b9 — two-signal case resolved, residual is probe-absence only; probe now health-checked; fixed person-name false positive — ambiguous Census given names (summer/spring/autumn/winter, month names, virtue words) were auto_accepted when paired with a Census surname; new `_AMBIGUOUS_GIVEN_NAMES` hard rule + 41-test suite; closed `redact_pii.py` barcode item — cv2 barcode+QR detection, `--redact-terms` flag, `barcode_unredacted` manifest field, non-zero exit, 27-test suite).
+Last updated: 2026-08-11 (added 3 items from a test-maintenance session — hardcoded E2E dashboard card assertions, stale `package.json` version + missing unit-test script, and `/git-commit-smart` blanket-staging another session's work in the shared checkout; no code written for any of them beyond the 5-line `dashboard.spec.ts` fix already committed in `58f7659`). Prior update 2026-08-10 (added 4 items from the facebookresearch library audit — faiss near-dupe index + SSCD descriptors as two halves of one feature, nevergrad joint weight search, and a PE-Core-vs-`ViT-B-32` backbone A/B; library viability, licensing, and py3.14/arm64 wheel availability verified on this machine, no code written for any of them). Prior update 2026-07-25 (migrated 3 Done items to `docs/changelog/2.2.0/CHANGELOG.md`; resolved the census-gazetteer setup gap — `scripts/download_census_names.py` verified + documented in QUICK_START/CLAUDE.md; shipped the `--ocr-doctr-fallback` config flag for the P2 docTR-fallback gate, closing the OCR-bound item's last work item). Prior update 2026-07-18 (added [Repo Snapshot](#repo-snapshot--2026-07-18) — repomix token census, top-churn gitlog, and the uncommitted InteriorSignal→SceneSignal retirement inventory; added identity-detection license-back item + partial fix — `corrective lenses` keyword added to `ID_KEYWORDS` (`restrictions`/`endorsements` trialed then dropped after backtest showed insurance-doc collision), front/back fixtures, 23 tests pass; added `redact_pii.py` barcode/alphabetic-PII blind-spot item — OCR-token redaction silently no-ops on ID barcodes + health terms; added trained graphic-vs-photograph probe item — opaque AI graphics/logos leak past the cheap `GraphicDetectionSignal` gate (code path since closed by `c327877` — `graphic` scene-probe class wired end-to-end, pending corpus + retrain); corrected `PHOTO_PROPERTY_CONFIDENCE` item post-f6488b9 — two-signal case resolved, residual is probe-absence only; probe now health-checked; fixed person-name false positive — ambiguous Census given names (summer/spring/autumn/winter, month names, virtue words) were auto_accepted when paired with a Census surname; new `_AMBIGUOUS_GIVEN_NAMES` hard rule + 41-test suite; closed `redact_pii.py` barcode item — cv2 barcode+QR detection, `--redact-terms` flag, `barcode_unredacted` manifest field, non-zero exit, 27-test suite).
 
 ## Open Items
 
@@ -635,6 +635,101 @@ should get `# noqa: E402` rather than reordering.
 - **Measure with the tools that already exist.** `scripts/profile_pipeline.py` for the wall/per-file and CLIP-vs-OCR hotspot split, `scripts/backtest_scoring.py` for decision agreement, `make golden` as the correctness gate, `eval_ocr_gate.py` for the gate. Requires a `backfill_clip_scores.py` re-run under the new backbone before the replay is meaningful — the replay serves CLIP/scene votes from the cache.
 - **Reported zero-shot gap is large enough to justify the trial** (PE-Core-B16 ≈ 78 vs `ViT-B-32/openai` ≈ 63 ImageNet zero-shot, upstream numbers, not measured here) — but upstream benchmark deltas have repeatedly failed to predict behaviour on this corpus. Treat them as the reason to *run* the A/B, never as its result.
 - **Related, deliberately out of scope:** `DINOv2` (Apache-2.0) has stronger linear-probe features and would be the better `SceneSignal` input, but has no text tower and so cannot replace the zero-shot `ClipVisionSignal`. That is a second-embedding question, not a backbone swap. `MetaCLIP` (CC-BY-NC 4.0) and `ImageBind` (CC-BY-NC-SA 4.0) are **license-blocked** — non-commercial binds the employer, same finding as the ImageNet/LLD/InfographicVQA call.
+
+### E2E dashboard assertions hardcode the card set (drifts every time a card is added)
+
+`tests/e2e/dashboard.spec.ts:42-56` asserts `toHaveCount(4)` against `.feature-card` plus four explicit `.card-title` filters. `_site/index.html` gained a fifth card ("Residence Galleries") in `205bd7e`; the count assertion then failed while the title assertions stayed **silent** — they covered 4 of the 5 cards, so the new card shipped with zero content coverage and only the count noticed it existed. Numbers were corrected in `58f7659` (4→5, added the missing `Residence Galleries` title assert), but the *shape* is unchanged: the next card added breaks the suite again and lands untested until someone hand-edits the spec.
+
+**Status:** Open — numbers corrected, structure unchanged.
+**Priority:** P3
+**Source:** `npm run test:e2e` failure triage, 2026-08-11
+
+- **The failure is amplified 5×.** The assertion lives in one test but runs under `chromium`/`firefox`/`webkit`/`mobile-chrome`/`mobile-safari`, so a single stale literal reports as 5 failures and reads like a systemic break rather than one number.
+- **Cheapest durable fix:** hoist the expected titles into one fixture array, then assert `toHaveCount(EXPECTED.length)` and loop the title checks. Adding a card becomes a one-line data change that cannot leave a card uncovered.
+- **Keep both assertion kinds.** The count is the only thing that catches an *added* card; the title filters only catch a *removed or renamed* one. Dropping either reintroduces a blind spot.
+- **The card set has changed without human intent before,** which is the real case for the count assertion: the resolved [`copy_to_site.sh` item](#copy_to_sitesh-clobbers-_siteindexhtml-with-a-stale-results-copy) records a content run *silently deleting* this same "Residence Galleries" card from `_site/index.html` on 2026-07-26, orphaning `_site/residence_gallery.html` from navigation. That clobber path is fixed (`1d3b262`), so the count is not currently load-bearing against it — but it was the only assertion that would have caught it.
+
+### `package.json` version is stale and there is no unit-test script
+
+`package.json:3` declares `"version": "1.3.0"` while `pyproject.toml` and `CLAUDE.md` both carry **2.1.0** — the JS metadata stopped tracking the project at some point and nothing flagged it. Separately, `package.json:5-15` defines only Playwright scripts (`test:e2e` plus five variants); the unit suite is pytest (`pytest tests/unit/`, 2,357 passing) with no npm entry point, so `npm run test:unit` fails with `Missing script: "test:unit"` — the exact wrong-runner mistake the `test:*` namespace invites.
+
+**Status:** Open
+**Priority:** P4
+**Source:** test-suite run + `package.json` read, 2026-08-11
+
+- **The version field is cosmetic today** — nothing reads it — but it is actively misleading to anyone who treats it as the project version. Either sync it to 2.1.0 or delete the field rather than leaving a third, wrong source of truth.
+- **Two ways to close the script asymmetry,** with opposite trade-offs: add `"test:unit": "pytest tests/unit/"` (discoverable, but implies npm owns the Python suite), or rename `test:e2e` → `e2e` so no `test:*` namespace is implied at all.
+
+### `/git-commit-smart` blanket-stages the working tree in a shared checkout
+
+Run on 2026-08-11, the skill staged all 9 modified files and split them across 3 commits (`58f7659`, `ad1b5ff`, `e38565a`). Exactly one file — `tests/e2e/dashboard.spec.ts`, 5 lines — belonged to the session that invoked it; the other 8 (`.gitignore`, `Makefile`, `src/cli.py`, `src/health_check.py`, `tests/unit/test_health_check.py`, `pyproject.toml`, `CLAUDE.md`, `docs/BACKLOG.md`) were a **concurrent session's in-flight work**. The result is that `58f7659` carries +73 lines of `src/cli.py`, +35 of `src/health_check.py`, and a 107-line `.gitignore` deletion under the message `refactor(tests): refactor 6 files in tests`, which describes none of it. The skill did warn that two sessions share the checkout — after the commits existed.
+
+**Status:** Open — history stands as committed; no reset was performed.
+**Priority:** P2
+**Source:** `/git-commit-smart` run, 2026-08-11
+
+- **Nothing was lost** — every change is in git, and the tree was clean afterward. The residue is an inaccurate commit message and a squashed authorship boundary, not missing work. `git reset --soft 4316af4` was offered and declined at the time.
+- **The existing rule does not cover this case.** `CLAUDE.md` mandates separate worktrees for parallel *agents*; the same clobbering hazard applies to concurrent *interactive sessions* in the primary checkout, which the rule never names. Widen the wording or the guard keeps missing the common case.
+- **The warning fires too late to function as a guard.** To prevent rather than annotate, it has to gate staging — prompt or abort before `git add` when the tree contains files the session did not touch — instead of reporting after the fact.
+- **Mitigation available today with no skill change:** in a shared checkout, commit by explicit path and never blanket-stage.
+
+### HEIC never reaches OCR — both readers decode the file themselves
+
+`register_heif_opener()` teaches *PIL* to open HEIC, and nothing else. Both OCR providers read the file themselves, so neither benefits: easyocr fails `'NoneType' object has no attribute 'shape'` (its `cv2.imread` returns `None` for the container) and docTR fails `ValueError: unable to read file`. Every `.heic` therefore yields zero extracted text — silently, since the pipeline logs the error and carries on with CLIP-only classification. Harmless for camera photos, but a HEIC screenshot or document scan loses its entire text layer, and with it `screenshot_ocr`, `text_content`, and `kie_structured` as voters.
+
+**Status:** Open — diagnosed while fixing the HEIC EXIF loss in `4b56759`; not attempted.
+**Priority:** P2
+**Source:** `organize-files content --dry-run` on `~/Downloads`, 2026-08-11
+
+- **Reproduces on every HEIC in the batch** (`IMG_7645.HEIC`, `IMG_9421.HEIC`); both errors appear in the run output above the classification lines, so they are visible but non-fatal.
+- **The fix is a decode hand-off, not another registration call.** Both readers accept arrays/tensors; the durable shape is to decode once via PIL (already HEIF-capable) and pass pixels down, rather than passing a path each provider must parse. That also removes the per-module `register_heif_opener()` pattern's remaining blind spots — same hazard already noted under the SSCD item above.
+- **Check the gate interaction before measuring recall.** The CLIP OCR gate (`--ocr-clip-topk`, K=3) can skip OCR before either reader is reached, so a naive before/after on a photo-heavy corpus will show no change. Evaluate on text-bearing HEICs specifically.
+
+### CLIP scores are a softmax over raw cosines — no logit scaling
+
+`CLIPClassifier._similarities` (`scripts/shared/clip_utils.py:302-303`) computes `sims = img_emb @ txt_norm.T` then `sims.softmax(dim=0)`, omitting the model's trained `logit_scale` (≈100 for `ViT-B-32`). Softmaxing unscaled cosines (~0.15–0.35) is necessarily near-uniform: over the 94-label photo vocab the floor is 1.064% and winners land at 1.13–1.16%, i.e. ~8% above chance. This is the "flat-softmax" property already relied on in several places (`W_CLIP` as a ranking-only signal, `CLIP_OCR_FALLBACK_THRESHOLD`, `_SCREENSHOT_OCR_KEYWORD_THRESHOLD`, `graphic_detection`'s 0.077 floor, the `OCR_CLIP_GATE_TOPK` note under the PE-Core item) — this entry records its *cause* and why it was not fixed.
+
+**Status:** Open — deliberately not fixed; the relative-margin gate in `4b56759` works around it instead.
+**Priority:** P3
+**Source:** label-accuracy investigation of `organize-files content`, 2026-08-11
+
+- **Applying `logit_scale` is the principled fix and a wide blast radius.** It would make absolute confidences meaningful for the first time, and simultaneously invalidate every threshold calibrated against the flat distribution — at least the five gates listed above plus `CLIP_REFINEMENT_MIN_CONFIDENCE`/`ACCEPT_CONFIDENCE` (0.15/0.30), which no current score can ever reach, so refinement is presently dead code on the photo profile. Sequence it as its own change with `make calibrate` + goldens, never bundled.
+- **The workaround deliberately does not touch the distribution.** `CLIP_MIN_LABEL_MARGIN_RATIO = 1.012` gates on top-1/top-2 *ratio*, which is scale-invariant and so survives a later logit-scale fix unchanged (the ratio of two softmax outputs changes, but the ordering-based gate keeps its meaning). Contained, but it only suppresses bad names — it cannot produce good ones.
+- **Confirm against the backbone A/B before investing.** The PE-Core trial above would change this distribution anyway; doing both at once makes neither attributable.
+
+### `all_scores` is scored from unprefixed prompts and can rank differently than the decision
+
+`classify_image` (`scripts/shared/clip_classification.py`) picks the winning category from `score_embedding(emb, labels, "a photo of ")` but then returns `all_scores` from `score_embedding(emb, labels, "")` — a second, *unprefixed* scoring pass. The two disagree in practice: `PXL_20260723_231733185.jpg` was categorized `living room` while `all_scores`' argmax was `dining room`, and `IMG_9421.HEIC` was `backyard` against an `all_scores` argmax of `patio`. So any consumer that reads `all_scores` to explain, validate, or re-derive a decision is reading a distribution that did not make it.
+
+**Status:** Open — `CLIPResult.margin` was added in `4b56759` so the renamer gates on the deciding distribution; the divergence itself is untouched.
+**Priority:** P3
+**Source:** margin-gate implementation, 2026-08-11
+
+- **Known consumers to audit:** `result["top_scores"]` (surfaced to the user), the `files.image_classification` column written by `scripts/backfill_clip_scores.py`, and anything in the calibration harness replaying those stored scores — the backtest oracle may be keyed on the non-deciding distribution.
+- **Either is defensible; having both silently is not.** Score once with the prefix and report that, or keep both and name them distinctly (`decision_scores` vs `raw_scores`) so no caller can mistake one for the other.
+
+### Screenshot renamer is ungated pending a labelled margin eval
+
+`RenamerProfile.min_label_margin` defaults to `1.0` (disabled) and only `PHOTO_PROFILE` sets it to `CLIP_MIN_LABEL_MARGIN_RATIO`. The threshold was calibrated on 8 hand-labelled photos and does not transfer as-is: on a random 20-file sample from `~/Documents/Media/Photos/Screenshots`, **75% fall below 1.012** while their chosen label still matches the folder they were previously filed into (`terminal`→`Terminal`, `settings`→`Settings`, at ratios as low as 1.0000). Enabling the gate there on today's evidence would suppress three-quarters of screenshot renames for no demonstrated accuracy gain.
+
+**Status:** Open — intentionally left at 1.0; needs its own labelled corpus.
+**Priority:** P3
+**Source:** margin-gate calibration, 2026-08-11
+
+- **The folder agreement is circular evidence** — those folders were produced by this same classifier, so it cannot distinguish "the label is right" from "the label is consistently wrong". A real eval needs hand labels, as the photo threshold got.
+- **Screenshots mostly bypass the CLIP label anyway.** `analyze_image` prefers an OCR title snippet (`Screenshot_<title>`) and only falls through to `generate_clip_filename` when no line qualifies, so the gate would apply to a minority of screenshots — measure that slice, not the whole folder.
+- **A smaller vocab may want a different number,** not the same one: 36 labels put the uniform floor at 2.78% versus the photo vocab's 1.06%.
+
+### HEIC files already filed keep their mtime-derived names
+
+The EXIF fix in `4b56759` corrects new runs, but files organized before it retain filenames built from file mtime (download time) rather than capture time, and `_maybe_rename_image` will not revisit them: `is_generic_filename` is `False` for an already-descriptive name like `20260516_kitchen.heic`, so the rename step returns early on every subsequent run. Confirmed on the two HEICs under `~/Documents` — `Media/Photos/Other/20260516_kitchen.heic` was actually captured **2024-04-04**, a 2-year error frozen into the name; `Media/Photos/Products/20240426_fabric_sofa.heic` happens to be correct.
+
+**Status:** Open — 2 files affected today; grows only if pre-fix HEICs are re-imported.
+**Priority:** P4
+**Source:** post-fix verification sweep, 2026-08-11
+
+- **Their categories are also pre-fix.** Both sit under `Media/Photos/*` because the lost GPS degraded `media_heuristic` to `photos_other`; a `--force` content pass would re-file them to `Media/Interiors`/`Exteriors` and fix the folder without fixing the name.
+- **Scale check before building anything:** at two files this is a manual rename. A repair pass is only worth writing if a bulk HEIC import lands, in which case the rule is "re-derive the date prefix from EXIF when the stem's leading date disagrees with `DateTimeOriginal`".
 
 ## Repo Snapshot — 2026-07-18
 

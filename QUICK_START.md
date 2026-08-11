@@ -5,8 +5,8 @@ AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and en
 ## 1. Setup (first time)
 
 ```bash
-# Python 3.14.0
-python3.14.0 -m venv venv && source venv/bin/activate
+# Python 3.14 (pyenv-built on macOS 26 — see CLAUDE.md Dependencies)
+python3.14 -m venv venv && source venv/bin/activate
 pip install -e ".[all]"
 brew install tesseract poppler
 
@@ -19,7 +19,7 @@ python scripts/download_census_names.py
 Verify the install:
 
 ```bash
-organize-files health        # should report 11/11 features
+organize-files health        # should report 12/12 features
 ```
 
 ## 2. Daily use
@@ -69,6 +69,28 @@ organize-files name --source ~/Downloads --target ~/Documents --dry-run --limit 
 # Extension-based only (simplest)
 organize-files type --source ~/Desktop --dry-run
 ```
+
+### Find near-duplicates (read-only)
+
+Reports the same content in different bytes — re-encoded, resized, cropped,
+PDF-vs-image — which duplicate-by-content-hash cannot see. Nothing is moved,
+deleted, or written to the graph.
+
+```bash
+organize-files find-duplicates --source ~/Documents
+organize-files find-duplicates --source ~/Documents --threshold 0.92    # stricter
+organize-files find-duplicates --source ~/Documents --no-pdfs           # skip PDF rasterisation
+organize-files find-duplicates --source ~/Documents --output results/dupes.json
+```
+
+First run downloads a 94 MB SSCD descriptor checkpoint to `.cache/sscd_models/`;
+descriptors are then cached per file in `.cache/sscd_descriptors_v1/`, so repeat
+runs skip both the download and the model load. Needs the `similarity` extra
+(`pip install -e ".[similarity]"`, included in `[all]`).
+
+Groups are transitive — A~B and B~C puts all three together even if A~C falls
+below the threshold. That is deliberate for reviewing a document family, and the
+reason this command only ever reports.
 
 ## 3. Where files go
 
@@ -135,7 +157,7 @@ organize-files evaluate --test-data results/test_set.json --classifier content
 ## 7. Development checks
 
 ```bash
-pytest tests/unit/                                          # ~1,070 unit tests
+pytest tests/unit/                                          # ~2,407 unit tests
 pytest tests/integration/                                   # schema.org export pipeline
 pytest tests/performance/ --benchmark-only -m "not slow"    # benchmarks
 black src/ scripts/ && flake8 src/ scripts/ && mypy src/ scripts/
@@ -148,7 +170,20 @@ PYTHONPATH=src:scripts:. python scripts/profile_pipeline.py --source DIR --ocr-c
 PYTHONPATH=src:scripts:. python scripts/eval_ocr_gate.py
 ```
 
-Train the 4-class scene probe (interior/exterior/place/neither) from the
+Scoring calibration — any change to `src/scoring/weights.py` must run the
+harness and hold the golden corpus:
+
+```bash
+make calibrate                  # backfill -> backtest -> weight grid -> threshold sweeps -> golden
+make golden                     # the correctness gate on its own
+BUDGET=250 make weight-search   # nevergrad joint weight+threshold search (exploratory, not in `calibrate`)
+```
+
+`weight-search` reports a proposal and never edits `weights.py`. As of
+2026-08-11 it finds no improvement over the shipped calibration on any
+optimizer or budget tried — see `docs/BACKLOG.md`.
+
+Train the 5-class scene probe (neither/interior/exterior/place/graphic) from the
 hand-labeled corpus in `results/scene_labels/` (see its `README.md`):
 
 ```bash

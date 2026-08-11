@@ -30,6 +30,22 @@ schema-org-file-system/
 │   ├── feedback/                     # correction_tracker, feedback_loop
 │   ├── utils/                        # tracking + shared helpers
 │   │
+│   ├── scoring/                      # Unified weighted-signal classifier (the decision engine)
+│   │   ├── scorer.py                 # Cost-tier waves + early exit; aggregates signal votes
+│   │   ├── registry.py               # Signal registration/ordering
+│   │   ├── weights.py                # Signal priors + decision thresholds (calibrated — see below)
+│   │   ├── context.py                # FileContext (lazy OCR/KIE/CLIP accessors)
+│   │   ├── types.py                  # CategoryScore, ClassificationDecision
+│   │   └── signals/                  # 19 signal modules (org, person, legal, kie, scene, clip, mime, …)
+│   │
+│   ├── similarity/                   # Near-duplicate detection (read-only report)
+│   │   ├── descriptors.py            # SSCD copy-detection descriptors + cache (.cache/sscd_descriptors_v1/)
+│   │   ├── index.py                  # faiss IndexFlatIP + union-find grouping
+│   │   ├── worker.py                 # Runs the faiss stage in a subprocess (faiss/torch libomp clash)
+│   │   ├── finder.py                 # Walk -> describe -> group -> report
+│   │   ├── types.py                  # SimilarPair, DuplicateGroup (cross the process boundary)
+│   │   └── constants.py              # Model URL, preprocessing, thresholds
+│   │
 │   ├── storage/                      # Data persistence
 │   │   ├── models.py                 # SQLAlchemy ORM + build_*_jsonld builders (serialization SoT)
 │   │   ├── graph_store.py            # Graph DB operations (canonical IDs, person edges)
