@@ -1,6 +1,17 @@
 import { test, expect } from './fixtures/index.js';
 import { measurePagePerformance, checkThresholds, formatMetrics, DEFAULT_THRESHOLDS } from './fixtures/performance.js';
 
+// Single source of truth for the dashboard's feature cards, in DOM order. Count,
+// title and navigation coverage all derive from it, so a new card cannot ship
+// with only some of the three.
+export const DASHBOARD_CARDS = [
+  { title: 'Organization Report', href: 'organization_report.html' },
+  { title: 'Metadata Viewer', href: 'metadata_viewer.html' },
+  { title: 'Correction Interface', href: 'correction_interface.html' },
+  { title: 'ML Data Explorer', href: 'ml_data_explorer.html' },
+  { title: 'Residence Galleries', href: 'residence_gallery.html' },
+] as const;
+
 test.describe('Dashboard', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
@@ -43,38 +54,23 @@ test.describe('Dashboard', () => {
     const cardsGrid = page.locator('.cards-grid');
     await expect(cardsGrid).toBeVisible();
 
-    // Should have 5 feature cards
+    // The count catches an added card; the title filters catch a removed or
+    // renamed one. Neither subsumes the other, so both stay.
     const featureCards = page.locator('.feature-card');
-    await expect(featureCards).toHaveCount(5);
+    await expect(featureCards).toHaveCount(DASHBOARD_CARDS.length);
 
-    // Verify card titles
-    await expect(page.locator('.card-title').filter({ hasText: 'Organization Report' })).toBeVisible();
-    await expect(page.locator('.card-title').filter({ hasText: 'Metadata Viewer' })).toBeVisible();
-    await expect(page.locator('.card-title').filter({ hasText: 'Correction Interface' })).toBeVisible();
-    await expect(page.locator('.card-title').filter({ hasText: 'ML Data Explorer' })).toBeVisible();
-    await expect(page.locator('.card-title').filter({ hasText: 'Residence Galleries' })).toBeVisible();
+    for (const { title } of DASHBOARD_CARDS) {
+      await expect(page.locator('.card-title').filter({ hasText: title })).toBeVisible();
+    }
   });
 
-  test('should navigate to Organization Report', async ({ page }) => {
-    await page.click('a[href="organization_report.html"]');
-    // URL may or may not have .html extension depending on server config
-    await expect(page).toHaveURL(/organization_report/);
-  });
-
-  test('should navigate to Metadata Viewer', async ({ page }) => {
-    await page.click('a[href="metadata_viewer.html"]');
-    await expect(page).toHaveURL(/metadata_viewer/);
-  });
-
-  test('should navigate to Correction Interface', async ({ page }) => {
-    await page.click('a[href="correction_interface.html"]');
-    await expect(page).toHaveURL(/correction_interface/);
-  });
-
-  test('should navigate to ML Data Explorer', async ({ page }) => {
-    await page.click('a[href="ml_data_explorer.html"]');
-    await expect(page).toHaveURL(/ml_data_explorer/);
-  });
+  for (const { title, href } of DASHBOARD_CARDS) {
+    test(`should navigate to ${title}`, async ({ page }) => {
+      await page.click(`a[href="${href}"]`);
+      // URL may or may not have .html extension depending on server config
+      await expect(page).toHaveURL(new RegExp(href.replace(/\.html$/, '')));
+    });
+  }
 
   test('should display technology stack in footer', async ({ page }) => {
     const footer = page.locator('.footer');
