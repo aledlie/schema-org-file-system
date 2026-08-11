@@ -32,14 +32,21 @@ from d1.generate_schema import _OUTPUT, generate
 REGENERATE_HINT = "Run `python scripts/d1/generate_schema.py` and commit the result."
 
 
+# `d1.generate_schema` is a root-relative import (scripts/ is on sys.path via
+# pyproject's pytest pythonpath, but mypy does not resolve it), so `_OUTPUT` and
+# `generate` are both Any here. Bind each at the boundary rather than returning
+# Any from a str-annotated function — same fix as the DocTRResult case, and the
+# annotations are what keep these fixtures honest for callers below.
 @pytest.fixture(scope="module")
 def committed_schema() -> str:
-    return _OUTPUT.read_text(encoding="utf-8")
+    content: str = _OUTPUT.read_text(encoding="utf-8")
+    return content
 
 
 @pytest.fixture(scope="module")
 def generated_schema() -> str:
-    return generate()
+    schema: str = generate()
+    return schema
 
 
 def test_committed_schema_exists() -> None:
