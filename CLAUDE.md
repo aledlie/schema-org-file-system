@@ -14,7 +14,7 @@ python scripts/download_census_names.py   # surnames.txt gazetteer (gitignored; 
 # Daily use
 source venv/bin/activate
 organize-files content --source ~/Downloads --dry-run --limit 100
-organize-files health                    # Should report 11/11 features
+organize-files health                    # Should report 12/12 features
 ```
 
 ## CLI Commands
@@ -23,7 +23,7 @@ organize-files health                    # Should report 11/11 features
 |---------|-------------|
 | `organize-files content` | AI-powered organization (CLIP, OCR) — the only DB-writing organizer |
 | `organize-files name` / `type` | Filename-pattern / extension-based organization (DB-free by design) |
-| `organize-files find-duplicates` | Report near-duplicate files (re-encoded/resized/PDF-vs-image copies) — read-only, no moves or DB writes |
+| `organize-files find-duplicates` | Report near-duplicate files (re-encoded/resized/PDF-vs-image copies) — read-only, no moves or DB writes. `--threshold`, `--max-neighbors`, `--no-pdfs`, `--limit`, `--output` |
 | `organize-files health` | Check system dependencies |
 | `organize-files migrate-ids` | Canonical-ID database migration |
 | `organize-files migrate-person` | Migrate `Person/` files → `Personal/{subcat}/` (dry-run default; `--apply`, `--rollback`) |
@@ -46,6 +46,7 @@ flake8 src/ scripts/                           # lint
 mypy src/ scripts/                             # type check
 npm run docs:api                               # regenerate pdoc3 API docs (docs/api submodule)
 make calibrate                                 # scoring calibration harness (backfill -> backtest -> grid -> sweeps -> goldens); stages: make clip-backfill|backtest|weight-grid|threshold-sweeps|golden
+BUDGET=250 make weight-search                  # nevergrad joint weight+threshold search; NOT part of `calibrate` (exploratory, budget-priced). Reports a proposal only — never writes weights.py
 ```
 
 **Profiling the classification hot path:** `scripts/profile_pipeline.py` cProfiles the unified scorer over a dir/file set and prints wall + per-file, a grouped hotspot summary (OCR-CNN / image-decode / face / CLIP), top-N functions, and OCR-invocation + gate-skip counts. Use it for before/after comparisons of any classification-cost change (OCR gating, signal reordering). Companion `scripts/eval_ocr_gate.py` evaluates the CLIP OCR gate (`--ocr-clip-topk`) on a folder-labeled corpus, sweeping top-k/margin for recall vs OCR-skip.
@@ -73,13 +74,14 @@ Full module map, data flow, and diagrams: [`docs/ARCHITECTURE.md`](docs/ARCHITEC
 │   ├── ml/                 # feature_extractor, data_preprocessor
 │   ├── feedback/           # correction_tracker + feedback_loop
 │   ├── api/                # schema_org_api (FastAPI), schema_org_models, timeline_api
+│   ├── similarity/         # near-dupe: SSCD descriptors + faiss index (worker.py = process isolation)
 │   └── storage/            # graph_store, models (to_schema_org), migrations, exporters
 ├── scripts/
 │   ├── shared/             # clip_classification, ocr_classifier, clip_utils/cache, file_organizer, filename_classifier
 │   ├── file_organizer_content_based.py  # thin CLI wrapper over src/{classifiers,analyzers,organizers,pipeline}
 │   ├── rename_images.py    # Unified CLIP renamer; --profile {photo,screenshot}
 │   └── redact_pii.py       # Rasterize + OCR-redact PII before adding to VCS
-├── tests/                  # unit/ (~2,310), integration/, performance/, e2e/ (Playwright+OTEL)
+├── tests/                  # unit/ (~2,407), integration/ (~192), performance/, e2e/ (Playwright+OTEL)
 ├── _site/                  # Dashboard UI
 └── results/                # Reports & database
 ```
@@ -111,12 +113,14 @@ Full module map, data flow, and diagrams: [`docs/ARCHITECTURE.md`](docs/ARCHITEC
 
 ## Dependencies
 
-Requires Python 3.12–3.14 (`pyproject.toml` declares `>=3.8`; the current venv runs pyenv-built 3.14.0). On macOS 26, use a **pyenv-built** interpreter — pyenv links expat statically, avoiding the libexpat ABI break that hits brew's `python@3.13/3.14` (see Troubleshooting).
+Requires Python 3.12–3.14 (`pyproject.toml` declares `requires-python = "<=3.14"`; the current venv runs pyenv-built 3.14.0). On macOS 26, use a **pyenv-built** interpreter — pyenv links expat statically, avoiding the libexpat ABI break that hits brew's `python@3.13/3.14` (see Troubleshooting).
 
 ```bash
 python3.14 -m venv venv && source venv/bin/activate
 pip install -e ".[all]" && brew install tesseract poppler
 ```
+
+Extras: `ai` (torch/open-clip/easyocr/opencv), `docs` (pdf/docx/xlsx), `ml` (scikit-learn), `names`, `geo`, `monitoring` (Sentry), `similarity` (faiss-cpu — near-dupe index; additive to `ai`, which supplies the torch the SSCD descriptors need), and `dev` (pytest/black/flake8/mypy + nevergrad for `make weight-search`). `all` = everything but `dev`.
 
 ## Troubleshooting
 
@@ -143,7 +147,7 @@ FastAPI app at `src/api/schema_org_api.py`. Entity types: `files`, `categories`,
 ## Testing
 
 ```bash
-pytest tests/unit/           # ~2,310 unit tests
+pytest tests/unit/           # ~2,407 unit tests
 pytest tests/integration/    # schema.org export pipeline
 pytest tests/performance/ --benchmark-only -m "not slow"
 pytest tests/e2e/            # Playwright E2E
@@ -171,7 +175,9 @@ pytest tests/e2e/            # Playwright E2E
 - **Graph persistence is content-only** — only `organize-files content` (BatchProcessor → FileProcessor → `GraphStore`) writes to the graph store and records `organization_sessions`/`files.session_id` (what the timeline groups by). `type`/`name` are DB-free by design. Sole `GraphStore.add_file` callers: content `FileProcessor` and `person_migration`. See [`docs/FILE_ORGANIZATION.md`](docs/FILE_ORGANIZATION.md) §5.
 - **Python 3.14 argparse colour breaks CLI-output asserts — but not via `FORCE_COLOR`** — argparse colourizes help/usage/error text, so plain-substring asserts (`"usage: organize-files" in out`) can fail. Route any test asserting on CLI/argparse output through the `run_cli` helper in `tests/integration/test_cli.py`, which monkeypatches `NO_COLOR=1` — that overrides every colour source and is the durable guard. **Correction (2026-07-27):** this entry previously claimed the shell profile exports `FORCE_COLOR=3`. It does not — `FORCE_COLOR` appears in zero commits across all refs in `~/dotfiles`, is unset in a login+interactive zsh and in the tool env, is absent from iTerm's plist, and piped `argparse --help` output is ANSI-free. So `env -u FORCE_COLOR` on tool output is a placebo; if piped output ever carries ANSI, use `NO_COLOR=1` or `PYTHON_COLORS=0`. See the shell-gotchas section in `~/.claude/CLAUDE.md`.
 - **DB backup filenames sort neither by name nor by mtime** — `results/file_organization.db.bak-*` mixes plain `bak-<%Y%m%d_%H%M%S>` with labelled forms (`bak-refile-20260726_165917`), and `r` > digits, so newest-by-name picks the *older* file. Newest-by-mtime is worse: `shutil.copy2` preserves the source mtime, so a fresh backup inherits the live DB's old timestamp, and the `-wal`/`-shm` sidecars sort ahead of the DB itself. Reference a backup by its exact name, or parse the trailing timestamp. Also note `mode=ro` URIs fail (`unable to open database file`) on a WAL-mode copy with no `-shm` — copy it aside and open normally.
-- **Scoring weights are calibrated — don't move without evidence** — `src/scoring/weights.py` priors and `MIN_DECISION_{CONFIDENCE,MARGIN}` were re-tuned 2026-07-26 to a measured local optimum (`docs/architecture/scoring-calibration-20260726.md`). Any change must run `make calibrate` (fix/break/neutral vs stored decisions) and hold the golden suite. Known invariants: `W_ORG > W_PERSON > W_LEGAL`; `W_MIME < MIN_DECISION_CONFIDENCE + MIN_DECISION_MARGIN`; `W_FILENAME` has no downward headroom.
+- **Scoring weights are calibrated — don't move without evidence** — `src/scoring/weights.py` priors and `MIN_DECISION_{CONFIDENCE,MARGIN}` were re-tuned 2026-07-26 to a measured local optimum (`docs/architecture/scoring-calibration-20260726.md`). Any change must run `make calibrate` (fix/break/neutral vs stored decisions) and hold the golden suite. Known invariants: `W_ORG > W_PERSON > W_LEGAL`; `W_MIME < MIN_DECISION_CONFIDENCE + MIN_DECISION_MARGIN`; `W_FILENAME` has no downward headroom. The three invariants are also encoded as constraints in `scripts/weight_search.py:constraint_violations` — update both.
+- **`make weight-search` searched the joint space and found nothing (2026-08-11)** — nevergrad over 19 priors + both thresholds, across `NGOpt`/`CMA`/`TwoPointsDE` at budgets 120–250: train non-media agreement never moved off the shipped 59/164, and every best candidate was flat or **−1** on the holdout slice. Corroborates the 2026-07-26 calibration; the binding constraint is the corpus (164 non-media labelled rows, biased oracle), not the optimiser — more labels beat more budget. Two traps if you extend it: **`--seed` is a no-op under the default `NGOpt`** (a meta-optimiser that picks a deterministic local algorithm from the shipped init — seeds 0/1/2 are byte-identical; vary `--optimizer` instead), and nevergrad's **default mutation sigma is 1.0 regardless of bounds**, which dwarfs these bands (W_MIME spans 0.24) and clips nearly every mutation to the boundary — sigma is sized to span/6, and `set_mutation` must precede `set_bounds` or you get a spurious "bounds are 0.32 sigma away" warning against the sigma it is about to replace.
+- **Never use `hash()` for anything persisted or compared across runs** — string hashing is randomised per process (`PYTHONHASHSEED`). It silently reshuffled `weight_search.py`'s train/holdout split on every run, so two runs reported *different baselines off different row sets* and the generalisation check compared nothing. Use `hashlib`; regression-tested across subprocesses in `test_weight_search.py::test_split_is_stable_across_processes`.
 - **Backtest replay oracle** — `files.image_classification` (CLIP scores) is written only by `scripts/backfill_clip_scores.py`, never by production; re-run it after new content runs. The replay classifies under `original_path` (pre-move), so `SceneSignal` needs the harness's context-path→`current_path` map to find cached embeddings. Stored decisions are a biased oracle (manual corrections, pre-unified placements) — trust the non-media slice; media-row disagreements may be fidelity artifacts. Some stored labels are simply wrong — inspect actual rows (`winning_signals`, OCR text) before "fixing" a signal for a disagreement.
 - **Category identity is `full_path`, not `name`** — `name` repeats across parents (`other` under 15 categories), so `full_path` carries the UNIQUE index and is what `Category.generate_canonical_id` hashes. `get_or_create_category` keys every lookup (existence, parent, IntegrityError recovery) on `full_path` and **raises** rather than returning `None`; `add_file_to_category`'s `False` return must never be ignored. Before 2026-07-26 `name` was UNIQUE, which silently dropped category edges for 26% of rows — existing databases need `organize-files migrate-category-identity`, then `organize-files reconcile --backfill-categories` to repair orphaned rows (a plain `content` re-run can't: correctly-placed files short-circuit at `already_organized` before persistence).
 - **`reconcile --backfill-categories` derives from disk, so duplicate documents legitimately split across categories** — the backfill answers "where does this file *sit*", never "what is this file". `resolve_taxonomy_folder` matches the file's folder exactly, then strips trailing segments in a loop until an ancestor is in the taxonomy, so entity-named folders resolve at any depth (`Events/{Name}/2026/maps` → `Events`, `Media/Interiors/{Prop}/{Room}` → `Media/Interiors`); a parent reached *by stripping* that declares no subcategory files under the generic bucket (`Events/*` → `events/other`) while an exact match keeps the bare category (a file directly in `Events/` stays `events`). **Consequence, and it is intended:** two copies of one document in two trees get two different categories — `Documents/Events/Burning Flipside/PlacementMap.pdf` → `events/other` and `Documents/Personal/Events/PlacementMap_300dpi.png` → `personal/events`. Both edges are true, so a category query returns a subset of the logical document family. That is filing, not drift — do **not** "fix" it in the backfill by inferring intent; move the file and re-run if you want them merged. Same reasoning for `Organization/{Name}` → `organization/vendors`: the taxonomy declares `Organization/` as the vendor/partner root, so the pair follows the folder. Folders with no taxonomy ancestor are reported unresolved and never guessed.

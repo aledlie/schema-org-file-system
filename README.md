@@ -2,17 +2,18 @@
 
 AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and entity detection.
 
-**Version:** 2.1.0 | **Python:** 3.12–3.13 (3.14 blocked by macOS 26 libexpat ABI) | **Files Processed:** 265,000+
+**Version:** 2.1.0 | **Python:** 3.12–3.14 (use a pyenv-built interpreter on macOS 26) | **Files Processed:** 265,000+
 
 ## Capabilities
 
 Scans directories, classifies files by content, organizes them into a semantic folder hierarchy, and builds a Schema.org-typed knowledge graph that is queryable over REST.
 
-- **Content classification** — layered priority pipeline: organization → personal (doc-class) → legal → financial (filename) → research paper → e-commerce → software UI → game assets → filepath → CLIP/OCR content analysis → MIME fallback (see [FILE_ORGANIZATION.md](docs/FILE_ORGANIZATION.md#4b-classification-priority-contentorganizerdetect_file_category-srcorganizerscontent_organizerpy)).
+- **Content classification** — unified weighted-signal scorer: 19 signals (entity detection, legal, financial, research publishers, game assets, filepath, screenshot OCR, CLIP vision, scene probe, media heuristics, MIME fallback) run in cost-tier waves with early exit; the highest aggregated `(category, subcategory)` wins, and margin/confidence thresholds route weak decisions to `uncategorized`. The legacy first-match-wins tier chain was removed in Phase 5 (see [FILE_ORGANIZATION.md](docs/FILE_ORGANIZATION.md) and [UNIFIED_SCORING_PLAN.md](docs/architecture/UNIFIED_SCORING_PLAN.md)).
 - **CLIP + OCR vision** — unified `classify_with_ocr_fallback()` (CLIP ViT-B-32 + cached embeddings) with OCR fallback for low-confidence predictions.
 - **Image/screenshot renaming** — `rename_images.py --profile {photo,screenshot}` selects vocabulary and in-place vs. folder mode; the screenshot profile prefers a title-like OCR line (`Screenshot_<title>`) over the generic CLIP label when one qualifies.
 - **Schema.org graph store** — SQLAlchemy ORM with canonical IDs (UUID v5 + SHA-256); every entity exposes `to_schema_org()`, plus bulk JSON/NDJSON/`@graph` export and JSON-LD `@context` generation.
-- **ML support** — training-data preprocessing and model evaluation.
+- **Near-duplicate detection** — `find-duplicates` reports the same content in different bytes (re-encoded, resized, cropped, PDF-vs-image), which exact content-hash grouping cannot see. SSCD copy-detection descriptors indexed with faiss; read-only, and it never moves or deletes anything.
+- **ML support** — training-data preprocessing, model evaluation, and a scoring-calibration harness (`make calibrate`, plus `make weight-search` for a nevergrad joint weight/threshold search).
 - **Dashboard + timeline** — static UI in `_site/`, fed by `update-site` and `timeline` data generators.
 
 All entry points share one backing SQLite graph (`results/file_organization.db`): the CLI writes classifications, the API serves them as JSON-LD, and the dashboard visualizes them.
@@ -31,12 +32,12 @@ All entry points share one backing SQLite graph (`results/file_organization.db`)
 ```bash
 git clone https://github.com/aledlie/schema-org-file-system.git
 cd schema-org-file-system
-python3.13 -m venv venv && source venv/bin/activate
+python3.14 -m venv venv && source venv/bin/activate
 pip install -e ".[all]"
 brew install tesseract poppler
 
 organize-files content --source ~/Downloads --dry-run --limit 100
-organize-files health  # Should report 9/9 features operational
+organize-files health  # Should report 12/12 features operational
 ```
 
 Full setup, daily-use commands, output-folder layout, ML workflow, and dev checks are in **[QUICK_START.md](QUICK_START.md)**.
@@ -75,8 +76,10 @@ flowchart LR
 
 | Layer | Technology |
 |-------|------------|
-| AI/ML | PyTorch, open-clip-torch, OpenCV |
+| AI/ML | PyTorch, open-clip-torch, OpenCV, scikit-learn |
 | OCR | docTR (PyTorch); easyocr preferred for the screenshot path when installed |
+| Similarity | faiss (near-duplicate index) + SSCD copy-detection descriptors |
+| Calibration | nevergrad (derivative-free weight/threshold search) |
 | Database | SQLite + SQLAlchemy |
 | API | FastAPI |
 | Monitoring | Sentry SDK |
