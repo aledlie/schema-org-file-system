@@ -330,7 +330,9 @@ def _run_image_ocr(image_path: Path) -> DocTRResult | None:
                 print(f"  OCR warning: HEIC array conversion failed for {image_path.name}")
                 return None
         doc = [page] if page is not None else DocumentFile.from_images([str(image_path)])
-        result = predictor(doc)
+        # _get_predictor() is untyped (docTR is an optional import), so the call
+        # result is Any — annotate here so the declared return type is honoured.
+        result: DocTRResult = predictor(doc)
         chars = len(result.render().strip())
         if chars < _CLAHE_RETRY_MIN_CHARS and (page is not None or chars > 0):
             enhanced = preprocess_for_ocr(image_path, enhance=True)
