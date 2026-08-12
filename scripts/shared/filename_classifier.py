@@ -1307,8 +1307,13 @@ def classify_by_filename_patterns(
         if re.match(r"^[A-Z][a-z]+-p-\d+$", file_path.stem):  # Use original stem for case
             print("  ✓ Filename pattern: Portrait photo")
             return ("media", "photos_portraits", None, [])
-        # Pattern: hyphenated long names (stock photos with -p-500/-800/-1080 suffix)
-        if re.match(r"^[a-z]+-[a-z]+-[a-z]+.*-p-\d+$", stem):
+        # Pattern: hyphenated long names (stock photos with a CMS responsive-variant
+        # suffix). Two shapes: plain width (-p-500/-800/-1080) and Webflow's
+        # dimension+quality form (-p-130x130q80). The second is what keeps a
+        # marketing photo of people out of photos_social when it sits outside an
+        # Organization/ folder — inside one the org signal already wins on its own,
+        # so before this the routing was correct by location rather than by name.
+        if re.match(r"^[a-z]+-[a-z]+-[a-z]+.*-p-\d+(x\d+q\d+)?$", stem):
             print("  ✓ Filename pattern: Stock photo")
             return ("media", "photos_stock", None, [])
         # Pattern: hyphenated long names without -p- suffix (general descriptive names)

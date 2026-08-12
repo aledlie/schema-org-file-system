@@ -316,3 +316,47 @@ class TestSignalMetadata:
         assert signal.name == "filename_pattern"
         assert signal.weight == W_FILENAME
         assert signal.cost_tier == "cheap"
+
+
+class TestCmsResponsiveVariantStockPhotos:
+    """A CMS responsive-variant suffix marks a marketing photo as stock.
+
+    These images depict people, so the people gate reads them as social photos.
+    The concrete files that prompted this (Leora's Webflow exports) are already
+    caught by name via the hardcoded ``elderlycare`` company keyword, which runs
+    earlier — but that list is overfit to one company. The variant suffix is the
+    general form of the same claim, and it is what covers a CMS export from any
+    other site.
+    """
+
+    def _route(self, name: str):
+        scores = make_signal().run(make_ctx(f"/tmp/{name}"))
+        assert len(scores) == 1
+        return scores[0].category, scores[0].subcategory
+
+    def test_plain_width_variant_is_stock(self):
+        assert self._route("nurse-assisting-patient-at-home-p-500.jpg") == (
+            "media",
+            "photos_stock",
+        )
+
+    def test_webflow_dimension_quality_variant_is_stock(self):
+        # -p-130x130q80 is width x height + quality; it matched neither shipped
+        # stock rule, both of which required the suffix to end in bare digits.
+        assert self._route("happy-family-at-the-park-p-130x130q80.jpg") == (
+            "media",
+            "photos_stock",
+        )
+
+    def test_company_keyword_still_wins_over_the_stock_rule(self):
+        # Ordering guard: the Leora keyword rule runs first and is more specific
+        # (it names the company), so widening the stock pattern must not steal
+        # these files into a generic bucket.
+        assert self._route(
+            "grandparents-and-grandson-elderlycare-x-webflow-template-p-130x130q80.jpg"
+        ) == ("organization", "other")
+
+    def test_ordinary_hyphenated_photo_is_not_captured(self):
+        # The suffix is the whole signal — a descriptive stem with no variant
+        # marker must not be pulled into stock by the widened pattern.
+        assert self._route("my-vacation-photo.jpg") != ("media", "photos_stock")
