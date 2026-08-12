@@ -5,6 +5,7 @@ from __future__ import annotations
 import sqlite3
 import sys
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -13,6 +14,7 @@ _SCRIPTS_DIR = Path(__file__).parent.parent.parent / "scripts"
 if str(_SCRIPTS_DIR) not in sys.path:
     sys.path.insert(0, str(_SCRIPTS_DIR))
 
+from shared.clip_classification import CLIPResult  # noqa: E402
 from shared.db_utils import db_connection, get_db_connection  # noqa: E402
 from shared.file_ops import is_os_junk_file, resolve_collision  # noqa: E402
 
@@ -386,3 +388,96 @@ class TestExtractScreenshotLines:
             patch.object(oc, "_run_image_ocr", return_value=None),
         ):
             assert oc.extract_screenshot_lines(sample_image_file) is None
+
+
+# ---------------------------------------------------------------------------
+# CLIPResult — decision_scores / raw_scores / all_scores (deprecated alias)
+# ---------------------------------------------------------------------------
+
+
+class TestCLIPResultScoreFields:
+    """CLIPResult carries two named distributions and a deprecated alias.
+
+    decision_scores — prefixed pass that chose the winner.
+    raw_scores      — unprefixed pass (flatter distribution).
+    all_scores      — deprecated alias for raw_scores; zero in-repo readers.
+    """
+
+    _DECISION = {"sofa": 0.0120, "chair": 0.0110}
+    _RAW = {"sofa": 0.0115, "chair": 0.0118}
+
+    def _make_result(self, margin: float | None = None) -> CLIPResult:
+        return CLIPResult("sofa", 0.0120, self._DECISION, self._RAW, margin)
+
+    def test_decision_scores_holds_prefixed_distribution(self) -> None:
+        r = self._make_result()
+        assert r.decision_scores == self._DECISION
+
+    def test_raw_scores_holds_unprefixed_distribution(self) -> None:
+        r = self._make_result()
+        assert r.raw_scores == self._RAW
+
+    def test_all_scores_is_alias_for_raw_scores(self) -> None:
+        r = self._make_result()
+        assert r.all_scores is r.raw_scores
+
+    def test_decision_and_raw_can_differ(self) -> None:
+        # The whole point: the two distributions rank differently.
+        r = self._make_result()
+        assert r.decision_scores["sofa"] > r.decision_scores["chair"]  # decision: sofa wins
+        assert r.raw_scores["chair"] > r.raw_scores["sofa"]  # raw: chair leads
+
+    def test_margin_field_survives_with_no_default(self) -> None:
+        r = self._make_result(margin=1.09)
+        assert r.margin == pytest.approx(1.09)
+
+    def test_margin_defaults_to_none(self) -> None:
+        r = self._make_result()
+        assert r.margin is None
+
+    def test_positional_and_keyword_construction_agree(self) -> None:
+        pos = CLIPResult("sofa", 0.012, self._DECISION, self._RAW, 1.09)
+        kw = CLIPResult(
+            category="sofa",
+            confidence=0.012,
+            decision_scores=self._DECISION,
+            raw_scores=self._RAW,
+            margin=1.09,
+        )
+        assert pos == kw
+
+    def test_classify_image_calls_score_embedding_twice(self, tmp_path: Path) -> None:
+        """classify_image makes one prefixed call (decision) and one unprefixed (raw)."""
+        import shared.clip_classification as cc
+
+        fake_image = tmp_path / "test.jpg"
+        fake_image.write_bytes(b"\xff\xd8")
+
+        prefixed_results = [("sofa", 0.0120), ("chair", 0.0110)]
+        raw_results = [("chair", 0.0118), ("sofa", 0.0115)]
+
+        mock_clf = MagicMock()
+        mock_clf.encode_image.return_value = MagicMock()  # fake embedding
+        mock_clf.score_embedding.side_effect = [prefixed_results, raw_results]
+
+        with (
+            patch.object(cc, "CLIP_AVAILABLE", True),
+            patch.object(cc, "get_clip_classifier", return_value=mock_clf),
+            patch.object(cc, "CLIP_CACHE_AVAILABLE", False),
+        ):
+            result = cc.classify_image(fake_image, ["sofa", "chair"])
+
+        assert result is not None
+        assert result.category == "sofa"
+        assert result.decision_scores == dict(prefixed_results)
+        assert result.raw_scores == dict(raw_results)
+        # Confirm they differ — decision picked sofa, raw would rank chair first.
+        assert result.decision_scores["sofa"] > result.decision_scores["chair"]
+        assert result.raw_scores["chair"] > result.raw_scores["sofa"]
+
+        calls = mock_clf.score_embedding.call_args_list
+        assert len(calls) == 2
+        _, prefixed_kwargs = calls[0]
+        _, raw_kwargs = calls[1]
+        assert calls[0][0][2] == "a photo of "  # decision pass prefix
+        assert calls[1][0][2] == ""  # raw pass prefix

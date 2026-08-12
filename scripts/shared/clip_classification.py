@@ -21,19 +21,45 @@ from shared.constants import (
 
 
 class CLIPResult(NamedTuple):
-    """Unified CLIP classification result."""
+    """Unified CLIP classification result.
+
+    Two scoring distributions are stored to make their distinct roles explicit:
+
+    - ``decision_scores`` — the prompt-prefixed pass (``"a photo of "``) that
+      actually chose ``category``.  Consumers that want to understand or audit
+      the decision should read this field.
+    - ``raw_scores`` — the unprefixed pass (``prompt_prefix=""``).  The two
+      distributions differ in practice; having both named makes it impossible to
+      silently read the wrong one.
+    - ``all_scores`` — **deprecated alias for ``raw_scores``**.  Carries the
+      unprefixed distribution (same value ``all_scores`` always held).  Prefer
+      ``raw_scores`` for clarity.  No in-repo readers should remain; this exists
+      only for external callers.
+    """
 
     category: str
     confidence: float
-    all_scores: dict[str, float]
+    # Scores from the "a photo of " prefixed pass that chose ``category``.
+    decision_scores: dict[str, float]
+    # Scores from the unprefixed pass — a different, flatter distribution.
+    raw_scores: dict[str, float]
     # Top-1/top-2 ratio of the prompt-prefixed distribution that *chose*
     # ``category`` — the only usable measure of how decided this label is, since
     # the unscaled softmax leaves absolute confidences pinned near the uniform
     # floor. ``None`` means ``category`` did not come from that ranking (OCR
     # fallback or an accepted refinement won instead), so callers must not apply
-    # a margin gate to it. Note this is *not* the margin of ``all_scores``:
-    # those are scored from unprefixed prompts and can rank differently.
+    # a margin gate to it.
     margin: float | None = None
+
+    @property
+    def all_scores(self) -> dict[str, float]:
+        """Deprecated alias for ``raw_scores`` (the unprefixed distribution).
+
+        Prefer ``raw_scores`` for clarity, or ``decision_scores`` if you need
+        the distribution that actually picked the winner.  Zero in-repo readers
+        remain; this property exists only for external consumers.
+        """
+        return self.raw_scores
 
 
 def refine_classification(
@@ -149,7 +175,7 @@ def classify_image(
             # embedding instead of re-encoding the same pixels.
             store_embedding(image_path, classifier.embedding_to_numpy(image_emb))
 
-        # Get best match (matches top_match: "a photo of " prefix)
+        # Get best match using the "a photo of " prefix — this IS the decision pass.
         prefixed = classifier.score_embedding(image_emb, labels, "a photo of ")
         best_category, confidence = prefixed[0] if prefixed else ("unknown", 0.0)
 
@@ -175,11 +201,15 @@ def classify_image(
             margin = None
         best_category = refined_category
 
-        # Collect all scores (matches classify_raw: no prefix)
-        raw_results = classifier.score_embedding(image_emb, labels, "")
-        all_scores = {prompt: conf for prompt, conf in raw_results}
+        # decision_scores: the prefixed distribution that chose the winner.
+        decision_scores = {prompt: conf for prompt, conf in prefixed}
 
-        return CLIPResult(best_category, confidence, all_scores, margin)
+        # raw_scores: unprefixed pass — a distinct, flatter distribution kept
+        # so callers that need to compare the two can do so explicitly.
+        raw_results = classifier.score_embedding(image_emb, labels, "")
+        raw_scores = {prompt: conf for prompt, conf in raw_results}
+
+        return CLIPResult(best_category, confidence, decision_scores, raw_scores, margin)
 
     except Exception as e:
         print(f"  CLIP classification error for {image_path.name}: {e}")
@@ -229,19 +259,27 @@ def classify_with_ocr_fallback(
     # that unpacking here would silently reject on arity.
     clip_category = clip_result.category
 
-    # Step 2: Apply OCR fallback if needed
-    final_category, final_confidence, final_scores, _ = apply_ocr_fallback_logic(
+    # Step 2: Apply OCR fallback if needed.
+    # Pass decision_scores so the threshold comparison uses the same distribution
+    # that chose clip_category, and any OCR merge starts from that baseline.
+    final_category, final_confidence, final_decision_scores, _ = apply_ocr_fallback_logic(
         clip_category,
         clip_result.confidence,
-        clip_result.all_scores,
+        clip_result.decision_scores,
         image_path,
         clip_threshold=ocr_threshold,
         content_classifier=content_classifier,
         verbose=verbose,
     )
 
+    # raw_scores always carries the unmodified unprefixed CLIP distribution;
+    # it is not affected by whether OCR overrode the decision.
+    final_raw_scores = clip_result.raw_scores
+
     # The CLIP margin only describes the label CLIP itself picked; when OCR
     # supplies a better one, there is no CLIP separation to gate on.
     margin = clip_result.margin if final_category == clip_category else None
 
-    return CLIPResult(final_category, final_confidence, final_scores, margin)
+    return CLIPResult(
+        final_category, final_confidence, final_decision_scores, final_raw_scores, margin
+    )

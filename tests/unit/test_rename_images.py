@@ -23,10 +23,16 @@ from rename_images import PHOTO_PROFILE, SCREENSHOT_PROFILE, ImageAnalyzer  # no
 from shared.clip_classification import CLIPResult  # noqa: E402
 from shared.status import ProcessingStatus  # noqa: E402
 
-# A real CLIPResult, not a bare tuple: analyze_image reads .margin, so a 3-tuple
-# stub would pass while the production 4-field result path went unexercised.
+# A real CLIPResult, not a bare tuple: analyze_image reads .margin and
+# .decision_scores, so a positional stub would leave those paths unexercised.
+# decision_scores is the prefixed distribution; raw_scores is unprefixed (empty
+# here because the test only exercises the decision_scores path).
 _CLIP_RESULT = CLIPResult(
-    "a web browser or website", 0.82, {"a web browser or website": 0.82}, margin=2.0
+    "a web browser or website",
+    0.82,
+    {"a web browser or website": 0.82},
+    {},
+    margin=2.0,
 )
 
 
@@ -92,7 +98,7 @@ def _photo(tmp_path: Path) -> Path:
 
 
 def _result_with_margin(margin) -> CLIPResult:
-    return CLIPResult("desk", 0.0114, {"desk": 0.0114, "bookshelf": 0.0113}, margin)
+    return CLIPResult("desk", 0.0114, {"desk": 0.0114, "bookshelf": 0.0113}, {}, margin)
 
 
 class TestLabelMarginGate:

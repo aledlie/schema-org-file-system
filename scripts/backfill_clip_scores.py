@@ -76,14 +76,22 @@ def backfill(db_path: Path, apply: bool, force: bool, limit: Optional[int]) -> i
             missing += 1
             continue
         try:
-            results = get_cached_embedding(path, list(CLIP_CATEGORY_PROMPTS), prompt_prefix="")
+            # CLIP_CATEGORY_PROMPTS are the full decision prompts built by
+            # _make_clip_prompt — they already embed "a photo of " (or a
+            # label-specific prefix) per entry. prompt_prefix="" is therefore
+            # correct: the prefix is inside each prompt string, not added here.
+            # This produces the same distribution that _clip_scores_for_context
+            # uses in production for ClipVisionSignal, i.e. the decision pass.
+            decision_results = get_cached_embedding(
+                path, list(CLIP_CATEGORY_PROMPTS), prompt_prefix=""
+            )
         except Exception as exc:  # noqa: BLE001 — per-file resilience
             print(f"  ERR {path.name}: {exc}")
             failed += 1
             continue
         # Checked against the column's declared shape (models.ClipScores).
         scores: ClipScores = {
-            prompt_to_label.get(prompt, prompt): score for prompt, score in results
+            prompt_to_label.get(prompt, prompt): score for prompt, score in decision_results
         }
         updates.append((json.dumps(scores), row["id"]))
         done += 1

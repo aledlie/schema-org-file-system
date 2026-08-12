@@ -439,13 +439,15 @@ class ImageAnalyzer:
 
         # Attribute access, not tuple unpacking: CLIPResult carries a margin field.
         category = clip_result.category
-        all_scores = clip_result.all_scores
+        decision_scores = clip_result.decision_scores
         result["category"] = category
         result["confidence"] = clip_result.confidence
-        result["all_scores"] = all_scores
+        result["decision_scores"] = decision_scores
         result["margin"] = clip_result.margin
+        # top_scores is derived from the decision distribution so it matches the
+        # label that was actually chosen (not the unprefixed raw_scores).
         result["top_scores"] = dict(
-            sorted(all_scores.items(), key=lambda x: x[1], reverse=True)[:5]
+            sorted(decision_scores.items(), key=lambda x: x[1], reverse=True)[:5]
         )
         result["status"] = ProcessingStatus.PENDING
 
