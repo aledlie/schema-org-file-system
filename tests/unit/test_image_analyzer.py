@@ -438,12 +438,21 @@ class TestRankBasedPeopleGate:
             base[key] = value
         return base
 
-    def _has_people(self, analyzer, path, scores, faces: bool) -> bool:
+    def _has_people(
+        self,
+        analyzer: ImageContentAnalyzer,
+        path: Path,
+        scores: dict,
+        faces: bool,
+    ) -> bool:
         with (
             patch.object(analyzer, "classify_image_content", return_value=scores),
             patch.object(analyzer, "detect_people", return_value=faces),
         ):
-            return analyzer.analyze_for_organization(path)[0]
+            # Annotate where the value enters: the module is spec-loaded as Any,
+            # so the call is Any and would flow straight out of a bool return.
+            has_people: bool = analyzer.analyze_for_organization(path)[0]
+        return has_people
 
     def test_decision_is_invariant_to_scale(
         self, dummy_path: Path, analyzer: ImageContentAnalyzer
