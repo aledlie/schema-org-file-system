@@ -111,11 +111,13 @@ integrity problems, neither of which is data loss, and both of which mislead any
 future reader of the DB (including the calibration oracle in
 [`docs/architecture/scoring-calibration-20260726.md`](architecture/scoring-calibration-20260726.md)).
 
-**Status:** Mostly resolved — 7 dead rows pruned (`reconcile --prune-missing`), 42 of
-the 43 reverted-run rows re-organized and healed (item 1), and the 3 category-less
+**Status:** Path integrity resolved — 7 dead rows pruned (`reconcile --prune-missing`),
+42 of the 43 reverted-run rows re-organized and healed (item 1), the 3 category-less
 `Events/Burning Flipside/` rows now resolve via the looped entity-segment strip
-(item 3, 2026-07-27). Open: the `flutter_auth.txt` straggler + the 25-row staging-dir
-provenance record (items 2–3).
+(item 3, 2026-07-27), and the `flutter_auth.txt` straggler repaired 2026-08-11 (item 3).
+**0 of 488 rows now claim a `current_path` that does not exist while their file is
+live.** Open: only the 25-row staging-dir provenance record (item 2), which has no
+honest repair and stands as a rule rather than a task.
 **Priority:** P3
 **Source:** DB path audit, 2026-07-26 (same session as the sprite naming-trap fix)
 
@@ -154,11 +156,35 @@ provenance record (items 2–3).
    exist and provenance is destroyed. Stage into a durable location, or organize from
    the user's real source directory.
 3. **Residual rows the 2026-07-26 sweep deliberately left (4 rows).**
-   - `flutter_auth.txt` — the 43rd reverted-run file, sitting at `~/Desktop` **root**
+   - ~~`flutter_auth.txt` — the 43rd reverted-run file, sitting at `~/Desktop` **root**
      rather than `~/Desktop/Uncategorized`, so it was outside the source the re-organize
-     covered. Its `current_path` still claims `Documents/Business/Planning/`. One
-     `organize-files content --source ~/Desktop --limit 1`-style pass (or a `reconcile`
-     path repair) closes it.
+     covered.~~ **FIXED 2026-08-11** — but by neither route this item proposed, because
+     **both were wrong.** The row is now `current_path=NULL`, `status=PENDING`,
+     `organized_at=NULL`, with `organization_reason` recording the reverted run; the
+     file is untouched at `~/Desktop/flutter_auth.txt` (23,596 bytes, matching the row).
+     - **`reconcile` has no path-repair operation.** This item named one as if it
+       existed. `cmd_reconcile` implements exactly `--set-category`, `--prune-missing`
+       and `--backfill-categories` — none of which can rewrite a path. Check the
+       subcommand before citing it as the cheap route.
+     - **The `--source ~/Desktop --limit 1` pass was not viable either.**
+       `BatchProcessor.scan_directory` is `rglob("*")`, so that source is **751 files**
+       recursively, not the 10 at the top level, and `--limit 1` takes an arbitrary
+       rglob entry rather than the intended file — a scattergun that would move
+       unrelated Desktop files into `~/Documents`. There is no single-file `--source`.
+     - **`current_path=NULL` rather than `= original_path`**, which is how this item
+       phrased the option. `add_file` never sets `current_path`, so NULL *is* the
+       never-organized shape, and the `current_path or original_path` readers
+       (`graph_store.py:1288`, `:1364`) resolve it to the Desktop path either way.
+       Writing the original path in instead would make the four sites that treat a
+       non-NULL `current_path` as "organized" (`:988`, `:1021`, `:1448`) report a file
+       that was never filed as filed — trading a wrong path for a wrong status.
+     - **Verified that NULL does not make it prunable:** `prune_missing_files` requires
+       *both* paths gone, and `original_path` exists, so `reconcile --prune-missing`
+       still reports the same 6 unrecoverable rows and leaves this one alone.
+     - Its `business/planning` category edge was deliberately left in place — the edge
+       records the classification, and this repair is about path provenance. A file at
+       `~/Desktop` root has no taxonomy ancestor, so `resolve_taxonomy_folder` would
+       report it unresolved rather than propose a better one.
    - ~~3 rows under `Events/Burning Flipside/` have **no category edge**~~
      **FIXED 2026-07-27.** Folder lookup moved to `resolve_taxonomy_folder`
      (`graph_store.py`): exact match first, then trailing segments stripped **in a
