@@ -220,6 +220,22 @@ class PruneFilesResult(TypedDict):
     files: List[PrunedFileEntry]
 
 
+class SignalEvidenceEntry(TypedDict):
+    """One ``file_categories`` row carrying persisted scoring evidence.
+
+    The read side of ``add_file_to_category(signal_evidence=...)``. Until this
+    existed the column was write-only: nothing in the codebase read back what
+    every content run had been recording since UNIFIED_SCORING_PLAN §5.4.
+    """
+
+    file_id: str
+    filename: str
+    current_path: Optional[str]
+    category: Optional[str]
+    confidence: Optional[float]
+    evidence: Dict[str, Any]
+
+
 class GraphStatistics(TypedDict):
     """``get_statistics()`` shape."""
 
@@ -561,6 +577,67 @@ class GraphStore:
                 )
             self._signal_evidence_supported = supported
         return self._signal_evidence_supported
+
+    def get_signal_evidence(
+        self,
+        *,
+        file_id: Optional[str] = None,
+        category_full_path: Optional[str] = None,
+        limit: Optional[int] = None,
+        session: Optional[Session] = None,
+    ) -> List[SignalEvidenceEntry]:
+        """Read back persisted ``file_categories.signal_evidence`` rows.
+
+        The counterpart to ``add_file_to_category(signal_evidence=...)``. Rows
+        with a NULL column (legacy runs, or runs before the migration) are
+        skipped, so an empty result means "nothing recorded", never "no files".
+
+        Args:
+            file_id: Restrict to one file's associations.
+            category_full_path: Restrict to one category identity. Matches
+                ``Category.full_path`` (the identity), not ``name`` — ``name``
+                repeats across parents and would collapse unrelated buckets.
+            limit: Cap the number of rows returned.
+            session: Optional existing session.
+
+        Returns:
+            One entry per association row that carries evidence.
+        """
+        if not self._supports_signal_evidence():
+            return []
+
+        with self._session_scope(session) as (session, _owned):
+            query = (
+                session.query(
+                    file_categories.c.file_id,
+                    file_categories.c.confidence,
+                    file_categories.c.signal_evidence,
+                    File.filename,
+                    File.current_path,
+                    Category.full_path,
+                )
+                .join(File, File.id == file_categories.c.file_id)
+                .join(Category, Category.id == file_categories.c.category_id)
+                .filter(file_categories.c.signal_evidence.isnot(None))
+            )
+            if file_id is not None:
+                query = query.filter(file_categories.c.file_id == file_id)
+            if category_full_path is not None:
+                query = query.filter(Category.full_path == category_full_path)
+            if limit is not None:
+                query = query.limit(limit)
+
+            return [
+                SignalEvidenceEntry(
+                    file_id=row[0],
+                    filename=row[3],
+                    current_path=row[4],
+                    category=row[5],
+                    confidence=row[1],
+                    evidence=row[2] or {},
+                )
+                for row in query.all()
+            ]
 
     def add_file_to_category(
         self,

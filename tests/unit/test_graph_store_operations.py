@@ -557,3 +557,69 @@ class TestSearch:
         results = store.search_by_location(30.0, -98.0, radius_km=10)
 
         assert [f.id for f in results] == [east]
+
+
+class TestSignalEvidenceReadback:
+    """``get_signal_evidence()`` — the read side of the evidence column.
+
+    Before this existed the column was write-only: every content run recorded
+    per-signal evidence and nothing in the codebase read it back.
+    """
+
+    def test_returns_evidence_written_by_add_file_to_category(self, store: GraphStore):
+        file_id = _add_file(store, "/tmp/photo.jpg")
+        evidence = {"scorer": "unified", "all_scores": [{"signal": "clip_vision"}]}
+        store.add_file_to_category(file_id, "media", "photos_other", signal_evidence=evidence)
+
+        rows = store.get_signal_evidence()
+
+        assert len(rows) == 1
+        assert rows[0]["file_id"] == file_id
+        assert rows[0]["filename"] == "photo.jpg"
+        assert rows[0]["evidence"] == evidence
+
+    def test_rows_without_evidence_are_skipped(self, store: GraphStore):
+        # A legacy association (NULL column) must not surface as an empty dict —
+        # "nothing recorded" and "recorded as empty" are different facts.
+        plain = _add_file(store, "/tmp/plain.jpg")
+        store.add_file_to_category(plain, "media", "photos_other")
+        withev = _add_file(store, "/tmp/withev.jpg")
+        store.add_file_to_category(withev, "media", "photos_social", signal_evidence={"a": 1})
+
+        rows = store.get_signal_evidence()
+
+        assert [r["file_id"] for r in rows] == [withev]
+
+    def test_filter_by_file_id(self, store: GraphStore):
+        first = _add_file(store, "/tmp/first.jpg")
+        second = _add_file(store, "/tmp/second.jpg")
+        store.add_file_to_category(first, "media", "photos_other", signal_evidence={"n": 1})
+        store.add_file_to_category(second, "media", "photos_other", signal_evidence={"n": 2})
+
+        rows = store.get_signal_evidence(file_id=second)
+
+        assert [r["evidence"] for r in rows] == [{"n": 2}]
+
+    def test_filter_by_category_full_path_not_name(self, store: GraphStore):
+        # `name` repeats across parents ("other" lives under many categories);
+        # only full_path distinguishes them, so the filter must key on it.
+        media = _add_file(store, "/tmp/m.jpg")
+        personal = _add_file(store, "/tmp/p.pdf")
+        store.add_file_to_category(media, "media", "other", signal_evidence={"where": "media"})
+        store.add_file_to_category(
+            personal, "personal", "other", signal_evidence={"where": "personal"}
+        )
+
+        rows = store.get_signal_evidence(category_full_path="personal/other")
+
+        assert [r["evidence"] for r in rows] == [{"where": "personal"}]
+
+    def test_limit_caps_rows(self, store: GraphStore):
+        for i in range(3):
+            fid = _add_file(store, f"/tmp/f{i}.jpg")
+            store.add_file_to_category(fid, "media", "photos_other", signal_evidence={"i": i})
+
+        assert len(store.get_signal_evidence(limit=2)) == 2
+
+    def test_empty_store_returns_empty_list(self, store: GraphStore):
+        assert store.get_signal_evidence() == []
