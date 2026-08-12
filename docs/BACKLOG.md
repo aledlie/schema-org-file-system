@@ -32,9 +32,11 @@ Last updated: 2026-08-11 (closed 2 items — **Lint debt** `flake8 src/ scripts/
 
 The durable fix mirrors the interior-detection precedent (`docs/reviews/INTERIOR_DETECTION_DURABLE_FIX_ANALYSIS.md`): replace/augment the pixel heuristics with a **trained linear probe over the frozen `ViT-B-32` embeddings the pipeline already caches** — a `graphic` (or binary graphic-vs-photograph) class — exactly as `InteriorSignal` (`src/scoring/signals/interior.py`, `results/interior_probe.joblib`) did for the zero-shot interior gate. CLIP embeddings *do* separate graphics from photographs even though CLIP zero-shot labels don't (the whole reason `GraphicDetectionSignal` avoided CLIP). Landing chosen and shipped: a dedicated `graphic` class (index 4) in the scene probe (`scripts/prototype_scene_probe.py`, corpus `results/scene_labels/`) — see the runtime bullet below; the logo + poster above are ideal `graphic/` positives (boundary rules: `results/scene_labels/README.md`, graphic-vs-photograph split added `38ddfd5`).
 
-**Status:** Open — narrowed 2026-07-27. Corpus expanded 34 → 307 via Crello; real-world
-graphic recall 0.67 → 0.76. The residual error is now a single identified subtype
-(data-viz/dashboards), not general volume. See the 2026-07-27 entry at the end of this item.
+**Status:** Open — narrowed 2026-07-27, labeling policy decided 2026-08-11. Corpus expanded
+34 → 307 via Crello; real-world graphic recall 0.67 → 0.76. The promo-panel/dashboard
+boundary is now settled (content rule — see the 2026-08-11 bullets at the end of this item),
+which unblocks the next corpus increment. Remaining: pull data-viz into `graphic/` **and**
+functional-UI/document screenshots into `neither/`, then retrain and re-eval.
 **Priority:** P3
 **Source:** ChatGPT shadow-scorer investigation, 2026-07-18 (`results/scoring_shadow.jsonl`; agreement-set manual review)
 
@@ -70,13 +72,39 @@ graphic recall 0.67 → 0.76. The residual error is now a single identified subt
   `~/.claude/.../memory/dataset-license-constraints.md`); **DomainNet `infograph`**
   (51,605 images, one-line TFDS pull) is the license-viable candidate, pending
   verification of DomainNet's terms at ai.bu.edu.
-- **This also sharpens the promo-panel labeling call.** The dashboards are the hybrid case
-  in concrete form: flat data-viz rendered inside product UI. The README's boundary rules
-  currently point both ways — "data-viz → `graphic`" and "UI screenshots → `neither`".
-  Enrico's published precedent (no promotional category; onboarding/value-prop panels
-  labeled as functional UI) argues for `neither`; the graphic class's *purpose* — stop
-  non-photographic imagery leaking to `photos_*` — argues for `graphic`. Decide and write
-  it into the boundary rules, because 8 of the corpus's hardest images turn on it.
+- **~~This also sharpens the promo-panel labeling call.~~ DECIDED 2026-08-11 — the content
+  rule: the pixels decide, not the framing.** Synthetic imagery is `graphic/` **even when
+  the image is a screenshot**; live interface chrome in the frame does not move it to
+  `neither/`. Written into `results/scene_labels/README.md` as three bullets, replacing the
+  both-ways ambiguity ("data-viz → `graphic`" vs "UI screenshots → `neither`") that made the
+  README undecidable for the same image. Enrico's precedent argued the other way and was not
+  followed: the graphic class exists to stop non-photographic imagery reaching `photos_*`,
+  and a dashboard is not a photograph. **No image was relabelled** — all 12 contested
+  `biz_*` files keep `graphic/`, so the 0.76 real-world recall figure remains comparable
+  across the decision rather than being mechanically improved by moving the errors.
+- **The rule left one line undecided, so the README resolves it explicitly:** text documents
+  and functional UI (settings, terminals, editors, forms, chat) stay in `neither/`. A literal
+  "synthetic → `graphic/`" would swallow them, and they belong on the OCR/screenshot path,
+  not in `Media/Graphics`. The discriminator inside synthetic content is **imagery vs
+  text/controls**. A decision that resolves an ambiguity can introduce a new one at its own
+  edge — state the edge in the same commit or the item reopens under a different name.
+- **The risk now runs the other way, and the corpus is not shaped for it.** This rule trains
+  the probe toward "UI layout → graphic", so the new failure mode is genuine UI screenshots
+  and document scans being pulled *into* `Media/Graphics`. `neither/` is the class that must
+  teach that distinction and it is by far the smallest — **73, against `graphic` 308 and
+  `place` 347.** So the next corpus increment is no longer just DomainNet `infograph` into
+  `graphic/`; it must add functional-UI and document screenshots to `neither/`, and the
+  retrain must report `neither` recall and the `neither → graphic` confusion cell.
+- **Correction to the bullet above: the residual errors are *not* "one coherent subtype".**
+  Inspecting the images rather than the filenames, the 12 hand-collected `biz_*` files are at
+  least four different things: a pure flat vector illustration of chart panels
+  (`biz_dashboard_9f2885b8`, no interface at all), a chart-dominant real analytics view
+  (`biz_dashboard_26478eb2`), composed promo panels of headline + bullets + product mockup
+  (`fba0e47a`, `biz_20260107_dashboard`), and web captures carrying live chat-widget chrome
+  (`882118b3`). Only the last two were ever contested; the first is a plain graphic the probe
+  misses on volume alone. **"They're all `biz_dashboard_*`" is a filename observation being
+  read as a content finding** — which also means a wholesale relabel of that prefix would
+  have been wrong in either direction.
 - **Encoding confound found and fixed (`scripts/normalize_scene_corpus.py`).** The corpus
   had class partly recoverable from file metadata alone: `place/` was 100% JPEG at 256px
   (Places365), hand-collected `graphic/` mostly PNG at ~1536px. A logistic regression on

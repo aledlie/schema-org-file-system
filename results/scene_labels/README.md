@@ -13,8 +13,8 @@ is tracked **except** third-party pulls matching `crello_*` — see
 | `interior/` | interior | `Media/Interiors` | `Room` | indoor rooms — bedrooms, kitchens, offices, hotel/meeting rooms |
 | `exterior/` | exterior | `Media/Exteriors` | `House` | house/building facades **and attached porches & patios** |
 | `place/`    | place    | `Media/Place`     | `Place` | outdoor / landscape / travel; non-residential or commercial scenes |
-| `graphic/`  | graphic  | `Media/Graphics`  | `ImageObject` | non-photographic imagery: logos, marketing/text posters, icon sets, diagrams/infographics, data-viz (maps w/ overlays), flat/vector illustrations |
-| `neither/`  | neither  | *(no vote)*       | —       | reject class — real photographs that aren't a scene (portraits, product shots, still-lifes), plus documents & UI screenshots |
+| `graphic/`  | graphic  | `Media/Graphics`  | `ImageObject` | synthetic **imagery**: logos, marketing/text posters, promo panels, icon sets, diagrams/infographics, data-viz (charts, dashboards, maps w/ overlays), flat/vector illustrations — **including screenshots of any of those** |
+| `neither/`  | neither  | *(no vote)*       | —       | reject class — real photographs that aren't a scene (portraits, product shots, still-lifes), plus **text documents and functional UI** (settings, terminals, editors, forms, chat) |
 
 Boundary rules (locked 2026-07-17; `graphic/` added 2026-07-18):
 - A **covered patio or porch attached to a residence → `exterior/`** (not place).
@@ -28,6 +28,35 @@ Boundary rules (locked 2026-07-17; `graphic/` added 2026-07-18):
   past the cheap `GraphicDetectionSignal` gate to `photos_*` — do **not** file
   logos/posters in `neither/` (that trains the probe to reject the very thing it
   must catch).
+- **Promo panels and dashboard captures → `graphic/`. Decided 2026-08-11; the
+  pixels decide, not the framing.** This rule replaces the ambiguity that made
+  the two bullets above point in opposite directions for the same image
+  ("data-viz → `graphic`" vs "UI screenshots → `neither`"). If the *content* is
+  synthetic imagery, it is `graphic/` **even when the image is a screenshot** —
+  a marketing panel with a headline and a product mockup, a chart-dominant
+  analytics view, a flat illustration of dashboard cards. Live interface chrome
+  in the frame (a chat widget, a close ✕, a scrollbar, content cut off
+  mid-scroll) does **not** move it to `neither/`. Rationale: the graphic class
+  exists to stop non-photographic imagery reaching `photos_*`, and a dashboard
+  is not a photograph.
+- **The one line that rule does not decide, resolved explicitly: text documents
+  and functional UI stay in `neither/`.** A screenshot of a settings pane, a
+  terminal, a code editor, a web form or a chat thread is synthetic pixels too,
+  so a literal reading of "synthetic → `graphic/`" would swallow it. It should
+  not: those route through OCR and the screenshot/document path, not to
+  `Media/Graphics`. **The discriminator inside synthetic content is imagery vs
+  text/controls** — charts, illustration and designed layout are imagery;
+  prose, fields, menus and code are not. When an image is both (a documentation
+  page with one diagram), label it by which the image is *for*.
+- **Known cost of this choice, to measure rather than assume.** It trains the
+  probe toward "UI layout → graphic", so the risk runs the other way now:
+  genuine UI screenshots and document scans being pulled into `Media/Graphics`.
+  `neither/` is the class that has to teach that distinction and it is by far
+  the smallest (73 vs `graphic` 308, `place` 347). **The next corpus increment
+  must therefore add functional-UI and document screenshots to `neither/`, not
+  only data-viz to `graphic/`** — and the retrain must report `neither` recall
+  and the `neither → graphic` confusion cell, which is where this rule fails if
+  it fails.
 - When unsure whether an image is even a scene (a person portrait, a product, a
   document photo), put it in `neither/` — the reject class keeps the probe from
   forcing every image into a room/house/place/graphic.
