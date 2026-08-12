@@ -3,7 +3,9 @@
 
 UNIFIED_SCORING_PLAN §7.2: replay ``results/file_organization.db`` File rows
 through the REAL signal registry + Scorer, rebuilding each ``FileContext``
-from persisted columns only — no disk I/O, no OCR/CLIP models:
+from persisted columns — no OCR/CLIP models, and no disk reads except the two
+noted below (EXIF and the scene embedding cache), which have no stored
+equivalent to reconstruct from:
 
 - ``original_path``/``filename`` drive the filename/filepath signals (the
   original path is what the production classification saw; ``current_path``
@@ -18,6 +20,12 @@ from persisted columns only — no disk I/O, no OCR/CLIP models:
   reads; unreconstructable payloads skip KIE for that row.
 - ``image_classification`` (CLIP label→score JSON) feeds ``ensure_clip``
   when present as a numeric dict.
+- EXIF datetime/GPS is read from the file on disk (``current_path``, falling
+  back to ``original_path``), because nothing persists it: ``exif_datetime``
+  and ``gps_latitude``/``gps_longitude`` are empty on every row. Without it
+  ``ctx.ensure_image_metadata()`` is always ``{}``, which silently disables
+  ``ClipVisionSignal``'s GPS→travel upgrade and ``MediaHeuristicSignal``'s
+  GPS/datetime photo branches for the whole replay.
 - The screenshot-OCR signal's internal disk OCR is replaced by a stub that
   re-scores the STORED text against ``SCREENSHOT_KEYWORDS`` (pass 1 of
   ``shared.ocr_classifier.classify_by_ocr``), so screenshot-named rows
@@ -78,6 +86,14 @@ from src.organizers.category_config import CONTENT_CATEGORY_PATHS  # noqa: E402
 from src.scoring.context import FileContext  # noqa: E402
 from src.scoring.registry import build_default_signals  # noqa: E402
 from src.scoring.scorer import Scorer  # noqa: E402
+
+# The two image-metadata keys any signal reads. clip_vision.GPS_COORDINATES_KEY
+# is the same string; importing both consumers' keys from one place would imply
+# they can diverge, which they cannot — the provider must satisfy both.
+from src.scoring.signals.media_heuristic import (  # noqa: E402
+    DATETIME_METADATA_KEY,
+    GPS_METADATA_KEY,
+)
 from src.scoring.signals.scene import SCENE_SIGNAL_NAME, SceneSignal  # noqa: E402
 from src.scoring.signals.screenshot_ocr import ScreenshotOcrSignal  # noqa: E402
 from src.scoring.weights import (  # noqa: E402
@@ -103,6 +119,9 @@ from src.scoring.weights import (  # noqa: E402
 )
 
 BANNER = "Unified scoring backtest (UNIFIED_SCORING_PLAN §7.2)"
+
+# Shared ImageMetadataParser, built on first use by _metadata_parser().
+_METADATA_PARSER: Any = None
 
 EXIT_OK = 0
 EXIT_NO_DATA = 1
@@ -341,6 +360,78 @@ def _constant_provider(value: Any) -> Callable[[Path], Any]:
     return provider
 
 
+def on_disk_path(row: ReplayRow) -> Optional[str]:
+    """The row's live location on disk, or None when neither path resolves.
+
+    ``current_path`` first (where the file actually sits after the stored
+    filing decision), falling back to ``original_path`` for rows that were
+    never moved or whose move was later reverted.
+    """
+    for candidate in (row.current_path, row.original_path):
+        if candidate and Path(candidate).exists():
+            return candidate
+    return None
+
+
+def _metadata_parser() -> Any:
+    """Lazily built ``ImageMetadataParser``, shared across rows.
+
+    Imported inside the function because the analyzer pulls PIL/piexif, which
+    the rest of the replay never needs — a corpus with no resolvable images
+    should not pay the import.
+    """
+    global _METADATA_PARSER
+    if _METADATA_PARSER is None:
+        from src.analyzers.image_metadata import ImageMetadataParser
+
+        _METADATA_PARSER = ImageMetadataParser()
+    return _METADATA_PARSER
+
+
+def make_image_metadata_provider(row: ReplayRow) -> Optional[Callable[[Path], Dict[str, Any]]]:
+    """EXIF/GPS provider reading the row's on-disk file, or None if unresolvable.
+
+    Unlike the other providers this one touches the filesystem: nothing
+    persists EXIF today (``files.exif_datetime``/``gps_latitude``/
+    ``gps_longitude`` are empty on every row), so a stored-column
+    reconstruction would return ``{}`` for the whole corpus and leave
+    ``ClipVisionSignal``'s GPS→travel upgrade and ``MediaHeuristicSignal``'s
+    GPS/datetime photo branches unreachable in replay. Reading the file is
+    the only way to exercise them; ``_ReplaySceneSignal`` already sets the
+    precedent of resolving through the on-disk path.
+
+    Returns only the two keys the scorer actually reads — ``datetime`` and
+    ``gps_coordinates``. It deliberately does **not** call
+    ``get_metadata_summary``: that reverse-geocodes GPS through Nominatim,
+    which would put a network call in the replay for no observable effect
+    (no signal reads ``location_name``, ``year``, ``month``, ``date_str`` or
+    ``text_metadata``).
+    """
+    disk_path = on_disk_path(row)
+    if disk_path is None:
+        return None
+
+    def provider(_path: Path) -> Dict[str, Any]:
+        parser = _metadata_parser()
+        source = Path(disk_path)
+        exif = parser.extract_exif_data(source)
+        captured = parser.extract_datetime(source, exif)
+        if captured is None:
+            # Mirrors get_metadata_summary: GIF/PNG carry no EXIF datetime, so
+            # production falls back to a PNG "Creation Time" chunk — and .png is
+            # a PHOTO_EXTENSION, so that fallback can reach MediaHeuristicSignal's
+            # datetime branch. No row in the current corpus takes this path;
+            # reproduced anyway so the replay cannot silently diverge from
+            # production the day one does.
+            captured = parser._parse_creation_time(parser.extract_text_metadata(source))
+        return {
+            DATETIME_METADATA_KEY: captured,
+            GPS_METADATA_KEY: parser.extract_gps_coordinates(source, exif),
+        }
+
+    return provider
+
+
 def build_context(row: ReplayRow) -> Optional[FileContext]:
     """FileContext over the row's persisted columns, or None when unbuildable."""
     path_str = context_path(row)
@@ -375,6 +466,7 @@ def build_context(row: ReplayRow) -> Optional[FileContext]:
         ocr_provider=ocr_provider,
         clip_provider=clip_provider,
         kie_provider=kie_provider,
+        image_metadata_provider=make_image_metadata_provider(row),
     )
 
 

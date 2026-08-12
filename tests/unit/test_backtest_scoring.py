@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -547,3 +548,164 @@ def test_replay_row_is_plain_snapshot():
     """ReplayRow carries values, not ORM handles (SimpleNamespace-safe)."""
     kie = bs.reconstruct_kie(KIE_FIELDS_PERSISTED)
     assert isinstance(kie, SimpleNamespace)
+
+
+# --------------------------------------------------------------------------- #
+# On-disk EXIF/GPS provider                                                    #
+# --------------------------------------------------------------------------- #
+
+JPEG_MIME = "image/jpeg"
+
+# Written into the fixture EXIF; degrees-minutes-seconds so the expected
+# decimals below are exact rather than rounded.
+EXIF_CAPTURE_STAMP = "2024:04:04 18:44:35"
+EXPECTED_CAPTURE = datetime(2024, 4, 4, 18, 44, 35)
+EXPECTED_LATITUDE = 30.25  # 30 deg 15 min 0 sec N
+EXPECTED_LONGITUDE = -97.5  # 97 deg 30 min 0 sec W
+
+PNG_CREATION_STAMP = "2023-09-14T07:05:11"
+EXPECTED_PNG_CREATION = datetime(2023, 9, 14, 7, 5, 11)
+
+
+def _write_jpeg_with_exif(path: Path, *, stamp: str, with_gps: bool) -> Path:
+    """A real 8x8 JPEG carrying EXIF capture time and (optionally) GPS."""
+    import piexif
+    from PIL import Image
+
+    exif: dict = {"0th": {}, "Exif": {piexif.ExifIFD.DateTimeOriginal: stamp}, "GPS": {}}
+    if with_gps:
+        exif["GPS"] = {
+            piexif.GPSIFD.GPSLatitudeRef: "N",
+            piexif.GPSIFD.GPSLatitude: ((30, 1), (15, 1), (0, 1)),
+            piexif.GPSIFD.GPSLongitudeRef: "W",
+            piexif.GPSIFD.GPSLongitude: ((97, 1), (30, 1), (0, 1)),
+        }
+    Image.new("RGB", (8, 8), "blue").save(path, "JPEG", exif=piexif.dump(exif))
+    return path
+
+
+def _image_row(original_path: str, current_path: str, mime: str = JPEG_MIME) -> "bs.ReplayRow":
+    return bs.ReplayRow(
+        file_id="exif-row",
+        original_path=original_path,
+        current_path=current_path,
+        filename=Path(original_path or current_path).name,
+        mime_type=mime,
+        schema_type=IMAGE_SCHEMA,
+        extracted_text="",
+        ocr_confidence=None,
+        detected_language=None,
+        kie_fields=None,
+        clip_scores=None,
+        stored_category=None,
+        stored_subcategory=None,
+    )
+
+
+class TestOnDiskPath:
+    """Which of the row's two paths the replay should read the file from."""
+
+    def test_prefers_current_path_when_both_exist(self, tmp_path):
+        original = tmp_path / "original.jpg"
+        current = tmp_path / "filed.jpg"
+        original.write_bytes(b"x")
+        current.write_bytes(b"x")
+        row = _image_row(str(original), str(current))
+        assert bs.on_disk_path(row) == str(current)
+
+    def test_falls_back_to_original_when_current_path_is_empty(self, tmp_path):
+        original = tmp_path / "original.jpg"
+        original.write_bytes(b"x")
+        row = _image_row(str(original), "")
+        assert bs.on_disk_path(row) == str(original)
+
+    def test_falls_back_to_original_when_current_path_is_gone(self, tmp_path):
+        """The reverted-move shape: the row claims a destination that never persisted."""
+        original = tmp_path / "original.jpg"
+        original.write_bytes(b"x")
+        row = _image_row(str(original), str(tmp_path / "never_written.jpg"))
+        assert bs.on_disk_path(row) == str(original)
+
+    def test_returns_none_when_neither_path_resolves(self, tmp_path):
+        row = _image_row(str(tmp_path / "gone_a.jpg"), str(tmp_path / "gone_b.jpg"))
+        assert bs.on_disk_path(row) is None
+
+
+class TestImageMetadataProvider:
+    """EXIF/GPS read from disk, since no column persists it."""
+
+    def test_returns_none_when_the_file_cannot_be_found(self, tmp_path):
+        row = _image_row(str(tmp_path / "gone.jpg"), "")
+        assert bs.make_image_metadata_provider(row) is None
+
+    def test_reads_capture_time_and_gps(self, tmp_path):
+        path = _write_jpeg_with_exif(
+            tmp_path / "photo.jpg", stamp=EXIF_CAPTURE_STAMP, with_gps=True
+        )
+        provider = bs.make_image_metadata_provider(_image_row(str(path), ""))
+        assert provider is not None
+        metadata = provider(path)
+        assert metadata[bs.DATETIME_METADATA_KEY] == EXPECTED_CAPTURE
+        assert metadata[bs.GPS_METADATA_KEY] == (EXPECTED_LATITUDE, EXPECTED_LONGITUDE)
+
+    def test_reads_the_resolved_file_not_the_path_it_is_handed(self, tmp_path):
+        """The replay classifies under original_path (pre-move); the pixels are at current_path.
+
+        Reading the handed path would find nothing and silently yield empty
+        metadata — the exact failure this provider exists to prevent.
+        """
+        filed = _write_jpeg_with_exif(
+            tmp_path / "filed.jpg", stamp=EXIF_CAPTURE_STAMP, with_gps=True
+        )
+        moved_from = tmp_path / "no_longer_here.jpg"
+        provider = bs.make_image_metadata_provider(_image_row(str(moved_from), str(filed)))
+        assert provider is not None
+
+        metadata = provider(moved_from)
+
+        assert metadata[bs.GPS_METADATA_KEY] == (EXPECTED_LATITUDE, EXPECTED_LONGITUDE)
+
+    def test_reports_both_keys_as_none_when_the_image_has_no_exif(self, tmp_path):
+        from PIL import Image
+
+        path = tmp_path / "bare.jpg"
+        Image.new("RGB", (8, 8), "red").save(path, "JPEG")
+        provider = bs.make_image_metadata_provider(_image_row(str(path), ""))
+        assert provider is not None
+        metadata = provider(path)
+        assert metadata[bs.DATETIME_METADATA_KEY] is None
+        assert metadata[bs.GPS_METADATA_KEY] is None
+
+    def test_falls_back_to_the_png_creation_time_chunk(self, tmp_path):
+        """PNG carries no EXIF datetime, and .png is a PHOTO_EXTENSION."""
+        from PIL import Image
+        from PIL.PngImagePlugin import PngInfo
+
+        info = PngInfo()
+        info.add_text("Creation Time", PNG_CREATION_STAMP)
+        path = tmp_path / "made.png"
+        Image.new("RGB", (8, 8), "green").save(path, "PNG", pnginfo=info)
+
+        provider = bs.make_image_metadata_provider(_image_row(str(path), "", mime=PNG_MIME))
+        assert provider is not None
+        assert provider(path)[bs.DATETIME_METADATA_KEY] == EXPECTED_PNG_CREATION
+
+
+class TestBuildContextImageMetadata:
+    """The wiring: without it every replayed row sees {} and GPS signals go dark."""
+
+    def test_context_surfaces_exif_for_a_resolvable_image(self, tmp_path):
+        path = _write_jpeg_with_exif(
+            tmp_path / "photo.jpg", stamp=EXIF_CAPTURE_STAMP, with_gps=True
+        )
+        context = bs.build_context(_image_row(str(path), ""))
+        assert context is not None
+        assert context.ensure_image_metadata() == {
+            bs.DATETIME_METADATA_KEY: EXPECTED_CAPTURE,
+            bs.GPS_METADATA_KEY: (EXPECTED_LATITUDE, EXPECTED_LONGITUDE),
+        }
+
+    def test_context_is_empty_when_the_file_is_gone(self, tmp_path):
+        context = bs.build_context(_image_row(str(tmp_path / "gone.jpg"), ""))
+        assert context is not None
+        assert context.ensure_image_metadata() == {}
