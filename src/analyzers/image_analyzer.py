@@ -68,19 +68,69 @@ _INTERIOR_CATEGORIES = [
 ]
 
 _SCREENSHOT_LABEL = "a screenshot of a computer screen"
+_PEOPLE_LABEL = "a photo of people"
 
-_ALL_CATEGORIES = _INTERIOR_CATEGORIES + [
-    "a photo of a house exterior",
-    "a photo of people",
-    _SCREENSHOT_LABEL,
-    "a photo of outdoors",
-    "a photo of nature",
+# Non-photographic labels. Without them every logo, icon and flat graphic is
+# out-of-vocabulary: the softmax must still sum to 1 over labels that all
+# misfit, so the argmax lands arbitrarily — and it landed on _PEOPLE_LABEL for
+# 13 of 28 images in the 2026-08-11 measurement (9 logos, 3 icons, 1 text
+# screenshot). Giving those images a label to win keeps them off the people
+# gate; measured, all 9 logos moved here and every genuine people photo stayed.
+_GRAPHIC_LABELS = [
+    "a logo or brand mark",
+    "a graphic design or illustration",
 ]
 
+_ALL_CATEGORIES = (
+    _INTERIOR_CATEGORIES
+    + [
+        "a photo of a house exterior",
+        _PEOPLE_LABEL,
+        _SCREENSHOT_LABEL,
+        "a photo of outdoors",
+        "a photo of nature",
+    ]
+    + _GRAPHIC_LABELS
+)
+
+# Interior gate. DEAD, and deliberately left that way: CLIP scores here are an
+# unscaled-cosine softmax pinned near the uniform floor (max 0.1003 measured
+# over 39 images), so 0.3 can never be reached and `is_home_interior_no_people`
+# is always False. Interior detection moved to the trained SceneSignal on
+# 2026-07-18, so converting this to a rank test would resurrect a heuristic the
+# project replaced on purpose and re-route photos to property_management/other.
+# See docs/BACKLOG.md — CLIP scores are a softmax over raw cosines.
 _INTERIOR_SCORE_THRESHOLD = 0.3
-_PEOPLE_SCORE_THRESHOLD = 0.2
-_PEOPLE_SCORE_LOW_THRESHOLD = 0.15
-_SCREENSHOT_SCORE_THRESHOLD = 0.4
+
+
+def _ranks_top(scores: Dict[str, float], label: str) -> bool:
+    """True when ``label`` scores at or above every other label.
+
+    Rank is the only usable reading of these scores. ``_similarities`` softmaxes
+    unscaled cosines, so the distribution sits at the uniform floor (0.0903–0.1003
+    measured over 39 images against a 1/N floor of 0.0909) and every absolute
+    threshold written against it is unreachable. Softmax is order-preserving, so
+    a rank test is invariant to the missing ``logit_scale`` — restoring the
+    scaling later changes these magnitudes but not this comparison, which is
+    exactly why rank is used here rather than a ratio.
+
+    Ties count as ranking top (``>=``) so the answer never depends on dict
+    insertion order, which ``max()`` would otherwise decide arbitrarily. Callers
+    testing two labels can therefore both be true, and it is the caller's job to
+    resolve that — see the screenshot suppression in ``analyze_for_organization``.
+
+    A distribution whose labels all score identically carries no ranking at all,
+    so nothing ranks top and this returns False rather than True for every label.
+    Real softmax output never lands exactly uniform, so this only guards
+    degenerate and empty inputs — but without it an all-zero dict would fire
+    every gate at once, including suppressions.
+    """
+    if not scores:
+        return False
+    top = max(scores.values())
+    if top == min(scores.values()):
+        return False
+    return scores.get(label, 0.0) >= top
 
 
 class ImageContentAnalyzer:
@@ -185,11 +235,10 @@ class ImageContentAnalyzer:
             return (False, {})
 
         interior_score = max(scores.get(cat, 0) for cat in _INTERIOR_CATEGORIES)
-        people_score = scores.get("a photo of people", 0)
         has_faces = self.detect_people(image_path)
 
         is_interior = interior_score > _INTERIOR_SCORE_THRESHOLD
-        has_people = people_score > _PEOPLE_SCORE_THRESHOLD or has_faces
+        has_people = _ranks_top(scores, _PEOPLE_LABEL) or has_faces
 
         return (is_interior and not has_people, scores)
 
@@ -210,12 +259,16 @@ class ImageContentAnalyzer:
         has_faces = self.detect_people(image_path)
 
         interior_score = max(scores.get(cat, 0) for cat in _INTERIOR_CATEGORIES)
-        people_score = scores.get("a photo of people", 0)
-        screenshot_score = scores.get(_SCREENSHOT_LABEL, 0)
 
         is_interior = interior_score > _INTERIOR_SCORE_THRESHOLD
-        has_people = (people_score > _PEOPLE_SCORE_LOW_THRESHOLD or has_faces) and not (
-            screenshot_score > _SCREENSHOT_SCORE_THRESHOLD
+        # Rank, not magnitude — see _ranks_top. Structure is the original
+        # (people OR faces) AND NOT screenshot; only the comparison changed.
+        # The screenshot clause is what keeps a face detected inside a
+        # screenshot (a video call, a photo of a photo) out of the social
+        # bucket, and it wins a people/screenshot tie because it is applied
+        # last — suppression is the conservative resolution.
+        has_people = (_ranks_top(scores, _PEOPLE_LABEL) or has_faces) and not _ranks_top(
+            scores, _SCREENSHOT_LABEL
         )
         is_home_interior_no_people = is_interior and not has_people
 
@@ -236,11 +289,9 @@ class ImageContentAnalyzer:
         if not scores:
             return (False, {})
 
-        people_score = scores.get("a photo of people", 0)
         has_faces = self.detect_people(image_path)
-        screenshot_score = scores.get(_SCREENSHOT_LABEL, 0)
-        is_screenshot = screenshot_score > _SCREENSHOT_SCORE_THRESHOLD
+        is_screenshot = _ranks_top(scores, _SCREENSHOT_LABEL)
 
-        has_people = (people_score > _PEOPLE_SCORE_LOW_THRESHOLD or has_faces) and not is_screenshot
+        has_people = (_ranks_top(scores, _PEOPLE_LABEL) or has_faces) and not is_screenshot
 
         return (has_people, scores)

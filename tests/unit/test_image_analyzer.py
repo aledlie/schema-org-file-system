@@ -303,7 +303,10 @@ class TestHasPeopleInPhoto:
     def test_screenshot_suppresses_people_detection(
         self, dummy_path: Path, analyzer: ImageContentAnalyzer
     ) -> None:
-        scores = {"a photo of people": 0.9, _analyzer_module._SCREENSHOT_LABEL: 0.9}
+        # Screenshot outranks people. The fixture used to tie both at 0.9, which
+        # expressed "both cleared their magnitude thresholds"; under a rank test
+        # a tie is not a ranking, so the intent is now written as an ordering.
+        scores = {"a photo of people": 0.2, _analyzer_module._SCREENSHOT_LABEL: 0.9}
 
         with (
             patch.object(analyzer, "classify_image_content", return_value=scores),
@@ -321,10 +324,15 @@ class TestHasPeopleInPhoto:
 class TestAnalyzeForOrganization:
     """Covers the dual-flag logic in analyze_for_organization.
 
-    Key regression: interior images with a weak people signal (between
-    _PEOPLE_SCORE_LOW_THRESHOLD and _PEOPLE_SCORE_THRESHOLD, no faces) were
-    returning has_people=True *and* is_home_interior_no_people=True because
-    the two flags used different thresholds.  They must be mutually exclusive.
+    Key regression: interior images with a people signal and no faces were
+    returning has_people=True *and* is_home_interior_no_people=True because the
+    two flags used different thresholds.  They must be mutually exclusive.
+
+    The people/screenshot gates are rank tests, not magnitude tests — the score
+    values in these fixtures are ordering fixtures only.  The absolute
+    thresholds they replaced (0.15/0.2/0.4) were unreachable in production: real
+    scores are an unscaled-cosine softmax that maxes at ~0.10, so the synthetic
+    0.5 values below exercised a branch live data could never take.
     """
 
     def _make_scores(
@@ -376,27 +384,21 @@ class TestAnalyzeForOrganization:
         assert has_people is False
         assert is_interior is True
 
-    def test_flags_mutually_exclusive_in_gray_zone(
+    def test_flags_mutually_exclusive_when_people_and_interior_both_present(
         self, dummy_path: Path, analyzer: ImageContentAnalyzer
     ) -> None:
-        """Regression: people_score in (LOW_THRESHOLD, THRESHOLD) + interior must not
-        produce has_people=True AND is_home_interior_no_people=True simultaneously."""
-        mod = _analyzer_module
-        # people_score sits between the two thresholds; interior is clearly present
-        gray_people_score = (
-            mod._PEOPLE_SCORE_LOW_THRESHOLD + mod._PEOPLE_SCORE_THRESHOLD
-        ) / 2  # e.g. 0.175
-        scores = self._make_scores(people=gray_people_score, interior=0.4)
+        """Regression: an interior image that also reads as people must not
+        produce has_people=True AND is_home_interior_no_people=True at once."""
+        # People outranks interior, and interior also clears its own gate — the
+        # shape that used to set both flags when they read different thresholds.
+        scores = self._make_scores(people=0.5, interior=0.4)
         with (
             patch.object(analyzer, "classify_image_content", return_value=scores),
             patch.object(analyzer, "detect_people", return_value=False),
         ):
             has_people, is_interior_flag, _ = analyzer.analyze_for_organization(dummy_path)
-        # has_people fires (low threshold crossed) — the interior flag must be suppressed
         assert has_people is True
-        assert (
-            is_interior_flag is False
-        ), "Interior flag must be False when has_people is True (gray-zone misfire)"
+        assert is_interior_flag is False, "Interior flag must be False when has_people is True"
 
     def test_face_detection_suppresses_interior_flag(
         self, dummy_path: Path, analyzer: ImageContentAnalyzer
@@ -409,3 +411,92 @@ class TestAnalyzeForOrganization:
             has_people, is_interior_flag, _ = analyzer.analyze_for_organization(dummy_path)
         assert has_people is True
         assert is_interior_flag is False
+
+
+class TestRankBasedPeopleGate:
+    """The people/screenshot gates read rank, never magnitude.
+
+    Absolute thresholds (0.15/0.2/0.4) were written in 681c5ed against
+    `logits_per_image.softmax()`, which applied CLIP's trained logit_scale.
+    33264df removed that scaling as "boilerplate" while keeping the public API,
+    which flattened the distribution to the uniform floor and made every one of
+    those thresholds unreachable. Rank survives that class of change because
+    softmax is order-preserving.
+    """
+
+    def _scores(self, **overrides: float) -> dict:
+        mod = _analyzer_module
+        base = {cat: 0.01 for cat in mod._ALL_CATEGORIES}
+        for label, value in overrides.items():
+            key = {
+                "people": mod._PEOPLE_LABEL,
+                "screenshot": mod._SCREENSHOT_LABEL,
+                "logo": mod._GRAPHIC_LABELS[0],
+                "graphic": mod._GRAPHIC_LABELS[1],
+                "interior": "a photo of a home interior room",
+            }[label]
+            base[key] = value
+        return base
+
+    def _has_people(self, analyzer, path, scores, faces: bool) -> bool:
+        with (
+            patch.object(analyzer, "classify_image_content", return_value=scores),
+            patch.object(analyzer, "detect_people", return_value=faces),
+        ):
+            return analyzer.analyze_for_organization(path)[0]
+
+    def test_decision_is_invariant_to_scale(
+        self, dummy_path: Path, analyzer: ImageContentAnalyzer
+    ) -> None:
+        """The whole point of rank: restoring logit_scale must not change this.
+
+        Same ordering, magnitudes ~100x apart — the flat distribution the code
+        actually sees, and the peaked one it would see if the scaling came back.
+        """
+        flat = self._scores(people=0.0958, interior=0.0930)
+        peaked = {label: value * 100 for label, value in flat.items()}
+        assert self._has_people(analyzer, dummy_path, flat, faces=False) is True
+        assert self._has_people(analyzer, dummy_path, peaked, faces=False) is True
+
+    def test_floor_level_people_score_still_fires(
+        self, dummy_path: Path, analyzer: ImageContentAnalyzer
+    ) -> None:
+        # A real measured value: 0.0958 never reached the old 0.15 threshold, so
+        # this is precisely the case that was dead before the conversion.
+        scores = self._scores(people=0.0958)
+        assert self._has_people(analyzer, dummy_path, scores, faces=False) is True
+
+    def test_logo_does_not_read_as_people(
+        self, dummy_path: Path, analyzer: ImageContentAnalyzer
+    ) -> None:
+        # Without a graphic label a logo is out-of-vocabulary and the argmax
+        # landed on people for 9 of 9 measured logos.
+        scores = self._scores(logo=0.5, people=0.2)
+        assert self._has_people(analyzer, dummy_path, scores, faces=False) is False
+
+    def test_graphic_does_not_read_as_people(
+        self, dummy_path: Path, analyzer: ImageContentAnalyzer
+    ) -> None:
+        scores = self._scores(graphic=0.5, people=0.2)
+        assert self._has_people(analyzer, dummy_path, scores, faces=False) is False
+
+    def test_screenshot_suppresses_people_even_with_faces(
+        self, dummy_path: Path, analyzer: ImageContentAnalyzer
+    ) -> None:
+        # The surviving reason for the screenshot clause: a face detected inside
+        # a screenshot (video call, photo of a photo) is not a social photo.
+        scores = self._scores(screenshot=0.5)
+        assert self._has_people(analyzer, dummy_path, scores, faces=True) is False
+
+    def test_faces_still_fire_without_any_people_ranking(
+        self, dummy_path: Path, analyzer: ImageContentAnalyzer
+    ) -> None:
+        # Face detection remains the primary path — the CLIP rank only adds the
+        # profile/occluded cases the cascade misses.
+        scores = self._scores(interior=0.5)
+        assert self._has_people(analyzer, dummy_path, scores, faces=True) is True
+
+    def test_graphic_labels_are_in_the_vocabulary(self) -> None:
+        mod = _analyzer_module
+        for label in mod._GRAPHIC_LABELS:
+            assert label in mod._ALL_CATEGORIES
