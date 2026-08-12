@@ -554,12 +554,45 @@ The HEIC decode hand-off shipped 2026-08-11 (`e9fb0a8` + `41ee326` + `1c32fe7`),
 
 The EXIF fix in `4b56759` corrects new runs, but files organized before it retain filenames built from file mtime (download time) rather than capture time, and `_maybe_rename_image` will not revisit them: `is_generic_filename` is `False` for an already-descriptive name like `20260516_kitchen.heic`, so the rename step returns early on every subsequent run. Confirmed on the two HEICs under `~/Documents` — `Media/Photos/Other/20260516_kitchen.heic` was actually captured **2024-04-04**, a 2-year error frozen into the name; `Media/Photos/Products/20240426_fabric_sofa.heic` happens to be correct.
 
-**Status:** Open — 2 files affected today; grows only if pre-fix HEICs are re-imported.
+**Status:** **Name fixed 2026-08-11** — `20260516_kitchen.heic` → `20240404_kitchen.heic`, matching its
+`DateTimeOriginal` of `2024:04:04 18:44:35`. A full rescan of `~/Documents` confirms **0 of 2 HEICs**
+now carry a stem date disagreeing with EXIF. Open: the category residual only (first bullet below).
 **Priority:** P4
 **Source:** post-fix verification sweep, 2026-08-11
 
-- **Their categories are also pre-fix.** Both sit under `Media/Photos/*` because the lost GPS degraded `media_heuristic` to `photos_other`; a `--force` content pass would re-file them to `Media/Interiors`/`Exteriors` and fix the folder without fixing the name.
-- **Scale check before building anything:** at two files this is a manual rename. A repair pass is only worth writing if a bulk HEIC import lands, in which case the rule is "re-derive the date prefix from EXIF when the stem's leading date disagrees with `DateTimeOriginal`".
+- **Scope was rescanned, not assumed, and the item's count held.** `~/Documents` contains exactly 2
+  HEIC/HEIF files; only the kitchen one mismatched. Worth doing because an enumerated count in this
+  file is a snapshot — the lint item's 540 had already decayed to 498 before anyone acted on it.
+- **The DB carried the path in three fields, not one.** `files.current_path` is the obvious one, but
+  `files.schema_data` and `schema_metadata.schema_json` both embed it too, and a rename that updates
+  only `current_path` leaves two stale JSON blobs pointing at a file that no longer exists. Found by
+  sweeping every column of every table for the old basename rather than by editing the column named
+  in this item. **Do that sweep before any manual path repair** — `reconcile` still has no
+  path-repair operation to do it for you (same finding as the `flutter_auth.txt` straggler).
+- **`schema_data.filePath` is historical and was deliberately left stale-looking.** It reads
+  `~/Downloads/20260516_kitchen.heic` while `files.original_path` reads `~/Downloads/IMG_8550.HEIC`
+  — the two disagree *correctly*, because the photo-profile renamer works in place, so the file was
+  renamed in `Downloads` and only then moved. `filePath` snapshots the pre-move path at schema-generation
+  time (`file_processor.py:275`); `original_path` records the name before the renamer touched it.
+  **A blanket find-and-replace across the JSON would have rewritten it into a path that never
+  existed.** Only live pointers were updated: `schema_data.name`/`contentUrl`/`url` and
+  `schema_metadata.contentUrl` (its `name` stays `IMG_8550.HEIC`, the original filename).
+- **Verified no new provenance drift, by differencing against the backup.** Unresolvable
+  `current_path` rows went **7 → 6**, the repaired one being exactly this file and the remaining 6
+  being the known-unrecoverable set. Backup at `results/file_organization.db.bak-heicrename-20260811`
+  (reference it by exact name — these backups sort by neither name nor mtime).
+- **Still open: the category is pre-fix.** The row is still `media/photos_other` because the lost GPS
+  degraded `media_heuristic`; its own stored schema description reads "an interior room (5%
+  confident)", and the [calibrate-blindness item](#make-calibrate-and-the-goldens-are-structurally-blind-to-photocompositionsignal)
+  independently measured this exact file moving to `media/interiors_other` once EXIF is available.
+  **Deliberately not fixed here:** there is no single-file `--source`, and `BatchProcessor.scan_directory`
+  is `rglob("*")`, so the `--force` pass this item proposed would sweep all **25 entries** of
+  `Media/Photos/Other`, re-filing 23 unrelated files to fix one. Fixing the name without moving the
+  file is the contained half; the re-file wants either a single-file source or a hand move.
+- **Scale check before building anything:** at two files this was a manual rename, as this item
+  originally judged. A repair pass is only worth writing if a bulk HEIC import lands, in which case
+  the rule is "re-derive the date prefix from EXIF when the stem's leading date disagrees with
+  `DateTimeOriginal`" — the rescan snippet used here is that rule, and it is three lines.
 
 ## Repo Snapshot — 2026-07-18
 
