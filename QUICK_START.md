@@ -4,8 +4,9 @@ AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and en
 
 ## 1. Setup (first time)
 
+**Python 3.14+ is required, not preferred.** `src/` and `scripts/` use [PEP 758](https://peps.python.org/pep-0758/) unparenthesized `except A, B:` clauses, which are a SyntaxError on 3.13 and below — `pyproject.toml` declares `requires-python = ">=3.14"` so `pip` refuses cleanly rather than letting you hit an import error later. On macOS 26 use a **pyenv-built** interpreter; brew's `python@3.13/3.14` are the ones broken by the libexpat ABI change (see [CLAUDE.md Dependencies](CLAUDE.md#dependencies)).
+
 ```bash
-# Python 3.14 (pyenv-built on macOS 26 — see CLAUDE.md Dependencies)
 python3.14 -m venv venv && source venv/bin/activate
 pip install -e ".[all]"
 brew install tesseract poppler
