@@ -267,9 +267,23 @@ def detect_organization(
     curated domain (:data:`ORG_DOMAIN_IDENTITIES`) overrides both the type and
     the name, and that types in :data:`ORG_TYPE_REQUIRED_INDICATORS` must also
     hit an identity-bearing indicator.
+
+    ``hit_count`` on a domain-identity result is always
+    :data:`ORG_MIN_KEYWORD_HITS`, never a running keyword count. The keywords
+    that clear the gate belong to whichever type the sweep reaches first, which
+    is frequently *not* the type the domain resolves to — the SAFE Alliance
+    form clears ``government`` on "agency"/"immigration" while resolving to
+    ``nonprofit``, so reporting that count would scale a nonprofit's confidence
+    by how much government vocabulary the page happened to contain. A curated
+    domain is evidence in its own right and does not need the keyword sweep at
+    all, so it is checked first and every domain result scores at base
+    confidence.
     """
-    text_lower = text.lower()
     identity = detect_organization_domain(text)
+    if identity is not None:
+        return (identity.org_type, identity.name, ORG_MIN_KEYWORD_HITS)
+
+    text_lower = text.lower()
     for org_type, keywords in ORG_INDICATORS.items():
         hits = sum(1 for kw in keywords if kw in text_lower)
         if hits < ORG_MIN_KEYWORD_HITS:
@@ -277,18 +291,10 @@ def detect_organization(
         required = ORG_TYPE_REQUIRED_INDICATORS.get(org_type)
         if required is not None and not any(kw in text_lower for kw in required):
             continue
-        if identity is not None:
-            return (identity.org_type, identity.name, hits)
         companies = extract_company_names(text)
         org_name = companies[0] if companies else None
         if org_name:
             return (org_type, org_name, hits)
-
-    # A curated domain is evidence in its own right: the keyword sweep above
-    # can find nothing when a document names neither its organization nor the
-    # sector vocabulary, and the domain still identifies it.
-    if identity is not None:
-        return (identity.org_type, identity.name, ORG_MIN_KEYWORD_HITS)
     return None
 
 

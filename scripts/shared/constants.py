@@ -1,6 +1,7 @@
 """Shared constants for file organization scripts."""
 
 import os
+import warnings
 
 # Suffixes browsers append to the asset folder created by "Save Page As".
 # A page saved as "foo.html" yields a sibling "foo_files/" (locale-dependent)
@@ -662,8 +663,15 @@ def _parse_home_coordinates() -> tuple[float, float]:
             return (float(lat_text), float(lon_text))
         except ValueError:
             # A malformed override must not silently reshape every travel
-            # decision — fall back to the documented default.
-            pass
+            # decision — fall back to the documented default. Warn rather than
+            # pass: someone who typo'd their own coordinates would otherwise
+            # get a whole library filed against Austin with no indication that
+            # their setting was ignored.
+            warnings.warn(
+                f"Ignoring malformed FILE_ORGANIZE_HOME_COORDINATES={raw!r} "
+                f"(expected 'lat,lon'); using the {HOME_LOCATION_NAME} default.",
+                stacklevel=2,
+            )
     return (30.2672, -97.7431)
 
 

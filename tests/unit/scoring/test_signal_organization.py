@@ -8,6 +8,7 @@ import pytest
 from src.scoring.context import FileContext
 from src.scoring.signals.organization import (
     ORG_CONFIDENCE_BASE,
+    ORG_MIN_KEYWORD_HITS,
     OrgIdentity,
     ORG_MIN_TEXT_CHARS,
     OrganizationKeywordSignal,
@@ -327,3 +328,37 @@ class TestOrgDomainIdentity:
 
     def test_no_domain_in_text_returns_none(self):
         assert detect_organization_domain(VENDOR_TEXT_4_HITS) is None
+
+
+class TestDomainIdentityHitCount:
+    """A domain result reports base hits, not another type's keyword count.
+
+    The SAFE Alliance intake form clears ``government`` on "agency" and
+    "immigration" while resolving to ``nonprofit`` via its domain. Reporting
+    the government count would scale a nonprofit's confidence by how much
+    government vocabulary the page happened to contain.
+    """
+
+    def test_domain_result_reports_base_hits(self):
+        text = TestOrgDomainIdentity.SAFE_TEXT + (
+            " Contact the agency about your immigration filing and the "
+            "federal government bureau handling this commission."
+        )
+        result = detect_organization(text, extract_company_names=lambda _t: ["SAFE Legal Dept"])
+        assert result is not None
+        org_type, org_name, hits = result
+        assert (org_type, org_name) == ("nonprofit", "The SAFE Alliance")
+        assert hits == ORG_MIN_KEYWORD_HITS
+
+    def test_domain_result_scores_base_confidence(self):
+        text = TestOrgDomainIdentity.SAFE_TEXT
+        result = detect_organization(text, extract_company_names=lambda _t: ["SAFE Legal Dept"])
+        assert result is not None
+        assert organization_confidence(result[2]) == pytest.approx(ORG_CONFIDENCE_BASE)
+
+    def test_keyword_path_still_reports_real_hits(self):
+        # No curated domain -> the honest running count is preserved.
+        result = detect_organization(
+            VENDOR_TEXT_4_HITS, extract_company_names=lambda _t: ["Acme Corp"]
+        )
+        assert result == ("vendors", "Acme Corp", 4)
