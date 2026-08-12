@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 from shared.clip_classification import (
+    LABEL_SOURCE_OCR,
     classify_with_ocr_fallback,
 )
 from shared.clip_classification import generate_filename as generate_clip_filename
@@ -444,6 +445,7 @@ class ImageAnalyzer:
         result["confidence"] = clip_result.confidence
         result["decision_scores"] = decision_scores
         result["margin"] = clip_result.margin
+        result["label_source"] = clip_result.label_source
         # top_scores is derived from the decision distribution so it matches the
         # label that was actually chosen (not the unprefixed raw_scores).
         result["top_scores"] = dict(
@@ -457,17 +459,29 @@ class ImageAnalyzer:
         # island named "desk"). Diagnostics above stay populated so the near-tie
         # is inspectable; only the naming is withheld.
         margin = clip_result.margin
-        if (
-            self.profile.min_label_margin > 1.0
-            and margin is not None
-            and margin < self.profile.min_label_margin
-        ):
-            result["status"] = ProcessingStatus.SKIPPED
-            result["error"] = (
-                f"CLIP label '{category}' undecided: top-1/top-2 margin "
-                f"{margin:.4f} < {self.profile.min_label_margin:.4f}"
-            )
-            return result
+        if self.profile.min_label_margin > 1.0:
+            if margin is not None and margin < self.profile.min_label_margin:
+                result["status"] = ProcessingStatus.SKIPPED
+                result["error"] = (
+                    f"CLIP label '{category}' undecided: top-1/top-2 margin "
+                    f"{margin:.4f} < {self.profile.min_label_margin:.4f}"
+                )
+                return result
+            # An OCR override carries no margin, and its own gate is only
+            # "beat the CLIP score" — which had already fallen below the
+            # fallback trigger, so both sides of that comparison are noise.
+            # This is how a covered patio whose TV showed a login screen was
+            # renamed "financial_statements" off a 2% OCR match. Absent margin
+            # evidence the gate must fail closed, not wave the label through.
+            # Refinement labels also lack a margin but cleared their own
+            # absolute accept threshold, so they stay eligible.
+            if clip_result.label_source == LABEL_SOURCE_OCR:
+                result["status"] = ProcessingStatus.SKIPPED
+                result["error"] = (
+                    f"OCR-derived label '{category}' has no CLIP separation to gate on "
+                    f"(confidence {clip_result.confidence:.4f})"
+                )
+                return result
 
         if self.profile.category_folders:
             result["folder"] = self.profile.category_folders.get(category, "Uncategorized")

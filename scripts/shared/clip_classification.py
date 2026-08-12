@@ -19,6 +19,11 @@ from shared.constants import (
     CLIP_REFINEMENT_MIN_CONFIDENCE,
 )
 
+# Which vocabulary produced the winning label (CLIPResult.label_source).
+LABEL_SOURCE_CLIP = "clip"  # the prompt-prefixed base ranking — has a margin
+LABEL_SOURCE_REFINEMENT = "refinement"  # cleared CLIP_REFINEMENT_ACCEPT_CONFIDENCE
+LABEL_SOURCE_OCR = "ocr"  # OCR override — only had to beat a sub-threshold CLIP score
+
 
 class CLIPResult(NamedTuple):
     """Unified CLIP classification result.
@@ -50,6 +55,12 @@ class CLIPResult(NamedTuple):
     # fallback or an accepted refinement won instead), so callers must not apply
     # a margin gate to it.
     margin: float | None = None
+    # Which vocabulary actually produced ``category``. A ``None`` margin is
+    # ambiguous on its own — an accepted refinement cleared its own absolute
+    # threshold, while an OCR override only had to beat a CLIP score that was
+    # already below the fallback trigger. Callers that gate on separation need
+    # to tell those apart rather than treating "no margin" as "no objection".
+    label_source: str = LABEL_SOURCE_CLIP
 
     @property
     def all_scores(self) -> dict[str, float]:
@@ -195,10 +206,12 @@ def classify_image(
             refinement_min_confidence=refinement_min_confidence,
             refinement_accept_confidence=refinement_accept_confidence,
         )
+        label_source = LABEL_SOURCE_CLIP
         if refined_category != best_category:
             # The refinement vocabulary chose the label, so the margin computed
             # over `labels` no longer describes this decision.
             margin = None
+            label_source = LABEL_SOURCE_REFINEMENT
         best_category = refined_category
 
         # decision_scores: the prefixed distribution that chose the winner.
@@ -209,7 +222,9 @@ def classify_image(
         raw_results = classifier.score_embedding(image_emb, labels, "")
         raw_scores = {prompt: conf for prompt, conf in raw_results}
 
-        return CLIPResult(best_category, confidence, decision_scores, raw_scores, margin)
+        return CLIPResult(
+            best_category, confidence, decision_scores, raw_scores, margin, label_source
+        )
 
     except Exception as e:
         print(f"  CLIP classification error for {image_path.name}: {e}")
@@ -278,8 +293,15 @@ def classify_with_ocr_fallback(
 
     # The CLIP margin only describes the label CLIP itself picked; when OCR
     # supplies a better one, there is no CLIP separation to gate on.
-    margin = clip_result.margin if final_category == clip_category else None
+    ocr_won = final_category != clip_category
+    margin = None if ocr_won else clip_result.margin
+    label_source = LABEL_SOURCE_OCR if ocr_won else clip_result.label_source
 
     return CLIPResult(
-        final_category, final_confidence, final_decision_scores, final_raw_scores, margin
+        final_category,
+        final_confidence,
+        final_decision_scores,
+        final_raw_scores,
+        margin,
+        label_source,
     )

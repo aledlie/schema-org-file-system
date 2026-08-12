@@ -20,7 +20,12 @@ for p in (str(_ROOT), str(_SCRIPTS_DIR)):
 
 import rename_images  # noqa: E402
 from rename_images import PHOTO_PROFILE, SCREENSHOT_PROFILE, ImageAnalyzer  # noqa: E402
-from shared.clip_classification import CLIPResult  # noqa: E402
+from shared.clip_classification import (  # noqa: E402
+    LABEL_SOURCE_CLIP,
+    LABEL_SOURCE_OCR,
+    LABEL_SOURCE_REFINEMENT,
+    CLIPResult,
+)
 from shared.status import ProcessingStatus  # noqa: E402
 
 # A real CLIPResult, not a bare tuple: analyze_image reads .margin and
@@ -97,8 +102,10 @@ def _photo(tmp_path: Path) -> Path:
     return path
 
 
-def _result_with_margin(margin) -> CLIPResult:
-    return CLIPResult("desk", 0.0114, {"desk": 0.0114, "bookshelf": 0.0113}, {}, margin)
+def _result_with_margin(margin, label_source: str = LABEL_SOURCE_CLIP) -> CLIPResult:
+    return CLIPResult(
+        "desk", 0.0114, {"desk": 0.0114, "bookshelf": 0.0113}, {}, margin, label_source
+    )
 
 
 class TestLabelMarginGate:
@@ -142,16 +149,44 @@ class TestLabelMarginGate:
         assert result["margin"] == 1.001
         assert result["top_scores"]
 
-    def test_absent_margin_is_not_gated(self, tmp_path: Path) -> None:
-        """``None`` means an OCR fallback or refinement chose the label, so there
-        is no CLIP separation to judge -- gating it would suppress a good name."""
+    def test_refinement_label_without_margin_still_renames(self, tmp_path: Path) -> None:
+        """A refinement label has no CLIP separation to judge, but it cleared
+        CLIP_REFINEMENT_ACCEPT_CONFIDENCE -- an absolute gate of its own, and a
+        demanding one at this softmax scale. Gating it would suppress a good name."""
         result = _analyze(
             _photo(tmp_path),
             profile=PHOTO_PROFILE,
             lines=None,
-            clip_result=_result_with_margin(None),
+            clip_result=_result_with_margin(None, label_source=LABEL_SOURCE_REFINEMENT),
         )
         assert result["new_name"] == "20260101_desk.jpg"
+
+    def test_ocr_label_without_margin_does_not_rename(self, tmp_path: Path) -> None:
+        """An OCR override also has no margin, but unlike refinement its only
+        test was beating a CLIP score that had already fallen below the fallback
+        trigger -- both sides of that comparison are noise. Treating "no margin"
+        as "no objection" is how a covered patio whose TV showed a login screen
+        was renamed "financial_statements" off a 2% OCR match."""
+        result = _analyze(
+            _photo(tmp_path),
+            profile=PHOTO_PROFILE,
+            lines=None,
+            clip_result=_result_with_margin(None, label_source=LABEL_SOURCE_OCR),
+        )
+        assert result.get("new_name") is None
+        assert result["status"] == ProcessingStatus.SKIPPED
+        assert "no CLIP separation" in result["error"]
+
+    def test_ocr_label_diagnostics_survive_the_gate(self, tmp_path: Path) -> None:
+        result = _analyze(
+            _photo(tmp_path),
+            profile=PHOTO_PROFILE,
+            lines=None,
+            clip_result=_result_with_margin(None, label_source=LABEL_SOURCE_OCR),
+        )
+        assert result["category"] == "desk"
+        assert result["label_source"] == LABEL_SOURCE_OCR
+        assert result["top_scores"]
 
     def test_screenshot_profile_is_ungated(self, screenshot: Path) -> None:
         """Enabling the gate here needs its own labelled eval: 75% of a sampled

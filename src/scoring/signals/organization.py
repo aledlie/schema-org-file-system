@@ -19,7 +19,8 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from ..context import FileContext
 
-from typing import Callable, Dict, List, Optional, Protocol, Tuple
+import re
+from typing import Callable, Dict, FrozenSet, List, NamedTuple, Optional, Protocol, Tuple
 
 from ..types import EVIDENCE_COMPANY, CategoryScore
 from ..weights import W_ORG
@@ -191,6 +192,70 @@ ORG_INDICATORS: Dict[str, List[str]] = {
 }
 
 
+# Government indicators split by what they actually attest. The identity set
+# names a government body ("department of", "internal revenue"); the rest are
+# topical words that appear in any document *about* dealing with government.
+# Two topical words were enough to type an Austin domestic-violence nonprofit
+# as government — "agency" and "immigration", both incidental in a survivor
+# intake form that asks about immigration status. Requiring one identity-bearing
+# indicator keeps the IRS notices and DMV letters this type exists for.
+GOVERNMENT_IDENTITY_INDICATORS: FrozenSet[str] = frozenset(
+    {
+        "department of",
+        "internal revenue",
+        "irs",
+        "social security",
+        "state of",
+        "county of",
+        "city of",
+        "dmv",
+        "treasury",
+    }
+)
+
+# Org types where clearing ORG_MIN_KEYWORD_HITS is necessary but not sufficient:
+# at least one of these identity-bearing indicators must also hit.
+ORG_TYPE_REQUIRED_INDICATORS: Dict[str, FrozenSet[str]] = {
+    "government": GOVERNMENT_IDENTITY_INDICATORS,
+}
+
+
+class OrgIdentity(NamedTuple):
+    """The canonical name and type behind a domain."""
+
+    name: str
+    org_type: str
+
+
+# Domains whose organization cannot be read off the document text. A body's
+# letterhead often carries only a department or program name — the SAFE
+# Alliance's legal intake form says "SAFE Legal Department" and
+# "legal@safeaustin.org", and never its own name — so keyword typing lands on
+# the wrong type and company extraction lands on the wrong name. A domain is
+# unambiguous provenance, so it resolves both. Hand-curated and deliberately
+# small: this is not a substitute for entity extraction, only an override for
+# organizations whose documents do not name themselves.
+ORG_DOMAIN_IDENTITIES: Dict[str, OrgIdentity] = {
+    "safeaustin.org": OrgIdentity(name="The SAFE Alliance", org_type="nonprofit"),
+}
+
+# Email addresses and bare hostnames; the capture is the registrable domain as
+# written, matched against ORG_DOMAIN_IDENTITIES case-folded.
+_DOMAIN_PATTERN = re.compile(
+    r"[\w.+-]+@([\w-]+(?:\.[\w-]+)+)|(?:https?://|www\.)([\w-]+(?:\.[\w-]+)+)"
+)
+
+
+def detect_organization_domain(text: str) -> Optional[OrgIdentity]:
+    """Resolve a curated organization identity from a domain in *text*."""
+    for match in _DOMAIN_PATTERN.finditer(text):
+        domain = (match.group(1) or match.group(2) or "").lower()
+        identity = ORG_DOMAIN_IDENTITIES.get(domain)
+        if identity is not None:
+            return identity
+    return None
+
+
 def detect_organization(
     text: str, *, extract_company_names: Callable[[str], List[str]]
 ) -> Optional[Tuple[str, str, int]]:
@@ -198,16 +263,32 @@ def detect_organization(
 
     Returns ``(org_type, org_name, hit_count)`` or ``None``. Mirrors the
     legacy loop exactly, including trying later indicator types when a
-    hit-clearing type yields no extractable company name.
+    hit-clearing type yields no extractable company name — except that a
+    curated domain (:data:`ORG_DOMAIN_IDENTITIES`) overrides both the type and
+    the name, and that types in :data:`ORG_TYPE_REQUIRED_INDICATORS` must also
+    hit an identity-bearing indicator.
     """
     text_lower = text.lower()
+    identity = detect_organization_domain(text)
     for org_type, keywords in ORG_INDICATORS.items():
         hits = sum(1 for kw in keywords if kw in text_lower)
-        if hits >= ORG_MIN_KEYWORD_HITS:
-            companies = extract_company_names(text)
-            org_name = companies[0] if companies else None
-            if org_name:
-                return (org_type, org_name, hits)
+        if hits < ORG_MIN_KEYWORD_HITS:
+            continue
+        required = ORG_TYPE_REQUIRED_INDICATORS.get(org_type)
+        if required is not None and not any(kw in text_lower for kw in required):
+            continue
+        if identity is not None:
+            return (identity.org_type, identity.name, hits)
+        companies = extract_company_names(text)
+        org_name = companies[0] if companies else None
+        if org_name:
+            return (org_type, org_name, hits)
+
+    # A curated domain is evidence in its own right: the keyword sweep above
+    # can find nothing when a document names neither its organization nor the
+    # sector vocabulary, and the domain still identifies it.
+    if identity is not None:
+        return (identity.org_type, identity.name, ORG_MIN_KEYWORD_HITS)
     return None
 
 

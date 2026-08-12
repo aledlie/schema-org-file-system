@@ -19,7 +19,11 @@ from src.scoring.signals.clip_vision import (
     map_clip_label,
 )
 
-GPS_METADATA = {"gps_coordinates": (30.27, -97.74)}
+# Eiffel Tower — beyond TRAVEL_MIN_DISTANCE_KM of home, so the geographic
+# upgrade applies. GPS *presence* is no longer enough: these coordinates used
+# to be downtown Austin, i.e. home, which made every local landscape "travel".
+GPS_METADATA = {"gps_coordinates": (48.8584, 2.2945)}
+HOME_GPS_METADATA = {"gps_coordinates": (30.27, -97.74)}
 
 
 def make_ctx(
@@ -56,11 +60,18 @@ class TestMapClipLabel:
     def test_unknown_label_returns_none(self) -> None:
         assert map_clip_label("mystery", None, self.LABEL_MAP, GEOGRAPHIC_LABELS) is None
 
-    def test_geographic_label_with_gps_upgrades_to_travel(self) -> None:
+    def test_geographic_label_far_from_home_upgrades_to_travel(self) -> None:
         result = map_clip_label(
             "a landscape or nature scene", GPS_METADATA, self.LABEL_MAP, GEOGRAPHIC_LABELS
         )
         assert result == ("media", "photos_travel")
+
+    def test_geographic_label_near_home_keeps_mapping(self) -> None:
+        """A local landscape is a place, not a trip -- GPS presence is not travel."""
+        result = map_clip_label(
+            "a landscape or nature scene", HOME_GPS_METADATA, self.LABEL_MAP, GEOGRAPHIC_LABELS
+        )
+        assert result == ("media", "photos_nature")
 
     def test_geographic_label_without_gps_keeps_mapping(self) -> None:
         result = map_clip_label(
@@ -129,11 +140,17 @@ class TestRun:
         assert len(emissions) == 1
         assert emissions[0].confidence == pytest.approx(0.05)
 
-    def test_gps_upgrades_geographic_label(self, signal: ClipVisionSignal) -> None:
+    def test_gps_far_from_home_upgrades_geographic_label(self, signal: ClipVisionSignal) -> None:
         emissions = signal.run(
             make_ctx({"a landscape or nature scene": 0.6}, image_metadata=GPS_METADATA)
         )
         assert (emissions[0].category, emissions[0].subcategory) == ("media", "photos_travel")
+
+    def test_gps_near_home_keeps_nature_mapping(self, signal: ClipVisionSignal) -> None:
+        emissions = signal.run(
+            make_ctx({"a landscape or nature scene": 0.6}, image_metadata=HOME_GPS_METADATA)
+        )
+        assert (emissions[0].category, emissions[0].subcategory) == ("media", "photos_nature")
 
     def test_no_gps_keeps_nature_mapping(self, signal: ClipVisionSignal) -> None:
         emissions = signal.run(make_ctx({"a landscape or nature scene": 0.6}))

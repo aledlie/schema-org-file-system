@@ -8,9 +8,11 @@ import pytest
 from src.scoring.context import FileContext
 from src.scoring.signals.organization import (
     ORG_CONFIDENCE_BASE,
+    OrgIdentity,
     ORG_MIN_TEXT_CHARS,
     OrganizationKeywordSignal,
     detect_organization,
+    detect_organization_domain,
     organization_confidence,
 )
 from src.scoring.weights import W_ORG
@@ -252,3 +254,76 @@ class TestInsurancePolicyPrecedence:
         assert len(scores) == 1
         assert (scores[0].category, scores[0].subcategory) == ("organization", "financial")
         assert scores[0].confidence == pytest.approx(0.7)
+
+
+class TestGovernmentIdentityRequirement:
+    """Topical government words alone must not type an org as government.
+
+    ``government`` is first in ORG_INDICATORS (dict order is load-bearing), so
+    any two of its keywords used to claim the file. In a domestic-violence
+    survivor intake form that is "agency" and "immigration" — both incidental
+    to a form that asks about immigration status — which typed an Austin
+    nonprofit as a government body.
+    """
+
+    # Two government indicators, both topical, no government body named.
+    TOPICAL_ONLY = (
+        "Contact the agency handling your case if your immigration status "
+        "changes during the course of this matter, so the file stays current."
+    )
+    # Two topical hits PLUS an identity-bearing indicator.
+    NAMES_A_BODY = (
+        "The Department of the Treasury notified the agency about your "
+        "immigration filing and the associated federal record for this year."
+    )
+
+    def test_topical_words_alone_do_not_type_as_government(self):
+        result = detect_organization(
+            self.TOPICAL_ONLY, extract_company_names=lambda _t: ["Some Org"]
+        )
+        assert result is None or result[0] != "government"
+
+    def test_named_government_body_still_detected(self):
+        result = detect_organization(
+            self.NAMES_A_BODY, extract_company_names=lambda _t: ["Department of the Treasury"]
+        )
+        assert result is not None
+        assert result[0] == "government"
+
+
+class TestOrgDomainIdentity:
+    """A curated domain resolves organizations whose documents never name them.
+
+    The SAFE Alliance's legal intake form says only "SAFE Legal Department"
+    and "legal@safeaustin.org" — company extraction lands on the department,
+    and keyword typing lands on government.
+    """
+
+    SAFE_TEXT = (
+        "Legal Intake Form | (512) 356-1682 legal@safeaustin.org. This intake "
+        "form does not constitute an attorney/client relationship and is solely "
+        "for the purpose of seeking services from SAFE Legal Department."
+    )
+
+    def test_domain_supplies_canonical_name_and_type(self):
+        assert detect_organization_domain(self.SAFE_TEXT) == OrgIdentity(
+            name="The SAFE Alliance", org_type="nonprofit"
+        )
+
+    def test_domain_overrides_extracted_name_and_keyword_type(self):
+        result = detect_organization(
+            self.SAFE_TEXT, extract_company_names=lambda _t: ["SAFE Legal Department"]
+        )
+        assert result is not None
+        org_type, org_name, _hits = result
+        assert (org_type, org_name) == ("nonprofit", "The SAFE Alliance")
+
+    def test_unknown_domain_leaves_detection_unchanged(self):
+        result = detect_organization(
+            VENDOR_TEXT_4_HITS.replace("lab equipment", "lab equipment (billing@example.com)"),
+            extract_company_names=lambda _t: ["Acme Corp"],
+        )
+        assert result == ("vendors", "Acme Corp", 4)
+
+    def test_no_domain_in_text_returns_none(self):
+        assert detect_organization_domain(VENDOR_TEXT_4_HITS) is None

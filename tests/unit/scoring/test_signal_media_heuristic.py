@@ -67,13 +67,26 @@ class TestDetectMediaCategory:
             "documents",
         )
 
-    def test_gps_metadata_routes_to_travel(self):
+    def test_gps_far_from_home_routes_to_travel(self):
+        # Paris — beyond TRAVEL_MIN_DISTANCE_KM of home.
         metadata = {"gps_coordinates": (48.85, 2.35)}
         assert detect_media_category(Path("/p/beach.png"), metadata) == (
             "media",
             "photos",
             "travel",
         )
+
+    def test_gps_near_home_abstains(self):
+        """Coordinates say where the shutter fired, not that it was a trip.
+
+        Near home this signal returns None rather than falling through to the
+        extension branch: that would re-assert the same fact MimeFallbackSignal
+        already carries, and two votes stacked on one piece of evidence
+        outscore SceneSignal (0.92 vs 0.85 x 0.998) — which is how a lake at
+        99.8% confidence lost Media/Place to the generic photo bucket.
+        """
+        metadata = {"gps_coordinates": (30.27, -97.74)}
+        assert detect_media_category(Path("/p/kitchen.jpg"), metadata) is None
 
     def test_datetime_metadata_routes_to_other(self):
         metadata = {"datetime": "2026-01-01T10:00:00"}
@@ -98,6 +111,7 @@ class TestMatchBasis:
         assert detect_media_match(Path("/v/screen_rec.mp4")).matched == "stem"
         assert detect_media_match(Path("/v/holiday.mkv")).matched == "extension"
         assert detect_media_match(Path("/a/ballad.wma")).matched == "extension"
+        # (1.0, 2.0) is the Gulf of Guinea — far from home, so still "gps".
         gps = detect_media_match(Path("/p/beach.png"), {"gps_coordinates": (1.0, 2.0)})
         assert gps.matched == "gps"
         dated = detect_media_match(Path("/p/party.png"), {"datetime": "2026-01-01"})
@@ -115,13 +129,31 @@ class TestSignalRun:
         assert score.signal_name == "media_heuristic"
         assert score.evidence == {"media_type": "videos", "matched": "stem"}
 
-    def test_gps_photo_routes_to_travel_with_metadata(self):
+    def test_gps_far_from_home_routes_to_travel(self):
         provider = CountingProvider({"gps_coordinates": (48.85, 2.35)})
         ctx = make_ctx("/p/beach.jpg", metadata_provider=provider)
         scores = MediaHeuristicSignal().run(ctx)
         assert (scores[0].category, scores[0].subcategory) == ("media", "photos_travel")
         assert scores[0].evidence == {"media_type": "photos", "matched": "gps"}
         assert provider.calls == 1
+
+    def test_gps_near_home_emits_nothing(self):
+        """A spice rack on a kitchen wall in Austin is not a trip.
+
+        Abstaining (rather than voting photos_other) keeps this signal from
+        stacking with MimeFallbackSignal on the same extension evidence.
+        """
+        provider = CountingProvider({"gps_coordinates": (30.27, -97.74)})
+        ctx = make_ctx("/p/spice_rack.jpg", metadata_provider=provider)
+        assert MediaHeuristicSignal().run(ctx) == []
+        assert provider.calls == 1
+
+    def test_gps_near_home_abstains_even_with_exif_datetime(self):
+        provider = CountingProvider(
+            {"gps_coordinates": (30.27, -97.74), "datetime": "2026:07:23 18:19:07"}
+        )
+        ctx = make_ctx("/p/bedroom.jpg", metadata_provider=provider)
+        assert MediaHeuristicSignal().run(ctx) == []
 
     def test_metadata_not_fetched_for_videos(self):
         provider = CountingProvider({"gps_coordinates": (1.0, 2.0)})

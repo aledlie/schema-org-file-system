@@ -1,5 +1,7 @@
 """Shared constants for file organization scripts."""
 
+import os
+
 # Suffixes browsers append to the asset folder created by "Save Page As".
 # A page saved as "foo.html" yields a sibling "foo_files/" (locale-dependent)
 # full of hashed-name JS/CSS/image cruft. Each asset is meaningless on its own,
@@ -630,4 +632,54 @@ CAMERA_VENDOR_PREFIX_PATTERNS: tuple[str, ...] = (
     r"^pxl_\d+",  # PXL_20250425 (Google Pixel)
     r"^dsc_?\d+",  # DSC_1234 / DSC1234 (Sony / Nikon; optional underscore)
     r"^dcim_\d+",  # DCIM_1234 (generic DCIM roll)
+)
+
+# Home location. GPS presence alone is not evidence of travel — phones geotag
+# everything, so every photo taken at home carried coordinates and the travel
+# rule fired on all of them. Distance from home is the evidence that was
+# missing: a spice rack on a kitchen wall in Austin is not a trip, the same
+# photo taken in Paris plausibly is.
+#
+# Override with FILE_ORGANIZE_HOME_COORDINATES="lat,lon" (and
+# FILE_ORGANIZE_TRAVEL_RADIUS_KM) — the default is only a default, and filing
+# someone else's photos against it would mislabel their whole library.
+HOME_LOCATION_NAME: str = os.environ.get("FILE_ORGANIZE_HOME_NAME", "Austin, Texas")
+
+# Radius beyond which a photo's coordinates read as travel. The Austin metro is
+# roughly 60 km across, so 100 km clears the metro and its day-trip ring while
+# still catching anywhere that needed a flight or a long drive. Deliberately
+# generous: a false "travel" is a misfiled photo, and the cost of being wrong is
+# higher than leaving a genuine trip in Photos/Other.
+TRAVEL_MIN_DISTANCE_KM: float = float(os.environ.get("FILE_ORGANIZE_TRAVEL_RADIUS_KM", "100"))
+
+
+def _parse_home_coordinates() -> tuple[float, float]:
+    """Read "lat,lon" from the environment, falling back to Austin, TX."""
+    raw = os.environ.get("FILE_ORGANIZE_HOME_COORDINATES", "")
+    if raw:
+        try:
+            lat_text, lon_text = raw.split(",", 1)
+            return (float(lat_text), float(lon_text))
+        except ValueError:
+            # A malformed override must not silently reshape every travel
+            # decision — fall back to the documented default.
+            pass
+    return (30.2672, -97.7431)
+
+
+HOME_LOCATION_COORDINATES: tuple[float, float] = _parse_home_coordinates()
+
+# Prefix-less camera timestamp stems: "20200705_171653" (Samsung / generic
+# Android), optionally with a milliseconds suffix.  These carry no vendor
+# prefix, so CAMERA_VENDOR_PREFIX_PATTERNS cannot see them — yet they are all
+# digits and underscores and therefore collide head-on with the numbered-sprite
+# rules (GAME_SPRITE_PATTERNS' ``^\d+_\d+$``, filename_classifier's
+# ``^\d+(_\d+)*$``).  The date and time fields are range-bounded rather than
+# matched as bare ``\d`` runs so a genuine sprite sheet name like "12345678_123456"
+# (month 34) still reads as a sprite.  Anchored at both ends: a sprite stem that
+# merely carries a timestamp ("103_20251120_164958") keeps its leading index and
+# does not match.
+CAMERA_TIMESTAMP_STEM_PATTERN: str = (
+    r"^(?:19|20)\d{2}(?:0[1-9]|1[0-2])(?:0[1-9]|[12]\d|3[01])"
+    r"_(?:[01]\d|2[0-3])[0-5]\d[0-5]\d\d{0,3}$"
 )

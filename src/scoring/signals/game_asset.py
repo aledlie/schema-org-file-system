@@ -32,6 +32,7 @@ from pathlib import Path
 from typing import Dict, Iterable, List, NamedTuple, Optional, Tuple
 
 from shared.constants import (
+    CAMERA_TIMESTAMP_STEM_PATTERN,
     CAMERA_VENDOR_PREFIX_PATTERNS,
     GAME_AUDIO_KEYWORDS,
     GAME_FONT_KEYWORDS,
@@ -108,7 +109,12 @@ _SCAN_STEM_PREFIX_RE = r"^scan_?\d+"
 # pattern matching (which emits GAME_STRONG_CONFIDENCE that content signals
 # cannot reliably outscore on low-content images).
 _CAMERA_OR_SCAN_STEM_PATTERNS: Tuple[re.Pattern[str], ...] = tuple(
-    re.compile(p) for p in (*CAMERA_VENDOR_PREFIX_PATTERNS, _SCAN_STEM_PREFIX_RE)
+    re.compile(p)
+    for p in (
+        *CAMERA_VENDOR_PREFIX_PATTERNS,
+        CAMERA_TIMESTAMP_STEM_PATTERN,
+        _SCAN_STEM_PREFIX_RE,
+    )
 )
 
 

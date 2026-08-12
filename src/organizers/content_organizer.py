@@ -80,7 +80,11 @@ from src.scoring.signals.legal_content import (
     LEGAL_DOCUMENT_SIGNALS,
     LEGAL_SIGNAL_MIN_HITS,
 )
-from src.scoring.signals.organization import ORG_MIN_TEXT_CHARS, detect_organization
+from src.scoring.signals.organization import (
+    ORG_MIN_TEXT_CHARS,
+    detect_organization,
+    detect_organization_domain,
+)
 from src.scoring.signals.personal_doc import (
     CONTACTS_MIN_KEYWORD_HITS,
     PERSON_MIN_KEYWORD_HITS,
@@ -250,18 +254,30 @@ _DOCUMENT_CONTENT_CATEGORIES = frozenset(
 )
 
 
+# https://schema.org/DigitalDocument and its text-bearing subtype. The MIME
+# type alone cannot tell a searchable PDF from a scan, so the narrower type is
+# assigned after extraction by ``_promote_text_document_schema``.
+DIGITAL_DOCUMENT_SCHEMA_TYPE = "DigitalDocument"
+TEXT_DIGITAL_DOCUMENT_SCHEMA_TYPE = "TextDigitalDocument"
+
+# Extracted characters below which a document is treated as having no usable
+# text layer — a stray ligature or page number from a scan should not promote
+# the type. Well under the shortest real document, well above scan noise.
+_TEXT_DOCUMENT_MIN_CHARS = 50
+
+
 def _derive_schema_type(mime_type: Optional[str]) -> str:
     """Map a MIME type onto the coarse Schema.org type the pipeline uses."""
     if mime_type:
         if mime_type.startswith("image/"):
             return "ImageObject"
         if mime_type == "application/pdf":
-            return "DigitalDocument"
+            return DIGITAL_DOCUMENT_SCHEMA_TYPE
         if mime_type.startswith("video/"):
             return "VideoObject"
         if mime_type.startswith("audio/"):
             return "AudioObject"
-    return "DigitalDocument"
+    return DIGITAL_DOCUMENT_SCHEMA_TYPE
 
 
 # The MIME→content translation (formerly ``_MIME_TO_CONTENT`` /
@@ -1044,6 +1060,8 @@ class ContentOrganizer(BaseOrganizer):
         decision = self._get_unified_scorer().classify(ctx)
         decision = self._reroute_screenshot_scene(ctx, decision)
         decision = self._refine_people_photo_subcategory(decision)
+        decision = self._promote_text_document_schema(ctx, decision)
+        decision = self._canonicalize_company_from_domain(ctx, decision)
 
         if update_state:
             ocr = ctx.ocr_if_loaded
@@ -1066,6 +1084,50 @@ class ContentOrganizer(BaseOrganizer):
             decision.people_names,
             ctx.image_metadata_if_loaded or {},
         )
+
+    @staticmethod
+    def _canonicalize_company_from_domain(
+        ctx: FileContext, decision: ClassificationDecision
+    ) -> ClassificationDecision:
+        """A curated domain identity outranks whatever name extraction found.
+
+        ``Scorer._merge_company`` prefers the *winning* signal's evidence, so a
+        text-content win carries the raw string company extraction pulled off
+        the page — "SAFE Legal Department" — even when OrganizationSignal has
+        already resolved the document's domain to the organization's actual
+        name. The registry is authoritative by construction, so it wins
+        regardless of which signal took the category.
+        """
+        text = ctx.text_if_loaded
+        if not text:
+            return decision
+        identity = detect_organization_domain(text)
+        if identity is None or decision.company_name == identity.name:
+            return decision
+        return replace(decision, company_name=identity.name)
+
+    @staticmethod
+    def _promote_text_document_schema(
+        ctx: FileContext, decision: ClassificationDecision
+    ) -> ClassificationDecision:
+        """Promote a document that yielded real text to ``TextDigitalDocument``.
+
+        ``_derive_schema_type`` only sees the MIME type, so every PDF is a bare
+        ``DigitalDocument`` whether it carries a text layer or is a scan. Once
+        the scorer has run, whether text actually extracted is known, and
+        schema.org has the narrower type for exactly this distinction. Applied
+        after scoring so the promotion cannot influence which signals ran.
+
+        Only ``DigitalDocument`` is promoted: ImageObject/VideoObject/AudioObject
+        are unrelated branches of the type tree, and an image that OCR'd is
+        still an ImageObject.
+        """
+        if decision.schema_type != DIGITAL_DOCUMENT_SCHEMA_TYPE:
+            return decision
+        text = ctx.text_if_loaded
+        if not text or len(text.strip()) < _TEXT_DOCUMENT_MIN_CHARS:
+            return decision
+        return replace(decision, schema_type=TEXT_DIGITAL_DOCUMENT_SCHEMA_TYPE)
 
     @staticmethod
     def _reroute_screenshot_scene(

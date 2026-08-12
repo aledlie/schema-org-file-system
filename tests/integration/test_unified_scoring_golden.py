@@ -27,6 +27,7 @@ from shared.constants import GAME_SPRITE_KEYWORDS
 from shared.ocr_classifier import SCREENSHOT_KEYWORDS
 from src.classifiers.content_classifier import ContentClassifier
 from src.organizers.category_config import CONTENT_CATEGORY_PATHS
+from src.organizers.content_organizer import ContentOrganizer
 from src.scoring.context import FileContext
 from src.scoring.registry import build_default_signals
 from src.scoring.scorer import Scorer
@@ -139,7 +140,20 @@ def golden_scorer(
 
 
 def classify(case: GoldenCase) -> ClassificationDecision:
-    return golden_scorer(case.screenshot_ocr).classify(case.context())
+    """Score a case the way the shipped pipeline does.
+
+    The bare ``Scorer`` verdict is not what gets written: ContentOrganizer
+    applies post-decision adjusters before persistence, in this order. Replayed
+    here so a golden case asserts on the category, schema type and company name
+    that actually reach the graph rather than an intermediate the pipeline
+    never stores.
+    """
+    ctx = case.context()
+    decision = golden_scorer(case.screenshot_ocr).classify(ctx)
+    decision = ContentOrganizer._reroute_screenshot_scene(ctx, decision)
+    decision = ContentOrganizer._refine_people_photo_subcategory(decision)
+    decision = ContentOrganizer._promote_text_document_schema(ctx, decision)
+    return ContentOrganizer._canonicalize_company_from_domain(ctx, decision)
 
 
 # --------------------------------------------------------------------------- #
@@ -368,7 +382,46 @@ LEVEL_OF_CARE_PLAN_TEXT = (
     "signature with dates. Assessment fee and current balance due are shown."
 )
 
+# Nonprofit legal-services intake form (The SAFE Alliance, Austin TX). Four
+# separate failures met on this one real file, all now guarded here:
+#   1. The filename rule returned ("business", "legal") — a pair no category map
+#      declares — so it silently degraded to Business/Other while Legal/ sat
+#      unused.
+#   2. That verdict scored FILENAME_MATCH_CONFIDENCE, early-exiting the cheap
+#      wave, so no text was ever extracted (extracted_text_length 0 on a PDF
+#      carrying 3,125 characters) and no content signal ever ran.
+#   3. Once text loads, ORG_INDICATORS types it "government" on two topical
+#      hits — "agency" and "immigration", both incidental in a survivor intake
+#      form that asks about immigration status.
+#   4. The document names no organization, only a department and an email
+#      domain, so company extraction yields "SAFE Legal Department".
+# Text mirrors the real form's driving phrases (blank template, no personal
+# data): the checkbox labels, the disclaimer, and the court/defendant terms
+# LegalContentSignal matches on.
+SAFE_LEGAL_INTAKE_TEXT = (
+    "Legal Intake Form | (512) 356-1682 legal@safeaustin.org. Disclaimer: this "
+    "intake form does not constitute an attorney/client relationship and is "
+    "solely for the purpose of seeking services from SAFE Legal Department. "
+    "Have you been served paperwork, or do you have an upcoming court date? "
+    "Criminal Case (I am the victim/defendant). My case is against (name/agency). "
+    "Protective Order/Restraining Order. Housing/Lease Termination. Immigration. "
+    "Divorce, custody, and child support matters are handled by the family law team."
+)
+
 GOLDEN_CASES = [
+    # ---- Group 0: nonprofit legal intake (taxonomy + org identity) --------- #
+    GoldenCase(
+        name="nonprofit_legal_intake_form",
+        filename="Fillable Legal Intake Form English.pdf",
+        schema_type="DigitalDocument",
+        mime_type="application/pdf",
+        text=SAFE_LEGAL_INTAKE_TEXT,
+        expected=("legal", "litigation"),
+        # A curated domain outranks the winning signal's raw extraction, and a
+        # PDF that yielded a text layer is the narrower schema.org type.
+        company_contains="The SAFE Alliance",
+        expected_schema_type="TextDigitalDocument",
+    ),
     # ---- Group 1: org-named PDFs (person/org confusion) ------------------- #
     GoldenCase(
         # Neutral filename: the brand-vs-person confusion under test is a
@@ -773,12 +826,33 @@ GOLDEN_CASES = [
         # in BOTH engines (pre-existing legacy bug, see §1 naming
         # brittleness) — the GPS-travel routing under test needs a camera
         # name that dodges it.
-        name="media_photo_gps_travel",
+        # Was `media_photo_gps_travel`, asserting that GPS alone means travel —
+        # with coordinates that are downtown Austin, i.e. the contract encoded
+        # "a photo taken at home is travel". Phones geotag everything, so the
+        # rule fired on every camera photo and, at MEDIA_MATCH_CONFIDENCE, beat
+        # the CLIP vote that had actually looked at the image (a spice rack on a
+        # kitchen wall, filed under Photos/Travel). Travel now needs distance
+        # from HOME_LOCATION_COORDINATES; at home MediaHeuristicSignal abstains
+        # and MimeFallbackSignal's generic photo vote stands alone.
+        name="media_photo_at_home_is_not_travel",
         filename="img-vacation-004.jpg",
         schema_type="ImageObject",
         mime_type="image/jpeg",
         ocr_text="",
         image_metadata={"gps_coordinates": (30.2672, -97.7431)},
+        expected=("media", "photos_other"),
+    ),
+    GoldenCase(
+        # Away from home, both the media heuristic and the geographic CLIP
+        # upgrade agree on travel — content and coordinates, not coordinates
+        # alone. Coordinates are the Eiffel Tower.
+        name="media_photo_away_from_home_is_travel",
+        filename="img-vacation-005.jpg",
+        schema_type="ImageObject",
+        mime_type="image/jpeg",
+        ocr_text="",
+        clip={"a landscape or nature scene": 0.42, "an interior room": 0.03},
+        image_metadata={"gps_coordinates": (48.8584, 2.2945)},
         expected=("media", "photos_travel"),
     ),
 ]

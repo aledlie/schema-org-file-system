@@ -30,6 +30,8 @@ if TYPE_CHECKING:
 from pathlib import Path
 from typing import List, Mapping, NamedTuple, Optional, Tuple
 
+from shared.geo import is_away_from_home
+
 from ..types import CategoryScore
 from ..weights import W_MEDIA
 
@@ -148,9 +150,26 @@ def detect_media_match(
                 MEDIA_CATEGORY, PHOTOS_MEDIA_TYPE, DOCUMENTS_SUBCATEGORY, MATCHED_STEM
             )
 
-        # Travel photos (GPS metadata present)
-        if image_metadata and image_metadata.get(GPS_METADATA_KEY):
-            return MediaMatch(MEDIA_CATEGORY, PHOTOS_MEDIA_TYPE, TRAVEL_SUBCATEGORY, MATCHED_GPS)
+        # Travel photos: GPS coordinates far enough from home. Presence of GPS
+        # is not itself evidence — phones geotag everything, so the old
+        # presence-only rule filed every photo taken at home under
+        # Photos/Travel (a spice rack on a kitchen wall in Austin). Distance
+        # from HOME_LOCATION_COORDINATES is the evidence that was missing.
+        gps_coordinates = image_metadata.get(GPS_METADATA_KEY) if image_metadata else None
+        if gps_coordinates:
+            if is_away_from_home(gps_coordinates):
+                return MediaMatch(
+                    MEDIA_CATEGORY, PHOTOS_MEDIA_TYPE, TRAVEL_SUBCATEGORY, MATCHED_GPS
+                )
+            # Near home the coordinates say nothing about what this file is, so
+            # this signal abstains rather than falling through to the branches
+            # below. Those would re-assert the *extension* — the same evidence
+            # MimeFallbackSignal already carries — and two votes stacked on one
+            # fact (0.4 + 0.65×0.8 = 0.92) outscore SceneSignal's 0.85 × 0.998,
+            # which is how a lake at 99.8% confidence lost Media/Place to the
+            # generic bucket. Abstaining keeps the vote structure the
+            # presence-only rule happened to produce, minus the false label.
+            return None
 
         # Photos with camera EXIF datetime are personal photos.
         if image_metadata and image_metadata.get(DATETIME_METADATA_KEY):

@@ -29,6 +29,7 @@ from typing import Dict, List, Optional, Tuple
 
 from shared.constants import (
     ARCHIVE_EXTENSIONS,
+    CAMERA_TIMESTAMP_STEM_PATTERN,
     SOFTWARE_INSTALLER_EXTENSIONS,
     SOFTWARE_PACKAGE_EXTENSIONS,
 )
@@ -50,6 +51,11 @@ SCHOLARLY_ARTICLE_SCHEMA_TYPE = "ScholarlyArticle"
 # the filename). Matched against the lowercased stem.
 EVENTS_CATEGORY = "events"
 _EVENT_MAP_PATTERN = re.compile(r"(?:placement|venue|event|festival)[ _-]?map")
+
+# Legal/contract keyword verdict. Exported so FilenamePatternSignal can graduate
+# its confidence from the same constants rather than restating the pair.
+LEGAL_CATEGORY = "legal"
+LEGAL_OTHER_SUBCATEGORY = "other"
 
 # Publisher-prefix patterns for Schema.org ScholarlyArticle detection.
 # Order matters: explicit publisher prefixes are checked before bare identifiers
@@ -109,6 +115,13 @@ GAME_ASSET_STEM_KEYWORDS = frozenset(
         "character",
     }
 )
+
+# Prefix-less camera timestamps ("20200705_171653.jpg" — Samsung / generic
+# Android). Ordinary photos, but all digits and underscores, so they collide
+# with the numbered-sprite rules below. Single-homed in shared.constants
+# alongside the vendor prefixes, because the same collision exists in
+# GameAssetSignal and FilenamePatternSignal.
+_CAMERA_TIMESTAMP_RE = re.compile(CAMERA_TIMESTAMP_STEM_PATTERN)
 
 
 def _detect_research_publisher(filename_stem: str) -> Optional[Tuple[str, str, str, str]]:
@@ -1080,9 +1093,12 @@ def classify_by_filename_patterns(
     # =========================================================
     if ext in {".png", ".jpg", ".jpeg", ".webp", ".gif", ".jp2"}:
         # EXCLUDE camera photo naming conventions from game asset detection
-        # These are photos from cameras/phones, not game assets
+        # These are photos from cameras/phones, not game assets. Two forms:
+        # a camera prefix ("IMG_", "PXL_") and the prefix-less Samsung/Android
+        # timestamp ("20200705_171653"), which is otherwise indistinguishable
+        # from a numbered sprite.
         camera_prefixes = ("pxl_", "img_", "dsc_", "dcim_", "dscn_", "dscf_", "p_", "photo_")
-        is_camera_photo = stem.startswith(camera_prefixes)
+        is_camera_photo = bool(stem.startswith(camera_prefixes) or _CAMERA_TIMESTAMP_RE.match(stem))
 
         # EXCLUDE screenshot renamer software prefixes from game asset detection
         # These are software screenshots renamed by screenshot_renamer.py
@@ -1570,7 +1586,13 @@ def classify_by_filename_patterns(
     if ext in {".pdf", ".docx", ".doc"}:
         if any(kw in stem for kw in legal_keywords):
             print("  ✓ Filename pattern: Legal/contract document")
-            return ("business", "legal", None, [])
+            # ("business", "legal") was not a real taxonomy pair — neither
+            # category map declares a "legal" subcategory under business, so
+            # every match silently degraded to Business/Other while the
+            # top-level Legal/ tree went unused. The keyword says the topic is
+            # legal, never which kind, so the generic bucket is the honest
+            # verdict; LegalContentSignal refines it from the text.
+            return (LEGAL_CATEGORY, LEGAL_OTHER_SUBCATEGORY, None, [])
 
     # =========================================================
     # FINANCIAL DOCUMENTS: billing, statement, invoice, receipt

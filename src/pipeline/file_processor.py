@@ -57,6 +57,12 @@ try:
 except ImportError:
     SCHOLARLY_ARTICLE_SCHEMA_TYPE = "ScholarlyArticle"
 
+# Text-bearing documents (assigned post-extraction by ContentOrganizer). Built
+# by the same DocumentGenerator as DigitalDocument — omitting it here silently
+# routes every promoted document to the bare `else` fallback, which drops
+# encodingFormat/url/contentSize and re-emits the unpromoted @type.
+TEXT_DIGITAL_DOCUMENT_SCHEMA_TYPE = "TextDigitalDocument"
+
 # Schema.org types that describe image *files* and so build via ImageGenerator
 # (contentUrl/width/height), even when the routing decision assigns a more
 # specific @type. Includes every scene @type emitted by the unified
@@ -222,7 +228,13 @@ class FileProcessor:
             generator = DatasetGenerator()
             generator.set_property("name", file_path.name, PropertyType.TEXT)
             generator.set_property("description", description, PropertyType.TEXT)
-        elif schema_type in ["DigitalDocument", "Article", SCHOLARLY_ARTICLE_SCHEMA_TYPE, "Report"]:
+        elif schema_type in [
+            "DigitalDocument",
+            TEXT_DIGITAL_DOCUMENT_SCHEMA_TYPE,
+            "Article",
+            SCHOLARLY_ARTICLE_SCHEMA_TYPE,
+            "Report",
+        ]:
             generator = DocumentGenerator(schema_type)
             generator.set_property("name", file_path.name, PropertyType.TEXT)
             generator.set_property("description", description, PropertyType.TEXT)

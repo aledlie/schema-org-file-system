@@ -10,6 +10,8 @@ import pytest
 from src.organizers.base_organizer import BaseOrganizer
 from src.organizers.category_config import CONTENT_CATEGORY_PATHS
 from src.organizers.content_organizer import (
+    DIGITAL_DOCUMENT_SCHEMA_TYPE,
+    TEXT_DIGITAL_DOCUMENT_SCHEMA_TYPE,
     _SIGNAL_AGREEMENT_BOOST,
     _TEXT_LENGTH_FULL_CHARS,
     _TEXT_MIN_CHARS,
@@ -447,6 +449,95 @@ class TestClassifyByFilenamePatterns:
 
 
 # ------------------------------------------------------------------ #
+# Prefix-less camera timestamps vs. numbered sprites                   #
+# ------------------------------------------------------------------ #
+
+
+class TestCameraTimestampNotSprite:
+    """A bare "YYYYMMDD_HHMMSS" stem is a photo, not a numbered sprite.
+
+    The Samsung/Android convention is all digits and underscores, so it used to
+    match the numbered-sprite rule and file real photos — including a passport
+    photo found in GameAssets/Sprites — as game assets.
+
+    The date/time fields are range-bounded by regex, not calendar-validated, so
+    impossible-but-well-formed stems ("20200230_171653", February 30) read as
+    camera timestamps. That imprecision is deliberate: it costs a nonexistent
+    sprite naming convention and buys one shared pattern across three call
+    sites instead of a bespoke parser per site.
+    """
+
+    @pytest.mark.parametrize(
+        "filename",
+        [
+            "20200705_171653.jpg",  # house exterior
+            "20191130_175350.jpg",  # sunset over water
+            "20190504_193648.jpg",  # passport photo
+            "20220622_204727.png",
+            "20260723_231227204.jpg",  # milliseconds suffix
+        ],
+    )
+    def test_camera_timestamp_is_not_a_game_asset(
+        self, organizer: ContentOrganizer, filename: str
+    ) -> None:
+        result = organizer.classify_by_filename_patterns(Path("/photos") / filename)
+        # Falls through to content analysis rather than claiming a category.
+        assert result is None
+
+    @pytest.mark.parametrize(
+        "filename",
+        [
+            "20200705_171653.jpg",
+            "20191130_175350.jpg",
+            "20190504_193648.jpg",
+            "20220622_204727.png",
+            "20260723_231227204.jpg",
+        ],
+    )
+    def test_camera_timestamp_excluded_from_sprite_signal(
+        self, organizer: ContentOrganizer, filename: str
+    ) -> None:
+        # The scoring path has its own sprite regexes (GAME_SPRITE_PATTERNS'
+        # ``^\d+_\d+$``); fixing only the filename classifier leaves this one
+        # still filing photos as sprites.
+        assert organizer.classify_game_asset(Path("/photos") / filename) is None
+
+    @pytest.mark.parametrize(
+        "filename",
+        [
+            "0.png",
+            "103.png",
+            "42_8.png",
+            "12345678_123456.png",  # not a real date: month 34
+            "20201305_171653.png",  # month 13
+            "20200705_991653.png",  # hour 99
+        ],
+    )
+    def test_numbered_sprites_still_route_to_game_assets(
+        self, organizer: ContentOrganizer, filename: str
+    ) -> None:
+        result = organizer.classify_by_filename_patterns(Path("/sprites") / filename)
+        assert result is not None
+        assert (result[0], result[1]) == ("game_assets", "sprites")
+
+    @pytest.mark.parametrize(
+        "filename",
+        [
+            "42_8.png",  # sprite sheet coordinates
+            "12345678_123456.png",
+            "20201305_171653.png",
+        ],
+    )
+    def test_sprite_signal_still_matches_real_sprites(
+        self, organizer: ContentOrganizer, filename: str
+    ) -> None:
+        assert organizer.classify_game_asset(Path("/sprites") / filename) == (
+            "game_assets",
+            "sprites",
+        )
+
+
+# ------------------------------------------------------------------ #
 # __init__ taxonomy wiring                                             #
 # ------------------------------------------------------------------ #
 
@@ -693,11 +784,17 @@ class TestClassifyMediaFile:
         result = organizer.classify_media_file(Path("/pics/receipt_2024.jpg"))
         assert result == ("media", "photos", "documents")
 
-    def test_gps_metadata_routes_to_travel(self, organizer: ContentOrganizer) -> None:
+    def test_gps_metadata_alone_no_longer_routes_to_travel(
+        self, organizer: ContentOrganizer
+    ) -> None:
+        # Phones geotag everything, so coordinates alone are not evidence of a
+        # trip. A PNG has no camera-extension fallback either, so it falls
+        # through and CLIP decides. Travel now needs a geographic CLIP label
+        # *and* GPS (ClipVisionSignal.GPS_TRAVEL_CATEGORY).
         result = organizer.classify_media_file(
             Path("/pics/img_100.png"), {"gps_coordinates": (30.27, -97.74)}
         )
-        assert result == ("media", "photos", "travel")
+        assert result is None
 
     def test_camera_datetime_routes_to_other(self, organizer: ContentOrganizer) -> None:
         result = organizer.classify_media_file(Path("/pics/img_100.png"), {"datetime": object()})
@@ -728,13 +825,22 @@ class TestMapClipLabel:
     def test_unknown_label_returns_none(self, organizer: ContentOrganizer) -> None:
         assert organizer._map_clip_label("a completely unknown label") is None
 
-    def test_geographic_label_with_gps_upgrades_to_travel(
+    def test_geographic_label_far_from_home_upgrades_to_travel(
         self, organizer: ContentOrganizer
     ) -> None:
+        # Eiffel Tower — well beyond TRAVEL_MIN_DISTANCE_KM of Austin.
+        result = organizer._map_clip_label(
+            "a landscape or nature scene", {"gps_coordinates": (48.8584, 2.2945)}
+        )
+        assert result == ("media", "photos_travel")
+
+    def test_geographic_label_near_home_is_not_travel(self, organizer: ContentOrganizer) -> None:
+        # Downtown Austin: a lake with the local skyline behind it is a place,
+        # not a trip. GPS presence used to be enough to call this travel.
         result = organizer._map_clip_label(
             "a landscape or nature scene", {"gps_coordinates": (30.27, -97.74)}
         )
-        assert result == ("media", "photos_travel")
+        assert result == ("media", "photos_nature")
 
     def test_geographic_label_without_gps_keeps_mapping(self, organizer: ContentOrganizer) -> None:
         result = organizer._map_clip_label("a landscape or nature scene")
@@ -1707,3 +1813,115 @@ class TestGetDestinationPathNesting:
             subcategory="litigation",
         )
         assert "Legal/Litigation" in str(result)
+
+
+# ------------------------------------------------------------------ #
+# Post-decision document adjusters                                     #
+# ------------------------------------------------------------------ #
+
+
+class TestTextDocumentSchemaPromotion:
+    """A document that yielded real text becomes TextDigitalDocument.
+
+    ``_derive_schema_type`` only sees the MIME type, so a searchable PDF and a
+    scan are both a bare ``DigitalDocument``. The narrower schema.org type is
+    assigned after extraction, when whether text exists is actually known.
+    """
+
+    @staticmethod
+    def _decision(schema_type: str = DIGITAL_DOCUMENT_SCHEMA_TYPE) -> ClassificationDecision:
+        return ClassificationDecision(
+            category="legal",
+            subcategory="litigation",
+            schema_type=schema_type,
+            confidence=0.9,
+            margin=0.5,
+            winning_signals=["text_content"],
+            all_scores=[],
+            company_name=None,
+            people_names=[],
+        )
+
+    @staticmethod
+    def _ctx(text: str | None) -> FileContext:
+        ctx = FileContext(
+            path=Path("/docs/intake.pdf"),
+            schema_type=DIGITAL_DOCUMENT_SCHEMA_TYPE,
+            text_provider=(lambda _p: text) if text is not None else None,
+        )
+        if text is not None:
+            ctx.ensure_text()
+        return ctx
+
+    def test_promotes_when_text_extracted(self) -> None:
+        result = ContentOrganizer._promote_text_document_schema(
+            self._ctx("Legal intake form. " * 20), self._decision()
+        )
+        assert result.schema_type == TEXT_DIGITAL_DOCUMENT_SCHEMA_TYPE
+
+    def test_scan_without_text_layer_stays_digital_document(self) -> None:
+        result = ContentOrganizer._promote_text_document_schema(self._ctx(""), self._decision())
+        assert result.schema_type == DIGITAL_DOCUMENT_SCHEMA_TYPE
+
+    def test_text_below_threshold_does_not_promote(self) -> None:
+        # Scan noise (a stray page number) must not read as a text layer.
+        result = ContentOrganizer._promote_text_document_schema(self._ctx("12"), self._decision())
+        assert result.schema_type == DIGITAL_DOCUMENT_SCHEMA_TYPE
+
+    def test_image_object_is_never_promoted(self) -> None:
+        # An OCR'd image is still an ImageObject — a different type branch.
+        result = ContentOrganizer._promote_text_document_schema(
+            self._ctx("Scanned letterhead text. " * 20), self._decision(schema_type="ImageObject")
+        )
+        assert result.schema_type == "ImageObject"
+
+
+class TestCompanyCanonicalizationFromDomain:
+    """A curated domain identity outranks the winning signal's raw extraction."""
+
+    SAFE_TEXT = (
+        "Legal Intake Form | legal@safeaustin.org. Seeking services from the "
+        "SAFE Legal Department regarding a protective order."
+    )
+
+    @staticmethod
+    def _decision(company_name: str | None) -> ClassificationDecision:
+        return ClassificationDecision(
+            category="legal",
+            subcategory="litigation",
+            schema_type=DIGITAL_DOCUMENT_SCHEMA_TYPE,
+            confidence=0.9,
+            margin=0.5,
+            winning_signals=["text_content"],
+            all_scores=[],
+            company_name=company_name,
+            people_names=[],
+        )
+
+    @staticmethod
+    def _ctx(text: str) -> FileContext:
+        ctx = FileContext(
+            path=Path("/docs/intake.pdf"),
+            schema_type=DIGITAL_DOCUMENT_SCHEMA_TYPE,
+            text_provider=lambda _p: text,
+        )
+        ctx.ensure_text()
+        return ctx
+
+    def test_registry_name_replaces_extracted_department(self) -> None:
+        result = ContentOrganizer._canonicalize_company_from_domain(
+            self._ctx(self.SAFE_TEXT), self._decision("SAFE Legal Department")
+        )
+        assert result.company_name == "The SAFE Alliance"
+
+    def test_unknown_domain_leaves_company_untouched(self) -> None:
+        result = ContentOrganizer._canonicalize_company_from_domain(
+            self._ctx("Invoice from billing@example.com for the purchase order."),
+            self._decision("Example Corp"),
+        )
+        assert result.company_name == "Example Corp"
+
+    def test_no_text_leaves_company_untouched(self) -> None:
+        ctx = FileContext(path=Path("/docs/x.pdf"), schema_type=DIGITAL_DOCUMENT_SCHEMA_TYPE)
+        result = ContentOrganizer._canonicalize_company_from_domain(ctx, self._decision("Acme"))
+        assert result.company_name == "Acme"

@@ -35,9 +35,11 @@ if TYPE_CHECKING:
 import re
 from typing import Dict, List
 
-from shared.constants import CAMERA_VENDOR_PREFIX_PATTERNS
+from shared.constants import CAMERA_TIMESTAMP_STEM_PATTERN, CAMERA_VENDOR_PREFIX_PATTERNS
 from shared.filename_classifier import (
     GAME_ASSET_STEM_KEYWORDS,
+    LEGAL_CATEGORY,
+    LEGAL_OTHER_SUBCATEGORY,
     RESEARCH_CATEGORY,
     SCHOLARLY_ARTICLE_SCHEMA_TYPE,
     classify_by_filename_patterns,
@@ -76,6 +78,13 @@ EVENTS_MAP_RESULT = ("events", "other")
 # manifest is read; graduated, a media/medical manifest outscores this verdict
 # and a silent manifest leaves it to commit Technical/Other alone.
 ARCHIVE_RESULT = ("technical", "archives")
+
+# Legal/contract keyword stems ("...Legal Intake Form...", "nda_2024"). Same
+# downgrade rationale as ARCHIVE_RESULT: the keyword names the topic, not the
+# author or the document kind, and at full confidence it early-exits the cheap
+# wave so no text is ever extracted. Graduated, OrganizationSignal and
+# LegalContentSignal get to run and can name the source organization.
+LEGAL_KEYWORD_RESULT = (LEGAL_CATEGORY, LEGAL_OTHER_SUBCATEGORY)
 
 # Legacy filename naming traps (BACKLOG Phase-3 item #5): the shared rule
 # module answers these at full strength, but the stem is not what the verdict
@@ -129,7 +138,12 @@ def _is_stock_asset_stem(stem: str) -> bool:
 # on any of these downgrades so MediaHeuristicSignal / TextContentSignal win.
 SCAN_STEM_PREFIX_PATTERN = r"^scan_?\d+"
 _CAMERA_OR_SCAN_STEM_PATTERNS = tuple(
-    re.compile(pattern) for pattern in (*CAMERA_VENDOR_PREFIX_PATTERNS, SCAN_STEM_PREFIX_PATTERN)
+    re.compile(pattern)
+    for pattern in (
+        *CAMERA_VENDOR_PREFIX_PATTERNS,
+        CAMERA_TIMESTAMP_STEM_PATTERN,
+        SCAN_STEM_PREFIX_PATTERN,
+    )
 )
 
 
@@ -200,6 +214,13 @@ def graduated_filename_confidence(stem: str, category: str, subcategory: str, ex
         return FILENAME_WEAK_CONFIDENCE
     # Archives: let the mid wave read the member listing (ARCHIVE_RESULT above).
     if result == ARCHIVE_RESULT:
+        return FILENAME_WEAK_CONFIDENCE
+    # Legal keyword in the stem: it says the topic is legal, never whose
+    # document it is or which kind. At full strength this cheap-wave verdict
+    # early-exits before any text is read, so a legal document from a named
+    # organization never reaches OrganizationSignal or LegalContentSignal —
+    # the file commits to Legal/Other with extracted_text empty.
+    if result == LEGAL_KEYWORD_RESULT:
         return FILENAME_WEAK_CONFIDENCE
     # Sprite verdict on a camera-roll / scanner stem: it is a photo or a scan.
     if result == GAME_SPRITES_RESULT and _is_camera_or_scan_stem(stem):

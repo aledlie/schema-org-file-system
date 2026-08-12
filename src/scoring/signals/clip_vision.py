@@ -28,6 +28,8 @@ if TYPE_CHECKING:
 
 from typing import Dict, FrozenSet, List, Mapping, Optional, Tuple
 
+from shared.geo import is_away_from_home
+
 from ..types import CategoryScore
 from ..weights import W_CLIP
 
@@ -53,6 +55,10 @@ CLIP_TOP_EMISSIONS = 3
 # Destination for geographic labels when the image carries GPS coordinates.
 GPS_TRAVEL_CATEGORY = ("media", "photos_travel")
 
+# Signal name, exported so the organizer's generic-bucket refinement can look
+# for this signal's vote without restating the string.
+CLIP_VISION_SIGNAL_NAME = "clip_vision"
+
 # Image-metadata key carrying (lat, lon) — the get_metadata_summary() shape.
 GPS_COORDINATES_KEY = "gps_coordinates"
 
@@ -77,15 +83,24 @@ def map_clip_label(
 ) -> Optional[Tuple[str, str]]:
     """Map a CLIP label to ``(category, subcategory)``, or ``None`` if unmapped.
 
-    Reproduces ``ContentOrganizer._map_clip_label`` exactly: unknown labels
-    return ``None``; geographic labels upgrade to ``GPS_TRAVEL_CATEGORY``
-    when the image metadata carries GPS coordinates.
+    Unknown labels return ``None``; geographic labels (landscape, cityscape,
+    landmark) upgrade to ``GPS_TRAVEL_CATEGORY`` when the image was taken far
+    enough from home.
+
+    The upgrade used to fire on GPS *presence*, which made every local
+    landscape "travel" — a lake with the Austin skyline behind it, photographed
+    from the Austin shore. A geographic subject says the photo is of a place;
+    only distance from home says it was a trip.
     """
     mapping = label_to_organizer.get(label)
     if not mapping:
         return None
     category, subcategory = mapping
-    if image_metadata and image_metadata.get(GPS_COORDINATES_KEY) and label in geographic_labels:
+    if (
+        image_metadata
+        and label in geographic_labels
+        and is_away_from_home(image_metadata.get(GPS_COORDINATES_KEY))
+    ):
         category, subcategory = GPS_TRAVEL_CATEGORY
     return (category, subcategory)
 
@@ -93,7 +108,7 @@ def map_clip_label(
 class ClipVisionSignal:
     """Votes for the organizer mappings of the top CLIP labels."""
 
-    name = "clip_vision"
+    name = CLIP_VISION_SIGNAL_NAME
     weight = W_CLIP
     cost_tier = "heavy"
 
