@@ -457,12 +457,16 @@ should get `# noqa: E402` rather than reordering.
 
 `classify_image` (`scripts/shared/clip_classification.py`) picks the winning category from `score_embedding(emb, labels, "a photo of ")` but then returns `all_scores` from `score_embedding(emb, labels, "")` — a second, *unprefixed* scoring pass. The two disagree in practice: `PXL_20260723_231733185.jpg` was categorized `living room` while `all_scores`' argmax was `dining room`, and `IMG_9421.HEIC` was `backyard` against an `all_scores` argmax of `patio`. So any consumer that reads `all_scores` to explain, validate, or re-derive a decision is reading a distribution that did not make it.
 
-**Status:** Open — `CLIPResult.margin` was added in `4b56759` so the renamer gates on the deciding distribution; the divergence itself is untouched.
+**Status:** **Done 2026-08-11** — `d4efff5`. Both distributions are now explicitly named in `CLIPResult`.
 **Priority:** P3
 **Source:** margin-gate implementation, 2026-08-11
 
-- **Known consumers to audit:** `result["top_scores"]` (surfaced to the user), the `files.image_classification` column written by `scripts/backfill_clip_scores.py`, and anything in the calibration harness replaying those stored scores — the backtest oracle may be keyed on the non-deciding distribution.
-- **Either is defensible; having both silently is not.** Score once with the prefix and report that, or keep both and name them distinctly (`decision_scores` vs `raw_scores`) so no caller can mistake one for the other.
+- **Shipped (`d4efff5`) — second option: keep both, name them distinctly.** `CLIPResult` gains `decision_scores` (the `"a photo of "` prefixed pass that chose the winner) and `raw_scores` (the unprefixed pass). `all_scores` becomes a deprecated `@property` alias for `raw_scores` — carries the same value it always held, so external callers whose behaviour is unchanged; zero in-repo readers remain. Every in-repo call site was migrated to the explicit name.
+- **Consumer audit:**
+  - `result["top_scores"]` in `rename_images.py` — migrated to `clip_result.decision_scores`. Top-5 now reflects the same distribution that picked the label, consistent with the winning category and confidence.
+  - `files.image_classification` column via `scripts/backfill_clip_scores.py` — **no computation change needed.** `CLIP_CATEGORY_PROMPTS` are full prompts built by `_make_clip_prompt` (they already embed `"a photo of "` per label). `prompt_prefix=""` + `CLIP_CATEGORY_PROMPTS` IS the decision distribution — semantically equivalent to what the production `_clip_scores_for_context` path does. Added a comment in `backfill_clip_scores.py` making this explicit. Renamed local variable to `decision_results`. **No mixed-provenance consequence:** all existing rows were already written using the decision distribution; nothing stored was the unprefixed-label distribution. No re-run needed.
+  - Calibration harness (`backtest_scoring.py`) — reads `image_classification` (full-prompt decision distribution, consistent with production `ClipVisionSignal`). The oracle's known limitations (164-row biased corpus) remain unchanged; cross-reference the "Scoring calibration is corpus-bound" item. The backtest does not replay the renamer's `decision_scores`/`raw_scores` — those are separate label sets for a separate pipeline.
+- **8 new tests in `TestCLIPResultScoreFields`** — field shape, alias contract, different-ranking guarantee, `classify_image` two-call structure with correct per-pass prefix.
 
 ### Screenshot renamer is ungated pending a labelled margin eval
 
