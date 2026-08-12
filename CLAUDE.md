@@ -1,7 +1,7 @@
 # Schema.org File Organization System
 
 AI-powered file organization using CLIP vision, OCR, Schema.org metadata, and entity detection.
-**Python:** 3.12–3.14, pyenv builds (brew pythons blocked on macOS 26 by libexpat ABI) | **Version:** 2.1.0 | **Files:** 265,000+
+**Python:** 3.14+, pyenv builds (brew pythons blocked on macOS 26 by libexpat ABI) | **Version:** 2.1.0 | **Files:** 265,000+
 
 ## Quick Start
 
@@ -117,7 +117,9 @@ Full module map, data flow, and diagrams: [`docs/ARCHITECTURE.md`](docs/ARCHITEC
 
 ## Dependencies
 
-Requires Python 3.12–3.14 (`pyproject.toml` declares `requires-python = "<=3.14"`; the current venv runs pyenv-built 3.14.0). On macOS 26, use a **pyenv-built** interpreter — pyenv links expat statically, avoiding the libexpat ABI break that hits brew's `python@3.13/3.14` (see Troubleshooting).
+Requires Python **3.14+** (`pyproject.toml` declares `requires-python = ">=3.14"`; the current venv runs pyenv-built 3.14.0). On macOS 26, use a **pyenv-built** interpreter — pyenv links expat statically, avoiding the libexpat ABI break that hits brew's `python@3.13/3.14` (see Troubleshooting).
+
+**The 3.14 floor is load-bearing, not aspirational.** `src/` and `scripts/` contain 9 [PEP 758](https://peps.python.org/pep-0758/) unparenthesized `except A, B:` clauses (`image_metadata.py` ×3, `correction_tracker.py` ×2, `wikidata_enricher.py`, `migration.py`, `timeline_api.py`, `redact_pii.py`), written by the `black` pass in `f905953`. Those are a **SyntaxError before 3.14**, so a lower floor is not a compatibility claim — it is a module that will not import. The prior declaration was `<=3.14`, which had **no lower bound at all** (Python 3.9 satisfied it) and **excluded 3.14.1**, so a routine patch upgrade would have made `pip install -e ".[all]"` refuse. Both CI jobs in `.github/workflows/checks.yml` pin `python-version: "3.14"`, so nothing ever tested the 3.12/3.13 that was advertised. If you ever need to lower the floor, revert those 9 clauses first and add the older versions to the CI matrix — otherwise the declaration is fiction again.
 
 ```bash
 python3.14 -m venv venv && source venv/bin/activate

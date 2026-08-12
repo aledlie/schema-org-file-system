@@ -1,6 +1,7 @@
 # Schema.org File Organization System
 # Requirements file - Generated 2025-12-10
-# Python 3.12-3.13 (3.14 blocked by macOS 26 libexpat ABI)
+# Python 3.14+ (on macOS 26 use a pyenv-built interpreter; brew's pythons are
+# the ones blocked by the libexpat ABI break, not 3.14 itself)
 
 # =============================================================================
 # CORE DEPENDENCIES (Required for basic functionality)
