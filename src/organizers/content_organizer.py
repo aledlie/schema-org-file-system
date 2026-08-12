@@ -942,6 +942,32 @@ class ContentOrganizer(BaseOrganizer):
             return None
         return {_CLIP_PROMPT_TO_LABEL.get(prompt, prompt): score for prompt, score in results}
 
+    def _clip_raw_scores_for_context(self, file_path: Path) -> Optional[Dict[str, float]]:
+        """Unprefixed CLIP label→score mapping — diagnostic baseline only.
+
+        Scores the *bare* ``CLIP_CONTENT_LABELS`` where
+        :meth:`_clip_scores_for_context` scores ``CLIP_CATEGORY_PROMPTS`` (the
+        same labels wrapped by ``_make_clip_prompt``). Mirrors the renamer's
+        ``decision_scores``/``raw_scores`` pair so the prefixed-vs-unprefixed
+        divergence is measurable on the content path too.
+
+        **No signal may vote on this.** It exists to be compared against the
+        decision distribution and recorded as evidence; feeding it into a
+        decision would reintroduce the exact defect the split was made to fix.
+
+        Cost is a matmul + softmax against the already-cached image embedding
+        (text embeddings memoize per prompt set), not a re-encode.
+        """
+        try:
+            if CLIP_CACHE_AVAILABLE:
+                results = get_cached_embedding(file_path, CLIP_CONTENT_LABELS, prompt_prefix="")
+            else:
+                results = get_clip_classifier().classify_raw(file_path, CLIP_CONTENT_LABELS)
+        except Exception as e:
+            print(f"  CLIP raw-baseline error: {e}")
+            return None
+        return dict(results)
+
     def _build_file_context(
         self, file_path: Path, display_path: Optional[Path] = None
     ) -> FileContext:
@@ -960,12 +986,14 @@ class ContentOrganizer(BaseOrganizer):
                 )
 
         clip_provider = None
+        clip_raw_provider = None
         if (
             ENHANCED_CLIP_AVAILABLE
             and self.image_analyzer is not None
             and self.image_analyzer.vision_available
         ):
             clip_provider = self._clip_scores_for_context
+            clip_raw_provider = self._clip_raw_scores_for_context
 
         metadata_provider = None
         if self.metadata_parser is not None and self.metadata_parser.metadata_available:
@@ -984,6 +1012,7 @@ class ContentOrganizer(BaseOrganizer):
             text_provider=text_provider,
             ocr_provider=ocr_provider,
             clip_provider=clip_provider,
+            clip_raw_provider=clip_raw_provider,
             image_metadata_provider=metadata_provider,
             kie_provider=kie_provider,
             ocr_confidence_gate=_OCR_CONFIDENCE_THRESHOLD,

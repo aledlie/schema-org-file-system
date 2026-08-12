@@ -75,6 +75,7 @@ class FileContext:
         text_provider: Optional[Callable[[Path], str]] = None,
         ocr_provider: Optional[Callable[[Path], Optional[OcrResultLike]]] = None,
         clip_provider: Optional[Callable[[Path], Optional[Dict[str, float]]]] = None,
+        clip_raw_provider: Optional[Callable[[Path], Optional[Dict[str, float]]]] = None,
         image_metadata_provider: Optional[Callable[[Path], Dict[str, Any]]] = None,
         kie_provider: Optional[Callable[[Path], Optional[KieResultLike]]] = None,
         ocr_confidence_gate: float = OCR_CONFIDENCE_GATE,
@@ -89,6 +90,7 @@ class FileContext:
         self._text_provider = text_provider
         self._ocr_provider = ocr_provider
         self._clip_provider = clip_provider
+        self._clip_raw_provider = clip_raw_provider
         self._image_metadata_provider = image_metadata_provider
         self._kie_provider = kie_provider
         self._ocr_confidence_gate = ocr_confidence_gate
@@ -106,6 +108,7 @@ class FileContext:
         self._text: Any = _UNSET
         self._ocr: Any = _UNSET
         self._clip: Any = _UNSET
+        self._clip_raw: Any = _UNSET
         self._image_metadata: Any = _UNSET
         self._kie: Any = _UNSET
         # Telemetry: set when ensure_ocr suppressed OCR via the CLIP gate.
@@ -218,6 +221,24 @@ class FileContext:
             scores = self._clip_provider(self.path) if self._clip_provider else None
             self._clip = dict(scores) if scores else {}
         return cast(Dict[str, float], self._clip)
+
+    def ensure_clip_raw(self) -> Dict[str, float]:
+        """Unprefixed CLIP label → score mapping ({} when unavailable).
+
+        Diagnostic counterpart to :meth:`ensure_clip`. ``ensure_clip`` scores
+        the full decision prompts (``CLIP_CATEGORY_PROMPTS``, which embed
+        ``"a photo of "`` per label); this scores the *bare* labels. The two
+        distributions rank differently in practice, and only having both makes
+        that divergence observable. Never feeds a decision — signals must vote
+        on ``ensure_clip()``.
+
+        Lazy and independent: nothing calls it unless a signal asks, so the
+        extra pass costs nothing on files whose CLIP votes never run.
+        """
+        if self._clip_raw is _UNSET:
+            scores = self._clip_raw_provider(self.path) if self._clip_raw_provider else None
+            self._clip_raw = dict(scores) if scores else {}
+        return cast(Dict[str, float], self._clip_raw)
 
     def ensure_image_metadata(self) -> Dict[str, Any]:
         """EXIF/GPS metadata summary ({} when unavailable or not an image)."""

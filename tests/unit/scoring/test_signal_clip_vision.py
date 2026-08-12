@@ -22,11 +22,16 @@ from src.scoring.signals.clip_vision import (
 GPS_METADATA = {"gps_coordinates": (30.27, -97.74)}
 
 
-def make_ctx(clip_scores=None, image_metadata=None, schema_type="ImageObject"):
+def make_ctx(
+    clip_scores=None, image_metadata=None, schema_type="ImageObject", clip_raw_scores=None
+):
     return FileContext(
         path=Path("/tmp/img.png"),
         schema_type=schema_type,
         clip_provider=(lambda _path: clip_scores) if clip_scores is not None else None,
+        clip_raw_provider=(
+            (lambda _path: clip_raw_scores) if clip_raw_scores is not None else None
+        ),
         image_metadata_provider=(
             (lambda _path: image_metadata) if image_metadata is not None else None
         ),
@@ -139,3 +144,78 @@ class TestRun:
         score = emissions[0]
         assert score.signal_name == "clip_vision"
         assert score.evidence == {"clip_label": "food or a meal", "clip_score": 0.42}
+
+
+class TestRawBaselineEvidence:
+    """The unprefixed-CLIP diagnostic baseline (clip_raw_label/clip_diverged).
+
+    Observational only: these keys ride the evidence dict into
+    file_categories.signal_evidence and never influence a decision.
+    """
+
+    def test_absent_provider_records_nothing(self, signal: ClipVisionSignal) -> None:
+        # No raw provider wired -> keys absent entirely, so "not measured" stays
+        # distinguishable from a measured agreement.
+        emissions = signal.run(make_ctx({"food or a meal": 0.42}))
+        assert "clip_raw_label" not in emissions[0].evidence
+        assert "clip_diverged" not in emissions[0].evidence
+
+    def test_divergence_recorded_when_passes_disagree(self, signal: ClipVisionSignal) -> None:
+        emissions = signal.run(
+            make_ctx(
+                {"food or a meal": 0.42, "a document or text": 0.30},
+                clip_raw_scores={"food or a meal": 0.10, "a document or text": 0.90},
+            )
+        )
+        assert emissions[0].evidence["clip_raw_label"] == "a document or text"
+        assert emissions[0].evidence["clip_diverged"] is True
+
+    def test_agreement_records_false_not_absence(self, signal: ClipVisionSignal) -> None:
+        # Measured-and-agreed must be a recorded False, not a missing key.
+        emissions = signal.run(
+            make_ctx(
+                {"food or a meal": 0.42, "a document or text": 0.30},
+                clip_raw_scores={"food or a meal": 0.90, "a document or text": 0.10},
+            )
+        )
+        assert emissions[0].evidence["clip_diverged"] is False
+
+    def test_baseline_rides_first_emission_only(self, signal: ClipVisionSignal) -> None:
+        # One baseline per file: repeating it per emission would multiply-count
+        # a single divergence in any frequency analysis over the evidence.
+        emissions = signal.run(
+            make_ctx(
+                {"food or a meal": 0.42, "a document or text": 0.30, "an animal or pet": 0.20},
+                clip_raw_scores={"an animal or pet": 0.90},
+            )
+        )
+        assert len(emissions) > 1
+        assert "clip_diverged" in emissions[0].evidence
+        assert all("clip_diverged" not in e.evidence for e in emissions[1:])
+
+    def test_baseline_does_not_alter_the_decision(self, signal: ClipVisionSignal) -> None:
+        # A raw pass ranking a *different* category first must not move the
+        # emitted votes: same categories, same confidences, with and without it.
+        scores = {"food or a meal": 0.42, "a document or text": 0.30}
+        without = signal.run(make_ctx(scores))
+        with_raw = signal.run(make_ctx(scores, clip_raw_scores={"an animal or pet": 0.99}))
+        assert [(e.category, e.subcategory, e.confidence) for e in without] == [
+            (e.category, e.subcategory, e.confidence) for e in with_raw
+        ]
+
+    def test_raw_pass_is_lazy(self, signal: ClipVisionSignal) -> None:
+        # Non-images never reach run(), so the extra pass must not be paid for.
+        calls: list = []
+
+        def raw_provider(path):
+            calls.append(path)
+            return {"food or a meal": 0.5}
+
+        ctx = FileContext(
+            path=Path("/tmp/doc.pdf"),
+            schema_type="DigitalDocument",
+            clip_provider=lambda _p: {"food or a meal": 0.42},
+            clip_raw_provider=raw_provider,
+        )
+        assert signal.applies_to(ctx) is False
+        assert calls == []

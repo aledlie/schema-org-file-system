@@ -60,6 +60,14 @@ GPS_COORDINATES_KEY = "gps_coordinates"
 EVIDENCE_CLIP_LABEL = "clip_label"
 EVIDENCE_CLIP_SCORE = "clip_score"
 
+# Diagnostic-only evidence keys: the unprefixed baseline's top label and
+# whether it disagrees with the label the decision distribution chose. Carried
+# on the first emission only — one vote per file, not one per emitted label.
+# Never read by a signal or a decision; they exist to be mined out of
+# ``file_categories.signal_evidence`` (GraphStore.get_signal_evidence).
+EVIDENCE_CLIP_RAW_LABEL = "clip_raw_label"
+EVIDENCE_CLIP_DIVERGED = "clip_diverged"
+
 
 def map_clip_label(
     label: str,
@@ -107,13 +115,43 @@ class ClipVisionSignal:
             if mapped is None:
                 continue
             category, subcategory = mapped
+            evidence: Dict[str, object] = {
+                EVIDENCE_CLIP_LABEL: label,
+                EVIDENCE_CLIP_SCORE: score,
+            }
+            if not emissions:
+                # First emission only: the baseline describes the file, not this
+                # label, so repeating it per emission would triple-count it in
+                # any downstream frequency analysis.
+                evidence.update(self._raw_baseline_evidence(ctx, ranked[0][0]))
             emissions.append(
                 CategoryScore(
                     category=category,
                     subcategory=subcategory,
                     confidence=score,
                     signal_name=self.name,
-                    evidence={EVIDENCE_CLIP_LABEL: label, EVIDENCE_CLIP_SCORE: score},
+                    evidence=evidence,
                 )
             )
         return emissions
+
+    @staticmethod
+    def _raw_baseline_evidence(ctx: FileContext, decision_label: str) -> Dict[str, object]:
+        """Diagnostic-only comparison against the unprefixed CLIP distribution.
+
+        Records the unprefixed pass's top label and whether it disagrees with
+        the label the *decision* distribution ranked first. Returns ``{}`` when
+        no raw provider is wired, so the absence of a baseline is distinguishable
+        from a measured agreement — an empty dict means "not measured", while
+        ``clip_diverged: false`` means "measured, and they agreed".
+
+        Purely observational: nothing reads these keys to make a decision.
+        """
+        raw_scores = ctx.ensure_clip_raw()
+        if not raw_scores:
+            return {}
+        raw_label = max(raw_scores, key=lambda label: raw_scores[label])
+        return {
+            EVIDENCE_CLIP_RAW_LABEL: raw_label,
+            EVIDENCE_CLIP_DIVERGED: raw_label != decision_label,
+        }
