@@ -509,3 +509,72 @@ class TestRankBasedPeopleGate:
         mod = _analyzer_module
         for label in mod._GRAPHIC_LABELS:
             assert label in mod._ALL_CATEGORIES
+
+
+class TestGraphicSuppressesPeople:
+    """A face inside a graphic does not make it somebody's photo.
+
+    The cv2 cascade is usually right that a face is present — sprites and event
+    flyers contain real faces — but Media/Photos/Social is the wrong home for
+    them. Measured over 300 images: 10 files changed behaviour, all of them
+    faces-only (CLIP never ranked people top), and all 10 were correct
+    suppressions — 7 GameAssets sprites and 3 event promo flyers. No genuine
+    social photo was affected.
+    """
+
+    def _scores(self, **overrides: float) -> dict:
+        mod = _analyzer_module
+        base = {cat: 0.01 for cat in mod._ALL_CATEGORIES}
+        for label, value in overrides.items():
+            key = {
+                "people": mod._PEOPLE_LABEL,
+                "screenshot": mod._SCREENSHOT_LABEL,
+                "logo": mod._GRAPHIC_LABELS[0],
+                "graphic": mod._GRAPHIC_LABELS[1],
+                "outdoors": "a photo of outdoors",
+            }[label]
+            base[key] = value
+        return base
+
+    def _has_people(self, analyzer, path, scores, faces: bool) -> bool:
+        with (
+            patch.object(analyzer, "classify_image_content", return_value=scores),
+            patch.object(analyzer, "detect_people", return_value=faces),
+        ):
+            has_people: bool = analyzer.analyze_for_organization(path)[0]
+        return has_people
+
+    def test_faces_in_a_graphic_are_suppressed(
+        self, dummy_path: Path, analyzer: ImageContentAnalyzer
+    ) -> None:
+        # The event-flyer case: real faces, but a promotional graphic.
+        scores = self._scores(graphic=0.5, people=0.2)
+        assert self._has_people(analyzer, dummy_path, scores, faces=True) is False
+
+    def test_faces_in_a_logo_are_suppressed(
+        self, dummy_path: Path, analyzer: ImageContentAnalyzer
+    ) -> None:
+        scores = self._scores(logo=0.5, people=0.2)
+        assert self._has_people(analyzer, dummy_path, scores, faces=True) is False
+
+    def test_faces_in_an_ordinary_photo_still_fire(
+        self, dummy_path: Path, analyzer: ImageContentAnalyzer
+    ) -> None:
+        # The guard must not swallow the primary path: a non-graphic scene with
+        # a detected face is still a people photo.
+        scores = self._scores(outdoors=0.5)
+        assert self._has_people(analyzer, dummy_path, scores, faces=True) is True
+
+    def test_people_ranked_top_still_fires_without_faces(
+        self, dummy_path: Path, analyzer: ImageContentAnalyzer
+    ) -> None:
+        # Every file the measurement flipped was faces-only; a photo CLIP itself
+        # calls people must be unaffected by the graphic clause.
+        scores = self._scores(people=0.5)
+        assert self._has_people(analyzer, dummy_path, scores, faces=False) is True
+
+    def test_suppression_labels_cover_screenshot_and_graphics(self) -> None:
+        mod = _analyzer_module
+        assert mod._SCREENSHOT_LABEL in mod._NOT_A_PERSONAL_PHOTO_LABELS
+        for label in mod._GRAPHIC_LABELS:
+            assert label in mod._NOT_A_PERSONAL_PHOTO_LABELS

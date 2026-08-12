@@ -8,7 +8,7 @@ CLIP inference is delegated to the shared CLIPClassifier singleton
 from contextlib import nullcontext
 from pathlib import Path
 from types import TracebackType
-from typing import Any, Dict, Literal, Optional, TYPE_CHECKING, Tuple
+from typing import Any, Dict, List, Literal, Optional, TYPE_CHECKING, Tuple
 
 if TYPE_CHECKING:
     # The bare cost_roi_calculator import below is Any to mypy; the
@@ -81,6 +81,12 @@ _GRAPHIC_LABELS = [
     "a graphic design or illustration",
 ]
 
+# Labels that mean "this is not somebody's photograph", whatever the face
+# detector found. A face inside a screenshot (a video call), a sprite sheet, or
+# an event flyer is real — the cascade is not wrong — but none of them is a
+# social photo, and routing them to Media/Photos/Social is.
+_NOT_A_PERSONAL_PHOTO_LABELS = [_SCREENSHOT_LABEL] + _GRAPHIC_LABELS
+
 _ALL_CATEGORIES = (
     _INTERIOR_CATEGORIES
     + [
@@ -101,6 +107,11 @@ _ALL_CATEGORIES = (
 # project replaced on purpose and re-route photos to property_management/other.
 # See docs/BACKLOG.md — CLIP scores are a softmax over raw cosines.
 _INTERIOR_SCORE_THRESHOLD = 0.3
+
+
+def _any_ranks_top(scores: Dict[str, float], labels: List[str]) -> bool:
+    """True when any of ``labels`` ranks top — see :func:`_ranks_top`."""
+    return any(_ranks_top(scores, label) for label in labels)
 
 
 def _ranks_top(scores: Dict[str, float], label: str) -> bool:
@@ -262,13 +273,12 @@ class ImageContentAnalyzer:
 
         is_interior = interior_score > _INTERIOR_SCORE_THRESHOLD
         # Rank, not magnitude — see _ranks_top. Structure is the original
-        # (people OR faces) AND NOT screenshot; only the comparison changed.
-        # The screenshot clause is what keeps a face detected inside a
-        # screenshot (a video call, a photo of a photo) out of the social
-        # bucket, and it wins a people/screenshot tie because it is applied
-        # last — suppression is the conservative resolution.
-        has_people = (_ranks_top(scores, _PEOPLE_LABEL) or has_faces) and not _ranks_top(
-            scores, _SCREENSHOT_LABEL
+        # (people OR faces) AND NOT screenshot, widened: the suppression now
+        # covers graphics as well, because the face detector is right about
+        # sprites and event flyers and wrong about what they are. Suppression is
+        # applied last, so it wins a tie — the conservative resolution.
+        has_people = (_ranks_top(scores, _PEOPLE_LABEL) or has_faces) and not _any_ranks_top(
+            scores, _NOT_A_PERSONAL_PHOTO_LABELS
         )
         is_home_interior_no_people = is_interior and not has_people
 
@@ -290,8 +300,8 @@ class ImageContentAnalyzer:
             return (False, {})
 
         has_faces = self.detect_people(image_path)
-        is_screenshot = _ranks_top(scores, _SCREENSHOT_LABEL)
+        not_a_photo = _any_ranks_top(scores, _NOT_A_PERSONAL_PHOTO_LABELS)
 
-        has_people = (_ranks_top(scores, _PEOPLE_LABEL) or has_faces) and not is_screenshot
+        has_people = (_ranks_top(scores, _PEOPLE_LABEL) or has_faces) and not not_a_photo
 
         return (has_people, scores)
