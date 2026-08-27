@@ -91,3 +91,85 @@ def test_known_brands_gazetteer_catches_bare_single_token():
 
 def test_empty_text_returns_empty_list():
     assert extract_organizations("", base_extractor=_detector()) == []
+
+
+# ---------------------------------------------------------------------------
+# Regression: CamelCase code identifiers must not become company names
+# (Bug: _DOMAIN_RE used re.IGNORECASE, so Routes.signup / AuthMode.signIn
+# matched as "domains" and seeded _find_body_brand with tokens that recovered
+# capitalized identifiers as org names.)
+# ---------------------------------------------------------------------------
+
+FLUTTER_AUTH_DOC = """\
+Authentication Mode
+
+This module handles authentication for the Flutter application.
+
+The AuthMode enum defines the authentication mode:
+
+enum AuthMode { signUp, signIn }
+
+Navigator.pushNamed(context, Routes.signup);
+Navigator.pushNamed(context, Routes.login);
+
+When the client selects signUp mode, navigate to signup screen.
+When the client selects signIn mode, navigate to login screen.
+"""
+
+
+def test_camelcase_identifiers_not_extracted_as_companies():
+    """Routes.signup / AuthMode.signIn must NOT be treated as domain names."""
+    result = extract_organizations(FLUTTER_AUTH_DOC, base_extractor=_detector())
+    code_identifiers = {"Routes", "AuthMode", "Navigator", "Mode"}
+    leaked = code_identifiers & set(result)
+    assert not leaked, f"Code identifiers leaked as company names: {leaked!r} in {result!r}"
+
+
+def test_lowercase_domain_cue_still_works_after_case_fix():
+    """Lowercase domains (genedx.com) must still be recovered after removing IGNORECASE."""
+    result = extract_organizations(GENEDX_DOC, base_extractor=_detector())
+    assert "GeneDx" in result, result
+    assert result[0] == "GeneDx", result
+
+
+# ---------------------------------------------------------------------------
+# Regression: bare dotted code references (file paths, method calls, property
+# access) must not become company names either.
+#
+# Even after the CamelCase/IGNORECASE fix above, bare ``label.label`` prose
+# still matched the domain regex: a file path (``lib/config/content/
+# constants.dart``) recovered "Constants" as a false company, and a method
+# call (``error.contains(...)``) or property access (``context.go``,
+# ``state.uri``) would recover "Error"/"Context"/"State" the same way. There
+# is no finite denylist of "not a domain" second labels that closes this gap
+# (an extension denylist stopped ``constants.dart`` but not ``error.contains``).
+# The actual fix restricts domain matching to genuine URL/email syntax
+# (``@domain`` / ``http(s)://domain`` / ``www.domain``), which a dotted code
+# reference never has.
+# ---------------------------------------------------------------------------
+
+FLUTTER_AUTH_DOC_WITH_CODE_REFERENCES = FLUTTER_AUTH_DOC + (
+    "\n### Routes Constants\n\n"
+    "**Location:** `lib/config/content/constants.dart:95-110`\n\n"
+    "if (error.contains('token')) {\n"
+    "  context.go(state.uri.toString());\n"
+    "}\n"
+)
+
+
+def test_code_file_path_not_extracted_as_company():
+    """A bare ``constants.dart`` file reference must NOT be treated as a domain."""
+    result = extract_organizations(
+        FLUTTER_AUTH_DOC_WITH_CODE_REFERENCES, base_extractor=_detector()
+    )
+    assert "Constants" not in result, result
+
+
+def test_code_method_and_property_access_not_extracted_as_company():
+    """Dotted method/property references (error.contains, context.go, state.uri)
+    must NOT be treated as domains either."""
+    result = extract_organizations(
+        FLUTTER_AUTH_DOC_WITH_CODE_REFERENCES, base_extractor=_detector()
+    )
+    leaked = {"Error", "Context", "State"} & set(result)
+    assert not leaked, f"Code references leaked as company names: {leaked!r} in {result!r}"

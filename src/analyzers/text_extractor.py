@@ -169,7 +169,14 @@ class TextExtractor:
                 with open(pdf_path, "rb") as f:
                     reader = pypdf.PdfReader(f)
                     for page in reader.pages[:_MAX_PDF_PAGES]:
-                        page_text = page.extract_text()
+                        # layout mode uses character positions to insert proper
+                        # whitespace between text runs; plain mode (the default)
+                        # concatenates runs in stream order and omits spaces when
+                        # the PDF encodes each glyph individually (common in some
+                        # mortgage/escrow PDFs), producing "There'sasurplus…".
+                        page_text = (
+                            page.extract_text(extraction_mode="layout") or page.extract_text()
+                        )
                         if page_text:
                             text += page_text + "\n"
 
@@ -202,7 +209,14 @@ class TextExtractor:
                 with open(pdf_path, "rb") as f:
                     reader = pypdf.PdfReader(f)
                     for page in reader.pages[:_MAX_PDF_PAGES]:
-                        page_text = page.extract_text()
+                        # layout mode uses character positions to insert proper
+                        # whitespace between text runs; plain mode (the default)
+                        # concatenates runs in stream order and omits spaces when
+                        # the PDF encodes each glyph individually (common in some
+                        # mortgage/escrow PDFs), producing "There'sasurplus…".
+                        page_text = (
+                            page.extract_text(extraction_mode="layout") or page.extract_text()
+                        )
                         if page_text:
                             text += page_text + "\n"
 

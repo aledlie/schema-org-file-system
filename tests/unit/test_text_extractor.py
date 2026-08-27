@@ -129,6 +129,84 @@ class TestExtractTextFromPdf:
 
         assert result == ""
 
+    def test_layout_mode_called_first(self, tmp_path):
+        """extract_text(extraction_mode='layout') must be the first extraction attempt.
+
+        Some PDFs encode each glyph individually; pypdf plain mode then
+        concatenates runs without inserting spaces, producing run-together text
+        like "There'sasurplusinyourescrowaccount." that defeats keyword matching.
+        Layout mode uses character positions to infer word boundaries.
+        """
+        fake_pdf = tmp_path / "statement.pdf"
+        fake_pdf.write_bytes(b"fake")
+
+        # Simulate a PDF where layout mode returns proper spaced text.
+        layout_text = "There is a surplus in your escrow account. " * 5
+        plain_text = "There'sasurplusinyourescrowaccount." * 5
+
+        def extract_text_side_effect(**kwargs):
+            if kwargs.get("extraction_mode") == "layout":
+                return layout_text
+            return plain_text
+
+        mock_page = MagicMock()
+        mock_page.extract_text.side_effect = extract_text_side_effect
+
+        mock_reader = MagicMock()
+        mock_reader.pages = [mock_page]
+
+        with (
+            patch("src.analyzers.text_extractor.OCR_AVAILABLE", True),
+            patch("src.analyzers.text_extractor.pypdf") as mock_pypdf,
+        ):
+            mock_pypdf.PdfReader.return_value = mock_reader
+
+            from src.analyzers.text_extractor import TextExtractor
+
+            extractor = TextExtractor()
+            extractor.ocr_available = True
+
+            result = extractor.extract_text_from_pdf(fake_pdf)
+
+        # Layout text (with spaces) must be returned, not the run-together plain text.
+        assert "escrow account" in result, f"Expected spaced layout text, got: {result!r}"
+        # Confirm layout mode was attempted first.
+        first_call_kwargs = mock_page.extract_text.call_args_list[0].kwargs
+        assert first_call_kwargs.get("extraction_mode") == "layout"
+
+    def test_layout_mode_falls_back_to_plain_when_empty(self, tmp_path):
+        """When layout mode returns empty, plain mode must be used as fallback."""
+        fake_pdf = tmp_path / "statement.pdf"
+        fake_pdf.write_bytes(b"fake")
+
+        plain_text = "Invoice total amount due payment " * 5
+
+        def extract_text_side_effect(**kwargs):
+            if kwargs.get("extraction_mode") == "layout":
+                return ""  # layout mode found nothing
+            return plain_text
+
+        mock_page = MagicMock()
+        mock_page.extract_text.side_effect = extract_text_side_effect
+
+        mock_reader = MagicMock()
+        mock_reader.pages = [mock_page]
+
+        with (
+            patch("src.analyzers.text_extractor.OCR_AVAILABLE", True),
+            patch("src.analyzers.text_extractor.pypdf") as mock_pypdf,
+        ):
+            mock_pypdf.PdfReader.return_value = mock_reader
+
+            from src.analyzers.text_extractor import TextExtractor
+
+            extractor = TextExtractor()
+            extractor.ocr_available = True
+
+            result = extractor.extract_text_from_pdf(fake_pdf)
+
+        assert "Invoice" in result, f"Expected plain-mode fallback text, got: {result!r}"
+
 
 # ---------------------------------------------------------------------------
 # extract_text_from_docx

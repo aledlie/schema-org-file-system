@@ -82,10 +82,20 @@ _REFERENCE_SPLIT_RE = re.compile(
 )
 
 # A plausible domain: one or more ``label.`` groups followed by an alpha TLD.
-_DOMAIN_RE = re.compile(
-    r"\b((?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,})\b",
-    re.IGNORECASE,
-)
+# Case-SENSITIVE intentionally: real domain hostnames are always lowercase.
+#
+# Only matched when anchored to genuine URL/email syntax (``@domain`` or
+# ``http(s)://domain`` / ``www.domain``), NEVER as bare ``label.label`` prose.
+# A bare-text match is indistinguishable from a dotted code reference — a
+# method call (``error.contains``), property access (``context.go``,
+# ``state.uri``), or file path (``constants.dart``) all produce the exact same
+# shape as a real domain, and each was tried and recovered as a false-positive
+# company in turn (there is no finite denylist of "not a domain" second labels
+# that closes this gap — see git history on this constant). Requiring a URL/
+# email marker is what the docstring's "domain-ownership cue" always meant.
+_DOMAIN_LABEL = r"(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}"
+_EMAIL_DOMAIN_RE = re.compile(r"@(" + _DOMAIN_LABEL + r")\b")
+_URL_DOMAIN_RE = re.compile(r"\b(?:https?://|www\.)(" + _DOMAIN_LABEL + r")\b")
 
 # A single capitalized word token (allows internal caps/digits/&) used to find a
 # domain's brand token as it actually appears in the body (preserves "GeneDx").
@@ -153,12 +163,13 @@ def _domain_brand_token(domain: str) -> Optional[str]:
 
 
 def _extract_domain_tokens(text: str) -> set[str]:
-    """Collect ownership-cue brand tokens from every domain mentioned in text."""
+    """Collect ownership-cue brand tokens from every URL/email domain in text."""
     tokens: set[str] = set()
-    for match in _DOMAIN_RE.finditer(text):
-        token = _domain_brand_token(match.group(1))
-        if token:
-            tokens.add(token)
+    for pattern in (_EMAIL_DOMAIN_RE, _URL_DOMAIN_RE):
+        for match in pattern.finditer(text):
+            token = _domain_brand_token(match.group(1))
+            if token:
+                tokens.add(token)
     return tokens
 
 
